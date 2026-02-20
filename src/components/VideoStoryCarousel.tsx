@@ -183,7 +183,7 @@ export default function VideoStoryCarousel({ videos: initialVideos, initialIndex
 
   function handleSaveVideo(e: React.MouseEvent) {
     e.stopPropagation()
-    if (!videoUrl) return
+    if (!videoUrl || !video) return
     const a = document.createElement('a')
     a.href = videoUrl
     a.download = `${video.username}_${video.platform}_${video.id}.mp4`
