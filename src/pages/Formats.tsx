@@ -127,34 +127,34 @@ export default function Formats() {
   return (
     <>
       {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 md:gap-6 mb-6 md:mb-12">
         <div>
-          <div className="flex items-center gap-2 mb-3">
+          <div className="flex items-center gap-2 mb-2 md:mb-3">
             <span className="px-2 py-0.5 bg-pink-500/10 text-pink-400 text-[10px] font-black uppercase tracking-widest rounded">
               The Receipts
             </span>
           </div>
-          <h1 className="text-4xl font-black tracking-tighter mb-2">VIRAL FORMATS</h1>
-          <p className="text-slate-500 text-sm font-medium">
+          <h1 className="text-2xl md:text-4xl font-black tracking-tighter mb-1 md:mb-2">VIRAL FORMATS</h1>
+          <p className="text-slate-500 text-xs md:text-sm font-medium">
             The most successful content structures currently winning on the global feed.
           </p>
         </div>
 
-        <div className="flex gap-4">
-          <div className="px-6 py-4 glass-card rounded-[1.5rem] border-white/5">
+        <div className="flex gap-3 md:gap-4">
+          <div className="px-4 py-3 md:px-6 md:py-4 glass-card rounded-2xl md:rounded-[1.5rem] border-white/5 flex-1 md:flex-initial">
             <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Total Formats</div>
-            <div className="text-2xl font-black text-white">{total}</div>
+            <div className="text-xl md:text-2xl font-black text-white">{total}</div>
           </div>
-          <div className="px-6 py-4 glass-card rounded-[1.5rem] border-white/5">
+          <div className="px-4 py-3 md:px-6 md:py-4 glass-card rounded-2xl md:rounded-[1.5rem] border-white/5 flex-1 md:flex-initial">
             <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Global Avg Views</div>
-            <div className="text-2xl font-black text-white">{formatNumber(globalAvgViews)}</div>
+            <div className="text-xl md:text-2xl font-black text-white">{formatNumber(globalAvgViews)}</div>
           </div>
         </div>
       </div>
 
       {/* Sort Controls */}
-      <div className="flex items-center gap-2 mb-8">
-        <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest mr-2">Sort by</span>
+      <div className="flex items-center gap-2 mb-6 md:mb-8 overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
+        <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest mr-2 shrink-0">Sort by</span>
         {sortOptions.map((opt) => (
           <button
             key={opt.field}
@@ -187,16 +187,16 @@ export default function Formats() {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
             {formats.map((format, index) => (
               <Link
                 key={format.id}
                 to={`/dashboard/formats/${format.id}`}
-                className="gradient-border group cursor-pointer hover:translate-y-[-4px] transition-all duration-300"
+                className="gradient-border group cursor-pointer md:hover:translate-y-[-4px] active:scale-[0.98] transition-all duration-300"
               >
-                <div className="card-inner p-7 flex flex-col h-full">
-                  <div className="flex justify-between items-start mb-6">
-                    <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center text-xl">
+                <div className="card-inner p-5 md:p-7 flex flex-col h-full">
+                  <div className="flex justify-between items-start mb-4 md:mb-6">
+                    <div className="w-10 h-10 md:w-12 md:h-12 bg-white/5 rounded-xl md:rounded-2xl flex items-center justify-center text-lg md:text-xl">
                       {getFormatEmoji(format.name)}
                     </div>
                     <div className="px-3 py-1 bg-teal-400/10 rounded-lg">
@@ -205,17 +205,17 @@ export default function Formats() {
                     </div>
                   </div>
 
-                  <h3 className="text-xl font-black mb-3 tracking-tight group-hover:text-pink-400 transition-colors uppercase">
+                  <h3 className="text-base md:text-xl font-black mb-2 md:mb-3 tracking-tight group-hover:text-pink-400 transition-colors uppercase">
                     {format.name}
                   </h3>
                   {format.description && (
-                    <p className="text-xs text-slate-400 font-semibold mb-8 leading-relaxed line-clamp-3">
+                    <p className="text-xs text-slate-400 font-semibold mb-4 md:mb-8 leading-relaxed line-clamp-2 md:line-clamp-3">
                       {format.description}
                     </p>
                   )}
 
                   {/* Metrics Grid */}
-                  <div className="mt-auto grid grid-cols-2 gap-x-8 gap-y-4 pt-6 border-t border-white/5">
+                  <div className="mt-auto grid grid-cols-2 gap-x-6 md:gap-x-8 gap-y-3 md:gap-y-4 pt-4 md:pt-6 border-t border-white/5">
                     <div>
                       <div className="metric-label">Engagement</div>
                       <div className="metric-value">

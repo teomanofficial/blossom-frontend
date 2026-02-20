@@ -136,49 +136,49 @@ export default function Tactics() {
   return (
     <>
       {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 md:gap-6 mb-6 md:mb-12">
         <div>
-          <div className="flex items-center gap-2 mb-3">
+          <div className="flex items-center gap-2 mb-2 md:mb-3">
             <span className="px-2 py-0.5 bg-amber-500/10 text-amber-400 text-[10px] font-black uppercase tracking-widest rounded">
               Engagement Playbook
             </span>
           </div>
-          <h1 className="text-4xl font-black tracking-tighter mb-2">VIRAL TACTICS</h1>
-          <p className="text-slate-500 text-sm font-medium">
+          <h1 className="text-2xl md:text-4xl font-black tracking-tighter mb-1 md:mb-2">VIRAL TACTICS</h1>
+          <p className="text-slate-500 text-xs md:text-sm font-medium">
             The specific techniques that drive views, shares, and engagement across top-performing content.
           </p>
         </div>
 
-        <div className="flex gap-4">
-          <div className="px-6 py-4 glass-card rounded-[1.5rem] border-white/5">
+        <div className="flex gap-2 md:gap-4 overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
+          <div className="px-4 py-3 md:px-6 md:py-4 glass-card rounded-2xl md:rounded-[1.5rem] border-white/5 shrink-0">
             <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Total Tactics</div>
-            <div className="text-2xl font-black text-white">{total}</div>
+            <div className="text-xl md:text-2xl font-black text-white">{total}</div>
           </div>
-          <div className="px-6 py-4 glass-card rounded-[1.5rem] border-white/5">
+          <div className="px-4 py-3 md:px-6 md:py-4 glass-card rounded-2xl md:rounded-[1.5rem] border-white/5 shrink-0">
             <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Avg Exec Score</div>
-            <div className={`text-2xl font-black ${getScoreColor(globalAvgScore)}`}>
+            <div className={`text-xl md:text-2xl font-black ${getScoreColor(globalAvgScore)}`}>
               {globalAvgScore > 0 ? Math.round(globalAvgScore) : '--'}
             </div>
           </div>
-          <div className="px-6 py-4 glass-card rounded-[1.5rem] border-white/5">
+          <div className="px-4 py-3 md:px-6 md:py-4 glass-card rounded-2xl md:rounded-[1.5rem] border-white/5 shrink-0">
             <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Video Uses</div>
-            <div className="text-2xl font-black text-white">{formatNumber(totalVideos)}</div>
+            <div className="text-xl md:text-2xl font-black text-white">{formatNumber(totalVideos)}</div>
           </div>
         </div>
       </div>
 
       {/* Search + Filters */}
-      <div className="flex flex-col md:flex-row items-start md:items-center gap-4 mb-8">
+      <div className="flex flex-col md:flex-row items-start md:items-center gap-3 md:gap-4 mb-6 md:mb-8">
         {/* Search */}
-        <form onSubmit={handleSearchSubmit} className="flex items-center gap-2">
-          <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2 rounded-xl">
+        <form onSubmit={handleSearchSubmit} className="flex items-center gap-2 w-full md:w-auto">
+          <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2 rounded-xl flex-1 md:flex-initial">
             <i className="fas fa-search text-slate-500 text-xs"></i>
             <input
               type="text"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder="Search tactics..."
-              className="bg-transparent border-none outline-none text-sm w-48 placeholder:text-slate-600 font-medium"
+              className="bg-transparent border-none outline-none text-sm w-full md:w-48 placeholder:text-slate-600 font-medium"
             />
             {search && (
               <button
@@ -212,8 +212,8 @@ export default function Tactics() {
       </div>
 
       {/* Sort Controls */}
-      <div className="flex items-center gap-2 mb-8">
-        <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest mr-2">Sort by</span>
+      <div className="flex items-center gap-2 mb-6 md:mb-8 overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
+        <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest mr-2 shrink-0">Sort by</span>
         {sortOptions.map((opt) => (
           <button
             key={opt.field}
@@ -245,16 +245,16 @@ export default function Tactics() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
           {tactics.map((tactic, index) => {
             const score = Number(tactic.avg_execution_score) || 0
             return (
               <Link
                 key={tactic.id}
                 to={`/dashboard/tactics/${tactic.id}`}
-                className="gradient-border group cursor-pointer hover:translate-y-[-4px] transition-all duration-300"
+                className="gradient-border group cursor-pointer md:hover:translate-y-[-4px] active:scale-[0.98] transition-all duration-300"
               >
-                <div className="card-inner p-7 flex flex-col h-full">
+                <div className="card-inner p-5 md:p-7 flex flex-col h-full">
                   <div className="flex justify-between items-start mb-5">
                     <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center">
                       <i className={`fas ${getTacticIcon(tactic.category)} text-lg text-slate-400`}></i>

@@ -268,14 +268,14 @@ export default function Support() {
   return (
     <>
       {/* Page header */}
-      <div className="mb-12">
+      <div className="mb-6 md:mb-12">
         <span className="px-3 py-1 bg-pink-500/10 text-pink-400 rounded-full text-xs font-bold uppercase tracking-wider">
           Support
         </span>
-        <h1 className="text-3xl font-black tracking-tight mt-3">
+        <h1 className="text-2xl md:text-3xl font-black tracking-tight mt-2 md:mt-3">
           Support & <span className="gradient-text">Help</span>
         </h1>
-        <p className="text-slate-500 text-sm font-medium mt-1">
+        <p className="text-slate-500 text-xs md:text-sm font-medium mt-1">
           Have a question or issue? We're here to help.
         </p>
       </div>
@@ -300,7 +300,7 @@ export default function Support() {
             <h2 className="text-lg font-bold text-white">Your Tickets</h2>
             <button
               onClick={goToCreate}
-              className="px-6 py-3 bg-gradient-to-r from-pink-500 to-orange-400 text-white text-sm font-bold rounded-xl hover:opacity-90 transition-opacity"
+              className="px-4 py-2.5 md:px-6 md:py-3 bg-gradient-to-r from-pink-500 to-orange-400 text-white text-xs md:text-sm font-bold rounded-xl hover:opacity-90 transition-opacity"
             >
               New Ticket
             </button>
@@ -336,7 +336,7 @@ export default function Support() {
                   key={ticket.id}
                   onClick={() => fetchTicketDetail(ticket.id)}
                   disabled={detailLoading}
-                  className="w-full text-left p-5 rounded-2xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.05] transition-colors group"
+                  className="w-full text-left p-4 md:p-5 rounded-2xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.05] active:bg-white/[0.06] transition-colors group"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0 flex-1">
@@ -541,13 +541,13 @@ export default function Support() {
                           className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}
                         >
                           <div
-                            className={`max-w-[75%] px-4 py-3 rounded-2xl ${
+                            className={`max-w-[85%] md:max-w-[75%] px-3.5 py-2.5 md:px-4 md:py-3 rounded-2xl ${
                               isUser
                                 ? 'bg-pink-500/10 border border-pink-500/20'
                                 : 'bg-white/5 border border-white/10'
                             }`}
                           >
-                            <div className="flex items-center justify-between gap-4 mb-1">
+                            <div className="flex items-center justify-between gap-2 md:gap-4 mb-1">
                               <span
                                 className={`text-[10px] font-bold uppercase tracking-wider ${
                                   isUser ? 'text-pink-400' : 'text-slate-400'
@@ -555,7 +555,7 @@ export default function Support() {
                               >
                                 {isUser ? 'You' : msg.sender_name || 'Support Team'}
                               </span>
-                              <span className="text-[10px] text-slate-600 font-medium whitespace-nowrap">
+                              <span className="text-[9px] md:text-[10px] text-slate-600 font-medium whitespace-nowrap">
                                 {formatDate(msg.created_at)}
                               </span>
                             </div>

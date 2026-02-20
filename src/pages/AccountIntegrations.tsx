@@ -172,14 +172,14 @@ export default function AccountIntegrations() {
                 className="border border-white/[0.08] rounded-2xl bg-white/[0.02] overflow-hidden"
               >
                 {/* Platform header */}
-                <div className="flex items-center justify-between p-5">
-                  <div className="flex items-center gap-4">
-                    <div className={`w-11 h-11 rounded-xl ${platform.bgColor} flex items-center justify-center`}>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 sm:p-5">
+                  <div className="flex items-center gap-3 sm:gap-4">
+                    <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl ${platform.bgColor} flex items-center justify-center shrink-0`}>
                       <i className={`${platform.iconBrand ? 'fab' : 'fas'} ${platform.icon} ${platform.color} text-lg`}></i>
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <h3 className="text-sm font-bold text-white">{platform.label}</h3>
-                      <p className="text-xs text-slate-500 mt-0.5 max-w-md">
+                      <p className="text-xs text-slate-500 mt-0.5 hidden sm:block max-w-md">
                         {platform.description}
                       </p>
                     </div>
@@ -226,8 +226,8 @@ export default function AccountIntegrations() {
 
                 {/* Connected account details */}
                 {account && (
-                  <div className="border-t border-white/[0.06] px-5 py-4 bg-white/[0.01]">
-                    <div className="flex items-center gap-4">
+                  <div className="border-t border-white/[0.06] px-4 sm:px-5 py-4 bg-white/[0.01]">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
                       {/* Avatar */}
                       <div className="w-10 h-10 rounded-full overflow-hidden bg-white/5 flex-shrink-0">
                         {account.avatar_url ? (
@@ -261,7 +261,7 @@ export default function AccountIntegrations() {
                       </div>
 
                       {/* Stats */}
-                      <div className="flex items-center gap-5 text-center">
+                      <div className="flex items-center gap-4 sm:gap-5 text-center sm:ml-auto">
                         <div>
                           <div className="text-sm font-bold text-white">{formatNumber(account.follower_count)}</div>
                           <div className="text-[10px] text-slate-500 uppercase tracking-wider">Followers</div>

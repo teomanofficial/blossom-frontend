@@ -1,8 +1,9 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { authFetch } from '../lib/api'
 import SearchOverlay from './SearchOverlay'
+import MobileDrawer from './MobileDrawer'
 
 const navItems = [
   { to: '/dashboard', icon: 'fa-chart-pie', label: 'Dashboard', end: true },
@@ -29,11 +30,42 @@ const managementItems = [
   { to: '/dashboard/onboarding-management', icon: 'fa-clipboard-check', label: 'Onboarding' },
 ]
 
+/* Bottom tab items for mobile — the 4 most-used features + More */
+const bottomTabs = [
+  { to: '/dashboard', icon: 'fa-chart-pie', label: 'Home', end: true },
+  { to: '/dashboard/analyze', icon: 'fa-microscope', label: 'Analyze' },
+  { to: '/dashboard/formats', icon: 'fa-shapes', label: 'Formats' },
+  { to: '/dashboard/suggestions', icon: 'fa-lightbulb', label: 'Ideas' },
+  { to: '__more__', icon: 'fa-grid-2', label: 'More' },
+]
+
+/* Routes that live in the "More" drawer — used to highlight the More tab */
+const drawerRoutes = [
+  '/dashboard/hooks',
+  '/dashboard/tactics',
+  '/dashboard/trending',
+  '/dashboard/influencers',
+  '/dashboard/support',
+  '/dashboard/account',
+  '/dashboard/users',
+  '/dashboard/subscription-plans',
+  '/dashboard/content-management',
+  '/dashboard/categories',
+  '/dashboard/videos',
+  '/dashboard/discovery',
+  '/dashboard/support-management',
+  '/dashboard/bulk-management',
+  '/dashboard/onboarding-management',
+]
+
 export default function DashboardLayout() {
   const { user, signOut, userType, planSlug } = useAuth()
+  const location = useLocation()
   const displayName = user?.user_metadata?.full_name ?? user?.email?.split('@')[0] ?? 'Creator'
 
   const [supportUnreadCount, setSupportUnreadCount] = useState(0)
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
 
   useEffect(() => {
     const fetchUnread = async () => {
@@ -50,20 +82,26 @@ export default function DashboardLayout() {
     return () => clearInterval(interval)
   }, [])
 
+  // Close drawer & search on navigation
+  useEffect(() => {
+    setDrawerOpen(false)
+    setMobileSearchOpen(false)
+  }, [location.pathname])
+
   const hasAnalysis = userType === 'admin' || planSlug === 'premium' || planSlug === 'platin'
   const showManagement = userType === 'admin'
 
   const visibleNavItems = navItems.filter((item) => {
-    if (item.to === '/dashboard/influencers') {
-      return hasAnalysis
-    }
+    if (item.to === '/dashboard/influencers') return hasAnalysis
     return true
   })
 
+  const isDrawerRouteActive = drawerRoutes.some((r) => location.pathname.startsWith(r))
+
   return (
     <div className="flex h-screen overflow-hidden bg-[#020617]">
-      {/* Sidebar */}
-      <aside className="w-64 flex-shrink-0 border-r border-white/5 flex flex-col">
+      {/* ═══════════ Desktop Sidebar (lg+) ═══════════ */}
+      <aside className="hidden lg:flex w-64 flex-shrink-0 border-r border-white/5 flex-col">
         <div className="p-8">
           <div className="flex items-center gap-3">
             <img src="/logo-light.png" alt="Blossom AI" className="w-9 h-9" />
@@ -95,10 +133,9 @@ export default function DashboardLayout() {
             </NavLink>
           ))}
 
-          {/* Management Section - admin only */}
           {showManagement && (
             <div className="pt-4 mt-4 border-t border-white/5">
-              <div className="px-4 py-2 text-[10px] font-black text-slate-600 uppercase tracking-widest">
+              <div className="px-4 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
                 Management
               </div>
               {managementItems.map((item) => (
@@ -125,15 +162,13 @@ export default function DashboardLayout() {
             </div>
           )}
         </nav>
-
       </aside>
 
-      {/* Main Content */}
+      {/* ═══════════ Main Content ═══════════ */}
       <main className="flex-1 flex flex-col overflow-hidden">
-        {/* Top Header */}
-        <header className="h-20 border-b border-white/5 flex items-center justify-between px-10 bg-slate-950/20 backdrop-blur-xl z-10">
+        {/* ── Desktop Top Header (lg+) ── */}
+        <header className="hidden lg:flex h-20 border-b border-white/5 items-center justify-between px-10 bg-slate-950/20 backdrop-blur-xl z-10">
           <SearchOverlay />
-
           <div className="flex items-center gap-4 ml-6">
             <div className="flex items-center gap-3 px-4 py-2 bg-white/5 rounded-2xl border border-white/5">
               <div className="text-right">
@@ -152,13 +187,88 @@ export default function DashboardLayout() {
           </div>
         </header>
 
-        {/* Page Content */}
-        <div className="flex-1 overflow-y-auto p-10 dashboard-scrollbar">
+        {/* ── Mobile Top Header (<lg) ── */}
+        <header className="flex lg:hidden h-14 border-b border-white/5 items-center justify-between px-4 bg-slate-950/80 backdrop-blur-xl z-30 shrink-0">
+          <div className="flex items-center gap-2.5">
+            <img src="/logo-light.png" alt="Blossom AI" className="w-7 h-7" />
+            <span className="text-base font-bold tracking-tighter">Blossom AI</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
+              className="w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center"
+            >
+              <i className={`fas ${mobileSearchOpen ? 'fa-xmark' : 'fa-search'} text-sm text-slate-400`} />
+            </button>
+            <NavLink
+              to="/dashboard/account"
+              className="w-9 h-9 rounded-full bg-gradient-to-br from-pink-500 to-orange-400 flex items-center justify-center text-xs font-bold"
+            >
+              {displayName.charAt(0).toUpperCase()}
+            </NavLink>
+          </div>
+        </header>
+
+        {/* ── Mobile Search Dropdown ── */}
+        {mobileSearchOpen && (
+          <div className="lg:hidden px-4 py-3 bg-slate-950/95 backdrop-blur-xl border-b border-white/5 z-20">
+            <SearchOverlay />
+          </div>
+        )}
+
+        {/* ── Page Content ── */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-10 pb-24 lg:pb-10 dashboard-scrollbar">
           <div className="max-w-7xl mx-auto">
             <Outlet />
           </div>
         </div>
       </main>
+
+      {/* ═══════════ Mobile Bottom Tab Bar (<lg) ═══════════ */}
+      <nav className="fixed bottom-0 left-0 right-0 lg:hidden z-40 bg-[#020617]/95 backdrop-blur-xl border-t border-white/10 safe-bottom">
+        <div className="flex items-stretch justify-around h-16 px-2">
+          {bottomTabs.map((tab) => {
+            if (tab.to === '__more__') {
+              return (
+                <button
+                  key="more"
+                  onClick={() => setDrawerOpen(!drawerOpen)}
+                  className={`flex flex-col items-center justify-center gap-1 flex-1 transition-colors ${
+                    drawerOpen || isDrawerRouteActive ? 'text-pink-400' : 'text-slate-500'
+                  }`}
+                >
+                  <i className={`fas ${drawerOpen ? 'fa-xmark' : tab.icon} text-base`} />
+                  <span className="text-[10px] font-bold">{drawerOpen ? 'Close' : tab.label}</span>
+                </button>
+              )
+            }
+            return (
+              <NavLink
+                key={tab.to}
+                to={tab.to}
+                end={tab.end}
+                className={({ isActive }) =>
+                  `flex flex-col items-center justify-center gap-1 flex-1 transition-colors ${
+                    isActive ? 'text-pink-400' : 'text-slate-500'
+                  }`
+                }
+              >
+                <i className={`fas ${tab.icon} text-base`} />
+                <span className="text-[10px] font-bold">{tab.label}</span>
+              </NavLink>
+            )
+          })}
+        </div>
+      </nav>
+
+      {/* ═══════════ Mobile "More" Drawer ═══════════ */}
+      <MobileDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        supportUnreadCount={supportUnreadCount}
+        hasAnalysis={hasAnalysis}
+        showManagement={showManagement}
+      />
     </div>
   )
 }

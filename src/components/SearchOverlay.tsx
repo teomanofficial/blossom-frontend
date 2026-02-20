@@ -31,7 +31,6 @@ interface TacticResult {
   video_count: number
   avg_views_when_present: number
   avg_execution_score: number
-  is_verified: boolean
 }
 
 interface InfluencerResult {
@@ -156,7 +155,11 @@ export default function SearchOverlay() {
     try {
       const res = await authFetch(`/api/analysis/search?q=${encodeURIComponent(q.trim())}&limit=5`)
       const data = await res.json()
-      setResults(data)
+      if (data.formats && data.hooks && data.tactics && data.influencers) {
+        setResults(data)
+      } else {
+        setResults(null)
+      }
     } catch {
       setResults(null)
     } finally {
@@ -378,7 +381,6 @@ export default function SearchOverlay() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-bold text-white truncate">{t.name}</span>
-                            {t.is_verified && <i className="fas fa-check-circle text-teal-400 text-[10px] flex-shrink-0"></i>}
                           </div>
                           <div className="flex items-center gap-2 mt-0.5">
                             <span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded ${categoryColors[t.category] || 'bg-slate-500/20 text-slate-400'}`}>

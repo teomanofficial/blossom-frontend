@@ -28,6 +28,7 @@ import AccountLayout from './pages/Account'
 import AccountProfile from './pages/AccountProfile'
 import AccountBilling from './pages/AccountBilling'
 import AccountIntegrations from './pages/AccountIntegrations'
+import AccountSecurity from './pages/AccountSecurity'
 import SubscriptionPlans from './pages/SubscriptionPlans'
 import Users from './pages/Users'
 import ContentManagement from './pages/ContentManagement'
@@ -103,6 +104,7 @@ function App() {
         <Route path="settings" element={<Navigate to="/dashboard/account/billing" replace />} />
         <Route path="account" element={<AccountLayout />}>
           <Route index element={<AccountProfile />} />
+          <Route path="security" element={<AccountSecurity />} />
           <Route path="integrations" element={<AccountIntegrations />} />
           <Route path="billing" element={<AccountBilling />} />
         </Route>

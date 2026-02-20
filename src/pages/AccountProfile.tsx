@@ -78,7 +78,7 @@ export default function AccountProfile() {
         <h2 className="text-xl font-black tracking-tight">Public profile</h2>
       </div>
 
-      <div className="flex gap-8">
+      <div className="flex flex-col-reverse lg:flex-row gap-6 lg:gap-8">
         {/* Form */}
         <div className="flex-1 space-y-5">
           {/* Name */}
@@ -172,7 +172,7 @@ export default function AccountProfile() {
         </div>
 
         {/* Avatar column */}
-        <div className="flex-shrink-0">
+        <div className="flex-shrink-0 flex flex-col items-center lg:items-start">
           <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
             Avatar
           </label>
@@ -187,7 +187,7 @@ export default function AccountProfile() {
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className="relative group w-[200px] h-[200px] rounded-full overflow-hidden shadow-xl shadow-pink-500/10 focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:ring-offset-2 focus:ring-offset-[#0a0a0f]"
+            className="relative group w-28 h-28 lg:w-[200px] lg:h-[200px] rounded-full overflow-hidden shadow-xl shadow-pink-500/10 focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:ring-offset-2 focus:ring-offset-[#0a0a0f]"
           >
             {profile?.avatar_url ? (
               <img

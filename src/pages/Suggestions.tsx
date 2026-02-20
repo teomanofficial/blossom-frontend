@@ -168,15 +168,15 @@ export default function Suggestions() {
   return (
     <>
       {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 md:gap-6 mb-6 md:mb-8">
         <div>
-          <div className="flex items-center gap-2 mb-3">
+          <div className="flex items-center gap-2 mb-2 md:mb-3">
             <span className="px-2 py-0.5 bg-pink-500/10 text-pink-400 text-[10px] font-black uppercase tracking-widest rounded">
               AI Powered
             </span>
           </div>
-          <h1 className="text-4xl font-black tracking-tighter mb-2">CONTENT SUGGESTIONS</h1>
-          <p className="text-slate-500 text-sm font-medium">
+          <h1 className="text-2xl md:text-4xl font-black tracking-tighter mb-1 md:mb-2">CONTENT SUGGESTIONS</h1>
+          <p className="text-slate-500 text-xs md:text-sm font-medium">
             Daily content ideas based on trending patterns. Film them today.
           </p>
         </div>
@@ -204,28 +204,28 @@ export default function Suggestions() {
       </div>
 
       {/* Stats Row */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-        <div className="px-6 py-4 glass-card rounded-[1.5rem] border-white/5">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 mb-6 md:mb-8">
+        <div className="px-4 py-3 md:px-6 md:py-4 glass-card rounded-2xl md:rounded-[1.5rem] border-white/5">
           <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Today's Ideas</div>
-          <div className="text-2xl font-black text-pink-400">{stats?.today_count ?? 0}</div>
-          <div className="text-[10px] font-bold text-slate-600 mt-1">{stats?.total_active ?? 0} active total</div>
+          <div className="text-xl md:text-2xl font-black text-pink-400">{stats?.today_count ?? 0}</div>
+          <div className="text-[10px] font-bold text-slate-600 mt-1 hidden md:block">{stats?.total_active ?? 0} active total</div>
         </div>
-        <div className="px-6 py-4 glass-card rounded-[1.5rem] border-white/5">
+        <div className="px-4 py-3 md:px-6 md:py-4 glass-card rounded-2xl md:rounded-[1.5rem] border-white/5">
           <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Active Topics</div>
-          <div className="text-2xl font-black text-purple-400">{stats?.active_topics ?? 0}</div>
-          <div className="text-[10px] font-bold text-slate-600 mt-1">keyword clusters</div>
+          <div className="text-xl md:text-2xl font-black text-purple-400">{stats?.active_topics ?? 0}</div>
+          <div className="text-[10px] font-bold text-slate-600 mt-1 hidden md:block">keyword clusters</div>
         </div>
-        <div className="px-6 py-4 glass-card rounded-[1.5rem] border-white/5">
+        <div className="px-4 py-3 md:px-6 md:py-4 glass-card rounded-2xl md:rounded-[1.5rem] border-white/5">
           <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Total Upvotes</div>
-          <div className="text-2xl font-black text-cyan-400">{formatNumber(stats?.total_upvotes ?? 0)}</div>
-          <div className="text-[10px] font-bold text-slate-600 mt-1">across all ideas</div>
+          <div className="text-xl md:text-2xl font-black text-cyan-400">{formatNumber(stats?.total_upvotes ?? 0)}</div>
+          <div className="text-[10px] font-bold text-slate-600 mt-1 hidden md:block">across all ideas</div>
         </div>
-        <div className="px-6 py-4 glass-card rounded-[1.5rem] border-white/5">
+        <div className="px-4 py-3 md:px-6 md:py-4 glass-card rounded-2xl md:rounded-[1.5rem] border-white/5">
           <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Videos Analyzed</div>
-          <div className="text-2xl font-black text-teal-400">{formatNumber(stats?.videos_analyzed ?? 0)}</div>
-          <div className="text-[10px] font-bold text-slate-600 mt-1">source videos</div>
+          <div className="text-xl md:text-2xl font-black text-teal-400">{formatNumber(stats?.videos_analyzed ?? 0)}</div>
+          <div className="text-[10px] font-bold text-slate-600 mt-1 hidden md:block">source videos</div>
         </div>
-        <div className="px-6 py-4 glass-card rounded-[1.5rem] border-white/5">
+        <div className="col-span-2 md:col-span-1 px-4 py-3 md:px-6 md:py-4 glass-card rounded-2xl md:rounded-[1.5rem] border-white/5">
           <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Last Generated</div>
           <div className="text-lg font-black text-white mt-1">{timeAgo(stats?.last_generated_at ?? null)}</div>
         </div>
@@ -320,10 +320,10 @@ export default function Suggestions() {
               <div
                 key={s.id}
                 onClick={() => navigate(`/dashboard/suggestions/${s.id}`)}
-                className="flex items-center gap-4 px-6 py-4 hover:bg-white/[0.02] cursor-pointer transition-colors"
+                className="flex items-center gap-3 md:gap-4 px-4 md:px-6 py-3.5 md:py-4 hover:bg-white/[0.02] active:bg-white/[0.03] cursor-pointer transition-colors"
               >
                 {/* Upvote column */}
-                <div className="flex flex-col items-center gap-0.5 flex-shrink-0 w-10">
+                <div className="flex flex-col items-center gap-0.5 flex-shrink-0 w-8 md:w-10">
                   <button
                     onClick={(e) => toggleVote(e, s.id)}
                     className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all ${
@@ -386,11 +386,11 @@ export default function Suggestions() {
                 </div>
 
                 {/* Right side actions */}
-                <div className="flex items-center gap-3 flex-shrink-0">
-                  {/* Save button */}
+                <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
+                  {/* Save button — hidden on small mobile */}
                   <button
                     onClick={(e) => toggleSave(e, s.id)}
-                    className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all ${
+                    className={`hidden sm:flex w-8 h-8 items-center justify-center rounded-lg transition-all ${
                       s.has_saved
                         ? 'text-amber-400 bg-amber-500/10'
                         : 'text-slate-600 hover:text-slate-300 hover:bg-white/5'

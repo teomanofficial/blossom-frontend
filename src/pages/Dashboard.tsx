@@ -92,11 +92,10 @@ function KeywordCloud({ keywords }: { keywords: TrendingKeyword[] }) {
   const minCount = Math.min(...keywords.map(k => k.video_count))
   const range = maxCount - minCount || 1
 
-  // Shuffle for organic look, but keep it stable with useMemo
   const shuffled = useMemo(() => {
     const arr = [...keywords]
     for (let i = arr.length - 1; i > 0; i--) {
-      const j = Math.floor((i * 7 + 3) % (i + 1)) // deterministic shuffle
+      const j = Math.floor((i * 7 + 3) % (i + 1))
       const tmp = arr[i]!
       arr[i] = arr[j]!
       arr[j] = tmp
@@ -108,7 +107,6 @@ function KeywordCloud({ keywords }: { keywords: TrendingKeyword[] }) {
     <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 py-2">
       {shuffled.map((k) => {
         const ratio = (k.video_count - minCount) / range
-        // Size: 11px to 24px based on usage frequency
         const fontSize = 11 + ratio * 13
         const opacity = 0.5 + ratio * 0.5
         const color = CATEGORY_COLORS[k.category] || 'text-slate-300'
@@ -141,7 +139,7 @@ function PostCard({
   return (
     <div
       onClick={onClick}
-      className="shrink-0 w-[160px] cursor-pointer group"
+      className="shrink-0 w-[130px] sm:w-[160px] cursor-pointer group"
     >
       <div className="aspect-[9/16] bg-slate-900 rounded-2xl overflow-hidden border border-white/5 group-hover:border-pink-500/30 transition-all relative">
         {src ? (
@@ -152,10 +150,8 @@ function PostCard({
           </div>
         )}
 
-        {/* Gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
-        {/* Top badges */}
         <div className="absolute top-2 left-2 right-2 flex items-center justify-between">
           {video.final_viral_probability != null && (
             <span className={`text-[9px] font-black px-1.5 py-0.5 rounded backdrop-blur-sm ${viralBadge(video.final_viral_probability)}`}>
@@ -165,22 +161,20 @@ function PostCard({
           <i className={`${platformIcon(video.platform)} text-[10px] text-white/70`} />
         </div>
 
-        {/* Bottom info */}
-        <div className="absolute bottom-0 left-0 right-0 p-2.5">
-          <div className="text-[11px] font-bold text-white truncate">@{video.username}</div>
+        <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-2.5">
+          <div className="text-[10px] sm:text-[11px] font-bold text-white truncate">@{video.username}</div>
           <div className="flex items-center gap-2 mt-0.5">
-            <span className="text-[10px] font-black text-white/80">
+            <span className="text-[9px] sm:text-[10px] font-black text-white/80">
               <i className="fas fa-eye mr-0.5 text-[8px]" />{fmt(video.views)}
             </span>
             {video.likes != null && (
-              <span className="text-[10px] font-bold text-white/60">
+              <span className="text-[9px] sm:text-[10px] font-bold text-white/60">
                 <i className="fas fa-heart mr-0.5 text-[8px]" />{fmt(video.likes)}
               </span>
             )}
           </div>
         </div>
       </div>
-      {/* Format tag below card */}
       {video.format_class_name && (
         <div className="text-[9px] text-slate-500 font-bold mt-1.5 truncate capitalize px-1">
           {video.format_class_name}
@@ -222,11 +216,11 @@ export default function Dashboard() {
   return (
     <>
       {/* Page Header */}
-      <div className="mb-10">
-        <h1 className="text-4xl font-black tracking-tighter mb-2">
+      <div className="mb-6 lg:mb-10">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tighter mb-1 lg:mb-2">
           Welcome, <span className="gradient-text">{displayName}</span>
         </h1>
-        <p className="text-slate-500 text-sm font-medium">Your viral intelligence hub. Study what works, create what's next.</p>
+        <p className="text-slate-500 text-xs sm:text-sm font-medium">Your viral intelligence hub. Study what works, create what's next.</p>
       </div>
 
       {loading ? (
@@ -236,7 +230,7 @@ export default function Dashboard() {
       ) : stats ? (
         <>
           {/* ── Quick Actions ── */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 mb-6 lg:mb-8">
             {[
               { to: '/dashboard/analyze', icon: 'fa-bolt', label: 'Analyze Content', desc: 'Check viral potential' },
               { to: '/dashboard/suggestions', icon: 'fa-lightbulb', label: 'Get Ideas', desc: 'AI content suggestions' },
@@ -246,15 +240,15 @@ export default function Dashboard() {
               <Link
                 key={a.to}
                 to={a.to}
-                className="glass-card rounded-2xl p-5 hover:bg-white/[0.04] transition-all group border border-transparent hover:border-pink-500/20"
+                className="glass-card rounded-xl sm:rounded-2xl p-3.5 sm:p-5 hover:bg-white/[0.04] transition-all group border border-transparent hover:border-pink-500/20 active:scale-[0.97]"
               >
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-9 h-9 rounded-xl bg-pink-500/10 flex items-center justify-center">
-                    <i className={`fas ${a.icon} text-pink-400 text-sm`} />
+                <div className="flex items-center gap-2.5 sm:gap-3 mb-1.5 sm:mb-2">
+                  <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-pink-500/10 flex items-center justify-center">
+                    <i className={`fas ${a.icon} text-pink-400 text-xs sm:text-sm`} />
                   </div>
-                  <div className="text-sm font-bold group-hover:text-pink-400 transition-colors">{a.label}</div>
+                  <div className="text-xs sm:text-sm font-bold group-hover:text-pink-400 transition-colors leading-tight">{a.label}</div>
                 </div>
-                <div className="text-[11px] text-slate-500 font-medium">{a.desc}</div>
+                <div className="text-[10px] sm:text-[11px] text-slate-500 font-medium hidden sm:block">{a.desc}</div>
               </Link>
             ))}
           </div>
@@ -263,19 +257,19 @@ export default function Dashboard() {
           {stats.featured_suggestion && (
             <Link
               to={`/dashboard/suggestions/${stats.featured_suggestion.id}`}
-              className="block glass-card rounded-2xl p-7 mb-8 border border-pink-500/10 hover:border-pink-500/30 transition-all group relative overflow-hidden"
+              className="block glass-card rounded-xl sm:rounded-2xl p-4 sm:p-7 mb-6 lg:mb-8 border border-pink-500/10 hover:border-pink-500/30 transition-all group relative overflow-hidden active:scale-[0.99]"
             >
               <div className="absolute top-0 right-0 w-64 h-64 bg-pink-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
               <div className="relative">
-                <div className="flex items-center gap-2 mb-4">
+                <div className="flex items-center gap-2 mb-3 sm:mb-4">
                   <i className="fas fa-sparkles text-pink-400 text-xs" />
                   <span className="text-[10px] font-black text-pink-400 uppercase tracking-widest">Today's Top Content Idea</span>
                 </div>
-                <h2 className="text-xl font-black mb-2 group-hover:text-pink-400 transition-colors">
+                <h2 className="text-base sm:text-xl font-black mb-1.5 sm:mb-2 group-hover:text-pink-400 transition-colors leading-snug">
                   {stats.featured_suggestion.title}
                 </h2>
-                <p className="text-sm text-slate-400 mb-4 line-clamp-2">{stats.featured_suggestion.description}</p>
-                <div className="flex flex-wrap items-center gap-3">
+                <p className="text-xs sm:text-sm text-slate-400 mb-3 sm:mb-4 line-clamp-2">{stats.featured_suggestion.description}</p>
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                   {stats.featured_suggestion.difficulty && (
                     <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded ${difficultyColor(stats.featured_suggestion.difficulty)}`}>
                       {stats.featured_suggestion.difficulty}
@@ -298,12 +292,7 @@ export default function Dashboard() {
                       {Math.round(stats.featured_suggestion.trend_strength * 100)}% trend
                     </span>
                   )}
-                  {stats.featured_suggestion.avg_views > 0 && (
-                    <span className="text-[10px] font-bold text-slate-500 bg-white/5 px-2 py-0.5 rounded">
-                      {fmt(stats.featured_suggestion.avg_views)} avg views
-                    </span>
-                  )}
-                  <span className="text-[10px] font-black text-pink-400 uppercase tracking-wider ml-auto group-hover:translate-x-1 transition-transform">
+                  <span className="text-[10px] font-black text-pink-400 uppercase tracking-wider ml-auto group-hover:translate-x-1 transition-transform hidden sm:inline">
                     View Blueprint <i className="fas fa-arrow-right ml-1" />
                   </span>
                 </div>
@@ -313,33 +302,33 @@ export default function Dashboard() {
 
           {/* ── Top Performing Content (Horizontal Carousel) ── */}
           {stats.top_viral_videos.length > 0 && (
-            <div className="glass-card rounded-2xl p-7 mb-8">
-              <div className="flex items-center justify-between mb-5">
+            <div className="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-7 mb-6 lg:mb-8">
+              <div className="flex items-center justify-between mb-4 sm:mb-5">
                 <div className="flex items-center gap-2">
                   <i className="fas fa-crown text-yellow-400 text-xs" />
-                  <h2 className="text-sm font-black uppercase tracking-widest text-slate-500">Top Performing Content</h2>
+                  <h2 className="text-xs sm:text-sm font-black uppercase tracking-widest text-slate-500">Top Content</h2>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => scrollCarousel('left')}
-                    className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors"
+                    className="hidden sm:flex w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 items-center justify-center transition-colors"
                   >
                     <i className="fas fa-chevron-left text-[10px] text-slate-400" />
                   </button>
                   <button
                     onClick={() => scrollCarousel('right')}
-                    className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors"
+                    className="hidden sm:flex w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 items-center justify-center transition-colors"
                   >
                     <i className="fas fa-chevron-right text-[10px] text-slate-400" />
                   </button>
-                  <Link to="/dashboard/trending" className="text-[10px] font-black text-pink-400 uppercase tracking-widest hover:text-pink-300 transition-colors ml-2">
+                  <Link to="/dashboard/trending" className="text-[10px] font-black text-pink-400 uppercase tracking-widest hover:text-pink-300 transition-colors sm:ml-2">
                     View All
                   </Link>
                 </div>
               </div>
               <div
                 ref={scrollRef}
-                className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide"
+                className="flex gap-2.5 sm:gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0"
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
               >
                 {stats.top_viral_videos.map((v, idx) => (
@@ -354,32 +343,32 @@ export default function Dashboard() {
           )}
 
           {/* ── Viral Formats + Winning Hooks ── */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 lg:mb-8">
             {/* Viral Formats */}
-            <div className="glass-card rounded-2xl p-7">
-              <div className="flex items-center justify-between mb-5">
+            <div className="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-7">
+              <div className="flex items-center justify-between mb-4 sm:mb-5">
                 <div className="flex items-center gap-2">
                   <i className="fas fa-fire text-orange-400 text-xs" />
-                  <h2 className="text-sm font-black uppercase tracking-widest text-slate-500">Viral Formats</h2>
+                  <h2 className="text-xs sm:text-sm font-black uppercase tracking-widest text-slate-500">Viral Formats</h2>
                 </div>
                 <Link to="/dashboard/formats" className="text-[10px] font-black text-pink-400 uppercase tracking-widest hover:text-pink-300 transition-colors">
                   View All
                 </Link>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1 sm:space-y-2">
                 {stats.top_formats.length > 0 ? stats.top_formats.map((f, i) => (
                   <Link
                     key={f.id}
                     to="/dashboard/formats"
-                    className="flex items-center justify-between py-3 px-3 rounded-xl hover:bg-white/5 transition-colors group"
+                    className="flex items-center justify-between py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl hover:bg-white/5 active:bg-white/5 transition-colors group"
                   >
-                    <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
                       <span className="text-[10px] font-black text-slate-600 w-5 shrink-0">#{i + 1}</span>
-                      <span className="text-sm font-bold group-hover:text-pink-400 transition-colors capitalize truncate">{f.name}</span>
+                      <span className="text-xs sm:text-sm font-bold group-hover:text-pink-400 transition-colors capitalize truncate">{f.name}</span>
                     </div>
-                    <div className="flex items-center gap-3 text-xs shrink-0 ml-3">
-                      <span className="text-emerald-400 font-black">{f.video_count} vids</span>
-                      <span className="text-slate-500 font-bold">{fmt(Math.round(f.avg_views))} avg</span>
+                    <div className="flex items-center gap-2 sm:gap-3 text-[10px] sm:text-xs shrink-0 ml-2 sm:ml-3">
+                      <span className="text-emerald-400 font-black">{f.video_count} <span className="hidden sm:inline">vids</span></span>
+                      <span className="text-slate-500 font-bold">{fmt(Math.round(f.avg_views))}</span>
                     </div>
                   </Link>
                 )) : (
@@ -389,29 +378,29 @@ export default function Dashboard() {
             </div>
 
             {/* Winning Hooks */}
-            <div className="glass-card rounded-2xl p-7">
-              <div className="flex items-center justify-between mb-5">
+            <div className="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-7">
+              <div className="flex items-center justify-between mb-4 sm:mb-5">
                 <div className="flex items-center gap-2">
                   <i className="fas fa-magnet text-purple-400 text-xs" />
-                  <h2 className="text-sm font-black uppercase tracking-widest text-slate-500">Winning Hooks</h2>
+                  <h2 className="text-xs sm:text-sm font-black uppercase tracking-widest text-slate-500">Winning Hooks</h2>
                 </div>
                 <Link to="/dashboard/hooks" className="text-[10px] font-black text-pink-400 uppercase tracking-widest hover:text-pink-300 transition-colors">
                   View All
                 </Link>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1 sm:space-y-2">
                 {stats.top_hooks.length > 0 ? stats.top_hooks.map((h, i) => (
                   <div
                     key={h.id}
-                    className="flex items-center justify-between py-3 px-3 rounded-xl hover:bg-white/5 transition-colors group"
+                    className="flex items-center justify-between py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl hover:bg-white/5 active:bg-white/5 transition-colors group"
                   >
-                    <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
                       <span className="text-[10px] font-black text-slate-600 w-5 shrink-0">#{i + 1}</span>
-                      <span className="text-sm font-bold group-hover:text-pink-400 transition-colors capitalize truncate">{h.name}</span>
+                      <span className="text-xs sm:text-sm font-bold group-hover:text-pink-400 transition-colors capitalize truncate">{h.name}</span>
                     </div>
-                    <div className="flex items-center gap-3 text-xs shrink-0 ml-3">
-                      <span className="text-emerald-400 font-black">{h.video_count} vids</span>
-                      <span className="text-slate-500 font-bold">{fmt(Math.round(h.avg_views))} avg</span>
+                    <div className="flex items-center gap-2 sm:gap-3 text-[10px] sm:text-xs shrink-0 ml-2 sm:ml-3">
+                      <span className="text-emerald-400 font-black">{h.video_count} <span className="hidden sm:inline">vids</span></span>
+                      <span className="text-slate-500 font-bold">{fmt(Math.round(h.avg_views))}</span>
                     </div>
                   </div>
                 )) : (
@@ -422,32 +411,32 @@ export default function Dashboard() {
           </div>
 
           {/* ── Trending Sounds + Top Tactics ── */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 lg:mb-8">
             {/* Trending Sounds */}
-            <div className="glass-card rounded-2xl p-7">
-              <div className="flex items-center justify-between mb-5">
+            <div className="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-7">
+              <div className="flex items-center justify-between mb-4 sm:mb-5">
                 <div className="flex items-center gap-2">
                   <i className="fas fa-music text-cyan-400 text-xs" />
-                  <h2 className="text-sm font-black uppercase tracking-widest text-slate-500">Trending Sounds</h2>
+                  <h2 className="text-xs sm:text-sm font-black uppercase tracking-widest text-slate-500">Trending Sounds</h2>
                 </div>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1 sm:space-y-2">
                 {stats.trending_music.length > 0 ? stats.trending_music.map((m) => (
-                  <div key={m.id} className="flex items-center gap-3 py-2.5 px-3 rounded-xl hover:bg-white/5 transition-colors">
+                  <div key={m.id} className="flex items-center gap-2.5 sm:gap-3 py-2 sm:py-2.5 px-2 sm:px-3 rounded-xl hover:bg-white/5 active:bg-white/5 transition-colors">
                     {(m.local_cover_path || m.cover_url) ? (
-                      <img src={m.local_cover_path || m.cover_url} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />
+                      <img src={m.local_cover_path || m.cover_url} alt="" className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg object-cover shrink-0" />
                     ) : (
-                      <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
+                      <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
                         <i className="fas fa-music text-slate-600 text-xs" />
                       </div>
                     )}
                     <div className="min-w-0 flex-1">
-                      <div className="text-sm font-bold truncate">{m.title || 'Unknown Track'}</div>
-                      <div className="text-[11px] text-slate-500 font-medium truncate">{m.artist || 'Unknown Artist'}</div>
+                      <div className="text-xs sm:text-sm font-bold truncate">{m.title || 'Unknown Track'}</div>
+                      <div className="text-[10px] sm:text-[11px] text-slate-500 font-medium truncate">{m.artist || 'Unknown Artist'}</div>
                     </div>
                     <div className="text-right shrink-0">
-                      <div className="text-xs font-black text-emerald-400">{m.video_count} vids</div>
-                      <div className="text-[10px] text-slate-500 font-bold">{fmt(m.total_views)} views</div>
+                      <div className="text-[10px] sm:text-xs font-black text-emerald-400">{m.video_count} <span className="hidden sm:inline">vids</span></div>
+                      <div className="text-[9px] sm:text-[10px] text-slate-500 font-bold">{fmt(m.total_views)}</div>
                     </div>
                   </div>
                 )) : (
@@ -457,30 +446,30 @@ export default function Dashboard() {
             </div>
 
             {/* Top Tactics */}
-            <div className="glass-card rounded-2xl p-7">
-              <div className="flex items-center justify-between mb-5">
+            <div className="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-7">
+              <div className="flex items-center justify-between mb-4 sm:mb-5">
                 <div className="flex items-center gap-2">
                   <i className="fas fa-bullseye text-amber-400 text-xs" />
-                  <h2 className="text-sm font-black uppercase tracking-widest text-slate-500">Proven Tactics</h2>
+                  <h2 className="text-xs sm:text-sm font-black uppercase tracking-widest text-slate-500">Proven Tactics</h2>
                 </div>
                 <Link to="/dashboard/tactics" className="text-[10px] font-black text-pink-400 uppercase tracking-widest hover:text-pink-300 transition-colors">
                   View All
                 </Link>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1 sm:space-y-2">
                 {stats.top_tactics.length > 0 ? stats.top_tactics.map((t) => (
                   <Link
                     key={t.id}
                     to="/dashboard/tactics"
-                    className="flex items-center justify-between py-3 px-3 rounded-xl hover:bg-white/5 transition-colors group"
+                    className="flex items-center justify-between py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl hover:bg-white/5 active:bg-white/5 transition-colors group"
                   >
                     <div className="min-w-0 flex-1">
-                      <div className="text-sm font-bold group-hover:text-pink-400 transition-colors capitalize truncate">{t.name}</div>
+                      <div className="text-xs sm:text-sm font-bold group-hover:text-pink-400 transition-colors capitalize truncate">{t.name}</div>
                       <div className="text-[10px] text-slate-500 font-medium capitalize">{t.category}</div>
                     </div>
-                    <div className="flex items-center gap-3 shrink-0 ml-3">
-                      <span className="text-xs text-emerald-400 font-black">{t.video_count} vids</span>
-                      <span className="text-xs text-slate-500 font-bold">{fmt(Math.round(t.avg_views_when_present))} avg</span>
+                    <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-2 sm:ml-3">
+                      <span className="text-[10px] sm:text-xs text-emerald-400 font-black">{t.video_count} <span className="hidden sm:inline">vids</span></span>
+                      <span className="text-[10px] sm:text-xs text-slate-500 font-bold">{fmt(Math.round(t.avg_views_when_present))}</span>
                     </div>
                   </Link>
                 )) : (
@@ -491,12 +480,12 @@ export default function Dashboard() {
           </div>
 
           {/* ── Trending Keywords Cloud + Your Accounts ── */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 lg:mb-8">
             {/* Trending Keywords Cloud */}
-            <div className="glass-card rounded-2xl p-7">
-              <div className="flex items-center gap-2 mb-5">
+            <div className="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-7">
+              <div className="flex items-center gap-2 mb-4 sm:mb-5">
                 <i className="fas fa-cloud text-violet-400 text-xs" />
-                <h2 className="text-sm font-black uppercase tracking-widest text-slate-500">Trending Topics</h2>
+                <h2 className="text-xs sm:text-sm font-black uppercase tracking-widest text-slate-500">Trending Topics</h2>
               </div>
               <KeywordCloud keywords={stats.trending_keywords} />
               {stats.trending_keywords.length > 0 && (
@@ -515,21 +504,21 @@ export default function Dashboard() {
             </div>
 
             {/* Your Accounts */}
-            <div className="glass-card rounded-2xl p-7">
-              <div className="flex items-center gap-2 mb-5">
+            <div className="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-7">
+              <div className="flex items-center gap-2 mb-4 sm:mb-5">
                 <i className="fas fa-chart-line text-pink-400 text-xs" />
-                <h2 className="text-sm font-black uppercase tracking-widest text-slate-500">Your Accounts</h2>
+                <h2 className="text-xs sm:text-sm font-black uppercase tracking-widest text-slate-500">Your Accounts</h2>
               </div>
               {stats.connected_accounts.active > 0 ? (
                 <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-white/5 rounded-xl p-4">
+                  <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                    <div className="bg-white/5 rounded-xl p-3 sm:p-4">
                       <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Connected</div>
-                      <div className="text-2xl font-black">{stats.connected_accounts.active}</div>
+                      <div className="text-xl sm:text-2xl font-black">{stats.connected_accounts.active}</div>
                     </div>
-                    <div className="bg-white/5 rounded-xl p-4">
-                      <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Total Followers</div>
-                      <div className="text-2xl font-black">{fmt(stats.connected_accounts.total_followers)}</div>
+                    <div className="bg-white/5 rounded-xl p-3 sm:p-4">
+                      <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Followers</div>
+                      <div className="text-xl sm:text-2xl font-black">{fmt(stats.connected_accounts.total_followers)}</div>
                     </div>
                   </div>
                   <Link
@@ -559,19 +548,19 @@ export default function Dashboard() {
 
           {/* ── Trending Hashtags (Full Width) ── */}
           {stats.trending_hashtags.length > 0 && (
-            <div className="glass-card rounded-2xl p-7">
-              <div className="flex items-center gap-2 mb-5">
+            <div className="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-7">
+              <div className="flex items-center gap-2 mb-4 sm:mb-5">
                 <i className="fas fa-hashtag text-blue-400 text-xs" />
-                <h2 className="text-sm font-black uppercase tracking-widest text-slate-500">Top Hashtags</h2>
+                <h2 className="text-xs sm:text-sm font-black uppercase tracking-widest text-slate-500">Top Hashtags</h2>
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5 sm:gap-2">
                 {stats.trending_hashtags.map((h) => (
                   <div
                     key={h.tag}
-                    className="bg-white/5 hover:bg-white/[0.08] rounded-xl px-3 py-2 transition-colors cursor-default"
+                    className="bg-white/5 hover:bg-white/[0.08] active:bg-white/[0.08] rounded-lg sm:rounded-xl px-2.5 sm:px-3 py-1.5 sm:py-2 transition-colors cursor-default"
                   >
-                    <div className="text-sm font-bold text-blue-400">#{h.tag}</div>
-                    <div className="text-[10px] text-slate-500 font-bold mt-0.5">
+                    <div className="text-xs sm:text-sm font-bold text-blue-400">#{h.tag}</div>
+                    <div className="text-[9px] sm:text-[10px] text-slate-500 font-bold mt-0.5">
                       {fmt(h.avg_views)} avg &middot; {h.video_count} vids
                     </div>
                   </div>
@@ -581,7 +570,7 @@ export default function Dashboard() {
           )}
         </>
       ) : (
-        <div className="glass-card rounded-2xl p-12 text-center">
+        <div className="glass-card rounded-xl sm:rounded-2xl p-8 sm:p-12 text-center">
           <p className="text-slate-500 text-sm">Failed to load stats. Make sure the backend is running.</p>
         </div>
       )}

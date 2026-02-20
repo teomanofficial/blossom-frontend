@@ -162,22 +162,22 @@ export default function Influencers() {
   return (
     <div className="max-w-[1400px] mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <div className="flex items-center gap-4">
           <h1 className="text-xl font-bold tracking-tight">Influencers</h1>
           <div className="flex items-center gap-3 text-xs text-slate-400">
             <span><span className="text-white font-semibold">{total}</span> creators</span>
-            <span className="text-slate-600">|</span>
-            <span><span className="text-white font-semibold">{fmt(totalFollowers)}</span> reach</span>
-            <span className="text-slate-600">|</span>
-            <span><span className="text-teal-400 font-semibold">{avgEngagement > 0 ? (avgEngagement * 100).toFixed(1) + '%' : '--'}</span> avg eng</span>
+            <span className="text-slate-600 hidden sm:inline">|</span>
+            <span className="hidden sm:inline"><span className="text-white font-semibold">{fmt(totalFollowers)}</span> reach</span>
+            <span className="text-slate-600 hidden sm:inline">|</span>
+            <span className="hidden sm:inline"><span className="text-teal-400 font-semibold">{avgEngagement > 0 ? (avgEngagement * 100).toFixed(1) + '%' : '--'}</span> avg eng</span>
           </div>
         </div>
         {userType === 'admin' && (
           <button
             onClick={handleRefetchProfiles}
             disabled={refetching}
-            className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-40"
+            className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-40 self-start sm:self-auto"
           >
             <i className={`fas fa-${refetching ? 'spinner fa-spin' : 'sync-alt'} mr-1.5 text-[10px]`}></i>
             {refetching ? 'Refetching...' : 'Refetch Profiles'}
@@ -186,8 +186,8 @@ export default function Influencers() {
       </div>
 
       {/* Toolbar */}
-      <div className="flex items-center gap-2 mb-4">
-        <form onSubmit={handleSearch} className="flex items-center bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 w-56 focus-within:border-white/20 transition-colors">
+      <div className="flex flex-wrap items-center gap-2 mb-4">
+        <form onSubmit={handleSearch} className="flex items-center bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 w-full sm:w-56 focus-within:border-white/20 transition-colors">
           <i className="fas fa-search text-slate-600 text-[10px] mr-2"></i>
           <input
             type="text"
@@ -291,97 +291,184 @@ export default function Influencers() {
           <p className="text-sm font-medium">{search ? 'No creators match your search.' : 'No influencers found. Scan some videos first.'}</p>
         </div>
       ) : (
-        <div className="border border-white/[0.06] rounded-xl overflow-hidden">
-          {/* Table Header */}
-          <div className="grid items-center gap-3 px-4 py-2.5 bg-white/[0.02] border-b border-white/[0.06] text-[10px] font-semibold text-slate-500 uppercase tracking-wider"
-            style={{ gridTemplateColumns: '2.5fr repeat(6, 1fr)' }}
-          >
-            <div>Creator</div>
-            {columns.map((col) => (
-              <button
-                key={col.field}
-                onClick={() => toggleSort(col.field)}
-                className={`text-right flex items-center justify-end gap-1 transition-colors hover:text-slate-300 ${sortBy === col.field ? 'text-white' : ''}`}
-              >
-                {col.label}
-                {sortBy === col.field && (
-                  <i className={`fas fa-caret-${order === 'desc' ? 'down' : 'up'} text-[9px]`}></i>
-                )}
-              </button>
-            ))}
+        <>
+          {/* Desktop Table View */}
+          <div className="hidden lg:block border border-white/[0.06] rounded-xl overflow-hidden">
+            {/* Table Header */}
+            <div className="grid items-center gap-3 px-4 py-2.5 bg-white/[0.02] border-b border-white/[0.06] text-[10px] font-semibold text-slate-500 uppercase tracking-wider"
+              style={{ gridTemplateColumns: '2.5fr repeat(6, 1fr)' }}
+            >
+              <div>Creator</div>
+              {columns.map((col) => (
+                <button
+                  key={col.field}
+                  onClick={() => toggleSort(col.field)}
+                  className={`text-right flex items-center justify-end gap-1 transition-colors hover:text-slate-300 ${sortBy === col.field ? 'text-white' : ''}`}
+                >
+                  {col.label}
+                  {sortBy === col.field && (
+                    <i className={`fas fa-caret-${order === 'desc' ? 'down' : 'up'} text-[9px]`}></i>
+                  )}
+                </button>
+              ))}
+            </div>
+
+            {/* Rows */}
+            {influencers.map((inf, idx) => {
+              const avatar = getAvatarSrc(inf)
+              return (
+                <Link
+                  key={inf.id}
+                  to={`/dashboard/influencers/${inf.id}`}
+                  className={`grid items-center gap-3 px-4 py-3 transition-colors hover:bg-white/[0.03] group ${
+                    idx !== influencers.length - 1 ? 'border-b border-white/[0.04]' : ''
+                  }`}
+                  style={{ gridTemplateColumns: '2.5fr repeat(6, 1fr)' }}
+                >
+                  {/* Creator Info */}
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="relative flex-shrink-0">
+                      {avatar ? (
+                        <img
+                          src={avatar}
+                          alt={inf.username}
+                          className="w-9 h-9 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-9 h-9 rounded-full bg-white/5 flex items-center justify-center">
+                          <span className="text-sm font-bold text-slate-500">
+                            {(inf.display_name || inf.username).charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                      )}
+                      <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-slate-950 flex items-center justify-center ring-1 ring-slate-800">
+                        <i className={`fab fa-${inf.platform === 'tiktok' ? 'tiktok' : 'instagram'} text-[8px] ${inf.platform === 'tiktok' ? 'text-slate-400' : 'text-pink-400'}`}></i>
+                      </div>
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-sm font-semibold truncate group-hover:text-pink-400 transition-colors">
+                          {inf.display_name || inf.username}
+                        </span>
+                        {inf.is_verified && <i className="fas fa-check-circle text-blue-400 text-[10px] flex-shrink-0"></i>}
+                        {inf.tier && (
+                          <span className={`text-[9px] font-bold uppercase px-1.5 py-px rounded border ${getTierColor(inf.tier)}`}>
+                            {inf.tier}
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[11px] text-slate-500 truncate">@{inf.username}</div>
+                    </div>
+                  </div>
+
+                  {/* Metrics */}
+                  <div className="text-right text-sm font-medium text-slate-200">
+                    {inf.follower_count ? fmt(inf.follower_count) : <span className="text-slate-600">--</span>}
+                  </div>
+                  <div className="text-right text-sm font-medium text-slate-200">
+                    {inf.avg_views ? fmt(Math.round(inf.avg_views)) : <span className="text-slate-600">--</span>}
+                  </div>
+                  <div className={`text-right text-sm font-medium ${inf.avg_engagement_rate ? 'text-teal-400' : 'text-slate-600'}`}>
+                    {inf.avg_engagement_rate ? Number(inf.avg_engagement_rate).toFixed(1) + '%' : '--'}
+                  </div>
+                  <div className="text-right text-sm font-medium text-slate-200">
+                    {inf.total_views ? fmt(inf.total_views) : <span className="text-slate-600">--</span>}
+                  </div>
+                  <div className={`text-right text-sm font-medium ${inf.viral_video_count ? 'text-pink-400' : 'text-slate-600'}`}>
+                    {inf.viral_video_count ?? '--'}
+                  </div>
+                  <div className="text-right text-sm font-medium text-slate-400">
+                    {inf.total_videos_fetched ?? <span className="text-slate-600">--</span>}
+                  </div>
+                </Link>
+              )
+            })}
           </div>
 
-          {/* Rows */}
-          {influencers.map((inf, idx) => {
-            const avatar = getAvatarSrc(inf)
-            return (
-              <Link
-                key={inf.id}
-                to={`/dashboard/influencers/${inf.id}`}
-                className={`grid items-center gap-3 px-4 py-3 transition-colors hover:bg-white/[0.03] group ${
-                  idx !== influencers.length - 1 ? 'border-b border-white/[0.04]' : ''
-                }`}
-                style={{ gridTemplateColumns: '2.5fr repeat(6, 1fr)' }}
-              >
-                {/* Creator Info */}
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="relative flex-shrink-0">
-                    {avatar ? (
-                      <img
-                        src={avatar}
-                        alt={inf.username}
-                        className="w-9 h-9 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-9 h-9 rounded-full bg-white/5 flex items-center justify-center">
-                        <span className="text-sm font-bold text-slate-500">
-                          {(inf.display_name || inf.username).charAt(0).toUpperCase()}
-                        </span>
-                      </div>
-                    )}
-                    <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-slate-950 flex items-center justify-center ring-1 ring-slate-800">
-                      <i className={`fab fa-${inf.platform === 'tiktok' ? 'tiktok' : 'instagram'} text-[8px] ${inf.platform === 'tiktok' ? 'text-slate-400' : 'text-pink-400'}`}></i>
-                    </div>
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-sm font-semibold truncate group-hover:text-pink-400 transition-colors">
-                        {inf.display_name || inf.username}
-                      </span>
-                      {inf.is_verified && <i className="fas fa-check-circle text-blue-400 text-[10px] flex-shrink-0"></i>}
-                      {inf.tier && (
-                        <span className={`text-[9px] font-bold uppercase px-1.5 py-px rounded border ${getTierColor(inf.tier)}`}>
-                          {inf.tier}
-                        </span>
+          {/* Mobile Card View */}
+          <div className="lg:hidden flex flex-col gap-2.5">
+            {influencers.map((inf) => {
+              const avatar = getAvatarSrc(inf)
+              return (
+                <Link
+                  key={inf.id}
+                  to={`/dashboard/influencers/${inf.id}`}
+                  className="block bg-white/[0.03] border border-white/[0.06] rounded-xl p-3.5 active:bg-white/[0.06] transition-colors"
+                >
+                  {/* Top: Avatar + Name + Followers */}
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="relative flex-shrink-0">
+                      {avatar ? (
+                        <img
+                          src={avatar}
+                          alt={inf.username}
+                          className="w-10 h-10 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center">
+                          <span className="text-sm font-bold text-slate-500">
+                            {(inf.display_name || inf.username).charAt(0).toUpperCase()}
+                          </span>
+                        </div>
                       )}
+                      <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-slate-950 flex items-center justify-center ring-1 ring-slate-800">
+                        <i className={`fab fa-${inf.platform === 'tiktok' ? 'tiktok' : 'instagram'} text-[8px] ${inf.platform === 'tiktok' ? 'text-slate-400' : 'text-pink-400'}`}></i>
+                      </div>
                     </div>
-                    <div className="text-[11px] text-slate-500 truncate">@{inf.username}</div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-sm font-semibold truncate">
+                          {inf.display_name || inf.username}
+                        </span>
+                        {inf.is_verified && <i className="fas fa-check-circle text-blue-400 text-[10px] flex-shrink-0"></i>}
+                        {inf.tier && (
+                          <span className={`text-[9px] font-bold uppercase px-1.5 py-px rounded border ${getTierColor(inf.tier)}`}>
+                            {inf.tier}
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[11px] text-slate-500 truncate">@{inf.username}</div>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <div className="text-sm font-semibold text-slate-200">
+                        {inf.follower_count ? fmt(inf.follower_count) : '--'}
+                      </div>
+                      <div className="text-[10px] text-slate-500">followers</div>
+                    </div>
                   </div>
-                </div>
 
-                {/* Metrics */}
-                <div className="text-right text-sm font-medium text-slate-200">
-                  {inf.follower_count ? fmt(inf.follower_count) : <span className="text-slate-600">--</span>}
-                </div>
-                <div className="text-right text-sm font-medium text-slate-200">
-                  {inf.avg_views ? fmt(Math.round(inf.avg_views)) : <span className="text-slate-600">--</span>}
-                </div>
-                <div className={`text-right text-sm font-medium ${inf.avg_engagement_rate ? 'text-teal-400' : 'text-slate-600'}`}>
-                  {inf.avg_engagement_rate ? Number(inf.avg_engagement_rate).toFixed(1) + '%' : '--'}
-                </div>
-                <div className="text-right text-sm font-medium text-slate-200">
-                  {inf.total_views ? fmt(inf.total_views) : <span className="text-slate-600">--</span>}
-                </div>
-                <div className={`text-right text-sm font-medium ${inf.viral_video_count ? 'text-pink-400' : 'text-slate-600'}`}>
-                  {inf.viral_video_count ?? '--'}
-                </div>
-                <div className="text-right text-sm font-medium text-slate-400">
-                  {inf.total_videos_fetched ?? <span className="text-slate-600">--</span>}
-                </div>
-              </Link>
-            )
-          })}
-        </div>
+                  {/* Stats Grid */}
+                  <div className="grid grid-cols-4 gap-2">
+                    <div className="bg-white/[0.03] rounded-lg px-2.5 py-2 text-center">
+                      <div className="text-[10px] text-slate-500 mb-0.5">Avg Views</div>
+                      <div className="text-xs font-semibold text-slate-200">
+                        {inf.avg_views ? fmt(Math.round(inf.avg_views)) : '--'}
+                      </div>
+                    </div>
+                    <div className="bg-white/[0.03] rounded-lg px-2.5 py-2 text-center">
+                      <div className="text-[10px] text-slate-500 mb-0.5">Eng %</div>
+                      <div className={`text-xs font-semibold ${inf.avg_engagement_rate ? 'text-teal-400' : 'text-slate-600'}`}>
+                        {inf.avg_engagement_rate ? Number(inf.avg_engagement_rate).toFixed(1) + '%' : '--'}
+                      </div>
+                    </div>
+                    <div className="bg-white/[0.03] rounded-lg px-2.5 py-2 text-center">
+                      <div className="text-[10px] text-slate-500 mb-0.5">Viral</div>
+                      <div className={`text-xs font-semibold ${inf.viral_video_count ? 'text-pink-400' : 'text-slate-600'}`}>
+                        {inf.viral_video_count ?? '--'}
+                      </div>
+                    </div>
+                    <div className="bg-white/[0.03] rounded-lg px-2.5 py-2 text-center">
+                      <div className="text-[10px] text-slate-500 mb-0.5">Videos</div>
+                      <div className="text-xs font-semibold text-slate-400">
+                        {inf.total_videos_fetched ?? '--'}
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              )
+            })}
+          </div>
+        </>
       )}
 
       {/* Bottom Pagination */}
