@@ -66,9 +66,7 @@ export default function DashboardLayout() {
       <aside className="w-64 flex-shrink-0 border-r border-white/5 flex flex-col">
         <div className="p-8">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-gradient-to-br from-pink-500 to-orange-400 rounded-xl flex items-center justify-center shadow-lg shadow-pink-500/20">
-              <i className="fas fa-seedling text-white text-sm"></i>
-            </div>
+            <img src="/logo-light.png" alt="Blossom AI" className="w-9 h-9" />
             <span className="text-xl font-bold tracking-tighter">Blossom AI</span>
           </div>
         </div>

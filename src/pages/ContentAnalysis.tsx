@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { API_URL } from '../lib/api'
 import VideoStoryCarousel, { type CarouselVideo } from '../components/VideoStoryCarousel'
 
 // === Helper Functions ===
@@ -71,7 +72,7 @@ export default function ContentAnalysis() {
   const fetchHistory = useCallback(async () => {
     if (!session?.access_token) return
     try {
-      const resp = await fetch('/api/content-analysis', {
+      const resp = await fetch(`${API_URL}/api/content-analysis`, {
         headers: { Authorization: `Bearer ${session.access_token}` },
       })
       const data = await resp.json()
@@ -92,7 +93,7 @@ export default function ContentAnalysis() {
     if (!session?.access_token) return
     if (fromHistory) setLoadingHistory(true)
     try {
-      const resp = await fetch(`/api/content-analysis/${id}`, {
+      const resp = await fetch(`${API_URL}/api/content-analysis/${id}`, {
         headers: { Authorization: `Bearer ${session.access_token}` },
       })
       const data = await resp.json()
@@ -121,7 +122,7 @@ export default function ContentAnalysis() {
     pollingRef.current = setInterval(async () => {
       if (!session?.access_token) return
       try {
-        const resp = await fetch(`/api/content-analysis/${id}/status`, {
+        const resp = await fetch(`${API_URL}/api/content-analysis/${id}/status`, {
           headers: { Authorization: `Bearer ${session.access_token}` },
         })
         const data = await resp.json()
@@ -165,7 +166,7 @@ export default function ContentAnalysis() {
   useEffect(() => {
     if (!analysisResult?.improvement?.improvement_json || !uploadId || !session?.access_token) return
     setExampleVideos(null)
-    fetch(`/api/content-analysis/${uploadId}/examples`, {
+    fetch(`${API_URL}/api/content-analysis/${uploadId}/examples`, {
       headers: { Authorization: `Bearer ${session.access_token}` },
     })
       .then(r => r.json())
@@ -187,7 +188,7 @@ export default function ContentAnalysis() {
     try {
       let resp: Response
       if (mode === 'url') {
-        resp = await fetch('/api/content-analysis/url', {
+        resp = await fetch(`${API_URL}/api/content-analysis/url`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -198,7 +199,7 @@ export default function ContentAnalysis() {
       } else {
         const formData = new FormData()
         formData.append('video', file!)
-        resp = await fetch('/api/content-analysis/upload', {
+        resp = await fetch(`${API_URL}/api/content-analysis/upload`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${session?.access_token}` },
           body: formData,
@@ -2339,7 +2340,7 @@ export default function ContentAnalysis() {
                           onClick={async () => {
                             if (!uploadId || !session?.access_token) return
                             try {
-                              const resp = await fetch(`/api/content-analysis/${uploadId}/retry`, {
+                              const resp = await fetch(`${API_URL}/api/content-analysis/${uploadId}/retry`, {
                                 method: 'POST',
                                 headers: { Authorization: `Bearer ${session.access_token}` },
                               })

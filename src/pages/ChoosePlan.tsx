@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { useAuth } from '../context/AuthContext'
-import { authFetch } from '../lib/api'
+import { authFetch, apiFetch } from '../lib/api'
 import { initializePaddle, Paddle } from '@paddle/paddle-js'
 
 interface Plan {
@@ -86,7 +86,7 @@ export default function ChoosePlan() {
 
   // Fetch plans
   useEffect(() => {
-    fetch('/api/billing/plans')
+    apiFetch('/api/billing/plans')
       .then((r) => r.json())
       .then((data) => setPlans(data.plans || []))
       .catch(() => toast.error('Failed to load plans'))
@@ -165,11 +165,7 @@ export default function ChoosePlan() {
       {/* Top bar */}
       <div className="relative z-10 flex items-center justify-between px-8 py-6">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-gradient-to-br from-pink-500 to-orange-400 rounded-xl flex items-center justify-center shadow-lg shadow-pink-500/20">
-            <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-            </svg>
-          </div>
+          <img src="/logo-light.png" alt="Blossom AI" className="w-9 h-9" />
           <span className="text-xl font-bold tracking-tighter">Blossom AI</span>
         </div>
         <div className="flex items-center gap-4">
@@ -265,7 +261,7 @@ export default function ChoosePlan() {
                 >
                   {subscribing === plan.paddle_price_id
                     ? 'Opening checkout...'
-                    : `Subscribe to ${plan.name}`}
+                    : 'Start Free Trial'}
                 </button>
               )}
             </div>

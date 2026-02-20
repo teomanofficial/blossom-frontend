@@ -49,9 +49,7 @@ export default function Signup() {
       <div className="relative w-full max-w-md">
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center gap-2 mb-6">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-pink-500 to-orange-400 flex items-center justify-center">
-              <span className="text-white font-bold text-sm">B</span>
-            </div>
+            <img src="/logo-light.png" alt="Blossom AI" className="w-8 h-8" />
             <span className="text-xl font-bold gradient-text">Blossom AI</span>
           </Link>
           <h1 className="text-2xl font-bold">Create your account</h1>

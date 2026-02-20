@@ -307,9 +307,7 @@ function OnboardingSimulation() {
         {/* Top bar */}
         <div className="flex items-center justify-between px-8 py-5 border-b border-white/5">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-pink-500 to-orange-400 rounded-xl flex items-center justify-center">
-              <i className="fas fa-seedling text-white text-xs" />
-            </div>
+            <img src="/logo-light.png" alt="Blossom AI" className="w-8 h-8" />
             <span className="text-lg font-bold tracking-tighter">Blossom AI</span>
           </div>
           <div className="flex items-center gap-2">

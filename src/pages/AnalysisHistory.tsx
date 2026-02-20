@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { API_URL } from '../lib/api'
 
 interface HistoryItem {
   id: number
@@ -53,7 +54,7 @@ export default function AnalysisHistory() {
     if (!session?.access_token) return
     setLoading(true)
     try {
-      const resp = await fetch(`/api/content-analysis?limit=${limit}&offset=${currentOffset}`, {
+      const resp = await fetch(`${API_URL}/api/content-analysis?limit=${limit}&offset=${currentOffset}`, {
         headers: { Authorization: `Bearer ${session.access_token}` },
       })
       const data = await resp.json()
@@ -89,7 +90,7 @@ export default function AnalysisHistory() {
     if (!session?.access_token) return
     setRetryingIds(prev => new Set(prev).add(itemId))
     try {
-      const resp = await fetch(`/api/content-analysis/${itemId}/retry`, {
+      const resp = await fetch(`${API_URL}/api/content-analysis/${itemId}/retry`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${session.access_token}` },
       })

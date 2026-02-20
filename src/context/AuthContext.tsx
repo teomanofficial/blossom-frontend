@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { User, Session } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
+import { API_URL } from '../lib/api'
 
 interface Profile {
   id: string
@@ -38,7 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchProfile = async (accessToken: string) => {
     try {
-      const res = await fetch('/api/auth/me', {
+      const res = await fetch(`${API_URL}/api/auth/me`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       })
       if (!res.ok) return
@@ -52,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setOnboardingCompleted(true)
       } else {
         try {
-          const obRes = await fetch('/api/onboarding/status', {
+          const obRes = await fetch(`${API_URL}/api/onboarding/status`, {
             headers: { Authorization: `Bearer ${accessToken}` },
           })
           if (obRes.ok) {

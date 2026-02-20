@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
+import { apiFetch } from '../lib/api'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 
@@ -16,19 +17,32 @@ interface Plan {
 
 const features = [
   {
-    emoji: '\uD83C\uDFAD',
+    icon: (
+      <svg className="w-6 h-6 text-pink-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15.362 5.214A8.252 8.252 0 0112 21 8.25 8.25 0 016.038 7.047 8.287 8.287 0 009 9.601a8.983 8.983 0 013.361-6.867 8.21 8.21 0 003 2.48z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 18a3.75 3.75 0 00.495-7.468 5.99 5.99 0 00-1.925 3.547 5.975 5.975 0 01-2.133-1.001A3.75 3.75 0 0012 18z" />
+      </svg>
+    ),
     title: 'Viral Formats & Hooks',
     description:
       'Learn the exact tricks and secrets top influencers use to go viral and get millions of views with zero effort.',
   },
   {
-    emoji: '\uD83D\uDD0E',
+    icon: (
+      <svg className="w-6 h-6 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 14.25v2.25m3-4.5v4.5m3-6.75v6.75m3-9v9M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z" />
+      </svg>
+    ),
     title: 'Analysis',
     description:
       'Analyze your posts and cover your mistakes instantly. That 1M view milestone is much closer than you think.',
   },
   {
-    emoji: '\uD83C\uDF0D',
+    icon: (
+      <svg className="w-6 h-6 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.518l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
+      </svg>
+    ),
     title: 'Trends',
     description:
       'Learn what is trending worldwide. Master new hooks and tactics to stay one step ahead of everyone else.',
@@ -39,7 +53,7 @@ export default function Landing() {
   const [plans, setPlans] = useState<Plan[]>([])
 
   useEffect(() => {
-    fetch('/api/billing/plans')
+    apiFetch('/api/billing/plans')
       .then((r) => r.json())
       .then((data) => setPlans(data.plans || []))
       .catch(console.error)
@@ -90,7 +104,7 @@ export default function Landing() {
               to="/signup"
               className="w-full sm:w-auto px-12 py-5 bg-gradient-to-r from-pink-500 to-orange-500 text-white font-black text-lg sm:text-xl rounded-2xl glow-button flex items-center justify-center gap-3 shadow-xl"
             >
-              Subscribe Now To Get Viral
+              Get Viral Now
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M11 21h-1l1-7H7.5c-.88 0-.33-.75-.31-.78C8.48 10.94 10.42 7.54 13.01 3h1l-1 7h3.51c.4 0 .62.19.4.66C12.97 17.55 11 21 11 21z" />
               </svg>
@@ -101,35 +115,50 @@ export default function Landing() {
           <div className="mt-24 relative px-0 sm:px-4 max-w-5xl mx-auto">
             <div className="absolute inset-0 bg-pink-500/10 blur-[120px] rounded-full" />
             <div className="glass-card rounded-[2rem] sm:rounded-[3.5rem] p-4 sm:p-6 md:p-12 relative overflow-hidden shadow-2xl">
-              <div className="flex flex-col lg:flex-row gap-10 items-start text-left">
+              <div className="flex flex-col lg:flex-row gap-10 items-stretch text-left">
                 {/* Post Preview with Scanner */}
-                <div className="w-full lg:w-5/12">
-                  <div className="relative bg-slate-950 rounded-[2rem] sm:rounded-[2.5rem] p-1.5 border-[4px] border-slate-800 shadow-2xl">
-                    <div className="scanner-line" />
-                    <div className="bg-black rounded-[1.5rem] sm:rounded-[2rem] h-[400px] sm:h-[500px] overflow-hidden relative">
-                      <div className="w-full h-full bg-gradient-to-b from-slate-800 to-slate-900 flex items-center justify-center">
-                        <div className="text-center space-y-4">
-                          <div className="w-20 h-20 mx-auto rounded-full bg-slate-700/50 flex items-center justify-center">
-                            <svg className="w-10 h-10 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.91 11.672a.375.375 0 010 .656l-5.603 3.113a.375.375 0 01-.557-.328V8.887c0-.286.307-.466.557-.327l5.603 3.112z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <div className="w-full lg:w-5/12 flex">
+                  <div className="relative bg-slate-950 rounded-[2rem] sm:rounded-[2.5rem] p-1.5 border-[4px] border-slate-800 shadow-2xl w-full">
+                    <div className="analysis-phone-frame rounded-[1.5rem] sm:rounded-[2rem] h-full overflow-hidden relative" style={{ aspectRatio: '9/16' }}>
+                      <img
+                        src="/landing-cover.jpg"
+                        alt="Content example"
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
+
+                      {/* Dark overlay for contrast */}
+                      <div className="absolute inset-0 bg-black/20" />
+
+                      {/* Subtle grid texture */}
+                      <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 1px, rgba(255,255,255,0.05) 1px, rgba(255,255,255,0.05) 2px), repeating-linear-gradient(90deg, transparent, transparent 1px, rgba(255,255,255,0.05) 1px, rgba(255,255,255,0.05) 2px)' }} />
+
+                      {/* Laser scanning beam */}
+                      <div className="absolute inset-x-0 analysis-laser-beam z-30" />
+                      <div className="absolute inset-x-0 analysis-laser-glow z-20" />
+
+                      {/* Pinging AI nodes */}
+                      <div className="analysis-node top-[25%] left-[35%]" style={{ animationDelay: '0.2s' }} />
+                      <div className="analysis-node top-[55%] left-[65%]" style={{ animationDelay: '0.9s' }} />
+                      <div className="analysis-node top-[78%] left-[40%]" style={{ animationDelay: '1.5s' }} />
+
+                      {/* Center status */}
+                      <div className="absolute inset-0 flex items-center justify-center z-10">
+                        <div className="p-4 bg-black/70 backdrop-blur-xl rounded-2xl border border-white/10 text-center">
+                          <div className="w-10 h-10 mx-auto rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mb-2">
+                            <svg className="w-5 h-5 text-pink-500 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                             </svg>
                           </div>
-                          <p className="text-slate-500 text-sm font-medium">Your content preview</p>
+                          <div className="text-white font-bold text-sm">
+                            Analyzing Hook Patterns...
+                          </div>
+                          <span className="text-[7px] font-mono tracking-[0.3em] uppercase text-white/30 mt-1 block">Neural Engine v4</span>
                         </div>
                       </div>
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="p-4 bg-black/60 backdrop-blur-md rounded-2xl border border-white/10 text-center">
-                          <div className="text-pink-400 text-xs font-black uppercase mb-1">
-                            Status
-                          </div>
-                          <div className="text-white font-bold">
-                            Analyzing Frame Patterns...
-                          </div>
-                        </div>
-                      </div>
-                      <div className="absolute bottom-6 sm:bottom-8 left-4 sm:left-6 right-4 sm:right-6">
-                        <div className="p-3 bg-red-500/20 backdrop-blur-md border border-red-500/30 rounded-xl text-red-400 text-[10px] font-black uppercase flex items-center gap-2">
+
+                      {/* Bottom warning badge */}
+                      <div className="absolute bottom-6 sm:bottom-8 left-4 sm:left-6 right-4 sm:right-6 z-10">
+                        <div className="p-3 bg-black/70 backdrop-blur-xl border border-red-500/40 rounded-xl text-red-400 text-[10px] font-black uppercase flex items-center gap-2 shadow-lg shadow-red-500/10">
                           <svg className="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
                           </svg>
@@ -143,7 +172,7 @@ export default function Landing() {
                 {/* Weakness Breakdown */}
                 <div className="w-full lg:w-7/12 space-y-6">
                   <h3 className="text-2xl sm:text-3xl font-black tracking-tight">
-                    THE CREATOR SCORECARD
+                    VIRALITY ANALYSIS
                   </h3>
                   <p className="text-slate-400 font-medium">
                     We found why your post is stuck at 200 views. Cover these
@@ -238,10 +267,12 @@ export default function Landing() {
                 key={feature.title}
                 className="p-8 sm:p-10 rounded-[2.5rem] sm:rounded-[3rem] glass-card hover:bg-white/[0.05] transition-all group"
               >
-                <div className="w-14 h-14 bg-gradient-to-br from-pink-500/10 to-orange-500/10 rounded-2xl flex items-center justify-center text-2xl mb-8 group-hover:scale-110 transition-transform">
-                  {feature.emoji}
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl sm:text-2xl font-black">{feature.title}</h3>
+                  <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0 ml-4">
+                    {feature.icon}
+                  </div>
                 </div>
-                <h3 className="text-xl sm:text-2xl font-black mb-3">{feature.title}</h3>
                 <p className="text-slate-400 font-medium leading-relaxed">
                   {feature.description}
                 </p>
@@ -297,7 +328,7 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16 sm:mb-24">
             <h2 className="text-3xl sm:text-4xl md:text-6xl font-black mb-4 tracking-tight">
-              THE INVESTMENT.
+              PRICING.
             </h2>
             <p className="text-slate-400 text-base sm:text-lg md:text-xl max-w-xl mx-auto font-medium">
               Choose the plan that matches your ambition.
@@ -356,7 +387,7 @@ export default function Landing() {
                       : 'bg-white/10 hover:bg-white/15 border border-white/10 text-white'
                   }`}
                 >
-                  Get Started
+                  Start Free Trial
                 </Link>
               </div>
             ))}

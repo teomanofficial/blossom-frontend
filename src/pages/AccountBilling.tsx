@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import { authFetch } from '../lib/api'
+import { authFetch, apiFetch } from '../lib/api'
 
 interface Subscription {
   id: number
@@ -137,7 +137,7 @@ export default function AccountBilling() {
           setSubscription(data.subscription || null)
           setSubStatus(data.status || 'none')
         }),
-      fetch('/api/billing/plans')
+      apiFetch('/api/billing/plans')
         .then((r) => r.json())
         .then((data) => setPlans(data.plans || [])),
     ])
