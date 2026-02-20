@@ -46,6 +46,7 @@ export default function AnalysisHistory() {
   const [loading, setLoading] = useState(true)
   const [total, setTotal] = useState(0)
   const [offset, setOffset] = useState(0)
+  const [retryingIds, setRetryingIds] = useState<Set<number>>(new Set())
   const limit = 20
 
   const fetchHistory = useCallback(async (currentOffset: number) => {
@@ -71,8 +72,40 @@ export default function AnalysisHistory() {
     fetchHistory(offset)
   }, [fetchHistory, offset])
 
+  // Auto-refresh when there are processing items
+  useEffect(() => {
+    const hasProcessing = history.some(h => h.status === 'analyzing' || h.status === 'pending')
+    if (!hasProcessing) return
+    const interval = setInterval(() => fetchHistory(offset), 3000)
+    return () => clearInterval(interval)
+  }, [history, fetchHistory, offset])
+
   const handleViewResult = (item: HistoryItem) => {
     navigate(`/dashboard/analyze?id=${item.id}`)
+  }
+
+  const handleRetry = async (e: React.MouseEvent, itemId: number) => {
+    e.stopPropagation()
+    if (!session?.access_token) return
+    setRetryingIds(prev => new Set(prev).add(itemId))
+    try {
+      const resp = await fetch(`/api/content-analysis/${itemId}/retry`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      })
+      if (resp.ok) {
+        // Update local state to show processing
+        setHistory(prev => prev.map(h => h.id === itemId ? { ...h, status: 'analyzing', error_message: null } : h))
+      }
+    } catch (err) {
+      console.error('Retry failed:', err)
+    } finally {
+      setRetryingIds(prev => {
+        const next = new Set(prev)
+        next.delete(itemId)
+        return next
+      })
+    }
   }
 
   const totalPages = Math.ceil(total / limit)
@@ -238,21 +271,32 @@ export default function AnalysisHistory() {
                     </div>
                   )}
 
-                  <span className={`px-3 py-1.5 text-xs font-bold rounded-lg ${
-                    item.status === 'completed'
-                      ? 'bg-green-500/10 text-green-500'
-                      : item.status === 'error'
-                      ? 'bg-red-500/10 text-red-400'
-                      : 'bg-yellow-500/10 text-yellow-400'
-                  }`}>
-                    {item.status === 'completed' ? (
-                      <><i className="fas fa-check mr-1.5"></i>Done</>
-                    ) : item.status === 'error' ? (
-                      <><i className="fas fa-times mr-1.5"></i>Error</>
-                    ) : (
-                      <><i className="fas fa-spinner fa-spin mr-1.5"></i>Processing</>
-                    )}
-                  </span>
+                  {item.status === 'error' ? (
+                    <button
+                      onClick={(e) => handleRetry(e, item.id)}
+                      disabled={retryingIds.has(item.id)}
+                      className="px-3 py-1.5 text-xs font-bold rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
+                      title={item.error_message || 'Analysis failed'}
+                    >
+                      {retryingIds.has(item.id) ? (
+                        <><i className="fas fa-spinner fa-spin mr-1.5"></i>Retrying...</>
+                      ) : (
+                        <><i className="fas fa-rotate-right mr-1.5"></i>Retry</>
+                      )}
+                    </button>
+                  ) : (
+                    <span className={`px-3 py-1.5 text-xs font-bold rounded-lg ${
+                      item.status === 'completed'
+                        ? 'bg-green-500/10 text-green-500'
+                        : 'bg-yellow-500/10 text-yellow-400'
+                    }`}>
+                      {item.status === 'completed' ? (
+                        <><i className="fas fa-check mr-1.5"></i>Done</>
+                      ) : (
+                        <><i className="fas fa-spinner fa-spin mr-1.5"></i>Processing</>
+                      )}
+                    </span>
+                  )}
 
                   <i className="fas fa-chevron-right text-slate-700 group-hover:text-slate-400 transition-colors"></i>
                 </div>

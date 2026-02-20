@@ -195,25 +195,19 @@ export default function Tactics() {
         {/* Category Filter */}
         <div className="flex items-center gap-2">
           <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest mr-1">Category</span>
-          <button
-            onClick={() => setCategoryFilter('all')}
-            className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-colors ${
-              categoryFilter === 'all' ? 'bg-white/10 text-white' : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
-            }`}
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="px-3 py-1.5 rounded-lg text-[11px] font-bold bg-white/5 border border-white/10 text-white appearance-none cursor-pointer hover:bg-white/10 transition-colors pr-8"
+            style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center' }}
           >
-            All
-          </button>
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setCategoryFilter(cat)}
-              className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-colors capitalize ${
-                categoryFilter === cat ? 'bg-white/10 text-white' : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
-              }`}
-            >
-              {getCategoryLabel(cat)}
-            </button>
-          ))}
+            <option value="all" className="bg-slate-900 text-white">All</option>
+            {categories.map((cat) => (
+              <option key={cat} value={cat} className="bg-slate-900 text-white capitalize">
+                {getCategoryLabel(cat)}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 

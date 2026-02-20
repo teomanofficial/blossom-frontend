@@ -223,11 +223,6 @@ export default function Dashboard() {
     <>
       {/* Page Header */}
       <div className="mb-10">
-        <div className="flex items-center gap-2 mb-3">
-          <span className="px-2 py-0.5 bg-pink-500/10 text-pink-400 text-[10px] font-black uppercase tracking-widest rounded">
-            Command Center
-          </span>
-        </div>
         <h1 className="text-4xl font-black tracking-tighter mb-2">
           Welcome, <span className="gradient-text">{displayName}</span>
         </h1>

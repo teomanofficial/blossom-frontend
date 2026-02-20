@@ -2334,13 +2334,35 @@ export default function ContentAnalysis() {
                   {analysisStatus?.status === 'error' && (
                     <div className="text-center pt-2">
                       <p className="text-red-400 text-sm mb-3">{analysisStatus.error || 'Analysis failed. Please try again.'}</p>
-                      <button
-                        onClick={handleReset}
-                        className="px-5 py-2.5 bg-gradient-to-r from-pink-500 to-orange-400 text-white text-sm font-bold rounded-xl hover:shadow-lg hover:shadow-pink-500/25 transition-all"
-                      >
-                        <i className="fas fa-redo mr-2"></i>
-                        Try Again
-                      </button>
+                      <div className="flex items-center justify-center gap-3">
+                        <button
+                          onClick={async () => {
+                            if (!uploadId || !session?.access_token) return
+                            try {
+                              const resp = await fetch(`/api/content-analysis/${uploadId}/retry`, {
+                                method: 'POST',
+                                headers: { Authorization: `Bearer ${session.access_token}` },
+                              })
+                              if (resp.ok) {
+                                setAnalysisStatus({ status: 'analyzing', steps: { upload: 'done', full_analysis: 'pending', hook_analysis: 'pending', virality_scores: 'pending', improvement: 'pending' } })
+                                startPolling(uploadId)
+                              }
+                            } catch (err) {
+                              console.error('Retry failed:', err)
+                            }
+                          }}
+                          className="px-5 py-2.5 bg-gradient-to-r from-pink-500 to-orange-400 text-white text-sm font-bold rounded-xl hover:shadow-lg hover:shadow-pink-500/25 transition-all"
+                        >
+                          <i className="fas fa-redo mr-2"></i>
+                          Retry Analysis
+                        </button>
+                        <button
+                          onClick={handleReset}
+                          className="px-5 py-2.5 bg-white/5 border border-white/10 text-slate-400 text-sm font-bold rounded-xl hover:bg-white/10 transition-all"
+                        >
+                          Start Over
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>

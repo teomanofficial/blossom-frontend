@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { authFetch } from '../lib/api'
@@ -30,39 +30,28 @@ interface Influencer {
 
 type SortField = 'follower_count' | 'total_views' | 'avg_views' | 'viral_video_count' | 'avg_engagement_rate' | 'total_videos_fetched' | 'created_at'
 
-function formatNumber(n: number): string {
+function fmt(n: number): string {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M'
   if (n >= 1_000) return (n / 1_000).toFixed(1).replace(/\.0$/, '') + 'k'
   return String(Math.round(n))
 }
 
-function getAvatarSrc(influencer: Influencer): string | null {
-  if (influencer.local_avatar_path) {
-    if (influencer.local_avatar_path.startsWith('http')) return influencer.local_avatar_path
-    return `/media/${influencer.local_avatar_path.split('/').pop()}`
+function getAvatarSrc(inf: Influencer): string | null {
+  if (inf.local_avatar_path) {
+    if (inf.local_avatar_path.startsWith('http')) return inf.local_avatar_path
+    return `/media/${inf.local_avatar_path.split('/').pop()}`
   }
-  return influencer.avatar_url
+  return inf.avatar_url
 }
 
 function getTierColor(tier: string | null): string {
   switch (tier) {
-    case 'mega': return 'text-pink-400 bg-pink-400/10'
-    case 'macro': return 'text-orange-400 bg-orange-400/10'
-    case 'mid': return 'text-yellow-400 bg-yellow-400/10'
-    case 'micro': return 'text-teal-400 bg-teal-400/10'
-    case 'nano': return 'text-blue-400 bg-blue-400/10'
-    default: return 'text-slate-400 bg-slate-400/10'
-  }
-}
-
-function getPartnershipColor(status: string | null): string {
-  switch (status) {
-    case 'contracted': return 'text-teal-400 bg-teal-400/10'
-    case 'negotiating': return 'text-orange-400 bg-orange-400/10'
-    case 'contacted': return 'text-yellow-400 bg-yellow-400/10'
-    case 'candidate': return 'text-blue-400 bg-blue-400/10'
-    case 'rejected': return 'text-red-400 bg-red-400/10'
-    default: return 'text-slate-500 bg-slate-500/10'
+    case 'mega': return 'text-pink-400 bg-pink-500/10 border-pink-500/20'
+    case 'macro': return 'text-orange-400 bg-orange-500/10 border-orange-500/20'
+    case 'mid': return 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20'
+    case 'micro': return 'text-teal-400 bg-teal-500/10 border-teal-500/20'
+    case 'nano': return 'text-blue-400 bg-blue-500/10 border-blue-500/20'
+    default: return 'text-slate-500 bg-slate-500/10 border-slate-500/20'
   }
 }
 
@@ -76,9 +65,30 @@ export default function Influencers() {
   const [search, setSearch] = useState('')
   const [searchInput, setSearchInput] = useState('')
   const [platformFilter, setPlatformFilter] = useState<string>('')
+  const [tierFilter, setTierFilter] = useState<string>('')
+  const [tierOpen, setTierOpen] = useState(false)
   const [page, setPage] = useState(0)
   const [refetching, setRefetching] = useState(false)
+  const tierRef = useRef<HTMLDivElement>(null)
   const limit = 30
+
+  const tierOptions = [
+    { value: '', label: 'All Tiers' },
+    { value: 'mega', label: 'Mega', color: 'text-pink-400' },
+    { value: 'macro', label: 'Macro', color: 'text-orange-400' },
+    { value: 'mid', label: 'Mid', color: 'text-yellow-400' },
+    { value: 'micro', label: 'Micro', color: 'text-teal-400' },
+    { value: 'nano', label: 'Nano', color: 'text-blue-400' },
+  ]
+
+  // Close tier dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (tierRef.current && !tierRef.current.contains(e.target as Node)) setTierOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
 
   useEffect(() => {
     setLoading(true)
@@ -90,6 +100,7 @@ export default function Influencers() {
     })
     if (search) params.set('search', search)
     if (platformFilter) params.set('platform', platformFilter)
+    if (tierFilter) params.set('tier', tierFilter)
 
     authFetch(`/api/analysis/influencers?${params}`)
       .then((r) => r.json())
@@ -99,7 +110,7 @@ export default function Influencers() {
       })
       .catch(() => toast.error('Failed to load influencers'))
       .finally(() => setLoading(false))
-  }, [sortBy, order, search, platformFilter, page])
+  }, [sortBy, order, search, platformFilter, tierFilter, page])
 
   const toggleSort = (field: SortField) => {
     if (sortBy === field) {
@@ -133,269 +144,268 @@ export default function Influencers() {
 
   const totalPages = Math.ceil(total / limit)
 
-  const sortOptions: { field: SortField; label: string }[] = [
-    { field: 'follower_count', label: 'Followers' },
-    { field: 'total_views', label: 'Total Views' },
-    { field: 'avg_views', label: 'Avg Views' },
-    { field: 'avg_engagement_rate', label: 'Engagement' },
-    { field: 'viral_video_count', label: 'Viral Videos' },
-    { field: 'total_videos_fetched', label: 'Videos' },
+  const columns: { field: SortField; label: string; short: string }[] = [
+    { field: 'follower_count', label: 'Followers', short: 'Flw' },
+    { field: 'avg_views', label: 'Avg Views', short: 'Avg' },
+    { field: 'avg_engagement_rate', label: 'Eng %', short: 'Eng' },
+    { field: 'total_views', label: 'Total Views', short: 'Total' },
+    { field: 'viral_video_count', label: 'Viral', short: 'Viral' },
+    { field: 'total_videos_fetched', label: 'Videos', short: 'Vids' },
   ]
 
   const totalFollowers = influencers.reduce((sum, i) => sum + (i.follower_count || 0), 0)
-  const avgEngagement = influencers.length > 0
-    ? influencers.reduce((sum, i) => sum + (i.avg_engagement_rate || 0), 0) / influencers.filter(i => i.avg_engagement_rate).length || 0
+  const engArr = influencers.filter(i => i.avg_engagement_rate)
+  const avgEngagement = engArr.length > 0
+    ? engArr.reduce((sum, i) => sum + (i.avg_engagement_rate || 0), 0) / engArr.length
     : 0
 
   return (
-    <>
-      {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
-        <div>
-          <div className="flex items-center gap-2 mb-3">
-            <span className="px-2 py-0.5 bg-pink-500/10 text-pink-400 text-[10px] font-black uppercase tracking-widest rounded">
-              Creator Network
-            </span>
-          </div>
-          <h1 className="text-4xl font-black tracking-tighter mb-2">INFLUENCERS</h1>
-          <p className="text-slate-500 text-sm font-medium">
-            Track and analyze creators across platforms. Discover partnership opportunities.
-          </p>
-        </div>
-
+    <div className="max-w-[1400px] mx-auto">
+      {/* Header */}
+      <div className="flex items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-4">
-          {userType === 'admin' && (
-            <button
-              onClick={handleRefetchProfiles}
-              disabled={refetching}
-              className="px-4 py-3 rounded-[1.5rem] bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-bold hover:bg-orange-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              <i className={`fas fa-${refetching ? 'spinner fa-spin' : 'sync-alt'} text-[10px]`}></i>
-              {refetching ? 'Refetching...' : 'Refetch Missing Followers'}
-            </button>
-          )}
-          <div className="px-6 py-4 glass-card rounded-[1.5rem] border-white/5">
-            <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Total Creators</div>
-            <div className="text-2xl font-black text-white">{formatNumber(total)}</div>
-          </div>
-          <div className="px-6 py-4 glass-card rounded-[1.5rem] border-white/5">
-            <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Combined Reach</div>
-            <div className="text-2xl font-black text-white">{formatNumber(totalFollowers)}</div>
-          </div>
-          <div className="px-6 py-4 glass-card rounded-[1.5rem] border-white/5">
-            <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Avg Engagement</div>
-            <div className="text-2xl font-black text-teal-400">
-              {avgEngagement > 0 ? (avgEngagement * 100).toFixed(1) + '%' : '--'}
-            </div>
+          <h1 className="text-xl font-bold tracking-tight">Influencers</h1>
+          <div className="flex items-center gap-3 text-xs text-slate-400">
+            <span><span className="text-white font-semibold">{total}</span> creators</span>
+            <span className="text-slate-600">|</span>
+            <span><span className="text-white font-semibold">{fmt(totalFollowers)}</span> reach</span>
+            <span className="text-slate-600">|</span>
+            <span><span className="text-teal-400 font-semibold">{avgEngagement > 0 ? (avgEngagement * 100).toFixed(1) + '%' : '--'}</span> avg eng</span>
           </div>
         </div>
+        {userType === 'admin' && (
+          <button
+            onClick={handleRefetchProfiles}
+            disabled={refetching}
+            className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-40"
+          >
+            <i className={`fas fa-${refetching ? 'spinner fa-spin' : 'sync-alt'} mr-1.5 text-[10px]`}></i>
+            {refetching ? 'Refetching...' : 'Refetch Profiles'}
+          </button>
+        )}
       </div>
 
-      {/* Search & Filters */}
-      <div className="flex flex-col md:flex-row items-start md:items-center gap-4 mb-8">
-        <form onSubmit={handleSearch} className="flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2 rounded-xl w-full md:w-auto md:min-w-[280px] focus-within:border-white/20 transition-all">
-          <i className="fas fa-search text-slate-500 text-xs"></i>
+      {/* Toolbar */}
+      <div className="flex items-center gap-2 mb-4">
+        <form onSubmit={handleSearch} className="flex items-center bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 w-56 focus-within:border-white/20 transition-colors">
+          <i className="fas fa-search text-slate-600 text-[10px] mr-2"></i>
           <input
             type="text"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="Search creators..."
-            className="bg-transparent border-none outline-none text-sm w-full placeholder:text-slate-600 font-medium"
+            placeholder="Search..."
+            className="bg-transparent border-none outline-none text-xs w-full placeholder:text-slate-600"
           />
           {search && (
-            <button
-              type="button"
-              onClick={() => { setSearch(''); setSearchInput(''); setPage(0) }}
-              className="text-slate-500 hover:text-white text-xs"
-            >
-              <i className="fas fa-times"></i>
+            <button type="button" onClick={() => { setSearch(''); setSearchInput(''); setPage(0) }} className="text-slate-500 hover:text-white ml-1">
+              <i className="fas fa-times text-[10px]"></i>
             </button>
           )}
         </form>
 
-        {/* Platform Filter */}
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest mr-1">Platform</span>
-          {['', 'instagram', 'tiktok'].map((p) => (
+        <div className="flex items-center bg-white/5 border border-white/10 rounded-lg overflow-hidden">
+          {(['', 'instagram', 'tiktok'] as const).map((p) => (
             <button
               key={p}
               onClick={() => { setPlatformFilter(p); setPage(0) }}
-              className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-colors ${
-                platformFilter === p
-                  ? 'bg-white/10 text-white'
-                  : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
+              className={`px-3 py-1.5 text-[11px] font-medium transition-colors ${
+                platformFilter === p ? 'bg-white/10 text-white' : 'text-slate-500 hover:text-slate-300'
               }`}
             >
-              {p === '' ? 'All' : (
-                <span className="flex items-center gap-1.5">
-                  <i className={`fab fa-${p === 'tiktok' ? 'tiktok' : 'instagram'} text-xs`}></i>
-                  {p.charAt(0).toUpperCase() + p.slice(1)}
-                </span>
-              )}
+              {p === '' ? 'All' : <i className={`fab fa-${p} ${p === 'instagram' ? 'text-pink-400' : ''}`}></i>}
             </button>
           ))}
         </div>
 
-        {/* Sort */}
-        <div className="flex items-center gap-2 ml-auto">
-          <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest mr-1">Sort</span>
-          {sortOptions.map((opt) => (
-            <button
-              key={opt.field}
-              onClick={() => toggleSort(opt.field)}
-              className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-colors ${
-                sortBy === opt.field
-                  ? 'bg-white/10 text-white'
-                  : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
-              }`}
-            >
-              {opt.label}
-              {sortBy === opt.field && (
-                <i className={`fas fa-chevron-${order === 'desc' ? 'down' : 'up'} ml-1 text-[8px]`}></i>
-              )}
-            </button>
-          ))}
+        {/* Tier Filter Dropdown */}
+        <div className="relative" ref={tierRef}>
+          <button
+            onClick={() => setTierOpen(!tierOpen)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium rounded-lg border transition-colors ${
+              tierFilter
+                ? 'bg-white/10 border-white/15 text-white'
+                : 'bg-white/5 border-white/10 text-slate-500 hover:text-slate-300'
+            }`}
+          >
+            <i className="fas fa-layer-group text-[9px]"></i>
+            {tierFilter ? tierOptions.find(t => t.value === tierFilter)?.label : 'Tier'}
+            <i className={`fas fa-chevron-down text-[8px] ml-0.5 transition-transform ${tierOpen ? 'rotate-180' : ''}`}></i>
+          </button>
+          {tierOpen && (
+            <div className="absolute top-full left-0 mt-1 z-50 bg-slate-900 border border-white/10 rounded-lg shadow-xl shadow-black/40 py-1 min-w-[140px]">
+              {tierOptions.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => { setTierFilter(opt.value); setTierOpen(false); setPage(0) }}
+                  className={`w-full text-left px-3 py-1.5 text-[11px] font-medium flex items-center gap-2 transition-colors ${
+                    tierFilter === opt.value ? 'bg-white/10 text-white' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
+                  }`}
+                >
+                  {opt.value && (
+                    <span className={`w-1.5 h-1.5 rounded-full ${
+                      opt.value === 'mega' ? 'bg-pink-400' :
+                      opt.value === 'macro' ? 'bg-orange-400' :
+                      opt.value === 'mid' ? 'bg-yellow-400' :
+                      opt.value === 'micro' ? 'bg-teal-400' :
+                      'bg-blue-400'
+                    }`}></span>
+                  )}
+                  {opt.label}
+                  {tierFilter === opt.value && <i className="fas fa-check text-[9px] ml-auto"></i>}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
+
+        <div className="flex-1" />
+
+        {totalPages > 1 && (
+          <div className="flex items-center gap-1 text-xs text-slate-500">
+            <button
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+              disabled={page === 0}
+              className="p-1.5 rounded hover:bg-white/5 disabled:opacity-30 transition-colors"
+            >
+              <i className="fas fa-chevron-left text-[10px]"></i>
+            </button>
+            <span className="font-medium px-1">{page + 1}/{totalPages}</span>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+              disabled={page >= totalPages - 1}
+              className="p-1.5 rounded hover:bg-white/5 disabled:opacity-30 transition-colors"
+            >
+              <i className="fas fa-chevron-right text-[10px]"></i>
+            </button>
+          </div>
+        )}
       </div>
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <div className="w-8 h-8 border-2 border-pink-500 border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-6 h-6 border-2 border-pink-500 border-t-transparent rounded-full animate-spin"></div>
         </div>
       ) : influencers.length === 0 ? (
-        <div className="glass-card rounded-2xl p-12 text-center">
-          <div className="w-16 h-16 mx-auto mb-4 bg-white/5 rounded-full flex items-center justify-center">
-            <i className="fas fa-users text-slate-500 text-xl"></i>
-          </div>
-          <h3 className="font-black text-lg mb-2">No Influencers Found</h3>
-          <p className="text-sm text-slate-500">
-            {search ? 'No creators match your search. Try different keywords.' : 'Scan some videos to start discovering creators.'}
-          </p>
+        <div className="text-center py-16 text-slate-500">
+          <i className="fas fa-users text-2xl mb-3 block"></i>
+          <p className="text-sm font-medium">{search ? 'No creators match your search.' : 'No influencers found. Scan some videos first.'}</p>
         </div>
       ) : (
-        <>
-          {/* Influencer Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {influencers.map((influencer) => {
-              const avatar = getAvatarSrc(influencer)
-              return (
-                <Link
-                  key={influencer.id}
-                  to={`/dashboard/influencers/${influencer.id}`}
-                  className="gradient-border group cursor-pointer hover:translate-y-[-4px] transition-all duration-300"
-                >
-                  <div className="card-inner p-7 flex flex-col h-full">
-                    {/* Profile Header */}
-                    <div className="flex items-start gap-4 mb-6">
-                      <div className="relative flex-shrink-0">
-                        {avatar ? (
-                          <img
-                            src={avatar}
-                            alt={`@${influencer.username}`}
-                            className="w-14 h-14 rounded-2xl object-cover border border-white/10"
-                          />
-                        ) : (
-                          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-pink-500/20 to-orange-400/20 flex items-center justify-center border border-white/10">
-                            <span className="text-xl font-black text-white/60">
-                              {(influencer.display_name || influencer.username).charAt(0).toUpperCase()}
-                            </span>
-                          </div>
-                        )}
-                        <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-slate-900 flex items-center justify-center border border-white/10">
-                          <i className={`fab fa-${influencer.platform === 'tiktok' ? 'tiktok' : 'instagram'} text-[9px] ${influencer.platform === 'tiktok' ? 'text-white' : 'text-pink-400'}`}></i>
-                        </div>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <h3 className="text-base font-black tracking-tight group-hover:text-pink-400 transition-colors truncate">
-                            {influencer.display_name || influencer.username}
-                          </h3>
-                          {influencer.is_verified && (
-                            <i className="fas fa-check-circle text-blue-400 text-xs flex-shrink-0"></i>
-                          )}
-                        </div>
-                        <div className="text-xs text-slate-500 font-bold">@{influencer.username}</div>
-                        <div className="flex items-center gap-2 mt-1.5">
-                          {influencer.tier && (
-                            <span className={`text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded ${getTierColor(influencer.tier)}`}>
-                              {influencer.tier}
-                            </span>
-                          )}
-                          {influencer.partnership_status && influencer.partnership_status !== 'none' && (
-                            <span className={`text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded ${getPartnershipColor(influencer.partnership_status)}`}>
-                              {influencer.partnership_status}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Bio */}
-                    {influencer.bio && (
-                      <p className="text-[11px] text-slate-400 font-medium mb-6 leading-relaxed line-clamp-2">
-                        {influencer.bio}
-                      </p>
-                    )}
-
-                    {/* Metrics Grid */}
-                    <div className="mt-auto grid grid-cols-3 gap-x-4 gap-y-3 pt-5 border-t border-white/5">
-                      <div>
-                        <div className="metric-label">Followers</div>
-                        <div className="metric-value">{influencer.follower_count ? formatNumber(influencer.follower_count) : '--'}</div>
-                      </div>
-                      <div>
-                        <div className="metric-label">Avg Views</div>
-                        <div className="metric-value">{influencer.avg_views ? formatNumber(Math.round(influencer.avg_views)) : '--'}</div>
-                      </div>
-                      <div>
-                        <div className="metric-label">Engagement</div>
-                        <div className="metric-value text-teal-400">
-                          {influencer.avg_engagement_rate ? Number(influencer.avg_engagement_rate).toFixed(1) + '%' : '--'}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="metric-label">Total Views</div>
-                        <div className="metric-value">{influencer.total_views ? formatNumber(influencer.total_views) : '--'}</div>
-                      </div>
-                      <div>
-                        <div className="metric-label">Viral Videos</div>
-                        <div className="metric-value text-pink-400">{influencer.viral_video_count ?? '--'}</div>
-                      </div>
-                      <div>
-                        <div className="metric-label">Videos</div>
-                        <div className="metric-value">{influencer.total_videos_fetched ?? '--'}</div>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              )
-            })}
+        <div className="border border-white/[0.06] rounded-xl overflow-hidden">
+          {/* Table Header */}
+          <div className="grid items-center gap-3 px-4 py-2.5 bg-white/[0.02] border-b border-white/[0.06] text-[10px] font-semibold text-slate-500 uppercase tracking-wider"
+            style={{ gridTemplateColumns: '2.5fr repeat(6, 1fr)' }}
+          >
+            <div>Creator</div>
+            {columns.map((col) => (
+              <button
+                key={col.field}
+                onClick={() => toggleSort(col.field)}
+                className={`text-right flex items-center justify-end gap-1 transition-colors hover:text-slate-300 ${sortBy === col.field ? 'text-white' : ''}`}
+              >
+                {col.label}
+                {sortBy === col.field && (
+                  <i className={`fas fa-caret-${order === 'desc' ? 'down' : 'up'} text-[9px]`}></i>
+                )}
+              </button>
+            ))}
           </div>
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-3 mt-10">
-              <button
-                onClick={() => setPage((p) => Math.max(0, p - 1))}
-                disabled={page === 0}
-                className="px-4 py-2 rounded-xl text-xs font-bold bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          {/* Rows */}
+          {influencers.map((inf, idx) => {
+            const avatar = getAvatarSrc(inf)
+            return (
+              <Link
+                key={inf.id}
+                to={`/dashboard/influencers/${inf.id}`}
+                className={`grid items-center gap-3 px-4 py-3 transition-colors hover:bg-white/[0.03] group ${
+                  idx !== influencers.length - 1 ? 'border-b border-white/[0.04]' : ''
+                }`}
+                style={{ gridTemplateColumns: '2.5fr repeat(6, 1fr)' }}
               >
-                <i className="fas fa-chevron-left mr-1 text-[8px]"></i> Prev
-              </button>
-              <span className="text-xs font-bold text-slate-500">
-                Page {page + 1} of {totalPages}
-              </span>
-              <button
-                onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-                disabled={page >= totalPages - 1}
-                className="px-4 py-2 rounded-xl text-xs font-bold bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-              >
-                Next <i className="fas fa-chevron-right ml-1 text-[8px]"></i>
-              </button>
-            </div>
-          )}
-        </>
+                {/* Creator Info */}
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="relative flex-shrink-0">
+                    {avatar ? (
+                      <img
+                        src={avatar}
+                        alt={inf.username}
+                        className="w-9 h-9 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-9 h-9 rounded-full bg-white/5 flex items-center justify-center">
+                        <span className="text-sm font-bold text-slate-500">
+                          {(inf.display_name || inf.username).charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                    )}
+                    <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-slate-950 flex items-center justify-center ring-1 ring-slate-800">
+                      <i className={`fab fa-${inf.platform === 'tiktok' ? 'tiktok' : 'instagram'} text-[8px] ${inf.platform === 'tiktok' ? 'text-slate-400' : 'text-pink-400'}`}></i>
+                    </div>
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm font-semibold truncate group-hover:text-pink-400 transition-colors">
+                        {inf.display_name || inf.username}
+                      </span>
+                      {inf.is_verified && <i className="fas fa-check-circle text-blue-400 text-[10px] flex-shrink-0"></i>}
+                      {inf.tier && (
+                        <span className={`text-[9px] font-bold uppercase px-1.5 py-px rounded border ${getTierColor(inf.tier)}`}>
+                          {inf.tier}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[11px] text-slate-500 truncate">@{inf.username}</div>
+                  </div>
+                </div>
+
+                {/* Metrics */}
+                <div className="text-right text-sm font-medium text-slate-200">
+                  {inf.follower_count ? fmt(inf.follower_count) : <span className="text-slate-600">--</span>}
+                </div>
+                <div className="text-right text-sm font-medium text-slate-200">
+                  {inf.avg_views ? fmt(Math.round(inf.avg_views)) : <span className="text-slate-600">--</span>}
+                </div>
+                <div className={`text-right text-sm font-medium ${inf.avg_engagement_rate ? 'text-teal-400' : 'text-slate-600'}`}>
+                  {inf.avg_engagement_rate ? Number(inf.avg_engagement_rate).toFixed(1) + '%' : '--'}
+                </div>
+                <div className="text-right text-sm font-medium text-slate-200">
+                  {inf.total_views ? fmt(inf.total_views) : <span className="text-slate-600">--</span>}
+                </div>
+                <div className={`text-right text-sm font-medium ${inf.viral_video_count ? 'text-pink-400' : 'text-slate-600'}`}>
+                  {inf.viral_video_count ?? '--'}
+                </div>
+                <div className="text-right text-sm font-medium text-slate-400">
+                  {inf.total_videos_fetched ?? <span className="text-slate-600">--</span>}
+                </div>
+              </Link>
+            )
+          })}
+        </div>
       )}
-    </>
+
+      {/* Bottom Pagination */}
+      {!loading && totalPages > 1 && (
+        <div className="flex items-center justify-between mt-4 text-xs text-slate-500">
+          <span>Showing {page * limit + 1}-{Math.min((page + 1) * limit, total)} of {total}</span>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+              disabled={page === 0}
+              className="px-3 py-1.5 rounded-lg hover:bg-white/5 disabled:opacity-30 font-medium transition-colors"
+            >
+              Previous
+            </button>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+              disabled={page >= totalPages - 1}
+              className="px-3 py-1.5 rounded-lg hover:bg-white/5 disabled:opacity-30 font-medium transition-colors"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   )
 }

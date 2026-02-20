@@ -355,7 +355,7 @@ export default function SuggestionDetail() {
                       <div className="flex items-center gap-3 text-[10px] font-bold text-slate-600">
                         <span>{formatNumber(v.views)} views</span>
                         <span>{formatNumber(v.likes)} likes</span>
-                        <span>{(v.engagement_rate * 100).toFixed(1)}% eng</span>
+                        <span>{v.engagement_rate.toFixed(1)}% eng</span>
                       </div>
                     </div>
                   </div>
@@ -431,7 +431,7 @@ export default function SuggestionDetail() {
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-slate-500 font-bold">Avg Engagement</span>
-                <span className="text-white font-black">{(s.avg_engagement_rate * 100).toFixed(1)}%</span>
+                <span className="text-white font-black">{s.avg_engagement_rate.toFixed(1)}%</span>
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-slate-500 font-bold">Upvotes</span>

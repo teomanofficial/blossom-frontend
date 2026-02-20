@@ -366,6 +366,16 @@ export default function InfluencerDetail() {
             {influencer.bio && (
               <p className="text-sm text-slate-400 font-medium leading-relaxed max-w-2xl">{influencer.bio}</p>
             )}
+            <a
+              href={influencer.profile_url || (influencer.platform === 'tiktok' ? `https://www.tiktok.com/@${influencer.username}` : `https://www.instagram.com/${influencer.username}/`)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 mt-4 bg-white/5 hover:bg-white/10 text-white text-[11px] font-black px-4 py-2.5 rounded-xl transition-all border border-white/5"
+            >
+              <i className={`fab fa-${influencer.platform === 'tiktok' ? 'tiktok' : 'instagram'} text-[10px]`}></i>
+              SHOW PROFILE
+              <i className="fas fa-external-link-alt text-[8px] ml-0.5 opacity-50"></i>
+            </a>
           </div>
 
           {/* Follower Stats */}

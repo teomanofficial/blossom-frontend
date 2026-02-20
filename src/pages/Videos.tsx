@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import toast from 'react-hot-toast'
 import { authFetch } from '../lib/api'
+import { useAuth } from '../context/AuthContext'
 import VideoStoryCarousel, { type CarouselVideo } from '../components/VideoStoryCarousel'
 
 interface Video {
@@ -24,6 +25,7 @@ interface Video {
   search_source: string
   search_query: string
   status: string
+  error_message: string | null
   format_class_name: string | null
   hook_class_name: string | null
   top_tactic_names: string[]
@@ -122,6 +124,9 @@ function saveScanPrefs(prefs: { platform: string; searchType: string; amount: nu
 }
 
 export default function Videos() {
+  const { userType } = useAuth()
+  const isAdmin = userType === 'admin'
+
   // Fetch form state — restore last preferences
   const savedPrefs = useRef(loadScanPrefs())
   const [platform, setPlatform] = useState<'instagram' | 'tiktok'>(
@@ -1417,6 +1422,7 @@ export default function Videos() {
           videos={carouselData.videos}
           initialIndex={carouselData.initialIndex}
           onClose={() => setCarouselData(null)}
+          isAdmin={isAdmin}
         />
       )}
     </>

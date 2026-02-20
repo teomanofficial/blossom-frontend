@@ -42,6 +42,7 @@ export interface CarouselVideo {
   published_at?: string | null
   updated_at?: string | null
   status?: string
+  error_message?: string | null
   format_class_name?: string | null
   hook_class_name?: string | null
   final_viral_probability?: number | null
@@ -53,6 +54,7 @@ interface VideoStoryCarouselProps {
   initialIndex?: number
   onClose: () => void
   renderMeta?: (video: CarouselVideo, index: number) => ReactNode
+  isAdmin?: boolean
 }
 
 function getThumbnailSrc(video: CarouselVideo): string | null {
@@ -71,7 +73,7 @@ function getVideoUrl(video: CarouselVideo): string | null {
   return null
 }
 
-export default function VideoStoryCarousel({ videos: initialVideos, initialIndex = 0, onClose, renderMeta }: VideoStoryCarouselProps) {
+export default function VideoStoryCarousel({ videos: initialVideos, initialIndex = 0, onClose, renderMeta, isAdmin }: VideoStoryCarouselProps) {
   const [videos, setVideos] = useState(initialVideos)
   const [currentIndex, setCurrentIndex] = useState(initialIndex)
   const [isPlaying, setIsPlaying] = useState(false)
@@ -447,6 +449,30 @@ export default function VideoStoryCarousel({ videos: initialVideos, initialIndex
                 )}
               </div>
             </div>
+
+            {/* Error details (admin only) */}
+            {isAdmin && (video.status === 'error' || video.status === 'video_failed') && (
+              <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-red-400 flex-shrink-0">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="12"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                  </svg>
+                  <p className="text-[10px] font-black text-red-400 uppercase tracking-widest">
+                    {video.status === 'video_failed' ? 'Video Download Failed' : 'Analysis Failed'}
+                  </p>
+                </div>
+                {video.error_message ? (
+                  <p className="text-xs text-red-300/80 font-mono break-all whitespace-pre-wrap">{video.error_message}</p>
+                ) : (
+                  <p className="text-xs text-red-300/50 italic">No error message recorded</p>
+                )}
+                {video.updated_at && (
+                  <p className="text-[10px] text-red-400/50 mt-1.5">Failed {timeAgo(video.updated_at)} &middot; {new Date(video.updated_at).toLocaleString()}</p>
+                )}
+              </div>
+            )}
 
             {/* Metrics row */}
             <div className="grid grid-cols-4 gap-2">

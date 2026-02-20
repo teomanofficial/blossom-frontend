@@ -74,7 +74,7 @@ export default function Suggestions() {
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
   const [tab, setTab] = useState<'all' | 'saved' | 'approved'>('all')
-  const [sortBy, setSortBy] = useState('trend_strength')
+  const [sortBy, setSortBy] = useState('newest')
   const [keywordFilter, setKeywordFilter] = useState('')
   const [formatFilter, setFormatFilter] = useState('')
   const [filterKeywords, setFilterKeywords] = useState<FilterOption[]>([])
