@@ -205,19 +205,19 @@ export default function TacticDetail() {
   return (
     <>
       {/* Breadcrumb Header */}
-      <div className="flex items-center justify-between mb-10">
-        <div className="flex items-center gap-2">
-          <Link to="/dashboard/tactics" className="text-slate-500 text-xs font-bold uppercase tracking-widest hover:text-slate-300 transition-colors">
+      <div className="flex items-center justify-between mb-6 md:mb-10">
+        <div className="flex items-center gap-2 min-w-0">
+          <Link to="/dashboard/tactics" className="text-slate-500 text-xs font-bold uppercase tracking-widest hover:text-slate-300 transition-colors shrink-0">
             Viral Tactics
           </Link>
-          <span className="text-slate-600 text-xs">/</span>
-          <span className="text-white text-xs font-black uppercase tracking-widest">{tactic.name}</span>
+          <span className="text-slate-600 text-xs shrink-0">/</span>
+          <span className="text-white text-xs font-black uppercase tracking-widest truncate">{tactic.name}</span>
         </div>
       </div>
 
       {/* Tactic Hero */}
-      <div className="mb-12">
-        <div className="flex items-center gap-3 mb-4">
+      <div className="mb-8 md:mb-12">
+        <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-4 flex-wrap">
           <span className={`px-2.5 py-1 rounded text-[10px] font-black uppercase tracking-widest ${getCategoryColor(tactic.category)}`}>
             {getCategoryLabel(tactic.category)}
           </span>
@@ -230,17 +230,17 @@ export default function TacticDetail() {
             Indexed {timeAgo(tactic.created_at)}
           </span>
         </div>
-        <h1 className="text-5xl font-black tracking-tighter mb-4 uppercase">{tactic.name}</h1>
+        <h1 className="text-3xl md:text-5xl font-black tracking-tighter mb-3 md:mb-4 uppercase">{tactic.name}</h1>
         {tactic.description && (
-          <p className="text-slate-400 text-lg font-medium max-w-3xl leading-relaxed">{tactic.description}</p>
+          <p className="text-slate-400 text-sm md:text-lg font-medium max-w-3xl leading-relaxed">{tactic.description}</p>
         )}
       </div>
 
       {/* High Level Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
-        <div className="p-6 glass-card rounded-3xl border-white/5">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8 md:mb-12">
+        <div className="p-4 md:p-6 glass-card rounded-2xl md:rounded-3xl border-white/5">
           <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Avg Exec Score</div>
-          <div className={`text-2xl font-black ${getScoreColor(score)}`}>
+          <div className={`text-xl md:text-2xl font-black ${getScoreColor(score)}`}>
             {score > 0 ? Math.round(score) : '--'}
           </div>
           {score > 0 && (
@@ -249,15 +249,15 @@ export default function TacticDetail() {
             </div>
           )}
         </div>
-        <div className="p-6 glass-card rounded-3xl border-white/5">
+        <div className="p-4 md:p-6 glass-card rounded-2xl md:rounded-3xl border-white/5">
           <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Avg Views</div>
-          <div className="text-2xl font-black text-white">{formatNumber(Math.round(avgViews))}</div>
+          <div className="text-xl md:text-2xl font-black text-white">{formatNumber(Math.round(avgViews))}</div>
         </div>
-        <div className="p-6 glass-card rounded-3xl border-white/5">
+        <div className="p-4 md:p-6 glass-card rounded-2xl md:rounded-3xl border-white/5">
           <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Videos Using</div>
-          <div className="text-2xl font-black text-white">{totalVideoCount}</div>
+          <div className="text-xl md:text-2xl font-black text-white">{totalVideoCount}</div>
         </div>
-        <div className="p-6 glass-card rounded-3xl border-white/5">
+        <div className="p-4 md:p-6 glass-card rounded-2xl md:rounded-3xl border-white/5">
           <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Score Dist</div>
           <div className="flex items-center gap-2 mt-1">
             <span className="text-teal-400 text-xs font-black">{scoreRanges.high}</span>
@@ -272,21 +272,21 @@ export default function TacticDetail() {
 
       {/* Why It Works + Viewer Effect */}
       {(tactic.why_it_works || tactic.viewer_effect) && (
-        <div className="grid md:grid-cols-2 gap-6 mb-12">
+        <div className="grid md:grid-cols-2 gap-4 md:gap-6 mb-8 md:mb-12">
           {tactic.why_it_works && (
-            <div className="p-8 glass-card rounded-[2rem] border-l-4 border-l-amber-500">
-              <h3 className="text-amber-400 text-xs font-black uppercase tracking-widest flex items-center gap-2 mb-4">
+            <div className="p-5 md:p-8 glass-card rounded-[1.5rem] md:rounded-[2rem] border-l-4 border-l-amber-500">
+              <h3 className="text-amber-400 text-xs font-black uppercase tracking-widest flex items-center gap-2 mb-3 md:mb-4">
                 <i className="fas fa-lightbulb"></i> Why It Works
               </h3>
-              <p className="text-sm text-slate-300 font-medium leading-relaxed">{tactic.why_it_works}</p>
+              <p className="text-xs md:text-sm text-slate-300 font-medium leading-relaxed">{tactic.why_it_works}</p>
             </div>
           )}
           {tactic.viewer_effect && (
-            <div className="p-8 glass-card rounded-[2rem] border-l-4 border-l-purple-500">
-              <h3 className="text-purple-400 text-xs font-black uppercase tracking-widest flex items-center gap-2 mb-4">
+            <div className="p-5 md:p-8 glass-card rounded-[1.5rem] md:rounded-[2rem] border-l-4 border-l-purple-500">
+              <h3 className="text-purple-400 text-xs font-black uppercase tracking-widest flex items-center gap-2 mb-3 md:mb-4">
                 <i className="fas fa-brain"></i> Viewer Effect
               </h3>
-              <p className="text-sm text-slate-300 font-medium leading-relaxed">{tactic.viewer_effect}</p>
+              <p className="text-xs md:text-sm text-slate-300 font-medium leading-relaxed">{tactic.viewer_effect}</p>
             </div>
           )}
         </div>
@@ -294,8 +294,8 @@ export default function TacticDetail() {
 
       {/* Format Distribution */}
       {tactic.format_distribution && tactic.format_distribution.length > 0 && (
-        <div className="mb-12">
-          <h2 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-6 flex items-center gap-2">
+        <div className="mb-8 md:mb-12">
+          <h2 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-4 md:mb-6 flex items-center gap-2">
             <i className="fas fa-shapes text-slate-500"></i> Most Used In Formats
           </h2>
           <div className="flex flex-wrap gap-3">
@@ -317,24 +317,24 @@ export default function TacticDetail() {
 
       {/* Videos Grid */}
       {videos.length > 0 && (
-        <div className="mb-20">
-          <div className="flex justify-between items-end mb-8">
+        <div className="mb-12 md:mb-20">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-2 mb-6 md:mb-8">
             <div>
-              <h2 className="text-3xl font-black tracking-tight uppercase">The Receipts</h2>
-              <p className="text-slate-500 text-sm font-medium">Videos using this tactic, ranked by execution score.</p>
+              <h2 className="text-2xl md:text-3xl font-black tracking-tight uppercase">The Receipts</h2>
+              <p className="text-slate-500 text-xs md:text-sm font-medium">Videos using this tactic, ranked by execution score.</p>
             </div>
             <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">
               {videos.length} of {totalVideoCount} video{totalVideoCount === 1 ? '' : 's'}
             </span>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
             {videos.map((video, idx) => {
               const thumb = getThumbnailSrc(video)
               const execScore = Number(video.execution_score) || 0
               return (
                 <div
                   key={video.video_id}
-                  className="relative group cursor-pointer"
+                  className="relative group cursor-pointer active:scale-[0.98] transition-transform"
                   onClick={() => {
                     const vids = videos.map(v => ({
                       ...v,
@@ -343,7 +343,7 @@ export default function TacticDetail() {
                     setCarouselData({ videos: vids, initialIndex: idx })
                   }}
                 >
-                  <div className="aspect-[9/16] bg-slate-900 rounded-[2rem] overflow-hidden border border-white/5 group-hover:border-amber-500/30 transition-all">
+                  <div className="aspect-[9/16] bg-slate-900 rounded-2xl md:rounded-[2rem] overflow-hidden border border-white/5 group-hover:border-amber-500/30 transition-all">
                     {thumb ? (
                       <img
                         src={thumb}
@@ -364,7 +364,7 @@ export default function TacticDetail() {
                         <i className="fas fa-film text-slate-700 text-3xl"></i>
                       </div>
                     )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-5">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-3 md:p-5">
                       <div className="flex items-center gap-2 mb-3">
                         <div className="w-6 h-6 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center">
                           <i className={`fab fa-${video.platform === 'tiktok' ? 'tiktok' : 'instagram'} text-[10px]`}></i>
@@ -417,7 +417,7 @@ export default function TacticDetail() {
 
       {/* No videos */}
       {videos.length === 0 && !loading && (
-        <div className="glass-card rounded-[2.5rem] p-10 mb-16 text-center">
+        <div className="glass-card rounded-[1.5rem] md:rounded-[2.5rem] p-6 md:p-10 mb-10 md:mb-16 text-center">
           <div className="w-16 h-16 mx-auto mb-4 bg-white/5 rounded-full flex items-center justify-center">
             <i className="fas fa-film text-slate-500 text-xl"></i>
           </div>

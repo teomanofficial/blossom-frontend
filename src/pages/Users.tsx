@@ -236,16 +236,16 @@ export default function Users() {
   return (
     <>
       {/* Page Header */}
-      <div className="mb-8">
+      <div className="mb-6 md:mb-8">
         <div className="flex items-center gap-2 mb-3">
           <span className="px-2 py-0.5 bg-orange-500/10 text-orange-400 text-[10px] font-black uppercase tracking-widest rounded">
             Management
           </span>
         </div>
-        <h1 className="text-4xl font-black tracking-tighter mb-2">
+        <h1 className="text-2xl md:text-4xl font-black tracking-tighter mb-2">
           User <span className="gradient-text">Management</span>
         </h1>
-        <p className="text-slate-500 text-sm font-medium">
+        <p className="text-slate-500 text-xs md:text-sm font-medium">
           View all users, subscriptions, billing events, and debug user state.
         </p>
       </div>
@@ -287,7 +287,7 @@ export default function Users() {
 
       {/* Search */}
       <div className="mb-6">
-        <div className="flex items-center gap-3 bg-white/5 border border-white/10 px-5 py-3 rounded-2xl max-w-md focus-within:border-white/20 transition-all">
+        <div className="flex items-center gap-3 bg-white/5 border border-white/10 px-4 py-2.5 md:px-5 md:py-3 rounded-2xl w-full md:max-w-md focus-within:border-white/20 transition-all">
           <i className="fas fa-search text-slate-500 text-sm" />
           <input
             type="text"
@@ -314,7 +314,7 @@ export default function Users() {
             {/* User Row */}
             <button
               onClick={() => handleRowClick(user.id)}
-              className="w-full p-5 flex items-center gap-4 text-left hover:bg-white/[0.02] transition-colors"
+              className="w-full p-4 md:p-5 flex items-center gap-3 md:gap-4 text-left hover:bg-white/[0.02] active:bg-white/[0.03] transition-colors"
             >
               {/* Avatar */}
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 to-orange-400 flex items-center justify-center text-sm font-bold flex-shrink-0">
@@ -386,7 +386,7 @@ export default function Users() {
 
             {/* Expanded Detail */}
             {expandedUserId === user.id && (
-              <div className="border-t border-white/5 p-6">
+              <div className="border-t border-white/5 p-4 md:p-6">
                 {detailLoading ? (
                   <div className="flex items-center justify-center py-10">
                     <div className="w-6 h-6 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />

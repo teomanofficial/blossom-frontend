@@ -228,19 +228,19 @@ export default function HookDetail() {
   return (
     <>
       {/* Breadcrumb Header */}
-      <div className="flex items-center justify-between mb-10">
-        <div className="flex items-center gap-2">
-          <Link to="/dashboard/hooks" className="text-slate-500 text-xs font-bold uppercase tracking-widest hover:text-slate-300 transition-colors">
+      <div className="flex items-center justify-between mb-6 md:mb-10">
+        <div className="flex items-center gap-2 min-w-0">
+          <Link to="/dashboard/hooks" className="text-slate-500 text-xs font-bold uppercase tracking-widest hover:text-slate-300 transition-colors shrink-0">
             Hook Analysis
           </Link>
-          <span className="text-slate-600 text-xs">/</span>
-          <span className="text-white text-xs font-black uppercase tracking-widest">{hook.name}</span>
+          <span className="text-slate-600 text-xs shrink-0">/</span>
+          <span className="text-white text-xs font-black uppercase tracking-widest truncate">{hook.name}</span>
         </div>
         {!analysis && totalVideoCount >= 3 && (
           <button
             onClick={triggerAnalysis}
             disabled={analyzing}
-            className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-[11px] font-black px-6 py-2.5 rounded-xl transition-all"
+            className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-[11px] font-black px-4 py-2 md:px-6 md:py-2.5 rounded-xl transition-all shrink-0 ml-3"
           >
             {analyzing ? 'ANALYZING...' : 'RUN AI ANALYSIS'}
           </button>
@@ -248,8 +248,8 @@ export default function HookDetail() {
       </div>
 
       {/* Hook Hero */}
-      <div className="mb-12">
-        <div className="flex items-center gap-3 mb-4">
+      <div className="mb-8 md:mb-12">
+        <div className="flex items-center gap-3 mb-3 md:mb-4">
           <span className="px-2 py-0.5 bg-pink-500/10 text-pink-400 text-[10px] font-black uppercase tracking-widest rounded">
             {analysis ? 'Analyzed' : 'Hook Class'}
           </span>
@@ -259,31 +259,31 @@ export default function HookDetail() {
             </span>
           )}
         </div>
-        <h1 className="text-5xl font-black tracking-tighter mb-4 uppercase">{hook.name}</h1>
-        <p className="text-slate-400 text-lg font-medium max-w-3xl leading-relaxed">
+        <h1 className="text-3xl md:text-5xl font-black tracking-tighter mb-3 md:mb-4 uppercase">{hook.name}</h1>
+        <p className="text-slate-400 text-sm md:text-lg font-medium max-w-3xl leading-relaxed">
           {analysis?.class_description || hook.hook_technique || hook.description || 'No description yet. Run AI analysis to generate insights.'}
         </p>
       </div>
 
       {/* High Level Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
-        <div className="p-6 glass-card rounded-3xl border-white/5">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8 md:mb-12">
+        <div className="p-4 md:p-6 glass-card rounded-2xl md:rounded-3xl border-white/5">
           <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Avg Views</div>
-          <div className="text-2xl font-black text-white">{formatNumber(Math.round(hook.avg_views || 0))}</div>
+          <div className="text-xl md:text-2xl font-black text-white">{formatNumber(Math.round(hook.avg_views || 0))}</div>
         </div>
-        <div className="p-6 glass-card rounded-3xl border-white/5">
+        <div className="p-4 md:p-6 glass-card rounded-2xl md:rounded-3xl border-white/5">
           <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Engagement</div>
-          <div className="text-2xl font-black text-teal-400">
+          <div className="text-xl md:text-2xl font-black text-teal-400">
             {hook.avg_engagement_rate ? Number(hook.avg_engagement_rate).toFixed(1) + '%' : '--'}
           </div>
         </div>
-        <div className="p-6 glass-card rounded-3xl border-white/5">
+        <div className="p-4 md:p-6 glass-card rounded-2xl md:rounded-3xl border-white/5">
           <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Videos</div>
-          <div className="text-2xl font-black text-white">{totalVideoCount}</div>
+          <div className="text-xl md:text-2xl font-black text-white">{totalVideoCount}</div>
         </div>
-        <div className="p-6 glass-card rounded-3xl border-white/5">
+        <div className="p-4 md:p-6 glass-card rounded-2xl md:rounded-3xl border-white/5">
           <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Hook Power</div>
-          <div className="text-2xl font-black text-pink-400">
+          <div className="text-xl md:text-2xl font-black text-pink-400">
             {avgHookEffectiveness > 0 ? Math.round(avgHookEffectiveness * 100) + '%' : '--'}
           </div>
         </div>
@@ -294,14 +294,14 @@ export default function HookDetail() {
         <>
           {/* The Blueprint */}
           {blueprintSteps.length > 0 && (
-            <div className="blueprint-box p-8 rounded-[2.5rem] mb-16 relative overflow-hidden glass-card">
-              <div className="absolute top-0 right-0 p-8 opacity-10">
-                <i className="fas fa-magnet text-8xl text-orange-400"></i>
+            <div className="blueprint-box p-5 md:p-8 rounded-[1.5rem] md:rounded-[2.5rem] mb-10 md:mb-16 relative overflow-hidden glass-card">
+              <div className="absolute top-0 right-0 p-4 md:p-8 opacity-10">
+                <i className="fas fa-magnet text-5xl md:text-8xl text-orange-400"></i>
               </div>
-              <h2 className="text-sm font-black text-orange-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+              <h2 className="text-sm font-black text-orange-400 uppercase tracking-[0.2em] mb-4 md:mb-6 flex items-center gap-2">
                 <i className="fas fa-clipboard-list"></i> The Blueprint
               </h2>
-              <div className="grid md:grid-cols-2 gap-10">
+              <div className="grid md:grid-cols-2 gap-6 md:gap-10">
                 <div className="space-y-4">
                   <h3 className="text-xl font-black text-white uppercase tracking-tight">How to execute:</h3>
                   <ul className="space-y-3">
@@ -331,7 +331,7 @@ export default function HookDetail() {
           )}
 
           {/* Strategic Tactics Grid */}
-          <div className="grid lg:grid-cols-3 gap-8 mb-20">
+          <div className="grid lg:grid-cols-3 gap-6 md:gap-8 mb-12 md:mb-20">
             {/* Gold Standard */}
             {analysis.gold_standard_tactics && analysis.gold_standard_tactics.length > 0 && (
               <div className="space-y-6">
@@ -340,7 +340,7 @@ export default function HookDetail() {
                 </h3>
                 <div className="space-y-4">
                   {analysis.gold_standard_tactics.map((tactic, i) => (
-                    <div key={i} className="p-5 glass-card rounded-2xl border-l-4 border-l-teal-500">
+                    <div key={i} className="p-4 md:p-5 glass-card rounded-2xl border-l-4 border-l-teal-500">
                       {tactic.category && (
                         <div className={`text-[10px] font-black uppercase mb-1 inline-block px-1.5 py-0.5 rounded ${getCategoryColor(tactic.category)}`}>
                           {getCategoryLabel(tactic.category)}
@@ -366,7 +366,7 @@ export default function HookDetail() {
                 </h3>
                 <div className="space-y-4">
                   {analysis.execution_gaps.map((tactic, i) => (
-                    <div key={i} className="p-5 glass-card rounded-2xl border-l-4 border-l-orange-500">
+                    <div key={i} className="p-4 md:p-5 glass-card rounded-2xl border-l-4 border-l-orange-500">
                       {tactic.category && (
                         <div className={`text-[10px] font-black uppercase mb-1 inline-block px-1.5 py-0.5 rounded ${getCategoryColor(tactic.category)}`}>
                           {getCategoryLabel(tactic.category)}
@@ -392,7 +392,7 @@ export default function HookDetail() {
                 </h3>
                 <div className="space-y-4 opacity-70 hover:opacity-100 transition-opacity">
                   {analysis.overrated_tactics.map((tactic, i) => (
-                    <div key={i} className="p-5 glass-card rounded-2xl border-l-4 border-l-red-500">
+                    <div key={i} className="p-4 md:p-5 glass-card rounded-2xl border-l-4 border-l-red-500">
                       {tactic.category && (
                         <div className={`text-[10px] font-black uppercase mb-1 inline-block px-1.5 py-0.5 rounded ${getCategoryColor(tactic.category)}`}>
                           {getCategoryLabel(tactic.category)}
@@ -415,7 +415,7 @@ export default function HookDetail() {
 
       {/* No analysis prompt */}
       {!analysis && (
-        <div className="glass-card rounded-[2.5rem] p-10 mb-16 text-center">
+        <div className="glass-card rounded-[1.5rem] md:rounded-[2.5rem] p-6 md:p-10 mb-10 md:mb-16 text-center">
           <div className="w-16 h-16 mx-auto mb-4 bg-white/5 rounded-full flex items-center justify-center">
             <i className="fas fa-brain text-slate-500 text-xl"></i>
           </div>
@@ -439,28 +439,28 @@ export default function HookDetail() {
 
       {/* Videos Grid - The Receipts */}
       {videos.length > 0 && (
-        <div className="mb-20">
-          <div className="flex justify-between items-end mb-8">
+        <div className="mb-12 md:mb-20">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-2 mb-6 md:mb-8">
             <div>
-              <h2 className="text-3xl font-black tracking-tight uppercase">The Receipts</h2>
-              <p className="text-slate-500 text-sm font-medium">Real videos using this hook, ranked by views.</p>
+              <h2 className="text-2xl md:text-3xl font-black tracking-tight uppercase">The Receipts</h2>
+              <p className="text-slate-500 text-xs md:text-sm font-medium">Real videos using this hook, ranked by views.</p>
             </div>
             <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">
               {videos.length} of {totalVideoCount} video{totalVideoCount === 1 ? '' : 's'}
             </span>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
             {videos.map((video, idx) => {
               const thumb = getThumbnailSrc(video)
               return (
                 <div
                   key={video.id}
-                  className="relative group cursor-pointer"
+                  className="relative group cursor-pointer active:scale-[0.98] transition-transform"
                   onClick={() => {
                     setCarouselData({ videos: videos as CarouselVideo[], initialIndex: idx })
                   }}
                 >
-                  <div className="aspect-[9/16] bg-slate-900 rounded-[2rem] overflow-hidden border border-white/5 group-hover:border-pink-500/30 transition-all">
+                  <div className="aspect-[9/16] bg-slate-900 rounded-2xl md:rounded-[2rem] overflow-hidden border border-white/5 group-hover:border-pink-500/30 transition-all">
                     {thumb ? (
                       <img
                         src={thumb}
@@ -481,7 +481,7 @@ export default function HookDetail() {
                         <i className="fas fa-film text-slate-700 text-3xl"></i>
                       </div>
                     )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-5">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-3 md:p-5">
                       <div className="flex items-center gap-2 mb-3">
                         <div className="w-6 h-6 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center">
                           <i className={`fab fa-${video.platform === 'tiktok' ? 'tiktok' : 'instagram'} text-[10px]`}></i>

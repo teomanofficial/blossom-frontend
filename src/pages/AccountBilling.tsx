@@ -277,9 +277,9 @@ export default function AccountBilling() {
           <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-5">
             Current Plan
           </h3>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <div className="text-2xl font-black mb-1">
+              <div className="text-xl sm:text-2xl font-black mb-1">
                 {subscription.plan_name}
               </div>
               <div className="text-sm text-slate-400 font-semibold">

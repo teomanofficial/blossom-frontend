@@ -264,21 +264,21 @@ export default function InfluencerDetail() {
   return (
     <>
       {/* Breadcrumb */}
-      <div className="flex items-center justify-between mb-10">
-        <div className="flex items-center gap-2">
-          <Link to="/dashboard/influencers" className="text-slate-500 text-xs font-bold uppercase tracking-widest hover:text-slate-300 transition-colors">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 md:mb-10">
+        <div className="flex items-center gap-2 min-w-0">
+          <Link to="/dashboard/influencers" className="text-slate-500 text-xs font-bold uppercase tracking-widest hover:text-slate-300 transition-colors shrink-0">
             Influencers
           </Link>
-          <span className="text-slate-600 text-xs">/</span>
-          <span className="text-white text-xs font-black uppercase tracking-widest">@{influencer.username}</span>
+          <span className="text-slate-600 text-xs shrink-0">/</span>
+          <span className="text-white text-xs font-black uppercase tracking-widest truncate">@{influencer.username}</span>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
           <button
             onClick={handleRefresh}
             disabled={refreshing}
-            className="bg-white/5 hover:bg-white/10 disabled:opacity-50 text-white text-[11px] font-black px-4 py-2.5 rounded-xl transition-all border border-white/5"
+            className="bg-white/5 hover:bg-white/10 disabled:opacity-50 text-white text-[11px] font-black px-3 py-2 md:px-4 md:py-2.5 rounded-xl transition-all border border-white/5 shrink-0"
           >
             <i className={`fas fa-sync-alt mr-1.5 text-[9px] ${refreshing ? 'animate-spin' : ''}`}></i>
             {refreshing ? 'REFRESHING...' : 'REFRESH'}
@@ -286,7 +286,7 @@ export default function InfluencerDetail() {
           <button
             onClick={handleFetchContent}
             disabled={fetching}
-            className="bg-white/5 hover:bg-white/10 disabled:opacity-50 text-white text-[11px] font-black px-4 py-2.5 rounded-xl transition-all border border-white/5"
+            className="bg-white/5 hover:bg-white/10 disabled:opacity-50 text-white text-[11px] font-black px-3 py-2 md:px-4 md:py-2.5 rounded-xl transition-all border border-white/5 shrink-0"
           >
             <i className={`fas fa-download mr-1.5 text-[9px]`}></i>
             {fetching ? 'FETCHING...' : 'FETCH VIDEOS'}
@@ -294,7 +294,7 @@ export default function InfluencerDetail() {
           <button
             onClick={handleDeepScan}
             disabled={scanning || (influencer.videos?.length || 0) < 3}
-            className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-[11px] font-black px-4 py-2.5 rounded-xl transition-all"
+            className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-[11px] font-black px-3 py-2 md:px-4 md:py-2.5 rounded-xl transition-all shrink-0"
           >
             <i className="fas fa-brain mr-1.5 text-[9px]"></i>
             {scanning ? 'SCANNING...' : 'DEEP SCAN'}
@@ -313,32 +313,32 @@ export default function InfluencerDetail() {
       )}
 
       {/* Profile Hero */}
-      <div className="glass-card rounded-[2rem] p-8 mb-10">
-        <div className="flex items-start gap-6">
+      <div className="glass-card rounded-2xl md:rounded-[2rem] p-5 md:p-8 mb-8 md:mb-10">
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 md:gap-6">
           {/* Avatar */}
           <div className="relative flex-shrink-0">
             {avatar ? (
               <img
                 src={avatar}
                 alt={`@${influencer.username}`}
-                className="w-24 h-24 rounded-3xl object-cover border-2 border-white/10"
+                className="w-20 h-20 md:w-24 md:h-24 rounded-2xl md:rounded-3xl object-cover border-2 border-white/10"
               />
             ) : (
-              <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-pink-500/20 to-orange-400/20 flex items-center justify-center border-2 border-white/10">
-                <span className="text-3xl font-black text-white/60">
+              <div className="w-20 h-20 md:w-24 md:h-24 rounded-2xl md:rounded-3xl bg-gradient-to-br from-pink-500/20 to-orange-400/20 flex items-center justify-center border-2 border-white/10">
+                <span className="text-2xl md:text-3xl font-black text-white/60">
                   {(influencer.display_name || influencer.username).charAt(0).toUpperCase()}
                 </span>
               </div>
             )}
-            <div className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center border-2 border-white/10">
-              <i className={`fab fa-${influencer.platform === 'tiktok' ? 'tiktok' : 'instagram'} text-sm ${influencer.platform === 'tiktok' ? 'text-white' : 'text-pink-400'}`}></i>
+            <div className="absolute -bottom-2 -right-2 w-7 h-7 md:w-8 md:h-8 rounded-full bg-slate-900 flex items-center justify-center border-2 border-white/10">
+              <i className={`fab fa-${influencer.platform === 'tiktok' ? 'tiktok' : 'instagram'} text-xs md:text-sm ${influencer.platform === 'tiktok' ? 'text-white' : 'text-pink-400'}`}></i>
             </div>
           </div>
 
           {/* Info */}
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-1">
-              <h1 className="text-3xl font-black tracking-tighter">
+          <div className="flex-1 text-center sm:text-left">
+            <div className="flex items-center justify-center sm:justify-start gap-2 md:gap-3 mb-1">
+              <h1 className="text-2xl md:text-3xl font-black tracking-tighter">
                 {influencer.display_name || influencer.username}
               </h1>
               {influencer.is_verified && (
@@ -346,7 +346,7 @@ export default function InfluencerDetail() {
               )}
             </div>
             <div className="text-sm text-slate-500 font-bold mb-3">@{influencer.username}</div>
-            <div className="flex items-center gap-2 mb-4">
+            <div className="flex items-center justify-center sm:justify-start gap-2 mb-4 flex-wrap">
               {influencer.tier && (
                 <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded ${getTierColor(influencer.tier)}`}>
                   {influencer.tier} tier
@@ -379,17 +379,17 @@ export default function InfluencerDetail() {
           </div>
 
           {/* Follower Stats */}
-          <div className="flex gap-6 flex-shrink-0">
+          <div className="flex gap-4 md:gap-6 flex-shrink-0 sm:flex-col sm:gap-3 md:flex-row md:gap-6">
             <div className="text-center">
-              <div className="text-2xl font-black">{influencer.follower_count ? formatNumber(influencer.follower_count) : '--'}</div>
+              <div className="text-xl md:text-2xl font-black">{influencer.follower_count ? formatNumber(influencer.follower_count) : '--'}</div>
               <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Followers</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-black">{influencer.following_count ? formatNumber(influencer.following_count) : '--'}</div>
+              <div className="text-xl md:text-2xl font-black">{influencer.following_count ? formatNumber(influencer.following_count) : '--'}</div>
               <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Following</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-black">{influencer.post_count ? formatNumber(influencer.post_count) : '--'}</div>
+              <div className="text-xl md:text-2xl font-black">{influencer.post_count ? formatNumber(influencer.post_count) : '--'}</div>
               <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Posts</div>
             </div>
           </div>
@@ -397,50 +397,50 @@ export default function InfluencerDetail() {
       </div>
 
       {/* Performance Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-4 mb-10">
-        <div className="p-5 glass-card rounded-2xl">
+      <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-3 md:gap-4 mb-8 md:mb-10">
+        <div className="p-4 md:p-5 glass-card rounded-2xl">
           <div className="flex items-center gap-2 mb-2">
             <i className="fas fa-eye text-slate-500 text-xs"></i>
             <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Total Views</div>
           </div>
-          <div className="text-2xl font-black">{influencer.total_views ? formatNumber(influencer.total_views) : '--'}</div>
+          <div className="text-xl md:text-2xl font-black">{influencer.total_views ? formatNumber(influencer.total_views) : '--'}</div>
         </div>
-        <div className="p-5 glass-card rounded-2xl">
+        <div className="p-4 md:p-5 glass-card rounded-2xl">
           <div className="flex items-center gap-2 mb-2">
             <i className="fas fa-chart-line text-slate-500 text-xs"></i>
             <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Avg Views</div>
           </div>
-          <div className="text-2xl font-black">{influencer.avg_views ? formatNumber(Math.round(influencer.avg_views)) : '--'}</div>
+          <div className="text-xl md:text-2xl font-black">{influencer.avg_views ? formatNumber(Math.round(influencer.avg_views)) : '--'}</div>
         </div>
-        <div className="p-5 glass-card rounded-2xl">
+        <div className="p-4 md:p-5 glass-card rounded-2xl">
           <div className="flex items-center gap-2 mb-2">
             <i className="fas fa-percentage text-slate-500 text-xs"></i>
             <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Engagement</div>
           </div>
-          <div className="text-2xl font-black text-teal-400">
+          <div className="text-xl md:text-2xl font-black text-teal-400">
             {influencer.avg_engagement_rate ? Number(influencer.avg_engagement_rate).toFixed(1) + '%' : '--'}
           </div>
         </div>
-        <div className="p-5 glass-card rounded-2xl">
+        <div className="p-4 md:p-5 glass-card rounded-2xl">
           <div className="flex items-center gap-2 mb-2">
             <i className="fas fa-fire text-slate-500 text-xs"></i>
             <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Viral Videos</div>
           </div>
-          <div className="text-2xl font-black text-pink-400">{influencer.viral_video_count ?? '--'}</div>
+          <div className="text-xl md:text-2xl font-black text-pink-400">{influencer.viral_video_count ?? '--'}</div>
         </div>
-        <div className="p-5 glass-card rounded-2xl">
+        <div className="p-4 md:p-5 glass-card rounded-2xl">
           <div className="flex items-center gap-2 mb-2">
             <i className="fas fa-heart text-slate-500 text-xs"></i>
             <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Avg Likes</div>
           </div>
-          <div className="text-2xl font-black">{influencer.avg_likes ? formatNumber(Math.round(influencer.avg_likes)) : '--'}</div>
+          <div className="text-xl md:text-2xl font-black">{influencer.avg_likes ? formatNumber(Math.round(influencer.avg_likes)) : '--'}</div>
         </div>
-        <div className="p-5 glass-card rounded-2xl">
+        <div className="p-4 md:p-5 glass-card rounded-2xl">
           <div className="flex items-center gap-2 mb-2">
             <i className="fas fa-comment text-slate-500 text-xs"></i>
             <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Avg Comments</div>
           </div>
-          <div className="text-2xl font-black">{influencer.avg_comments ? formatNumber(Math.round(influencer.avg_comments)) : '--'}</div>
+          <div className="text-xl md:text-2xl font-black">{influencer.avg_comments ? formatNumber(Math.round(influencer.avg_comments)) : '--'}</div>
         </div>
       </div>
 
@@ -449,9 +449,9 @@ export default function InfluencerDetail() {
         <>
           {/* AI Analysis Section */}
           {ds.ai_analysis && (
-            <div className="glass-card rounded-[2rem] p-8 mb-10 relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-8 opacity-10">
-                <i className="fas fa-brain text-8xl text-pink-400"></i>
+            <div className="glass-card rounded-2xl md:rounded-[2rem] p-5 md:p-8 mb-8 md:mb-10 relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-4 md:p-8 opacity-10">
+                <i className="fas fa-brain text-5xl md:text-8xl text-pink-400"></i>
               </div>
               <h2 className="text-sm font-black text-pink-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
                 <i className="fas fa-robot"></i> AI Analysis
@@ -460,8 +460,8 @@ export default function InfluencerDetail() {
                 <span className="text-[10px] font-bold text-slate-500 italic">Scanned {timeAgo(ds.scanned_at)} ({ds.videos_analyzed} videos analyzed)</span>
               )}
 
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-                <div className="p-5 bg-black/20 rounded-2xl border border-white/5">
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mt-4 md:mt-6">
+                <div className="p-4 md:p-5 bg-black/20 rounded-2xl border border-white/5">
                   <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Content Niche</div>
                   <div className="text-sm font-bold text-white">{ds.ai_analysis.content_niche}</div>
                 </div>
@@ -517,28 +517,28 @@ export default function InfluencerDetail() {
 
           {/* Performance Metrics */}
           {ds.performance && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
-              <div className="p-6 glass-card rounded-3xl border-white/5">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8 md:mb-10">
+              <div className="p-4 md:p-6 glass-card rounded-2xl md:rounded-3xl border-white/5">
                 <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Viral Hit Rate</div>
-                <div className="text-2xl font-black text-pink-400">
+                <div className="text-xl md:text-2xl font-black text-pink-400">
                   {(ds.performance.viral_hit_rate * 100).toFixed(1)}%
                 </div>
               </div>
-              <div className="p-6 glass-card rounded-3xl border-white/5">
+              <div className="p-4 md:p-6 glass-card rounded-2xl md:rounded-3xl border-white/5">
                 <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Consistency</div>
-                <div className="text-2xl font-black text-teal-400">
+                <div className="text-xl md:text-2xl font-black text-teal-400">
                   {(ds.performance.consistency_score * 100).toFixed(0)}%
                 </div>
               </div>
-              <div className="p-6 glass-card rounded-3xl border-white/5">
+              <div className="p-4 md:p-6 glass-card rounded-2xl md:rounded-3xl border-white/5">
                 <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Audience Quality</div>
-                <div className="text-2xl font-black text-orange-400">
+                <div className="text-xl md:text-2xl font-black text-orange-400">
                   {(ds.performance.audience_quality_score * 100).toFixed(0)}%
                 </div>
               </div>
-              <div className="p-6 glass-card rounded-3xl border-white/5">
+              <div className="p-4 md:p-6 glass-card rounded-2xl md:rounded-3xl border-white/5">
                 <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Posts / Week</div>
-                <div className="text-2xl font-black text-white">
+                <div className="text-xl md:text-2xl font-black text-white">
                   {ds.performance.posting_frequency.toFixed(1)}
                 </div>
               </div>
@@ -547,9 +547,9 @@ export default function InfluencerDetail() {
 
           {/* Top Formats & Hooks from Deep Scan */}
           {ds.content && (ds.content.top_formats?.length > 0 || ds.content.top_hooks?.length > 0) && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-8 md:mb-10">
               {ds.content.top_formats && ds.content.top_formats.length > 0 && (
-                <div className="glass-card rounded-2xl p-7">
+                <div className="glass-card rounded-2xl p-5 md:p-7">
                   <h3 className="text-sm font-black uppercase tracking-widest text-slate-500 mb-5">Top Formats Used</h3>
                   <div className="space-y-3">
                     {ds.content.top_formats.slice(0, 8).map((f, i) => (
@@ -565,7 +565,7 @@ export default function InfluencerDetail() {
                 </div>
               )}
               {ds.content.top_hooks && ds.content.top_hooks.length > 0 && (
-                <div className="glass-card rounded-2xl p-7">
+                <div className="glass-card rounded-2xl p-5 md:p-7">
                   <h3 className="text-sm font-black uppercase tracking-widest text-slate-500 mb-5">Top Hooks Used</h3>
                   <div className="space-y-3">
                     {ds.content.top_hooks.slice(0, 8).map((h, i) => (
@@ -587,7 +587,7 @@ export default function InfluencerDetail() {
 
       {/* No deep scan prompt */}
       {!ds && (
-        <div className="glass-card rounded-[2rem] p-10 mb-10 text-center">
+        <div className="glass-card rounded-[1.5rem] md:rounded-[2rem] p-6 md:p-10 mb-8 md:mb-10 text-center">
           <div className="w-16 h-16 mx-auto mb-4 bg-white/5 rounded-full flex items-center justify-center">
             <i className="fas fa-brain text-slate-500 text-xl"></i>
           </div>
@@ -625,17 +625,17 @@ export default function InfluencerDetail() {
 
       {/* Videos Grid */}
       {influencer.videos && influencer.videos.length > 0 && (
-        <div className="mb-20">
-          <div className="flex justify-between items-end mb-8">
+        <div className="mb-12 md:mb-20">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-2 mb-6 md:mb-8">
             <div>
-              <h2 className="text-3xl font-black tracking-tight uppercase">Content</h2>
-              <p className="text-slate-500 text-sm font-medium">Videos from @{influencer.username}, sorted by views.</p>
+              <h2 className="text-2xl md:text-3xl font-black tracking-tight uppercase">Content</h2>
+              <p className="text-slate-500 text-xs md:text-sm font-medium">Videos from @{influencer.username}, sorted by views.</p>
             </div>
             <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">
               {influencer.videos.length} video{influencer.videos.length === 1 ? '' : 's'}
             </span>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-5">
             {influencer.videos
               .sort((a, b) => (b.views || 0) - (a.views || 0))
               .slice(0, 20)
