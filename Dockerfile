@@ -7,6 +7,9 @@ ARG NODE_VERSION=20.16.0
 FROM node:${NODE_VERSION}-alpine AS build
 WORKDIR /app
 
+ARG VITE_SUPABASE_URL
+ARG VITE_SUPABASE_ANON_KEY
+
 COPY package*.json ./
 RUN --mount=type=cache,target=/root/.npm \
     npm install
