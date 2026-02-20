@@ -1,0 +1,716 @@
+import { useEffect, useState, useRef, useCallback } from 'react'
+import { useParams, Link } from 'react-router-dom'
+import { authFetch } from '../lib/api'
+import VideoStoryCarousel, { type CarouselVideo } from '../components/VideoStoryCarousel'
+
+interface FormatVideo {
+  id: number
+  username: string
+  caption: string | null
+  views: number
+  likes: number
+  comments: number
+  shares: number
+  saves: number
+  engagement_rate: number
+  platform: string
+  thumbnail_url: string | null
+  local_thumbnail_path: string | null
+  content_url: string | null
+  confidence: number
+  final_viral_probability: number | null
+}
+
+interface TacticItem {
+  name?: string
+  tactic?: string
+  category?: string
+  description?: string
+  analysis?: string
+  why?: string
+  top_freq?: number
+  bottom_freq?: number
+}
+
+interface ClassAnalysis {
+  class_description?: string
+  what_defines_this_format?: string
+  gold_standard_tactics?: TacticItem[]
+  overrated_tactics?: TacticItem[]
+  execution_gaps?: TacticItem[]
+  blueprint?: any
+  video_list?: any[]
+  tactic_frequency?: any
+}
+
+interface TacticVideo {
+  id: number
+  username: string
+  caption: string | null
+  views: number
+  likes: number
+  platform: string
+  thumbnail_url: string | null
+  local_thumbnail_path: string | null
+  content_url: string | null
+  engagement_rate: number
+  execution_score: number | null
+  final_viral_probability: number | null
+}
+
+interface FormatTactic {
+  id: number
+  name: string
+  category: string
+  description: string | null
+  why_it_works: string | null
+  video_count: number
+  avg_execution_score: number | null
+  videos: TacticVideo[]
+}
+
+interface Pagination {
+  page: number
+  limit: number
+  total: number
+  totalPages: number
+  hasMore: boolean
+}
+
+interface FormatDetail {
+  id: number
+  name: string
+  description: string | null
+  video_count: number
+  avg_views: number
+  avg_engagement_rate: number
+  class_analysis: ClassAnalysis | null
+  analysis_updated_at: string | null
+  analysis_video_count: number | null
+  videos: FormatVideo[]
+  pagination?: Pagination
+}
+
+function formatNumber(n: number): string {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M'
+  if (n >= 1_000) return (n / 1_000).toFixed(1).replace(/\.0$/, '') + 'k'
+  return String(Math.round(n))
+}
+
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime()
+  const hours = Math.floor(diff / 3600000)
+  if (hours < 1) return 'just now'
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.floor(hours / 24)
+  if (days < 30) return `${days}d ago`
+  return `${Math.floor(days / 30)}mo ago`
+}
+
+function getThumbnailSrc(video: FormatVideo): string | null {
+  if (video.local_thumbnail_path) {
+    if (video.local_thumbnail_path.startsWith('http')) return video.local_thumbnail_path
+    return `/media/${video.local_thumbnail_path.split('/').pop()}`
+  }
+  return video.thumbnail_url
+}
+
+function getTacticVideoThumb(video: TacticVideo): string | null {
+  if (video.local_thumbnail_path) {
+    if (video.local_thumbnail_path.startsWith('http')) return video.local_thumbnail_path
+    return `/media/${video.local_thumbnail_path.split('/').pop()}`
+  }
+  return video.thumbnail_url
+}
+
+export default function FormatDetail() {
+  const { id } = useParams()
+  const [format, setFormat] = useState<FormatDetail | null>(null)
+  const [videos, setVideos] = useState<FormatVideo[]>([])
+  const [pagination, setPagination] = useState<Pagination | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [analyzing, setAnalyzing] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [carouselData, setCarouselData] = useState<{ videos: CarouselVideo[]; initialIndex: number } | null>(null)
+  const [formatTactics, setFormatTactics] = useState<FormatTactic[]>([])
+  const [tacticsLoading, setTacticsLoading] = useState(false)
+  const [expandedTactic, setExpandedTactic] = useState<number | null>(null)
+  const loaderRef = useRef<HTMLDivElement>(null)
+
+  const fetchFormat = () => {
+    setLoading(true)
+    authFetch(`/api/analysis/formats/${id}?page=1&limit=20`)
+      .then((r) => {
+        if (!r.ok) throw new Error('Format not found')
+        return r.json()
+      })
+      .then((data) => {
+        setFormat(data)
+        setVideos(data.videos || [])
+        setPagination(data.pagination || null)
+      })
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false))
+  }
+
+  const loadMore = useCallback(() => {
+    if (loadingMore || !pagination?.hasMore) return
+    setLoadingMore(true)
+    const nextPage = pagination.page + 1
+    authFetch(`/api/analysis/formats/${id}?page=${nextPage}&limit=${pagination.limit}`)
+      .then((r) => r.json())
+      .then((data) => {
+        setVideos((prev) => [...prev, ...(data.videos || [])])
+        setPagination(data.pagination || null)
+      })
+      .catch((e) => setError(e.message))
+      .finally(() => setLoadingMore(false))
+  }, [id, pagination, loadingMore])
+
+  useEffect(() => {
+    const el = loaderRef.current
+    if (!el) return
+    const observer = new IntersectionObserver(
+      (entries) => { if (entries[0]?.isIntersecting) loadMore() },
+      { rootMargin: '400px' }
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [loadMore])
+
+  const fetchTactics = () => {
+    setTacticsLoading(true)
+    authFetch(`/api/analysis/formats/${id}/tactics?limit=20&video_limit=10`)
+      .then((r) => r.json())
+      .then((data) => setFormatTactics(data.tactics || []))
+      .catch(() => {})
+      .finally(() => setTacticsLoading(false))
+  }
+
+  useEffect(() => { fetchFormat(); fetchTactics() }, [id])
+
+  const triggerAnalysis = () => {
+    setAnalyzing(true)
+    authFetch(`/api/analysis/formats/${id}/analyze`, { method: 'POST' })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.error) {
+          setError(data.error)
+        } else {
+          setFormat((prev) => prev ? { ...prev, class_analysis: data.class_analysis, analysis_updated_at: data.analysis_updated_at, analysis_video_count: data.analysis_video_count } : prev)
+        }
+      })
+      .catch((e) => setError(e.message))
+      .finally(() => setAnalyzing(false))
+  }
+
+  const analysis = format?.class_analysis
+
+  // Parse blueprint - it could be a string, array, or object
+  const blueprintSteps: { name?: string; text: string }[] = (() => {
+    if (!analysis?.blueprint) return []
+    const bp = analysis.blueprint
+    const parseStep = (s: any): { name?: string; text: string } => {
+      if (typeof s === 'string') return { text: s }
+      return { name: s.name, text: s.instruction || s.description || s.text || (typeof s.step === 'string' ? s.step : '') }
+    }
+    if (Array.isArray(bp)) return bp.map(parseStep)
+    if (typeof bp === 'string') return bp.split('\n').filter(Boolean).map(s => ({ text: s }))
+    if (typeof bp === 'object') {
+      if (bp.steps && Array.isArray(bp.steps)) return bp.steps.map(parseStep)
+      return Object.values(bp).filter((v: any) => typeof v === 'string').map((v: any) => ({ text: v }))
+    }
+    return []
+  })()
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="w-8 h-8 border-2 border-pink-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    )
+  }
+
+  if (error || !format) {
+    return (
+      <div className="glass-card rounded-2xl p-12 text-center">
+        <p className="text-slate-500 text-sm">{error || 'Format not found'}</p>
+        <Link to="/dashboard/formats" className="text-pink-400 text-xs font-bold mt-4 inline-block hover:text-pink-300">
+          Back to Formats
+        </Link>
+      </div>
+    )
+  }
+
+  const totalVideoCount = pagination?.total ?? videos.length
+  const avgViralProb = videos.length > 0
+    ? videos.reduce((sum, v) => sum + (v.final_viral_probability || 0), 0) / Math.max(videos.filter(v => v.final_viral_probability != null).length, 1)
+    : 0
+
+  return (
+    <>
+      {/* Breadcrumb Header */}
+      <div className="flex items-center justify-between mb-10">
+        <div className="flex items-center gap-2">
+          <Link to="/dashboard/formats" className="text-slate-500 text-xs font-bold uppercase tracking-widest hover:text-slate-300 transition-colors">
+            Format Analysis
+          </Link>
+          <span className="text-slate-600 text-xs">/</span>
+          <span className="text-white text-xs font-black uppercase tracking-widest">{format.name}</span>
+        </div>
+        {!analysis && totalVideoCount >= 3 && (
+          <button
+            onClick={triggerAnalysis}
+            disabled={analyzing}
+            className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-[11px] font-black px-6 py-2.5 rounded-xl transition-all"
+          >
+            {analyzing ? 'ANALYZING...' : 'RUN AI ANALYSIS'}
+          </button>
+        )}
+      </div>
+
+      {/* Format Hero */}
+      <div className="mb-12">
+        <div className="flex items-center gap-3 mb-4">
+          <span className="px-2 py-0.5 bg-pink-500/10 text-pink-400 text-[10px] font-black uppercase tracking-widest rounded">
+            {analysis ? 'Analyzed' : 'Format Class'}
+          </span>
+          {format.analysis_updated_at && (
+            <span className="text-slate-500 text-[10px] font-black uppercase tracking-widest italic">
+              Updated {timeAgo(format.analysis_updated_at)}
+            </span>
+          )}
+        </div>
+        <h1 className="text-5xl font-black tracking-tighter mb-4 uppercase">{format.name}</h1>
+        <p className="text-slate-400 text-lg font-medium max-w-3xl leading-relaxed">
+          {analysis?.class_description || format.description || 'No description yet. Run AI analysis to generate insights.'}
+        </p>
+      </div>
+
+      {/* High Level Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+        <div className="p-6 glass-card rounded-3xl border-white/5">
+          <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Avg Views</div>
+          <div className="text-2xl font-black text-white">{formatNumber(Math.round(format.avg_views || 0))}</div>
+        </div>
+        <div className="p-6 glass-card rounded-3xl border-white/5">
+          <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Engagement</div>
+          <div className="text-2xl font-black text-teal-400">
+            {format.avg_engagement_rate ? Number(format.avg_engagement_rate).toFixed(1) + '%' : '--'}
+          </div>
+        </div>
+        <div className="p-6 glass-card rounded-3xl border-white/5">
+          <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Videos</div>
+          <div className="text-2xl font-black text-white">{totalVideoCount}</div>
+        </div>
+        <div className="p-6 glass-card rounded-3xl border-white/5">
+          <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Viral Prob.</div>
+          <div className="text-2xl font-black text-pink-400">
+            {avgViralProb > 0 ? Math.round(avgViralProb * 100) + '%' : '--'}
+          </div>
+        </div>
+      </div>
+
+      {/* AI Analysis Section */}
+      {analysis && (
+        <>
+          {/* The Blueprint */}
+          {blueprintSteps.length > 0 && (
+            <div className="blueprint-box p-8 rounded-[2.5rem] mb-16 relative overflow-hidden glass-card">
+              <div className="absolute top-0 right-0 p-8 opacity-10">
+                <i className="fas fa-pencil-ruler text-8xl text-orange-400"></i>
+              </div>
+              <h2 className="text-sm font-black text-orange-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                <i className="fas fa-clipboard-list"></i> The Blueprint
+              </h2>
+              <div className="grid md:grid-cols-2 gap-10">
+                <div className="space-y-4">
+                  <h3 className="text-xl font-black text-white uppercase tracking-tight">How to execute:</h3>
+                  <ul className="space-y-3">
+                    {blueprintSteps.slice(0, 6).map((step, i) => (
+                      <li key={i} className="flex items-start gap-3 text-sm text-slate-300 font-medium leading-relaxed">
+                        <span className="w-5 h-5 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center text-[10px] flex-shrink-0 mt-0.5 font-black">
+                          {i + 1}
+                        </span>
+                        <div>
+                          {step.name && <span className="font-black text-white">{step.name}: </span>}
+                          {step.text}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                {analysis.what_defines_this_format && (
+                  <div className="p-6 bg-black/20 rounded-2xl border border-white/5">
+                    <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">What defines this format:</h4>
+                    <p className="text-xs text-slate-400 font-semibold leading-loose">
+                      {analysis.what_defines_this_format}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Strategic Tactics Grid */}
+          <div className="grid lg:grid-cols-3 gap-8 mb-20">
+            {/* Gold Standard */}
+            {analysis.gold_standard_tactics && analysis.gold_standard_tactics.length > 0 && (
+              <div className="space-y-6">
+                <h3 className="text-teal-400 text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                  <i className="fas fa-check-circle"></i> Gold Standard
+                </h3>
+                <div className="space-y-4">
+                  {analysis.gold_standard_tactics.map((tactic, i) => (
+                    <div key={i} className="p-5 glass-card rounded-2xl border-l-4 border-l-teal-500">
+                      {tactic.category && (
+                        <div className="text-[10px] font-black text-slate-500 uppercase mb-1">{tactic.category}</div>
+                      )}
+                      <h4 className="font-bold text-white mb-2">{tactic.name || tactic.tactic}</h4>
+                      {(tactic.description || tactic.analysis || tactic.why) && (
+                        <p className="text-[11px] text-slate-400 font-medium leading-relaxed">
+                          {tactic.description || tactic.analysis || tactic.why}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Execution Gaps */}
+            {analysis.execution_gaps && analysis.execution_gaps.length > 0 && (
+              <div className="space-y-6">
+                <h3 className="text-orange-400 text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                  <i className="fas fa-exclamation-circle"></i> Execution Gaps
+                </h3>
+                <div className="space-y-4">
+                  {analysis.execution_gaps.map((tactic, i) => (
+                    <div key={i} className="p-5 glass-card rounded-2xl border-l-4 border-l-orange-500">
+                      {tactic.category && (
+                        <div className="text-[10px] font-black text-slate-500 uppercase mb-1">{tactic.category}</div>
+                      )}
+                      <h4 className="font-bold text-white mb-2">{tactic.name || tactic.tactic}</h4>
+                      {(tactic.description || tactic.analysis || tactic.why) && (
+                        <p className="text-[11px] text-slate-400 font-medium leading-relaxed">
+                          {tactic.description || tactic.analysis || tactic.why}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Overrated */}
+            {analysis.overrated_tactics && analysis.overrated_tactics.length > 0 && (
+              <div className="space-y-6">
+                <h3 className="text-red-400 text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                  <i className="fas fa-times-circle"></i> Overrated
+                </h3>
+                <div className="space-y-4 opacity-70 hover:opacity-100 transition-opacity">
+                  {analysis.overrated_tactics.map((tactic, i) => (
+                    <div key={i} className="p-5 glass-card rounded-2xl border-l-4 border-l-red-500">
+                      {tactic.category && (
+                        <div className="text-[10px] font-black text-slate-500 uppercase mb-1">{tactic.category}</div>
+                      )}
+                      <h4 className="font-bold text-white mb-2">{tactic.name || tactic.tactic}</h4>
+                      {(tactic.description || tactic.analysis || tactic.why) && (
+                        <p className="text-[11px] text-slate-400 font-medium leading-relaxed">
+                          {tactic.description || tactic.analysis || tactic.why}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* Most Used Tactics */}
+      {formatTactics.length > 0 && (
+        <div className="mb-20">
+          <div className="flex justify-between items-end mb-8">
+            <div>
+              <h2 className="text-3xl font-black tracking-tight uppercase">Most Used Tactics</h2>
+              <p className="text-slate-500 text-sm font-medium">Tactics most frequently used in this format, with example videos.</p>
+            </div>
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+              {formatTactics.length} tactic{formatTactics.length === 1 ? '' : 's'}
+            </span>
+          </div>
+          <div className="space-y-6">
+            {formatTactics.map((tactic) => {
+              const isExpanded = expandedTactic === tactic.id
+              return (
+                <div key={tactic.id} className="glass-card rounded-2xl overflow-hidden">
+                  {/* Tactic Header */}
+                  <div
+                    className="p-5 cursor-pointer hover:bg-white/[0.02] transition-colors"
+                    onClick={() => setExpandedTactic(isExpanded ? null : tactic.id)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4 min-w-0">
+                        <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center">
+                          <i className="fas fa-bolt text-indigo-400 text-sm"></i>
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-3">
+                            <h4 className="font-black text-white text-sm truncate">{tactic.name}</h4>
+                            {tactic.category && (
+                              <span className="flex-shrink-0 px-2 py-0.5 bg-white/5 text-slate-400 text-[9px] font-black uppercase tracking-widest rounded">
+                                {tactic.category.replace(/_/g, ' ')}
+                              </span>
+                            )}
+                          </div>
+                          {tactic.description && (
+                            <p className="text-[11px] text-slate-500 font-medium mt-1 truncate max-w-xl">
+                              {tactic.description}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-6 flex-shrink-0 ml-4">
+                        <div className="text-right">
+                          <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Videos</div>
+                          <div className="text-sm font-black text-white">{tactic.video_count}</div>
+                        </div>
+                        {tactic.avg_execution_score != null && (
+                          <div className="text-right">
+                            <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Exec Score</div>
+                            <div className={`text-sm font-black ${
+                              tactic.avg_execution_score >= 70 ? 'text-teal-400' :
+                              tactic.avg_execution_score >= 40 ? 'text-yellow-400' : 'text-slate-400'
+                            }`}>
+                              {tactic.avg_execution_score}
+                            </div>
+                          </div>
+                        )}
+                        <i className={`fas fa-chevron-${isExpanded ? 'up' : 'down'} text-slate-500 text-xs`}></i>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Expanded: Videos */}
+                  {isExpanded && (
+                    <div className="px-5 pb-5 border-t border-white/5 pt-4">
+                      {tactic.why_it_works && (
+                        <p className="text-[11px] text-slate-400 font-medium leading-relaxed mb-4 max-w-2xl">
+                          <span className="text-slate-300 font-bold">Why it works: </span>
+                          {tactic.why_it_works}
+                        </p>
+                      )}
+                      <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin">
+                        {tactic.videos.map((video) => {
+                          const thumb = getTacticVideoThumb(video)
+                          return (
+                            <div
+                              key={video.id}
+                              className="flex-shrink-0 w-28 cursor-pointer group"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setCarouselData({
+                                  videos: tactic.videos as unknown as CarouselVideo[],
+                                  initialIndex: tactic.videos.indexOf(video),
+                                })
+                              }}
+                            >
+                              <div className="aspect-[9/16] bg-slate-900 rounded-xl overflow-hidden border border-white/5 group-hover:border-indigo-500/30 transition-all relative">
+                                {thumb ? (
+                                  <img
+                                    src={thumb}
+                                    alt={`@${video.username}`}
+                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                    loading="lazy"
+                                    onError={(e) => {
+                                      const target = e.currentTarget
+                                      if (video.thumbnail_url && target.src !== video.thumbnail_url) {
+                                        target.src = video.thumbnail_url
+                                      } else {
+                                        target.style.display = 'none'
+                                      }
+                                    }}
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center">
+                                    <i className="fas fa-film text-slate-700 text-lg"></i>
+                                  </div>
+                                )}
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-2">
+                                  <span className="text-[8px] font-black text-white truncate">@{video.username}</span>
+                                  <span className="text-[8px] font-black text-slate-400">{formatNumber(video.views)} views</span>
+                                </div>
+                              </div>
+                              {video.execution_score != null && (
+                                <div className="mt-1 flex items-center gap-1">
+                                  <div className="flex-1 h-1 bg-white/5 rounded-full overflow-hidden">
+                                    <div
+                                      className={`h-full rounded-full ${
+                                        video.execution_score >= 70 ? 'bg-teal-400' :
+                                        video.execution_score >= 40 ? 'bg-yellow-400' : 'bg-slate-500'
+                                      }`}
+                                      style={{ width: `${video.execution_score}%` }}
+                                    />
+                                  </div>
+                                  <span className="text-[8px] font-black text-slate-500">{video.execution_score}</span>
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })}
+
+                        {/* Show more indicator */}
+                        {tactic.video_count > tactic.videos.length && (
+                          <Link
+                            to={`/dashboard/tactics/${tactic.id}`}
+                            className="flex-shrink-0 w-28 aspect-[9/16] border-2 border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center text-center hover:border-indigo-500/30 transition-colors"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <div className="text-lg font-black text-slate-400 mb-1">+{tactic.video_count - tactic.videos.length}</div>
+                            <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">More</span>
+                          </Link>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {tacticsLoading && (
+        <div className="flex items-center justify-center py-8 mb-12">
+          <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+          <span className="text-slate-500 text-xs font-bold ml-3">Loading tactics...</span>
+        </div>
+      )}
+
+      {/* No analysis prompt */}
+      {!analysis && (
+        <div className="glass-card rounded-[2.5rem] p-10 mb-16 text-center">
+          <div className="w-16 h-16 mx-auto mb-4 bg-white/5 rounded-full flex items-center justify-center">
+            <i className="fas fa-brain text-slate-500 text-xl"></i>
+          </div>
+          <h3 className="font-black text-lg mb-2">No AI Analysis Yet</h3>
+          <p className="text-sm text-slate-500 mb-6 max-w-md mx-auto">
+            {totalVideoCount < 3
+              ? `Need at least 3 videos to run analysis. Currently ${totalVideoCount} video${totalVideoCount === 1 ? '' : 's'}.`
+              : 'Run AI analysis to generate the blueprint, gold standard tactics, and execution gaps.'}
+          </p>
+          {totalVideoCount >= 3 && (
+            <button
+              onClick={triggerAnalysis}
+              disabled={analyzing}
+              className="px-8 py-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-[11px] font-black rounded-xl transition-all"
+            >
+              {analyzing ? 'ANALYZING...' : 'RUN AI ANALYSIS'}
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Videos Grid - The Receipts */}
+      {videos.length > 0 && (
+        <div className="mb-20">
+          <div className="flex justify-between items-end mb-8">
+            <div>
+              <h2 className="text-3xl font-black tracking-tight uppercase">The Receipts</h2>
+              <p className="text-slate-500 text-sm font-medium">Real videos using this format, ranked by views.</p>
+            </div>
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+              {videos.length} of {totalVideoCount} video{totalVideoCount === 1 ? '' : 's'}
+            </span>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {videos.map((video, idx) => {
+              const thumb = getThumbnailSrc(video)
+              return (
+                <div
+                  key={video.id}
+                  className="relative group cursor-pointer"
+                  onClick={() => {
+                    setCarouselData({ videos: videos as CarouselVideo[], initialIndex: idx })
+                  }}
+                >
+                  <div className="aspect-[9/16] bg-slate-900 rounded-[2rem] overflow-hidden border border-white/5 group-hover:border-pink-500/30 transition-all">
+                    {thumb ? (
+                      <img
+                        src={thumb}
+                        alt={`@${video.username}`}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        loading="lazy"
+                        onError={(e) => {
+                          const target = e.currentTarget
+                          if (video.thumbnail_url && target.src !== video.thumbnail_url) {
+                            target.src = video.thumbnail_url
+                          } else {
+                            target.style.display = 'none'
+                          }
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <i className="fas fa-film text-slate-700 text-3xl"></i>
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-5">
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-6 h-6 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center">
+                          <i className={`fab fa-${video.platform === 'tiktok' ? 'tiktok' : 'instagram'} text-[10px]`}></i>
+                        </div>
+                        <span className="text-[10px] font-black text-white">@{video.username}</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="bg-black/40 backdrop-blur-md px-2 py-1.5 rounded-lg flex flex-col">
+                          <span className="text-[8px] font-black text-slate-500 uppercase">Views</span>
+                          <span className="text-xs font-black">{formatNumber(video.views)}</span>
+                        </div>
+                        <div className="bg-black/40 backdrop-blur-md px-2 py-1.5 rounded-lg flex flex-col">
+                          <span className="text-[8px] font-black text-slate-500 uppercase">Viral Prob.</span>
+                          <span className={`text-xs font-black ${
+                            (video.final_viral_probability || 0) >= 0.7
+                              ? 'text-teal-400'
+                              : (video.final_viral_probability || 0) >= 0.4
+                              ? 'text-yellow-400'
+                              : 'text-slate-400'
+                          }`}>
+                            {video.final_viral_probability != null
+                              ? Math.round(video.final_viral_probability * 100) + '%'
+                              : '--'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Infinite scroll loader */}
+          <div ref={loaderRef} className="flex justify-center py-10">
+            {loadingMore && (
+              <div className="w-8 h-8 border-2 border-pink-500 border-t-transparent rounded-full animate-spin"></div>
+            )}
+            {pagination && !pagination.hasMore && videos.length > 20 && (
+              <span className="text-xs font-bold text-slate-600 uppercase tracking-widest">All {totalVideoCount} videos loaded</span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {carouselData && (
+        <VideoStoryCarousel
+          videos={carouselData.videos}
+          initialIndex={carouselData.initialIndex}
+          onClose={() => setCarouselData(null)}
+        />
+      )}
+    </>
+  )
+}

@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.env
+.env.*
+*.local
+.git
+.gitignore
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*.log
+npm-debug.log*
+*.tsbuildinfo

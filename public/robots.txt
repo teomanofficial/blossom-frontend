@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /api
+Disallow: /auth/callback
+Disallow: /verify-email
+Disallow: /choose-plan
+Disallow: /reset-password
+
+Sitemap: https://blossomapp.ai/sitemap.xml
