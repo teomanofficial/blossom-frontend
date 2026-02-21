@@ -382,25 +382,25 @@ export default function Platforms() {
                 value={fmt(creatorScore?.stats?.total_followers || stats?.followers.total || 0)}
                 delta={stats?.followers.growth_30d ? Math.round((stats.followers.growth_30d / Math.max(1, (stats.followers.total - stats.followers.growth_30d))) * 100) : undefined}
                 icon="fa-users"
-                iconColor="text-blue-400"
+                iconColor="#60a5fa"
               />
               <MetricsCard
                 label="Total Views"
                 value={fmt(creatorScore?.stats?.total_views || stats?.engagement.total_views || 0)}
                 icon="fa-eye"
-                iconColor="text-purple-400"
+                iconColor="#c084fc"
               />
               <MetricsCard
                 label="Avg Engagement"
                 value={`${(creatorScore?.stats?.avg_engagement_rate || 0).toFixed(1)}%`}
                 icon="fa-heart"
-                iconColor="text-pink-400"
+                iconColor="#f472b6"
               />
               <MetricsCard
                 label="Posts This Week"
                 value={creatorScore?.stats?.posts_last_week?.toString() || stats?.posts.last_7d?.toString() || '0'}
                 icon="fa-paper-plane"
-                iconColor="text-emerald-400"
+                iconColor="#34d399"
               />
             </div>
           </div>

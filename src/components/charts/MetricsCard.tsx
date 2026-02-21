@@ -41,7 +41,7 @@ export default function MetricsCard({
               className="w-9 h-9 rounded-lg flex items-center justify-center text-base"
               style={{ backgroundColor: `${iconColor}18` }}
             >
-              {icon}
+              <i className={`fas ${icon}`} style={{ color: iconColor }} />
             </div>
           )}
 
