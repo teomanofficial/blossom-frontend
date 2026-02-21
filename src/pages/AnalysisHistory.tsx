@@ -50,9 +50,9 @@ export default function AnalysisHistory() {
   const [retryingIds, setRetryingIds] = useState<Set<number>>(new Set())
   const limit = 20
 
-  const fetchHistory = useCallback(async (currentOffset: number) => {
+  const fetchHistory = useCallback(async (currentOffset: number, silent = false) => {
     if (!session?.access_token) return
-    setLoading(true)
+    if (!silent) setLoading(true)
     try {
       const resp = await fetch(`${API_URL}/api/content-analysis?limit=${limit}&offset=${currentOffset}`, {
         headers: { Authorization: `Bearer ${session.access_token}` },
@@ -65,7 +65,7 @@ export default function AnalysisHistory() {
     } catch (err) {
       console.error('Failed to fetch history:', err)
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
   }, [session?.access_token])
 
@@ -77,7 +77,7 @@ export default function AnalysisHistory() {
   useEffect(() => {
     const hasProcessing = history.some(h => h.status === 'analyzing' || h.status === 'pending')
     if (!hasProcessing) return
-    const interval = setInterval(() => fetchHistory(offset), 3000)
+    const interval = setInterval(() => fetchHistory(offset, true), 30000)
     return () => clearInterval(interval)
   }, [history, fetchHistory, offset])
 

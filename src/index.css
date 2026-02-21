@@ -197,6 +197,29 @@
   animation: progress-shimmer 3s ease-in-out infinite;
 }
 
+/* === Growth Chart Animations === */
+
+.growth-bar {
+  background: linear-gradient(180deg, #f472b6 0%, #fb923c 100%);
+}
+
+.growth-bar-shimmer {
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.15) 50%,
+    transparent 100%
+  );
+  background-size: 100% 200%;
+  animation: bar-shimmer 2s ease-in-out infinite;
+}
+
+@keyframes bar-shimmer {
+  0% { background-position: 0% 200%; }
+  50% { background-position: 0% 0%; }
+  100% { background-position: 0% 200%; }
+}
+
 /* === Mobile Navigation Animations === */
 
 @keyframes slide-up {

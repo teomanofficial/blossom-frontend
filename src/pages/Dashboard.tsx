@@ -522,10 +522,10 @@ export default function Dashboard() {
                     </div>
                   </div>
                   <Link
-                    to="/dashboard/account"
+                    to="/dashboard/platforms"
                     className="block text-center text-[11px] font-bold text-pink-400 hover:text-pink-300 transition-colors py-2"
                   >
-                    Manage accounts <i className="fas fa-arrow-right ml-1" />
+                    View platforms <i className="fas fa-arrow-right ml-1" />
                   </Link>
                 </div>
               ) : (
@@ -536,7 +536,7 @@ export default function Dashboard() {
                   <p className="text-sm font-bold mb-1">Connect Your Accounts</p>
                   <p className="text-xs text-slate-500 mb-4">Link Instagram or TikTok to track your growth</p>
                   <Link
-                    to="/dashboard/account"
+                    to="/dashboard/platforms"
                     className="inline-flex items-center gap-2 text-xs font-black text-pink-400 hover:text-pink-300 transition-colors"
                   >
                     Connect Now <i className="fas fa-arrow-right" />

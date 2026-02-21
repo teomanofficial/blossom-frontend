@@ -48,6 +48,10 @@ import TrendingContents from './pages/TrendingContents'
 import TrendingSongs from './pages/TrendingSongs'
 import Onboarding from './pages/Onboarding'
 import AuthCallback from './pages/AuthCallback'
+import Platforms from './pages/Platforms'
+import PlatformPosts from './pages/PlatformPosts'
+import PlatformPostDetail from './pages/PlatformPostDetail'
+import PlatformPostCreate from './pages/PlatformPostCreate'
 import ProtectedRoute from './components/ProtectedRoute'
 import DashboardLayout from './components/DashboardLayout'
 import type { ReactNode } from 'react'
@@ -90,6 +94,10 @@ function App() {
         }
       >
         <Route index element={<Dashboard />} />
+        <Route path="platforms" element={<Platforms />} />
+        <Route path="platforms/posts" element={<PlatformPosts />} />
+        <Route path="platforms/posts/new" element={<PlatformPostCreate />} />
+        <Route path="platforms/posts/:id" element={<PlatformPostDetail />} />
         <Route path="formats" element={<Formats />} />
         <Route path="formats/:id" element={<FormatDetail />} />
         <Route path="hooks" element={<Hooks />} />

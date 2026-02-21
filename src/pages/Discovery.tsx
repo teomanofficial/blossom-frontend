@@ -135,6 +135,10 @@ export default function Discovery() {
     post_actions: { auto_analyze: true, auto_download: false, auto_suggestions: false },
   })
 
+  // Inline edit max videos
+  const [editingMaxVideos, setEditingMaxVideos] = useState<number | null>(null)
+  const [editMaxValue, setEditMaxValue] = useState(30)
+
   // Run filter
   const [runHashtagFilter, setRunHashtagFilter] = useState('')
 
@@ -228,6 +232,20 @@ export default function Discovery() {
     } catch (error) {
       console.error('Failed to trigger run:', error)
       setRunningManual(false)
+    }
+  }
+
+  async function saveMaxVideos(hashtagId: number) {
+    try {
+      await authFetch(`/api/analysis/trending/hashtags/${hashtagId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ max_videos_per_run: editMaxValue }),
+      })
+      setEditingMaxVideos(null)
+      loadAll()
+    } catch (error) {
+      console.error('Failed to update max videos:', error)
     }
   }
 
@@ -448,7 +466,34 @@ export default function Discovery() {
                       </span>
                       <span className="text-sm font-black text-white">#{h.hashtag}</span>
                       <span className="text-[10px] font-bold text-slate-600">{h.total_videos || 0} videos</span>
-                      <span className="text-[10px] font-bold text-slate-600">max {h.max_videos_per_run}/run</span>
+                      {editingMaxVideos === h.id ? (
+                        <span className="flex items-center gap-1">
+                          <input
+                            type="number"
+                            min="5"
+                            max="100"
+                            value={editMaxValue}
+                            onChange={(e) => setEditMaxValue(parseInt(e.target.value) || 5)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') saveMaxVideos(h.id)
+                              if (e.key === 'Escape') setEditingMaxVideos(null)
+                            }}
+                            autoFocus
+                            className="bg-white/10 border border-violet-500/50 rounded px-1.5 py-0.5 text-[10px] font-bold text-white w-14 focus:outline-none"
+                          />
+                          <span className="text-[10px] font-bold text-slate-600">/run</span>
+                          <button onClick={() => saveMaxVideos(h.id)} className="text-[10px] text-teal-400 hover:text-teal-300"><i className="fas fa-check"></i></button>
+                          <button onClick={() => setEditingMaxVideos(null)} className="text-[10px] text-slate-500 hover:text-slate-400"><i className="fas fa-times"></i></button>
+                        </span>
+                      ) : (
+                        <span
+                          className="text-[10px] font-bold text-slate-600 cursor-pointer hover:text-slate-400 transition-colors"
+                          onClick={() => { setEditingMaxVideos(h.id); setEditMaxValue(h.max_videos_per_run) }}
+                          title="Click to edit max videos per run"
+                        >
+                          max {h.max_videos_per_run}/run
+                        </span>
+                      )}
                       {h.last_run_status && (
                         <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${statusColor(h.last_run_status)}`}>
                           {h.last_run_status}

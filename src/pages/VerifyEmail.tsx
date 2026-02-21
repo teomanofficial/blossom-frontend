@@ -12,7 +12,7 @@ export default function VerifyEmail() {
 
   const [resending, setResending] = useState(false)
   const [resent, setResent] = useState(false)
-  const [checking, setChecking] = useState(false)
+
 
   const handleResend = async () => {
     if (!email) return
@@ -31,21 +31,8 @@ export default function VerifyEmail() {
     setResent(true)
   }
 
-  const handleCheckVerification = async () => {
-    setChecking(true)
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (user?.email_confirmed_at) {
-      navigate('/dashboard')
-    } else {
-      // Refresh the session to pick up any changes
-      await supabase.auth.refreshSession()
-      const { data: { user: refreshedUser } } = await supabase.auth.getUser()
-      if (refreshedUser?.email_confirmed_at) {
-        navigate('/dashboard')
-      }
-    }
-    setChecking(false)
+  const handleCheckVerification = () => {
+    navigate('/login')
   }
 
   return (
@@ -81,10 +68,9 @@ export default function VerifyEmail() {
           <div className="space-y-3">
             <button
               onClick={handleCheckVerification}
-              disabled={checking}
-              className="w-full py-3 rounded-lg bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-400 hover:to-orange-400 transition-all font-medium text-sm disabled:opacity-50"
+              className="w-full py-3 rounded-lg bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-400 hover:to-orange-400 transition-all font-medium text-sm"
             >
-              {checking ? 'Checking...' : 'I\'ve verified my email'}
+              I've verified my email
             </button>
 
             <button

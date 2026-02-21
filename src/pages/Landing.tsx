@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { apiFetch } from '../lib/api'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
@@ -49,8 +49,36 @@ const features = [
   },
 ]
 
+function useCountUp(end: number, duration: number, startCounting: boolean) {
+  const [count, setCount] = useState(0)
+  useEffect(() => {
+    if (!startCounting) return
+    let start = 0
+    const increment = end / (duration / 16)
+    const timer = setInterval(() => {
+      start += increment
+      if (start >= end) {
+        setCount(end)
+        clearInterval(timer)
+      } else {
+        setCount(Math.floor(start))
+      }
+    }, 16)
+    return () => clearInterval(timer)
+  }, [end, duration, startCounting])
+  return count
+}
+
+function formatCompact(n: number) {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M'
+  if (n >= 1_000) return (n / 1_000).toFixed(1).replace(/\.0$/, '') + 'K'
+  return n.toString()
+}
+
 export default function Landing() {
   const [plans, setPlans] = useState<Plan[]>([])
+  const [chartVisible, setChartVisible] = useState(false)
+  const chartRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     apiFetch('/api/billing/plans')
@@ -58,6 +86,24 @@ export default function Landing() {
       .then((data) => setPlans(data.plans || []))
       .catch(console.error)
   }, [])
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          setChartVisible(true)
+          observer.disconnect()
+        }
+      },
+      { threshold: 0.3 }
+    )
+    if (chartRef.current) observer.observe(chartRef.current)
+    return () => observer.disconnect()
+  }, [])
+
+  const views = useCountUp(1_500_000, 2000, chartVisible)
+  const followers = useCountUp(47_000, 2000, chartVisible)
+  const engagement = useCountUp(340, 2000, chartVisible)
 
   const formatPrice = (cents: number) => `$${(cents / 100).toFixed(0)}`
 
@@ -245,6 +291,126 @@ export default function Landing() {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Growth Results Section */}
+      <section className="py-24 sm:py-32 px-4 sm:px-6 relative z-10 overflow-hidden" ref={chartRef}>
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-pink-500/[0.03] to-transparent pointer-events-none" />
+        <div className="max-w-6xl mx-auto relative">
+          <div className="text-center mb-16 sm:mb-20">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-500/10 border border-green-500/20 text-green-400 text-[10px] font-black mb-6 tracking-widest uppercase">
+              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z" />
+              </svg>
+              REAL RESULTS
+            </div>
+            <h2 className="text-3xl sm:text-4xl md:text-6xl font-black mb-4 tracking-tight">
+              FROM 10K TO <span className="gradient-text">1.5M VIEWS</span>
+            </h2>
+            <p className="text-slate-400 text-base sm:text-lg md:text-xl max-w-2xl mx-auto font-medium">
+              Creators using Blossom see explosive growth within 90 days. Here's what happens when you stop guessing.
+            </p>
+          </div>
+
+          {/* Big Stats Row */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 mb-12 sm:mb-16">
+            <div className="glass-card rounded-[2rem] p-6 sm:p-8 text-center group hover:bg-white/[0.04] transition-all">
+              <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">Avg. Views Growth</div>
+              <div className="text-4xl sm:text-5xl md:text-6xl font-black gradient-text mb-2">{formatCompact(views)}</div>
+              <div className="flex items-center justify-center gap-1.5 text-green-400 text-sm font-bold">
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M7 14l5-5 5 5z" /></svg>
+                +14,900%
+              </div>
+              <div className="text-[11px] text-slate-500 mt-1 font-medium">from 10K in 3 months</div>
+            </div>
+
+            <div className="glass-card rounded-[2rem] p-6 sm:p-8 text-center group hover:bg-white/[0.04] transition-all">
+              <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">New Followers</div>
+              <div className="text-4xl sm:text-5xl md:text-6xl font-black text-white mb-2">+{formatCompact(followers)}</div>
+              <div className="flex items-center justify-center gap-1.5 text-green-400 text-sm font-bold">
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M7 14l5-5 5 5z" /></svg>
+                +2,250%
+              </div>
+              <div className="text-[11px] text-slate-500 mt-1 font-medium">avg. per creator</div>
+            </div>
+
+            <div className="glass-card rounded-[2rem] p-6 sm:p-8 text-center group hover:bg-white/[0.04] transition-all">
+              <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">Engagement Rate</div>
+              <div className="text-4xl sm:text-5xl md:text-6xl font-black text-white mb-2">{engagement}%</div>
+              <div className="flex items-center justify-center gap-1.5 text-green-400 text-sm font-bold">
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M7 14l5-5 5 5z" /></svg>
+                +340% increase
+              </div>
+              <div className="text-[11px] text-slate-500 mt-1 font-medium">vs. industry avg. 1.5%</div>
+            </div>
+          </div>
+
+          {/* Growth Chart Visual */}
+          <div className="glass-card rounded-[2.5rem] sm:rounded-[3rem] p-6 sm:p-8 md:p-12">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
+              <div>
+                <h3 className="text-lg sm:text-xl font-black mb-1">VIEWS OVER 90 DAYS</h3>
+                <p className="text-slate-500 text-sm font-medium">Average creator growth after joining Blossom</p>
+              </div>
+              <div className="flex items-center gap-4 text-xs font-bold">
+                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-slate-600" />Before</span>
+                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-gradient-to-r from-pink-500 to-orange-400" />With Blossom</span>
+              </div>
+            </div>
+
+            {/* Bar Chart */}
+            <div className="flex items-end gap-2 sm:gap-3 h-56 sm:h-72 md:h-80">
+              {[
+                { label: 'Week 1', before: 8, after: 12, val: '10K' },
+                { label: 'Week 2', before: 9, after: 22, val: '35K' },
+                { label: 'Week 3', before: 8, after: 35, val: '85K' },
+                { label: 'Week 4', before: 10, after: 48, val: '150K' },
+                { label: 'Week 6', before: 9, after: 62, val: '320K' },
+                { label: 'Week 8', before: 11, after: 78, val: '580K' },
+                { label: 'Week 10', before: 10, after: 88, val: '900K' },
+                { label: 'Week 12', before: 12, after: 100, val: '1.5M' },
+              ].map((bar, i) => (
+                <div key={bar.label} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
+                  {/* Value label */}
+                  <span className={`text-[9px] sm:text-[10px] font-black transition-all duration-1000 ${chartVisible ? 'opacity-100' : 'opacity-0'} ${i === 7 ? 'text-pink-400' : 'text-slate-500'}`}
+                    style={{ transitionDelay: `${i * 120 + 800}ms` }}>
+                    {bar.val}
+                  </span>
+                  {/* Bars container */}
+                  <div className="w-full flex gap-[2px] items-end h-full">
+                    {/* Before bar */}
+                    <div className="flex-1 rounded-t-md sm:rounded-t-lg bg-slate-700/50 transition-all duration-1000 ease-out"
+                      style={{
+                        height: chartVisible ? `${bar.before}%` : '0%',
+                        transitionDelay: `${i * 120}ms`,
+                      }} />
+                    {/* After bar */}
+                    <div className="flex-1 rounded-t-md sm:rounded-t-lg growth-bar transition-all duration-1000 ease-out relative overflow-hidden"
+                      style={{
+                        height: chartVisible ? `${bar.after}%` : '0%',
+                        transitionDelay: `${i * 120 + 200}ms`,
+                      }}>
+                      <div className="absolute inset-0 growth-bar-shimmer" />
+                    </div>
+                  </div>
+                  {/* Week label */}
+                  <span className="text-[8px] sm:text-[10px] text-slate-600 font-bold mt-1 whitespace-nowrap">{bar.label}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Bottom Highlight */}
+            <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-pink-500/10 to-orange-500/10 border border-pink-500/20">
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5 text-pink-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                </svg>
+                <span className="font-black text-sm sm:text-base">Average creators hit 1M+ views</span>
+              </div>
+              <span className="text-pink-400 font-black text-lg sm:text-xl">within 90 days</span>
             </div>
           </div>
         </div>

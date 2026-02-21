@@ -7,6 +7,7 @@ import MobileDrawer from './MobileDrawer'
 
 const navItems = [
   { to: '/dashboard', icon: 'fa-chart-pie', label: 'Dashboard', end: true },
+  { to: '/dashboard/platforms', icon: 'fa-tower-broadcast', label: 'Platforms' },
   { to: '/dashboard/analyze', icon: 'fa-microscope', label: 'Content Analysis' },
   { to: '/dashboard/formats', icon: 'fa-shapes', label: 'Viral Formats' },
   { to: '/dashboard/hooks', icon: 'fa-magnet', label: 'Viral Hooks' },
@@ -34,13 +35,15 @@ const managementItems = [
 const bottomTabs = [
   { to: '/dashboard', icon: 'fa-chart-pie', label: 'Home', end: true },
   { to: '/dashboard/analyze', icon: 'fa-microscope', label: 'Analyze' },
-  { to: '/dashboard/formats', icon: 'fa-shapes', label: 'Formats' },
+  { to: '/dashboard/platforms', icon: 'fa-tower-broadcast', label: 'Platforms' },
   { to: '/dashboard/suggestions', icon: 'fa-lightbulb', label: 'Ideas' },
   { to: '__more__', icon: 'fa-grid-2', label: 'More' },
 ]
 
 /* Routes that live in the "More" drawer — used to highlight the More tab */
 const drawerRoutes = [
+  '/dashboard/platforms',
+  '/dashboard/platforms/posts',
   '/dashboard/hooks',
   '/dashboard/tactics',
   '/dashboard/trends',
