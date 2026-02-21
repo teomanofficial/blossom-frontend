@@ -13,7 +13,7 @@ interface MobileDrawerProps {
 const exploreItems = [
   { to: '/dashboard/hooks', icon: 'fa-magnet', label: 'Viral Hooks', color: 'text-purple-400', bg: 'bg-purple-500/10' },
   { to: '/dashboard/tactics', icon: 'fa-chess', label: 'Viral Tactics', color: 'text-amber-400', bg: 'bg-amber-500/10' },
-  { to: '/dashboard/trending', icon: 'fa-arrow-trend-up', label: 'Trending Posts', color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+  { to: '/dashboard/trends', icon: 'fa-arrow-trend-up', label: 'Trends', color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
 ]
 
 const influencerItem = { to: '/dashboard/influencers', icon: 'fa-users', label: 'Influencers', color: 'text-cyan-400', bg: 'bg-cyan-500/10' }

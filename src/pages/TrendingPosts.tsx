@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
+import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { authFetch } from '../lib/api'
 import VideoStoryCarousel, { type CarouselVideo } from '../components/VideoStoryCarousel'
@@ -124,6 +125,7 @@ export default function TrendingPosts() {
   const [loading, setLoading] = useState(true)
   const [platform, setPlatform] = useState<string>('')
   const [page, setPage] = useState(0)
+  const [days, setDays] = useState(30)
   const [carouselData, setCarouselData] = useState<{ videos: CarouselVideo[]; initialIndex: number } | null>(null)
 
   const fetchVideos = useCallback(async () => {
@@ -132,10 +134,11 @@ export default function TrendingPosts() {
       const params = new URLSearchParams({
         limit: String(PAGE_SIZE),
         offset: String(page * PAGE_SIZE),
+        days: String(days),
       })
       if (platform) params.set('platform', platform)
 
-      const res = await authFetch(`/api/analysis/trending-posts?${params}`)
+      const res = await authFetch(`/api/trends/posts?${params}`)
       if (!res.ok) throw new Error(`API returned ${res.status}`)
       const data = await res.json()
       if (data.error) throw new Error(data.error)
@@ -146,7 +149,7 @@ export default function TrendingPosts() {
     } finally {
       setLoading(false)
     }
-  }, [platform, page])
+  }, [platform, page, days])
 
   useEffect(() => {
     fetchVideos()
@@ -155,27 +158,32 @@ export default function TrendingPosts() {
   // Reset page on filter change
   useEffect(() => {
     setPage(0)
-  }, [platform])
+  }, [platform, days])
 
   const totalPages = Math.ceil(total / PAGE_SIZE)
 
   return (
     <>
+      {/* Back link */}
+      <Link to="/dashboard/trends" className="inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-500 hover:text-pink-400 transition-colors mb-4">
+        <i className="fas fa-arrow-left text-[9px]" /> Back to Trends
+      </Link>
+
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-2 mb-3">
           <span className="px-2 py-0.5 bg-pink-500/10 text-pink-400 text-[10px] font-black uppercase tracking-widest rounded">
-            Trending
+            Trends
           </span>
         </div>
-        <h1 className="text-3xl font-black tracking-tighter mb-2">Trending Posts</h1>
+        <h1 className="text-3xl font-black tracking-tighter mb-2">All Trending Posts</h1>
         <p className="text-slate-500 text-sm font-medium">
           Recently analyzed content sorted by analysis date. {total > 0 && <span className="text-slate-400">{total} posts</span>}
         </p>
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-3 mb-6">
+      <div className="flex items-center gap-3 mb-6 flex-wrap">
         <div className="flex items-center gap-1 bg-white/5 rounded-xl p-1">
           {[
             { value: '', label: 'All' },
@@ -193,6 +201,21 @@ export default function TrendingPosts() {
             >
               {opt.icon && <i className={`${opt.icon} text-[10px]`} />}
               {opt.label}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-1 bg-white/5 rounded-xl p-1">
+          {[7, 14, 30].map((d) => (
+            <button
+              key={d}
+              onClick={() => setDays(d)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                days === d
+                  ? 'bg-pink-500/20 text-pink-400'
+                  : 'text-slate-500 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              {d}d
             </button>
           ))}
         </div>

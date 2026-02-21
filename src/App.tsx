@@ -41,6 +41,11 @@ import OnboardingManagement from './pages/OnboardingManagement'
 import CategoryDomains from './pages/CategoryDomains'
 import ChoosePlan from './pages/ChoosePlan'
 import TrendingPosts from './pages/TrendingPosts'
+import Trends from './pages/Trends'
+import TrendingFormats from './pages/TrendingFormats'
+import TrendingHooks from './pages/TrendingHooks'
+import TrendingContents from './pages/TrendingContents'
+import TrendingSongs from './pages/TrendingSongs'
 import Onboarding from './pages/Onboarding'
 import AuthCallback from './pages/AuthCallback'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -98,7 +103,13 @@ function App() {
         <Route path="influencers/:id" element={<FeatureGate><InfluencerDetail /></FeatureGate>} />
         <Route path="discovery" element={<AdminGate><Discovery /></AdminGate>} />
         <Route path="discovery/items" element={<AdminGate><DiscoveredItems /></AdminGate>} />
-        <Route path="trending" element={<TrendingPosts />} />
+        <Route path="trends" element={<Trends />} />
+        <Route path="trends/posts" element={<TrendingPosts />} />
+        <Route path="trends/formats" element={<TrendingFormats />} />
+        <Route path="trends/hooks" element={<TrendingHooks />} />
+        <Route path="trends/contents" element={<TrendingContents />} />
+        <Route path="trends/songs" element={<TrendingSongs />} />
+        <Route path="trending" element={<Navigate to="/dashboard/trends" replace />} />
         <Route path="suggestions" element={<Suggestions />} />
         <Route path="suggestions/:id" element={<SuggestionDetail />} />
         <Route path="settings" element={<Navigate to="/dashboard/account/billing" replace />} />
