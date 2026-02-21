@@ -412,23 +412,47 @@ function StepLinkAccount({
   const [linking, setLinking] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
+  const isMobile = () => /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+
   const handleLink = async (platform: 'instagram' | 'tiktok') => {
     setLinking(platform)
     setError(null)
+
+    // On desktop, open blank popup immediately to preserve user gesture context
+    let popup: Window | null = null
+    if (!isMobile()) {
+      popup = window.open('about:blank', 'oauth_popup', 'width=600,height=700,scrollbars=yes')
+      if (popup) {
+        popup.document.write(
+          '<html><body style="background:#0f1419;color:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><div style="text-align:center"><p style="color:#94a3b8">Connecting...</p></div></body></html>'
+        )
+      }
+    }
+
     try {
-      const res = await authFetch(`/api/social/${platform}/auth-url?user_id=${userId}`)
+      const mobile = isMobile()
+      const res = await authFetch(`/api/social/${platform}/auth-url?user_id=${userId}${mobile ? '&mobile=1' : ''}`)
       const { url } = await res.json()
 
-      const popup = window.open(url, 'oauth_popup', 'width=600,height=700,scrollbars=yes')
-      if (!popup) {
-        setError('Popup blocked. Please allow popups for this site and try again.')
-        setLinking(null)
+      if (mobile) {
+        // Mobile: store platform in sessionStorage so we can resume onboarding after redirect back
+        sessionStorage.setItem('onboarding_oauth_platform', platform)
+        window.location.href = url
+        return
+      }
+
+      if (popup && !popup.closed) {
+        popup.location.href = url
+      } else {
+        // Popup blocked — fall back to redirect
+        sessionStorage.setItem('onboarding_oauth_platform', platform)
+        window.location.href = url
         return
       }
 
       const interval = setInterval(async () => {
         try {
-          if (popup.closed) {
+          if (!popup || popup.closed) {
             clearInterval(interval)
             // Check if an account was linked
             const linkRes = await authFetch('/api/onboarding/link-account', {
@@ -450,6 +474,7 @@ function StepLinkAccount({
         }
       }, 1000)
     } catch (err: any) {
+      if (popup) popup.close()
       setError(err.message || 'Failed to start OAuth flow')
       setLinking(null)
     }

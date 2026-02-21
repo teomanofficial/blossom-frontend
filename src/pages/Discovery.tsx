@@ -26,36 +26,60 @@ interface TrackedHashtag {
   created_at: string
 }
 
-interface TrendingRun {
+interface Scheduler {
   id: number
-  run_date: string
-  hashtag_id: number
-  platform: string
-  hashtag: string
-  videos_fetched: number
-  videos_analyzed: number
-  new_videos: number
-  status: string
-  error: string | null
-  started_at?: string | null
-  finished_at?: string | null
-  created_at: string
-}
-
-interface DiscoverySchedule {
-  id: number
-  hashtag_id: number
+  name: string
   frequency: string
   run_hour: number
   is_active: boolean
-  last_run_at: string | null
-  next_run_at: string | null
   post_actions: {
     auto_analyze: boolean
     auto_download: boolean
     auto_suggestions: boolean
   }
+  hashtag_count: number
+  last_run_id: number | null
+  last_run_status: string | null
+  last_run_fetched: number | null
+  last_run_new: number | null
+  last_run_total_hashtags: number | null
+  last_run_completed: number | null
+  last_run_failed: number | null
+  last_run_finished_at: string | null
+  last_run_started_at: string | null
+  next_run_at: string | null
   created_at: string
+}
+
+interface SchedulerRun {
+  id: number
+  scheduler_id: number
+  scheduler_name: string
+  status: string
+  total_hashtags: number
+  completed_hashtags: number
+  failed_hashtags: number
+  total_videos_fetched: number
+  total_new_videos: number
+  total_videos_analyzed: number
+  started_at: string | null
+  finished_at: string | null
+  created_at: string
+}
+
+interface SchedulerRunHashtag {
+  id: number
+  hashtag_id: number
+  hashtag: string
+  platform: string
+  status: string
+  videos_fetched: number
+  new_videos: number
+  videos_analyzed: number
+  videos_downloaded: number
+  error: string | null
+  started_at: string | null
+  finished_at: string | null
 }
 
 function formatNumber(n: number): string {
@@ -81,6 +105,8 @@ function timeAgo(dateStr: string | null): string {
 function statusColor(status: string): string {
   switch (status) {
     case 'completed': return 'bg-teal-500/10 text-teal-400'
+    case 'partial': return 'bg-amber-500/10 text-amber-400'
+    case 'running': return 'bg-blue-500/10 text-blue-400'
     case 'analyzing': return 'bg-amber-500/10 text-amber-400'
     case 'fetching': return 'bg-blue-500/10 text-blue-400'
     case 'error': return 'bg-red-500/10 text-red-400'
@@ -100,7 +126,7 @@ function formatDuration(startedAt: string | null | undefined, finishedAt: string
 }
 
 function formatNextRun(dateStr: string | null): string {
-  if (!dateStr) return 'No schedule'
+  if (!dateStr) return 'Not scheduled'
   const date = new Date(dateStr)
   const now = new Date()
   const diffMs = date.getTime() - now.getTime()
@@ -115,48 +141,65 @@ function formatNextRun(dateStr: string | null): string {
   return `in ${minutes}m`
 }
 
+function frequencyLabel(f: string): string {
+  switch (f) {
+    case 'daily': return 'Daily'
+    case 'every_6h': return 'Every 6h'
+    case 'every_12h': return 'Every 12h'
+    default: return f
+  }
+}
+
 export default function Discovery() {
   const navigate = useNavigate()
 
   const [stats, setStats] = useState<TrendingStats | null>(null)
   const [hashtags, setHashtags] = useState<TrackedHashtag[]>([])
-  const [runs, setRuns] = useState<TrendingRun[]>([])
+  const [schedulers, setSchedulers] = useState<Scheduler[]>([])
+  const [schedulerRuns, setSchedulerRuns] = useState<SchedulerRun[]>([])
   const [videosTotal, setVideosTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [runningManual, setRunningManual] = useState(false)
   const [newHashtag, setNewHashtag] = useState({ platform: 'tiktok', hashtag: '', max_videos_per_run: 30 })
 
-  // Schedule state
-  const [schedules, setSchedules] = useState<DiscoverySchedule[]>([])
-  const [editingSchedule, setEditingSchedule] = useState<number | null>(null)
-  const [scheduleForm, setScheduleForm] = useState({
+  // Scheduler form
+  const [showSchedulerForm, setShowSchedulerForm] = useState(false)
+  const [editingScheduler, setEditingScheduler] = useState<number | null>(null)
+  const [schedulerForm, setSchedulerForm] = useState({
+    name: '',
     frequency: 'daily',
     run_hour: 9,
     post_actions: { auto_analyze: true, auto_download: false, auto_suggestions: false },
+    hashtag_ids: [] as number[],
   })
 
   // Inline edit max videos
   const [editingMaxVideos, setEditingMaxVideos] = useState<number | null>(null)
   const [editMaxValue, setEditMaxValue] = useState(30)
 
-  // Run filter
-  const [runHashtagFilter, setRunHashtagFilter] = useState('')
+  // Run detail expansion
+  const [expandedRun, setExpandedRun] = useState<number | null>(null)
+  const [runDetail, setRunDetail] = useState<SchedulerRunHashtag[]>([])
+  const [loadingRunDetail, setLoadingRunDetail] = useState(false)
+
+  // Running schedulers (for polling)
+  const [runningSchedulerIds, setRunningSchedulerIds] = useState<Set<number>>(new Set())
 
   useEffect(() => { loadAll() }, [])
 
   async function loadAll() {
     try {
       setLoading(true)
-      const [statsRes, hashtagsRes, runsRes, schedulesRes] = await Promise.all([
+      const [statsRes, hashtagsRes, schedulersRes, runsRes] = await Promise.all([
         authFetch('/api/analysis/trending/stats').then(r => r.json()),
         authFetch('/api/analysis/trending/hashtags').then(r => r.json()),
-        authFetch('/api/analysis/trending/runs?limit=20').then(r => r.json()),
-        authFetch('/api/analysis/trending/schedules').then(r => r.json()).catch(() => []),
+        authFetch('/api/analysis/trending/schedulers').then(r => r.json()).catch(() => []),
+        authFetch('/api/analysis/trending/scheduler-runs?limit=20').then(r => r.json()).catch(() => []),
       ])
       setStats(statsRes)
       setHashtags(Array.isArray(hashtagsRes) ? hashtagsRes : [])
-      setRuns(Array.isArray(runsRes) ? runsRes : [])
-      setSchedules(Array.isArray(schedulesRes) ? schedulesRes : [])
+      setSchedulers(Array.isArray(schedulersRes) ? schedulersRes : [])
+      setSchedulerRuns(Array.isArray(runsRes) ? runsRes : [])
       await loadVideosTotal()
     } catch (error) {
       console.error('Failed to load discovery data:', error)
@@ -173,6 +216,8 @@ export default function Discovery() {
       console.error('Failed to load discovery videos count:', error)
     }
   }
+
+  // ---- Hashtag CRUD ----
 
   async function handleAddHashtag(e: React.FormEvent) {
     e.preventDefault()
@@ -204,34 +249,12 @@ export default function Discovery() {
   }
 
   async function deleteHashtag(id: number) {
-    if (!confirm('Remove this hashtag and its run history?')) return
+    if (!confirm('Remove this hashtag? It will also be removed from all schedulers.')) return
     try {
       await authFetch(`/api/analysis/trending/hashtags/${id}`, { method: 'DELETE' })
       loadAll()
     } catch (error) {
       console.error('Failed to delete hashtag:', error)
-    }
-  }
-
-  async function triggerManualRun() {
-    try {
-      setRunningManual(true)
-      await authFetch('/api/analysis/trending/run-now', { method: 'POST' })
-      const poll = setInterval(async () => {
-        const data = await authFetch('/api/analysis/trending/stats').then(r => r.json())
-        setStats(data)
-        const runsData = await authFetch('/api/analysis/trending/runs?limit=20').then(r => r.json())
-        setRuns(Array.isArray(runsData) ? runsData : [])
-        const hasRunning = (runsData as TrendingRun[]).some(r => r.status === 'fetching' || r.status === 'analyzing')
-        if (!hasRunning) {
-          clearInterval(poll)
-          setRunningManual(false)
-          loadAll()
-        }
-      }, 5000)
-    } catch (error) {
-      console.error('Failed to trigger run:', error)
-      setRunningManual(false)
     }
   }
 
@@ -249,77 +272,190 @@ export default function Discovery() {
     }
   }
 
-  // Schedule helpers
-  function getScheduleForHashtag(hashtagId: number): DiscoverySchedule | undefined {
-    return schedules.find(s => s.hashtag_id === hashtagId)
+  // ---- Manual Run (all hashtags) ----
+
+  async function triggerManualRun() {
+    try {
+      setRunningManual(true)
+      await authFetch('/api/analysis/trending/run-now', { method: 'POST' })
+      const poll = setInterval(async () => {
+        const data = await authFetch('/api/analysis/trending/stats').then(r => r.json())
+        setStats(data)
+        const running = await authFetch('/api/analysis/trending/runs?limit=5').then(r => r.json())
+        const hasRunning = Array.isArray(running) && running.some((r: any) => r.status === 'fetching' || r.status === 'analyzing')
+        if (!hasRunning) {
+          clearInterval(poll)
+          setRunningManual(false)
+          loadAll()
+        }
+      }, 5000)
+    } catch (error) {
+      console.error('Failed to trigger run:', error)
+      setRunningManual(false)
+    }
   }
 
-  function openScheduleEditor(hashtagId: number) {
-    const existing = getScheduleForHashtag(hashtagId)
-    if (existing) {
-      setScheduleForm({
-        frequency: existing.frequency,
-        run_hour: existing.run_hour,
-        post_actions: { ...existing.post_actions },
+  // ---- Scheduler CRUD ----
+
+  function openSchedulerForm(scheduler?: Scheduler) {
+    if (scheduler) {
+      setEditingScheduler(scheduler.id)
+      setSchedulerForm({
+        name: scheduler.name,
+        frequency: scheduler.frequency,
+        run_hour: scheduler.run_hour,
+        post_actions: { ...scheduler.post_actions },
+        hashtag_ids: [],
       })
+      // Load the scheduler's hashtags
+      authFetch(`/api/analysis/trending/schedulers/${scheduler.id}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.hashtags) {
+            setSchedulerForm(prev => ({
+              ...prev,
+              hashtag_ids: data.hashtags.map((h: any) => h.id),
+            }))
+          }
+        })
+        .catch(() => {})
     } else {
-      setScheduleForm({
+      setEditingScheduler(null)
+      setSchedulerForm({
+        name: '',
         frequency: 'daily',
         run_hour: 9,
         post_actions: { auto_analyze: true, auto_download: false, auto_suggestions: false },
+        hashtag_ids: [],
       })
     }
-    setEditingSchedule(hashtagId)
+    setShowSchedulerForm(true)
   }
 
-  async function saveSchedule(hashtagId: number) {
+  async function saveScheduler() {
+    if (!schedulerForm.name.trim()) return
     try {
-      const existing = getScheduleForHashtag(hashtagId)
-      if (existing) {
-        await authFetch(`/api/analysis/trending/schedules/${existing.id}`, {
+      if (editingScheduler) {
+        // Update scheduler config
+        await authFetch(`/api/analysis/trending/schedulers/${editingScheduler}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            frequency: scheduleForm.frequency,
-            run_hour: scheduleForm.run_hour,
-            post_actions: scheduleForm.post_actions,
+            name: schedulerForm.name,
+            frequency: schedulerForm.frequency,
+            run_hour: schedulerForm.run_hour,
+            post_actions: schedulerForm.post_actions,
           }),
         })
+        // Sync hashtags: get current, remove missing, add new
+        const currentRes = await authFetch(`/api/analysis/trending/schedulers/${editingScheduler}`).then(r => r.json())
+        const currentIds = (currentRes.hashtags || []).map((h: any) => h.id)
+        const toRemove = currentIds.filter((id: number) => !schedulerForm.hashtag_ids.includes(id))
+        const toAdd = schedulerForm.hashtag_ids.filter(id => !currentIds.includes(id))
+        for (const id of toRemove) {
+          await authFetch(`/api/analysis/trending/schedulers/${editingScheduler}/hashtags/${id}`, { method: 'DELETE' })
+        }
+        if (toAdd.length > 0) {
+          await authFetch(`/api/analysis/trending/schedulers/${editingScheduler}/hashtags`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ hashtag_ids: toAdd }),
+          })
+        }
       } else {
-        await authFetch('/api/analysis/trending/schedules', {
+        // Create new scheduler with hashtags
+        await authFetch('/api/analysis/trending/schedulers', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            hashtag_id: hashtagId,
-            frequency: scheduleForm.frequency,
-            run_hour: scheduleForm.run_hour,
-            post_actions: scheduleForm.post_actions,
+            name: schedulerForm.name,
+            frequency: schedulerForm.frequency,
+            run_hour: schedulerForm.run_hour,
+            post_actions: schedulerForm.post_actions,
+            hashtag_ids: schedulerForm.hashtag_ids,
           }),
         })
       }
-      setEditingSchedule(null)
-      const updated = await authFetch('/api/analysis/trending/schedules').then(r => r.json()).catch(() => [])
-      setSchedules(Array.isArray(updated) ? updated : [])
+      setShowSchedulerForm(false)
+      setEditingScheduler(null)
+      loadAll()
     } catch (error) {
-      console.error('Failed to save schedule:', error)
+      console.error('Failed to save scheduler:', error)
     }
   }
 
-  async function deleteSchedule(scheduleId: number) {
+  async function deleteScheduler(id: number) {
+    if (!confirm('Delete this scheduler? Run history will also be deleted.')) return
     try {
-      await authFetch(`/api/analysis/trending/schedules/${scheduleId}`, { method: 'DELETE' })
-      setEditingSchedule(null)
-      const updated = await authFetch('/api/analysis/trending/schedules').then(r => r.json()).catch(() => [])
-      setSchedules(Array.isArray(updated) ? updated : [])
+      await authFetch(`/api/analysis/trending/schedulers/${id}`, { method: 'DELETE' })
+      setShowSchedulerForm(false)
+      setEditingScheduler(null)
+      loadAll()
     } catch (error) {
-      console.error('Failed to delete schedule:', error)
+      console.error('Failed to delete scheduler:', error)
     }
   }
 
-  // Filtered runs
-  const filteredRuns = runHashtagFilter
-    ? runs.filter(r => r.hashtag === runHashtagFilter)
-    : runs
+  async function toggleSchedulerActive(s: Scheduler) {
+    try {
+      await authFetch(`/api/analysis/trending/schedulers/${s.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_active: !s.is_active }),
+      })
+      loadAll()
+    } catch (error) {
+      console.error('Failed to toggle scheduler:', error)
+    }
+  }
+
+  async function triggerSchedulerRun(schedulerId: number) {
+    try {
+      setRunningSchedulerIds(prev => new Set(prev).add(schedulerId))
+      await authFetch(`/api/analysis/trending/schedulers/${schedulerId}/run`, { method: 'POST' })
+      // Poll for completion
+      const poll = setInterval(async () => {
+        const runs = await authFetch(`/api/analysis/trending/scheduler-runs?scheduler_id=${schedulerId}&limit=1`).then(r => r.json())
+        if (Array.isArray(runs) && runs.length > 0 && runs[0].status !== 'running') {
+          clearInterval(poll)
+          setRunningSchedulerIds(prev => {
+            const next = new Set(prev)
+            next.delete(schedulerId)
+            return next
+          })
+          loadAll()
+        }
+      }, 5000)
+    } catch (error) {
+      console.error('Failed to trigger scheduler run:', error)
+      setRunningSchedulerIds(prev => {
+        const next = new Set(prev)
+        next.delete(schedulerId)
+        return next
+      })
+    }
+  }
+
+  // ---- Run Detail Expansion ----
+
+  async function toggleRunExpand(runId: number) {
+    if (expandedRun === runId) {
+      setExpandedRun(null)
+      setRunDetail([])
+      return
+    }
+    setExpandedRun(runId)
+    setLoadingRunDetail(true)
+    try {
+      const data = await authFetch(`/api/analysis/trending/scheduler-runs/${runId}`).then(r => r.json())
+      setRunDetail(data.hashtags || [])
+    } catch (error) {
+      console.error('Failed to load run detail:', error)
+      setRunDetail([])
+    } finally {
+      setLoadingRunDetail(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -341,7 +477,7 @@ export default function Discovery() {
           </div>
           <h1 className="text-4xl font-black tracking-tighter mb-2">DISCOVERY</h1>
           <p className="text-slate-500 text-sm font-medium">
-            Track hashtags, schedule discovery jobs, and find trending content across platforms.
+            Create schedulers to group hashtags, set run times, and discover trending content.
           </p>
         </div>
 
@@ -370,7 +506,7 @@ export default function Discovery() {
               </span>
             ) : (
               <span className="flex items-center gap-2">
-                <i className="fas fa-bolt"></i> RUN NOW
+                <i className="fas fa-bolt"></i> RUN ALL NOW
               </span>
             )}
           </button>
@@ -383,6 +519,11 @@ export default function Discovery() {
           <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Active Hashtags</div>
           <div className="text-2xl font-black text-purple-400">{stats?.active_hashtags ?? 0}</div>
           <div className="text-[10px] font-bold text-slate-600 mt-1">{stats?.total_hashtags ?? 0} total</div>
+        </div>
+        <div className="px-6 py-4 glass-card rounded-[1.5rem] border-white/5">
+          <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Schedulers</div>
+          <div className="text-2xl font-black text-violet-400">{schedulers.filter(s => s.is_active).length}</div>
+          <div className="text-[10px] font-bold text-slate-600 mt-1">{schedulers.length} total</div>
         </div>
         <div className="px-6 py-4 glass-card rounded-[1.5rem] border-white/5">
           <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Fetched Today</div>
@@ -399,15 +540,265 @@ export default function Discovery() {
           <div className="text-2xl font-black text-pink-400">{formatNumber(stats?.videos_analyzed_today ?? 0)}</div>
           <div className="text-[10px] font-bold text-slate-600 mt-1">with Gemini</div>
         </div>
-        <div className="px-6 py-4 glass-card rounded-[1.5rem] border-white/5">
-          <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Last Run</div>
-          <div className="text-lg font-black text-white mt-1">{timeAgo(stats?.last_run_at ?? null)}</div>
-          {stats?.last_run_status && (
-            <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded mt-1 inline-block ${statusColor(stats.last_run_status)}`}>
-              {stats.last_run_status}
+      </div>
+
+      {/* Schedulers */}
+      <div className="glass-card rounded-[1.5rem] border-white/5 p-8 mb-10">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Schedulers</h2>
+          <button
+            onClick={() => openSchedulerForm()}
+            className="bg-gradient-to-r from-violet-500 to-purple-500 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:opacity-90 transition-opacity"
+          >
+            <span className="flex items-center gap-2">
+              <i className="fas fa-plus"></i> Create Scheduler
             </span>
-          )}
+          </button>
         </div>
+
+        {/* Scheduler Form (inline create/edit) */}
+        {showSchedulerForm && (
+          <div className="mb-6 p-6 rounded-xl bg-violet-500/[0.03] border border-violet-500/10">
+            <div className="flex items-center gap-2 mb-5">
+              <i className="fas fa-calendar-alt text-violet-400 text-xs"></i>
+              <span className="text-[10px] font-black text-violet-400 uppercase tracking-widest">
+                {editingScheduler ? 'Edit Scheduler' : 'New Scheduler'}
+              </span>
+            </div>
+
+            {/* Name */}
+            <div className="mb-4">
+              <label className="text-[10px] font-bold text-slate-500 block mb-1.5">Name</label>
+              <input
+                type="text"
+                placeholder="e.g. Morning TikTok Check"
+                value={schedulerForm.name}
+                onChange={(e) => setSchedulerForm({ ...schedulerForm, name: e.target.value })}
+                className="bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-xs font-bold text-white w-full max-w-md focus:outline-none focus:border-violet-500/50 placeholder-slate-600 transition-colors"
+              />
+            </div>
+
+            <div className="flex flex-wrap gap-4 mb-4">
+              {/* Frequency */}
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 block mb-1.5">Frequency</label>
+                <select
+                  value={schedulerForm.frequency}
+                  onChange={(e) => setSchedulerForm({ ...schedulerForm, frequency: e.target.value })}
+                  className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-violet-500/50 transition-colors"
+                >
+                  <option value="daily">Daily</option>
+                  <option value="every_6h">Every 6 hours</option>
+                  <option value="every_12h">Every 12 hours</option>
+                </select>
+              </div>
+
+              {/* Hour selector (for daily) */}
+              {schedulerForm.frequency === 'daily' && (
+                <div>
+                  <label className="text-[10px] font-bold text-slate-500 block mb-1.5">Run Hour (UTC)</label>
+                  <select
+                    value={schedulerForm.run_hour}
+                    onChange={(e) => setSchedulerForm({ ...schedulerForm, run_hour: parseInt(e.target.value) })}
+                    className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-violet-500/50 transition-colors"
+                  >
+                    {Array.from({ length: 24 }, (_, i) => (
+                      <option key={i} value={i}>{String(i).padStart(2, '0')}:00</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+
+            {/* Post-actions */}
+            <div className="mb-4">
+              <label className="text-[10px] font-bold text-slate-500 block mb-2">Post-run Actions</label>
+              <div className="flex flex-wrap gap-3">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={schedulerForm.post_actions.auto_analyze}
+                    onChange={(e) => setSchedulerForm({
+                      ...schedulerForm,
+                      post_actions: { ...schedulerForm.post_actions, auto_analyze: e.target.checked },
+                    })}
+                    className="w-3.5 h-3.5 rounded border-white/20 bg-white/5 text-violet-500 focus:ring-violet-500/50"
+                  />
+                  <span className="text-[10px] font-bold text-slate-400">Auto Analyze</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={schedulerForm.post_actions.auto_download}
+                    onChange={(e) => setSchedulerForm({
+                      ...schedulerForm,
+                      post_actions: { ...schedulerForm.post_actions, auto_download: e.target.checked },
+                    })}
+                    className="w-3.5 h-3.5 rounded border-white/20 bg-white/5 text-violet-500 focus:ring-violet-500/50"
+                  />
+                  <span className="text-[10px] font-bold text-slate-400">Auto Download</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={schedulerForm.post_actions.auto_suggestions}
+                    onChange={(e) => setSchedulerForm({
+                      ...schedulerForm,
+                      post_actions: { ...schedulerForm.post_actions, auto_suggestions: e.target.checked },
+                    })}
+                    className="w-3.5 h-3.5 rounded border-white/20 bg-white/5 text-violet-500 focus:ring-violet-500/50"
+                  />
+                  <span className="text-[10px] font-bold text-slate-400">Auto Suggestions</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Hashtag Selection */}
+            <div className="mb-5">
+              <label className="text-[10px] font-bold text-slate-500 block mb-2">
+                Hashtags ({schedulerForm.hashtag_ids.length} selected)
+              </label>
+              {hashtags.length === 0 ? (
+                <p className="text-[10px] font-bold text-slate-600">No hashtags available. Add some below first.</p>
+              ) : (
+                <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-2 rounded-lg bg-white/[0.02] border border-white/5">
+                  {hashtags.map(h => {
+                    const selected = schedulerForm.hashtag_ids.includes(h.id)
+                    return (
+                      <button
+                        key={h.id}
+                        type="button"
+                        onClick={() => {
+                          setSchedulerForm(prev => ({
+                            ...prev,
+                            hashtag_ids: selected
+                              ? prev.hashtag_ids.filter(id => id !== h.id)
+                              : [...prev.hashtag_ids, h.id],
+                          }))
+                        }}
+                        className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-colors flex items-center gap-1.5 ${
+                          selected
+                            ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30'
+                            : 'bg-white/5 text-slate-400 border border-white/5 hover:bg-white/10'
+                        }`}
+                      >
+                        <span className={`text-[8px] font-black uppercase ${
+                          h.platform === 'tiktok' ? 'text-pink-400' : 'text-orange-400'
+                        }`}>
+                          {h.platform === 'tiktok' ? 'TT' : 'IG'}
+                        </span>
+                        #{h.hashtag}
+                        {selected && <i className="fas fa-check text-[8px] text-violet-400 ml-0.5"></i>}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Buttons */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={saveScheduler}
+                disabled={!schedulerForm.name.trim()}
+                className="bg-gradient-to-r from-violet-500 to-purple-500 text-white px-5 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest hover:opacity-90 transition-opacity disabled:opacity-50"
+              >
+                {editingScheduler ? 'Save Changes' : 'Create Scheduler'}
+              </button>
+              {editingScheduler && (
+                <button
+                  onClick={() => deleteScheduler(editingScheduler)}
+                  className="text-[10px] font-bold text-red-400/60 hover:text-red-400 px-3 py-2 transition-colors"
+                >
+                  Delete
+                </button>
+              )}
+              <button
+                onClick={() => { setShowSchedulerForm(false); setEditingScheduler(null) }}
+                className="text-[10px] font-bold text-slate-500 hover:text-slate-300 px-3 py-2 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Scheduler List */}
+        {schedulers.length === 0 && !showSchedulerForm ? (
+          <p className="text-slate-600 text-xs font-bold">No schedulers yet. Create one to group hashtags and schedule discovery runs.</p>
+        ) : (
+          <div className="space-y-2">
+            {schedulers.map(s => {
+              const isRunning = runningSchedulerIds.has(s.id)
+              return (
+                <div key={s.id} className="flex items-center justify-between p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.04] transition-colors">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <span className="text-sm font-black text-white">{s.name}</span>
+                    <span className="text-[10px] font-bold text-violet-400 bg-violet-500/10 px-2 py-0.5 rounded">
+                      {s.hashtag_count} hashtag{s.hashtag_count !== 1 ? 's' : ''}
+                    </span>
+                    <span className="text-[10px] font-bold text-slate-500">
+                      {frequencyLabel(s.frequency)}
+                      {s.frequency === 'daily' && ` at ${String(s.run_hour).padStart(2, '0')}:00 UTC`}
+                    </span>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                      s.next_run_at ? 'bg-cyan-500/10 text-cyan-400' : 'bg-slate-500/5 text-slate-600'
+                    }`}>
+                      <i className="fas fa-clock mr-1"></i>
+                      {formatNextRun(s.next_run_at)}
+                    </span>
+                    {s.last_run_status && (
+                      <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${statusColor(s.last_run_status)}`}>
+                        {s.last_run_status}
+                      </span>
+                    )}
+                    {s.last_run_finished_at && (
+                      <span className="text-[10px] font-bold text-slate-600">{timeAgo(s.last_run_finished_at)}</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => triggerSchedulerRun(s.id)}
+                      disabled={isRunning}
+                      className={`text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-lg transition-colors ${
+                        isRunning
+                          ? 'bg-amber-500/10 text-amber-400 cursor-wait'
+                          : 'bg-pink-500/10 text-pink-400 hover:bg-pink-500/20'
+                      }`}
+                    >
+                      {isRunning ? (
+                        <span className="flex items-center gap-1.5">
+                          <div className="w-2.5 h-2.5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin"></div>
+                          Running
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1.5">
+                          <i className="fas fa-play text-[8px]"></i> Run
+                        </span>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => openSchedulerForm(s)}
+                      className="text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-lg bg-violet-500/10 text-violet-400 hover:bg-violet-500/20 transition-colors"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => toggleSchedulerActive(s)}
+                      className={`text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-lg transition-colors ${
+                        s.is_active
+                          ? 'bg-teal-500/10 text-teal-400 hover:bg-teal-500/20'
+                          : 'bg-slate-500/10 text-slate-500 hover:bg-slate-500/20'
+                      }`}
+                    >
+                      {s.is_active ? 'Active' : 'Paused'}
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       {/* Tracked Hashtags */}
@@ -453,263 +844,186 @@ export default function Discovery() {
           <p className="text-slate-600 text-xs font-bold">No hashtags tracked yet. Add one above to get started.</p>
         ) : (
           <div className="space-y-2">
-            {hashtags.map(h => {
-              const schedule = getScheduleForHashtag(h.id)
-              return (
-                <div key={h.id}>
-                  <div className="flex items-center justify-between p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.04] transition-colors">
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded tracking-wider ${
-                        h.platform === 'tiktok' ? 'bg-pink-500/10 text-pink-400' : 'bg-orange-500/10 text-orange-400'
-                      }`}>
-                        {h.platform}
-                      </span>
-                      <span className="text-sm font-black text-white">#{h.hashtag}</span>
-                      <span className="text-[10px] font-bold text-slate-600">{h.total_videos || 0} videos</span>
-                      {editingMaxVideos === h.id ? (
-                        <span className="flex items-center gap-1">
-                          <input
-                            type="number"
-                            min="5"
-                            max="100"
-                            value={editMaxValue}
-                            onChange={(e) => setEditMaxValue(parseInt(e.target.value) || 5)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') saveMaxVideos(h.id)
-                              if (e.key === 'Escape') setEditingMaxVideos(null)
-                            }}
-                            autoFocus
-                            className="bg-white/10 border border-violet-500/50 rounded px-1.5 py-0.5 text-[10px] font-bold text-white w-14 focus:outline-none"
-                          />
-                          <span className="text-[10px] font-bold text-slate-600">/run</span>
-                          <button onClick={() => saveMaxVideos(h.id)} className="text-[10px] text-teal-400 hover:text-teal-300"><i className="fas fa-check"></i></button>
-                          <button onClick={() => setEditingMaxVideos(null)} className="text-[10px] text-slate-500 hover:text-slate-400"><i className="fas fa-times"></i></button>
-                        </span>
-                      ) : (
-                        <span
-                          className="text-[10px] font-bold text-slate-600 cursor-pointer hover:text-slate-400 transition-colors"
-                          onClick={() => { setEditingMaxVideos(h.id); setEditMaxValue(h.max_videos_per_run) }}
-                          title="Click to edit max videos per run"
-                        >
-                          max {h.max_videos_per_run}/run
-                        </span>
-                      )}
-                      {h.last_run_status && (
-                        <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${statusColor(h.last_run_status)}`}>
-                          {h.last_run_status}
-                        </span>
-                      )}
-                      {h.last_run_at && (
-                        <span className="text-[10px] font-bold text-slate-600">{timeAgo(h.last_run_at)}</span>
-                      )}
-                      {/* Schedule indicator */}
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                        schedule ? 'bg-violet-500/10 text-violet-400' : 'bg-slate-500/5 text-slate-600'
-                      }`}>
-                        <i className={`fas fa-clock mr-1 ${schedule ? 'text-violet-400' : 'text-slate-600'}`}></i>
-                        {schedule ? formatNextRun(schedule.next_run_at) : 'No schedule'}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => openScheduleEditor(h.id)}
-                        className={`text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-lg transition-colors ${
-                          editingSchedule === h.id
-                            ? 'bg-violet-500/20 text-violet-300'
-                            : 'bg-violet-500/10 text-violet-400 hover:bg-violet-500/20'
-                        }`}
-                      >
-                        Schedule
-                      </button>
-                      <button
-                        onClick={() => toggleActive(h)}
-                        className={`text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-lg transition-colors ${
-                          h.is_active
-                            ? 'bg-teal-500/10 text-teal-400 hover:bg-teal-500/20'
-                            : 'bg-slate-500/10 text-slate-500 hover:bg-slate-500/20'
-                        }`}
-                      >
-                        {h.is_active ? 'Active' : 'Paused'}
-                      </button>
-                      <button
-                        onClick={() => deleteHashtag(h.id)}
-                        className="text-[10px] font-bold text-red-400/60 hover:text-red-400 px-2 py-1.5 transition-colors"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Inline Schedule Editor */}
-                  {editingSchedule === h.id && (
-                    <div className="mt-1 p-5 rounded-xl bg-violet-500/[0.03] border border-violet-500/10">
-                      <div className="flex items-center gap-2 mb-4">
-                        <i className="fas fa-calendar-alt text-violet-400 text-xs"></i>
-                        <span className="text-[10px] font-black text-violet-400 uppercase tracking-widest">
-                          Schedule for #{h.hashtag}
-                        </span>
-                      </div>
-
-                      <div className="flex flex-wrap gap-4 mb-4">
-                        {/* Frequency */}
-                        <div>
-                          <label className="text-[10px] font-bold text-slate-500 block mb-1.5">Frequency</label>
-                          <select
-                            value={scheduleForm.frequency}
-                            onChange={(e) => setScheduleForm({ ...scheduleForm, frequency: e.target.value })}
-                            className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-violet-500/50 transition-colors"
-                          >
-                            <option value="daily">Daily</option>
-                            <option value="every_6_hours">Every 6 hours</option>
-                            <option value="every_12_hours">Every 12 hours</option>
-                          </select>
-                        </div>
-
-                        {/* Hour selector (for daily) */}
-                        {scheduleForm.frequency === 'daily' && (
-                          <div>
-                            <label className="text-[10px] font-bold text-slate-500 block mb-1.5">Run Hour (UTC)</label>
-                            <select
-                              value={scheduleForm.run_hour}
-                              onChange={(e) => setScheduleForm({ ...scheduleForm, run_hour: parseInt(e.target.value) })}
-                              className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-violet-500/50 transition-colors"
-                            >
-                              {Array.from({ length: 24 }, (_, i) => (
-                                <option key={i} value={i}>{String(i).padStart(2, '0')}:00</option>
-                              ))}
-                            </select>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Post-actions toggles */}
-                      <div className="mb-4">
-                        <label className="text-[10px] font-bold text-slate-500 block mb-2">Post-run Actions</label>
-                        <div className="flex flex-wrap gap-3">
-                          <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={scheduleForm.post_actions.auto_analyze}
-                              onChange={(e) => setScheduleForm({
-                                ...scheduleForm,
-                                post_actions: { ...scheduleForm.post_actions, auto_analyze: e.target.checked },
-                              })}
-                              className="w-3.5 h-3.5 rounded border-white/20 bg-white/5 text-violet-500 focus:ring-violet-500/50"
-                            />
-                            <span className="text-[10px] font-bold text-slate-400">Auto Analyze</span>
-                          </label>
-                          <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={scheduleForm.post_actions.auto_download}
-                              onChange={(e) => setScheduleForm({
-                                ...scheduleForm,
-                                post_actions: { ...scheduleForm.post_actions, auto_download: e.target.checked },
-                              })}
-                              className="w-3.5 h-3.5 rounded border-white/20 bg-white/5 text-violet-500 focus:ring-violet-500/50"
-                            />
-                            <span className="text-[10px] font-bold text-slate-400">Auto Download</span>
-                          </label>
-                          <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={scheduleForm.post_actions.auto_suggestions}
-                              onChange={(e) => setScheduleForm({
-                                ...scheduleForm,
-                                post_actions: { ...scheduleForm.post_actions, auto_suggestions: e.target.checked },
-                              })}
-                              className="w-3.5 h-3.5 rounded border-white/20 bg-white/5 text-violet-500 focus:ring-violet-500/50"
-                            />
-                            <span className="text-[10px] font-bold text-slate-400">Auto Suggestions</span>
-                          </label>
-                        </div>
-                      </div>
-
-                      {/* Save / Delete / Cancel */}
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => saveSchedule(h.id)}
-                          className="bg-gradient-to-r from-violet-500 to-purple-500 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest hover:opacity-90 transition-opacity"
-                        >
-                          Save Schedule
-                        </button>
-                        {schedule && (
-                          <button
-                            onClick={() => deleteSchedule(schedule.id)}
-                            className="text-[10px] font-bold text-red-400/60 hover:text-red-400 px-3 py-2 transition-colors"
-                          >
-                            Delete Schedule
-                          </button>
-                        )}
-                        <button
-                          onClick={() => setEditingSchedule(null)}
-                          className="text-[10px] font-bold text-slate-500 hover:text-slate-300 px-3 py-2 transition-colors"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
+            {hashtags.map(h => (
+              <div key={h.id} className="flex items-center justify-between p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.04] transition-colors">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded tracking-wider ${
+                    h.platform === 'tiktok' ? 'bg-pink-500/10 text-pink-400' : 'bg-orange-500/10 text-orange-400'
+                  }`}>
+                    {h.platform}
+                  </span>
+                  <span className="text-sm font-black text-white">#{h.hashtag}</span>
+                  <span className="text-[10px] font-bold text-slate-600">{h.total_videos || 0} videos</span>
+                  {editingMaxVideos === h.id ? (
+                    <span className="flex items-center gap-1">
+                      <input
+                        type="number"
+                        min="5"
+                        max="100"
+                        value={editMaxValue}
+                        onChange={(e) => setEditMaxValue(parseInt(e.target.value) || 5)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') saveMaxVideos(h.id)
+                          if (e.key === 'Escape') setEditingMaxVideos(null)
+                        }}
+                        autoFocus
+                        className="bg-white/10 border border-violet-500/50 rounded px-1.5 py-0.5 text-[10px] font-bold text-white w-14 focus:outline-none"
+                      />
+                      <span className="text-[10px] font-bold text-slate-600">/run</span>
+                      <button onClick={() => saveMaxVideos(h.id)} className="text-[10px] text-teal-400 hover:text-teal-300"><i className="fas fa-check"></i></button>
+                      <button onClick={() => setEditingMaxVideos(null)} className="text-[10px] text-slate-500 hover:text-slate-400"><i className="fas fa-times"></i></button>
+                    </span>
+                  ) : (
+                    <span
+                      className="text-[10px] font-bold text-slate-600 cursor-pointer hover:text-slate-400 transition-colors"
+                      onClick={() => { setEditingMaxVideos(h.id); setEditMaxValue(h.max_videos_per_run) }}
+                      title="Click to edit max videos per run"
+                    >
+                      max {h.max_videos_per_run}/run
+                    </span>
+                  )}
+                  {h.last_run_status && (
+                    <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${statusColor(h.last_run_status)}`}>
+                      {h.last_run_status}
+                    </span>
+                  )}
+                  {h.last_run_at && (
+                    <span className="text-[10px] font-bold text-slate-600">{timeAgo(h.last_run_at)}</span>
                   )}
                 </div>
-              )
-            })}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => toggleActive(h)}
+                    className={`text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-lg transition-colors ${
+                      h.is_active
+                        ? 'bg-teal-500/10 text-teal-400 hover:bg-teal-500/20'
+                        : 'bg-slate-500/10 text-slate-500 hover:bg-slate-500/20'
+                    }`}
+                  >
+                    {h.is_active ? 'Active' : 'Paused'}
+                  </button>
+                  <button
+                    onClick={() => deleteHashtag(h.id)}
+                    className="text-[10px] font-bold text-red-400/60 hover:text-red-400 px-2 py-1.5 transition-colors"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
 
-      {/* Recent Runs */}
+      {/* Scheduler Run History */}
       <div className="glass-card rounded-[1.5rem] border-white/5 p-8 mb-10">
-        <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-          <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Recent Runs</h2>
-          <select
-            value={runHashtagFilter}
-            onChange={(e) => setRunHashtagFilter(e.target.value)}
-            className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[10px] font-bold text-white focus:outline-none focus:border-pink-500/50 transition-colors"
-          >
-            <option value="">All Hashtags</option>
-            {hashtags.map(h => (
-              <option key={h.id} value={h.hashtag}>#{h.hashtag} ({h.platform})</option>
-            ))}
-          </select>
-        </div>
+        <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6">Run History</h2>
 
-        {filteredRuns.length === 0 ? (
-          <p className="text-slate-600 text-xs font-bold">No discovery runs yet. Add hashtags and click "Run Now" to start.</p>
+        {schedulerRuns.length === 0 ? (
+          <p className="text-slate-600 text-xs font-bold">No scheduler runs yet. Create a scheduler and run it to see history here.</p>
         ) : (
           <div className="space-y-2">
-            {filteredRuns.map(run => {
+            {schedulerRuns.map(run => {
               const duration = formatDuration(run.started_at, run.finished_at)
+              const isExpanded = expandedRun === run.id
               return (
-                <div key={run.id} className="flex items-center justify-between p-4 rounded-xl bg-white/[0.02] border border-white/5">
-                  <div className="flex items-center gap-3">
-                    <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${statusColor(run.status)}`}>
-                      {run.status}
-                    </span>
-                    <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded tracking-wider ${
-                      run.platform === 'tiktok' ? 'bg-pink-500/10 text-pink-400' : 'bg-orange-500/10 text-orange-400'
-                    }`}>
-                      {run.platform}
-                    </span>
-                    <span className="text-sm font-bold text-white">#{run.hashtag}</span>
+                <div key={run.id}>
+                  <div
+                    className={`flex items-center justify-between p-4 rounded-xl bg-white/[0.02] border transition-colors cursor-pointer ${
+                      isExpanded ? 'border-violet-500/20 bg-white/[0.04]' : 'border-white/5 hover:bg-white/[0.04]'
+                    }`}
+                    onClick={() => toggleRunExpand(run.id)}
+                  >
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <i className={`fas fa-chevron-${isExpanded ? 'down' : 'right'} text-[8px] text-slate-500`}></i>
+                      <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${statusColor(run.status)}`}>
+                        {run.status}
+                      </span>
+                      <span className="text-sm font-bold text-white">{run.scheduler_name}</span>
+                    </div>
+                    <div className="flex items-center gap-4 text-[10px] font-bold text-slate-500">
+                      <span>
+                        <span className="text-teal-400">{run.completed_hashtags}</span>
+                        {run.failed_hashtags > 0 && <span className="text-red-400">/{run.failed_hashtags} failed</span>}
+                        <span className="text-slate-600">/{run.total_hashtags} hashtags</span>
+                      </span>
+                      <span>{run.total_videos_fetched} fetched</span>
+                      <span className="text-teal-400">{run.total_new_videos} new</span>
+                      <span className="text-cyan-400">{run.total_videos_analyzed} analyzed</span>
+                      {duration && <span className="text-violet-400">{duration}</span>}
+                      <span>{timeAgo(run.created_at)}</span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          navigate(`/dashboard/discovery/items?scheduler_run_id=${run.id}`)
+                        }}
+                        className="text-pink-400/60 hover:text-pink-400 transition-colors"
+                      >
+                        View Videos
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-4 text-[10px] font-bold text-slate-500">
-                    <span>{run.videos_fetched || 0} fetched</span>
-                    <span className="text-teal-400">{run.new_videos || 0} new</span>
-                    <span className="text-cyan-400">{run.videos_analyzed || 0} analyzed</span>
-                    {duration && (
-                      <span className="text-violet-400">{duration}</span>
-                    )}
-                    <span>{timeAgo(run.created_at)}</span>
-                    {run.error && (
-                      <span className="text-red-400 truncate max-w-[200px]" title={run.error}>{run.error}</span>
-                    )}
-                    <button
-                      onClick={() => navigate(`/dashboard/discovery/items?run_id=${run.id}`)}
-                      className="text-pink-400/60 hover:text-pink-400 transition-colors"
-                    >
-                      View Details
-                    </button>
-                  </div>
+
+                  {/* Expanded Detail */}
+                  {isExpanded && (
+                    <div className="mt-1 p-4 rounded-xl bg-violet-500/[0.02] border border-violet-500/10">
+                      {loadingRunDetail ? (
+                        <div className="flex items-center justify-center py-4">
+                          <div className="w-5 h-5 border-2 border-violet-500 border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                      ) : runDetail.length === 0 ? (
+                        <p className="text-slate-600 text-xs font-bold text-center py-3">No hashtag results for this run.</p>
+                      ) : (
+                        <table className="w-full">
+                          <thead>
+                            <tr className="text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-white/5">
+                              <td className="pb-2">Platform</td>
+                              <td className="pb-2">Hashtag</td>
+                              <td className="pb-2">Status</td>
+                              <td className="pb-2 text-right">Fetched</td>
+                              <td className="pb-2 text-right">New</td>
+                              <td className="pb-2 text-right">Analyzed</td>
+                              <td className="pb-2">Duration</td>
+                              <td className="pb-2">Error</td>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {runDetail.map(rh => {
+                              const rhDuration = formatDuration(rh.started_at, rh.finished_at)
+                              return (
+                                <tr key={rh.id} className="text-xs border-b border-white/[0.03] last:border-0">
+                                  <td className="py-2">
+                                    <span className={`text-[10px] font-black uppercase px-1.5 py-0.5 rounded tracking-wider ${
+                                      rh.platform === 'tiktok' ? 'bg-pink-500/10 text-pink-400' : 'bg-orange-500/10 text-orange-400'
+                                    }`}>
+                                      {rh.platform}
+                                    </span>
+                                  </td>
+                                  <td className="py-2 font-bold text-white">#{rh.hashtag}</td>
+                                  <td className="py-2">
+                                    <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${statusColor(rh.status)}`}>
+                                      {rh.status}
+                                    </span>
+                                  </td>
+                                  <td className="py-2 text-right font-bold text-slate-400">{rh.videos_fetched}</td>
+                                  <td className="py-2 text-right font-bold text-teal-400">{rh.new_videos}</td>
+                                  <td className="py-2 text-right font-bold text-cyan-400">{rh.videos_analyzed}</td>
+                                  <td className="py-2 font-bold text-violet-400">{rhDuration || '-'}</td>
+                                  <td className="py-2">
+                                    {rh.error && (
+                                      <span className="text-red-400 text-[10px] truncate max-w-[200px] inline-block" title={rh.error}>
+                                        {rh.error}
+                                      </span>
+                                    )}
+                                  </td>
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                        </table>
+                      )}
+                    </div>
+                  )}
                 </div>
               )
             })}

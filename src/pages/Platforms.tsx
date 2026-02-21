@@ -159,28 +159,61 @@ export default function Platforms() {
 
   useEffect(() => { fetchData() }, [fetchData])
 
+  const isMobile = () => /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+
   const handleConnect = async (platform: 'instagram' | 'tiktok') => {
     setConnecting(platform)
+
+    // Open blank popup immediately to preserve user gesture context (Safari blocks async window.open)
+    let popup: Window | null = null
+    if (!isMobile()) {
+      const width = 600, height = 700
+      const left = window.screenX + (window.innerWidth - width) / 2
+      const top = window.screenY + (window.innerHeight - height) / 2
+      popup = window.open(
+        'about:blank',
+        `${platform}_oauth`,
+        `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no`
+      )
+      if (popup) {
+        popup.document.write(
+          '<html><body style="background:#0f1419;color:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><div style="text-align:center"><p style="color:#94a3b8">Connecting...</p></div></body></html>'
+        )
+      }
+    }
+
     try {
-      const res = await authFetch(`/api/social/${platform}/auth-url`)
+      const mobile = isMobile()
+      const res = await authFetch(`/api/social/${platform}/auth-url${mobile ? '?mobile=1' : ''}`)
       if (!res.ok) {
         const err = await res.json()
+        if (popup) popup.close()
+        setConnecting(null)
         toast.error(err.error || 'Failed to get authorization URL')
         return
       }
       const { url } = await res.json()
-      const width = 600, height = 700
-      const left = window.screenX + (window.innerWidth - width) / 2
-      const top = window.screenY + (window.innerHeight - height) / 2
-      const popup = window.open(url, `${platform}_oauth`, `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no`)
-      const pollTimer = setInterval(() => {
-        if (!popup || popup.closed) {
-          clearInterval(pollTimer)
-          setConnecting(null)
-          fetchData()
-        }
-      }, 500)
+
+      if (mobile) {
+        window.location.href = url
+        return
+      }
+
+      if (popup && !popup.closed) {
+        popup.location.href = url
+        const pollTimer = setInterval(() => {
+          if (!popup || popup.closed) {
+            clearInterval(pollTimer)
+            setConnecting(null)
+            fetchData()
+          }
+        }, 500)
+      } else {
+        setConnecting(null)
+        window.location.href = url
+      }
     } catch {
+      if (popup) popup.close()
       toast.error('Failed to initiate connection')
       setConnecting(null)
     }

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { authFetch } from '../lib/api'
 
 interface SocialAccount {
@@ -42,10 +43,26 @@ const PLATFORMS = [
 ]
 
 export default function AccountIntegrations() {
+  const [searchParams, setSearchParams] = useSearchParams()
   const [accounts, setAccounts] = useState<SocialAccount[]>([])
   const [loading, setLoading] = useState(true)
   const [connecting, setConnecting] = useState<string | null>(null)
   const [disconnecting, setDisconnecting] = useState<number | null>(null)
+  const [oauthMessage, setOauthMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+
+  // Handle OAuth redirect params (mobile flow)
+  useEffect(() => {
+    const success = searchParams.get('oauth_success')
+    const error = searchParams.get('oauth_error')
+    const username = searchParams.get('username')
+    if (success) {
+      setOauthMessage({ type: 'success', text: `@${username || ''} connected via ${success}!` })
+      setSearchParams({}, { replace: true })
+    } else if (error) {
+      setOauthMessage({ type: 'error', text: `Connection failed: ${error}` })
+      setSearchParams({}, { replace: true })
+    }
+  }, [searchParams, setSearchParams])
 
   const fetchAccounts = useCallback(async () => {
     try {
@@ -65,42 +82,71 @@ export default function AccountIntegrations() {
     fetchAccounts()
   }, [fetchAccounts])
 
+  const isMobile = () => /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+
   const handleConnect = async (platform: 'instagram' | 'tiktok') => {
     setConnecting(platform)
+
+    // On mobile, open a blank window IMMEDIATELY (synchronously in click handler)
+    // to preserve the user gesture context — Safari blocks async window.open
+    let popup: Window | null = null
+    if (!isMobile()) {
+      const width = 600
+      const height = 700
+      const left = window.screenX + (window.innerWidth - width) / 2
+      const top = window.screenY + (window.innerHeight - height) / 2
+      popup = window.open(
+        'about:blank',
+        `${platform}_oauth`,
+        `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no`
+      )
+      if (popup) {
+        popup.document.write(
+          '<html><body style="background:#0f1419;color:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><div style="text-align:center"><p style="color:#94a3b8">Connecting...</p></div></body></html>'
+        )
+      }
+    }
+
     try {
-      const res = await authFetch(`/api/social/${platform}/auth-url`)
+      const mobile = isMobile()
+      const res = await authFetch(`/api/social/${platform}/auth-url${mobile ? '?mobile=1' : ''}`)
       if (!res.ok) {
         const err = await res.json()
+        if (popup) popup.close()
+        setConnecting(null)
         alert(err.error || 'Failed to get authorization URL')
         return
       }
       const { url } = await res.json()
 
-      // Open OAuth popup
-      const width = 600
-      const height = 700
-      const left = window.screenX + (window.innerWidth - width) / 2
-      const top = window.screenY + (window.innerHeight - height) / 2
-      const popup = window.open(
-        url,
-        `${platform}_oauth`,
-        `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no`
-      )
+      if (isMobile()) {
+        // Mobile: redirect in same tab — the OAuth callback will redirect back
+        window.location.href = url
+        return
+      }
 
-      // Poll for popup close
-      const pollTimer = setInterval(() => {
-        if (!popup || popup.closed) {
-          clearInterval(pollTimer)
-          setConnecting(null)
-          // Refetch accounts after popup closes
-          fetchAccounts()
-        }
-      }, 500)
+      if (popup && !popup.closed) {
+        // Desktop: redirect the already-open popup to the OAuth URL
+        popup.location.href = url
+
+        // Poll for popup close
+        const pollTimer = setInterval(() => {
+          if (!popup || popup.closed) {
+            clearInterval(pollTimer)
+            setConnecting(null)
+            fetchAccounts()
+          }
+        }, 500)
+      } else {
+        // Popup was blocked even with sync open — fall back to redirect
+        setConnecting(null)
+        window.location.href = url
+      }
     } catch (err) {
       console.error('Connect error:', err)
+      if (popup) popup.close()
+      setConnecting(null)
       alert('Failed to initiate connection')
-    } finally {
-      // connecting state is cleared when popup closes
     }
   }
 
@@ -154,6 +200,22 @@ export default function AccountIntegrations() {
           Connect your social media accounts to sync content and track performance.
         </p>
       </div>
+
+      {oauthMessage && (
+        <div className={`mb-4 px-4 py-3 rounded-xl text-sm font-medium flex items-center justify-between ${
+          oauthMessage.type === 'success'
+            ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400'
+            : 'bg-red-500/10 border border-red-500/20 text-red-400'
+        }`}>
+          <span>
+            <i className={`fas ${oauthMessage.type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'} mr-2`}></i>
+            {oauthMessage.text}
+          </span>
+          <button onClick={() => setOauthMessage(null)} className="ml-3 opacity-60 hover:opacity-100">
+            <i className="fas fa-times text-xs"></i>
+          </button>
+        </div>
+      )}
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
