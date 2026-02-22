@@ -431,7 +431,7 @@ export default function SuggestionDetail() {
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-slate-500 font-bold">Avg Engagement</span>
-                <span className="text-white font-black">{s.avg_engagement_rate.toFixed(1)}%</span>
+                <span className="text-white font-black">{Number(s.avg_engagement_rate || 0).toFixed(1)}%</span>
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-slate-500 font-bold">Upvotes</span>

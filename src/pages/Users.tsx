@@ -158,6 +158,7 @@ export default function Users() {
   const [detailLoading, setDetailLoading] = useState(false)
   const [showEvents, setShowEvents] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [updatingUserType, setUpdatingUserType] = useState(false)
 
   const fetchUsers = async (searchTerm = '') => {
     try {
@@ -214,6 +215,32 @@ export default function Users() {
     } else {
       setExpandedUserId(userId)
       fetchUserDetail(userId)
+    }
+  }
+
+  const handleUserTypeChange = async (userId: string, newType: string) => {
+    setUpdatingUserType(true)
+    try {
+      const res = await authFetch(`/api/admin/users/${userId}/user-type`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_type: newType }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        setErrorMsg(data.error || 'Failed to update user type')
+        return
+      }
+      // Update local state
+      if (userDetail) setUserDetail({ ...userDetail, user_type: newType })
+      setUsers((prev) =>
+        prev.map((u) => (u.id === userId ? { ...u, user_type: newType } : u))
+      )
+    } catch (err) {
+      console.error('Error updating user type:', err)
+      setErrorMsg('Failed to update user type')
+    } finally {
+      setUpdatingUserType(false)
     }
   }
 
@@ -427,13 +454,19 @@ export default function Users() {
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         <Field label="Full Name">{userDetail.full_name || '—'}</Field>
                         <Field label="User Type">
-                          <span
-                            className={
-                              userDetail.user_type === 'admin' ? 'text-indigo-400 font-bold' : ''
-                            }
+                          <select
+                            value={userDetail.user_type || 'user'}
+                            onChange={(e) => handleUserTypeChange(userDetail.id, e.target.value)}
+                            disabled={updatingUserType}
+                            className="bg-white/5 border border-white/10 rounded-lg px-2.5 py-1 text-sm font-semibold outline-none cursor-pointer hover:border-white/20 focus:border-indigo-500/50 transition-colors appearance-none disabled:opacity-50"
+                            style={{ colorScheme: 'dark' }}
                           >
-                            {userDetail.user_type || 'user'}
-                          </span>
+                            <option value="user">user</option>
+                            <option value="admin">admin</option>
+                          </select>
+                          {updatingUserType && (
+                            <div className="w-3.5 h-3.5 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin ml-2" />
+                          )}
                         </Field>
                         <Field label="Avatar URL">
                           {userDetail.avatar_url ? (

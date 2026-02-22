@@ -229,7 +229,7 @@ export default function Videos() {
       body: JSON.stringify({
         platform,
         search_type: searchType,
-        query: query.trim(),
+        query: searchType === 'hashtag' ? query.trim().replace(/^#/, '') : query.trim(),
         amount,
       }),
     })

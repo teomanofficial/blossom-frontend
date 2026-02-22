@@ -1335,8 +1335,8 @@ export default function Discovery() {
                                   </tr>
                                   {isLogsExpanded && hasLogs && (
                                     <tr>
-                                      <td colSpan={7} className="p-0">
-                                        <div className="bg-black/40 border border-white/5 rounded-lg mx-2 mb-2 p-3 max-h-[400px] overflow-y-auto font-mono text-[11px] leading-relaxed">
+                                      <td colSpan={7} className="p-0" style={{ maxWidth: 0 }}>
+                                        <div className="bg-black/40 border border-white/5 rounded-lg mx-2 mb-2 p-3 max-h-[400px] overflow-y-auto overflow-x-hidden font-mono text-[11px] leading-relaxed">
                                           {rh.logs!.map((entry, i) => {
                                             const time = new Date(entry.ts).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3 } as any)
                                             const levelColor = entry.level === 'error' ? 'text-red-400'
@@ -1346,12 +1346,12 @@ export default function Discovery() {
                                               : entry.level === 'warn' ? 'text-amber-300'
                                               : 'text-slate-300'
                                             return (
-                                              <div key={i} className="flex gap-2 hover:bg-white/[0.02] px-1 rounded">
+                                              <div key={i} className="flex gap-2 hover:bg-white/[0.02] px-1 rounded min-w-0">
                                                 <span className="text-slate-600 shrink-0">{time}</span>
                                                 <span className={`${levelColor} shrink-0 w-10 text-right uppercase`}>{entry.level}</span>
-                                                <span className={msgColor}>{entry.msg}</span>
+                                                <span className={`${msgColor} break-all min-w-0`}>{entry.msg}</span>
                                                 {entry.data && (
-                                                  <span className="text-slate-600 truncate" title={JSON.stringify(entry.data)}>
+                                                  <span className="text-slate-600 min-w-0 break-all" title={JSON.stringify(entry.data)}>
                                                     {JSON.stringify(entry.data)}
                                                   </span>
                                                 )}
