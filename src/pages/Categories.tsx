@@ -54,6 +54,51 @@ export default function Categories() {
   // Delete state
   const [deletingId, setDeletingId] = useState<number | null>(null)
 
+  // Auto-match state
+  const [autoMatching, setAutoMatching] = useState(false)
+  const [orphanCount, setOrphanCount] = useState<number | null>(null)
+  const [showBackfillConfirm, setShowBackfillConfirm] = useState(false)
+
+  // Fetch orphan domain count
+  const fetchOrphanCount = useCallback(async () => {
+    try {
+      const res = await authFetch('/api/management/domains?limit=1&offset=0')
+      const data = await res.json()
+      const totalDomains = data.total ?? 0
+
+      // Sum domain_count across all categories to estimate linked domains
+      const catRes = await authFetch('/api/management/categories?limit=100&offset=0')
+      const catData = await catRes.json()
+      const linkedCount = (catData.categories ?? []).reduce((sum: number, c: any) => sum + (c.domain_count || 0), 0)
+
+      setOrphanCount(Math.max(0, totalDomains - linkedCount))
+    } catch {
+      setOrphanCount(null)
+    }
+  }, [])
+
+  useEffect(() => { fetchOrphanCount() }, [fetchOrphanCount])
+
+  const runAutoMatch = async () => {
+    setShowBackfillConfirm(false)
+    setAutoMatching(true)
+    try {
+      const res = await authFetch('/api/management/domains/auto-match-categories', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })
+      const data = await res.json()
+      if (res.ok) {
+        setMessage({ type: 'success', text: data.message || `Matched ${data.matched} domains` })
+        fetchCategories()
+        fetchOrphanCount()
+      } else {
+        setMessage({ type: 'error', text: data.error || 'Auto-match failed' })
+      }
+    } catch {
+      setMessage({ type: 'error', text: 'Auto-match failed' })
+    } finally {
+      setAutoMatching(false)
+    }
+  }
+
   const fetchCategories = useCallback(async () => {
     setLoading(true)
     try {
@@ -224,6 +269,25 @@ export default function Categories() {
             <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Total</div>
             <div className="text-2xl font-black text-white">{total}</div>
           </div>
+          {orphanCount !== null && orphanCount > 0 && (
+            <button
+              onClick={() => setShowBackfillConfirm(true)}
+              disabled={autoMatching}
+              className="px-6 py-4 glass-card rounded-[1.5rem] border-white/5 hover:bg-white/10 transition-colors group relative"
+            >
+              <div className="text-[10px] font-black text-orange-400/70 uppercase mb-1 tracking-widest">
+                Backfill Domains
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="text-2xl font-black text-orange-400 group-hover:text-orange-300 transition-colors">
+                  {autoMatching ? <i className="fas fa-spinner fa-spin"></i> : <i className="fas fa-wand-magic-sparkles"></i>}
+                </div>
+                <span className="text-xs font-bold text-slate-400">
+                  {autoMatching ? 'Matching...' : `${orphanCount} orphan${orphanCount !== 1 ? 's' : ''}`}
+                </span>
+              </div>
+            </button>
+          )}
           <button
             onClick={openCreate}
             className="px-6 py-4 glass-card rounded-[1.5rem] border-white/5 hover:bg-white/10 transition-colors group"
@@ -353,21 +417,6 @@ export default function Categories() {
                     </p>
                   )}
 
-                  {/* Domain pills */}
-                  {cat.domains && cat.domains.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mb-4">
-                      {cat.domains.slice(0, 6).map((d) => (
-                        <span key={d.id} className="px-2 py-0.5 bg-white/5 text-slate-400 text-[10px] font-bold rounded">
-                          {d.icon && <span className="mr-1">{d.icon}</span>}{d.name}
-                        </span>
-                      ))}
-                      {cat.domains.length > 6 && (
-                        <span className="px-2 py-0.5 text-slate-500 text-[10px] font-bold">
-                          +{cat.domains.length - 6} more
-                        </span>
-                      )}
-                    </div>
-                  )}
 
                   {/* Stats */}
                   <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
@@ -531,6 +580,36 @@ export default function Categories() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Backfill Confirmation Modal */}
+      {showBackfillConfirm && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowBackfillConfirm(false)}>
+          <div className="glass-card rounded-2xl p-8 w-full max-w-md border border-white/10" onClick={(e) => e.stopPropagation()}>
+            <div className="w-14 h-14 mx-auto mb-5 bg-orange-500/10 rounded-2xl flex items-center justify-center">
+              <i className="fas fa-wand-magic-sparkles text-orange-400 text-xl"></i>
+            </div>
+            <h2 className="text-xl font-black tracking-tight text-center mb-2">Backfill Domains</h2>
+            <p className="text-sm text-slate-400 text-center mb-6 leading-relaxed">
+              AI will analyze <span className="text-white font-bold">{orphanCount}</span> unassigned domain{orphanCount !== 1 ? 's' : ''} and match each to the best-fit content category. This may take a moment.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowBackfillConfirm(false)}
+                className="flex-1 py-3 rounded-xl text-sm font-bold bg-white/5 hover:bg-white/10 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={runAutoMatch}
+                className="flex-1 py-3 rounded-xl text-sm font-bold bg-orange-500 hover:bg-orange-400 text-white transition-colors"
+              >
+                <i className="fas fa-wand-magic-sparkles mr-2"></i>
+                Run Backfill
+              </button>
+            </div>
           </div>
         </div>
       )}
