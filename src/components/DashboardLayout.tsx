@@ -29,6 +29,7 @@ const managementItems = [
   { to: '/dashboard/support-management', icon: 'fa-ticket', label: 'Support Tickets' },
   { to: '/dashboard/bulk-management', icon: 'fa-arrows-rotate', label: 'Bulk Retrain' },
   { to: '/dashboard/onboarding-management', icon: 'fa-clipboard-check', label: 'Onboarding' },
+  { to: '/dashboard/ai-model-lab', icon: 'fa-microchip', label: 'AI Model Lab' },
 ]
 
 /* Bottom tab items for mobile — the 4 most-used features + More */
@@ -64,6 +65,7 @@ const drawerRoutes = [
   '/dashboard/support-management',
   '/dashboard/bulk-management',
   '/dashboard/onboarding-management',
+  '/dashboard/ai-model-lab',
 ]
 
 export default function DashboardLayout() {

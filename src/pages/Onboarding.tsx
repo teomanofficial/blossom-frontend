@@ -319,37 +319,83 @@ function StepCategory({
 
 function StepDomains({
   categoryId,
+  contentDescription,
   selectedIds,
   onToggle,
+  onSetSelected,
   onNext,
   onBack,
   saving,
 }: {
   categoryId: number | null
+  contentDescription: string
   selectedIds: number[]
   onToggle: (id: number) => void
+  onSetSelected: (ids: number[]) => void
   onNext: () => void
   onBack: () => void
   saving: boolean
 }) {
   const [domains, setDomains] = useState<Domain[]>([])
   const [loading, setLoading] = useState(true)
+  const [suggesting, setSuggesting] = useState(false)
 
   useEffect(() => {
     if (!categoryId) return
     setLoading(true)
-    authFetch(`/api/onboarding/categories/${categoryId}/domains`)
-      .then((r) => r.json())
-      .then(setDomains)
-      .catch(console.error)
-      .finally(() => setLoading(false))
+    let cancelled = false
+
+    const load = async () => {
+      try {
+        // Fetch domains
+        const domainsRes = await authFetch(`/api/onboarding/categories/${categoryId}/domains`)
+        const domainsData: Domain[] = await domainsRes.json()
+        if (cancelled) return
+        setDomains(domainsData)
+        setLoading(false)
+
+        // Only auto-suggest if user hasn't already selected domains for this category
+        if (selectedIds.length === 0 && contentDescription.trim().length >= 10) {
+          setSuggesting(true)
+          try {
+            const suggestRes = await authFetch(`/api/onboarding/categories/${categoryId}/suggest-domains`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ contentDescription }),
+            })
+            const { suggestedDomainIds } = await suggestRes.json()
+            if (!cancelled && Array.isArray(suggestedDomainIds) && suggestedDomainIds.length > 0) {
+              // Only pre-select domains that are in the loaded list
+              const validIds = new Set(domainsData.map((d) => d.id))
+              const validSuggestions = suggestedDomainIds.filter((id: number) => validIds.has(id))
+              if (validSuggestions.length > 0) {
+                onSetSelected(validSuggestions)
+              }
+            }
+          } catch {
+            // Non-critical, just skip suggestions
+          } finally {
+            if (!cancelled) setSuggesting(false)
+          }
+        }
+      } catch {
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    load()
+    return () => { cancelled = true }
   }, [categoryId])
 
   return (
     <div className="space-y-6">
       <div className="text-center mb-8">
         <h2 className="text-3xl font-black tracking-tight mb-2">Your Domains</h2>
-        <p className="text-slate-400 text-sm font-medium">Select the topics you're interested in (at least 1)</p>
+        <p className="text-slate-400 text-sm font-medium">
+          {suggesting
+            ? 'Picking the best domains for you...'
+            : 'We pre-selected domains based on your content. Feel free to adjust.'}
+        </p>
       </div>
       {loading ? (
         <div className="flex justify-center py-12">
@@ -358,24 +404,32 @@ function StepDomains({
       ) : domains.length === 0 ? (
         <p className="text-center text-slate-500 py-8 text-sm">No domains available for this category.</p>
       ) : (
-        <div className="flex flex-wrap gap-2 max-h-72 overflow-y-auto pr-1 dashboard-scrollbar">
-          {domains.map((d) => {
-            const isSelected = selectedIds.includes(d.id)
-            return (
-              <button
-                key={d.id}
-                onClick={() => onToggle(d.id)}
-                className={`px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${
-                  isSelected
-                    ? 'bg-pink-500/20 border border-pink-500/40 text-pink-300'
-                    : 'bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10 hover:text-white'
-                }`}
-              >
-                {d.name}
-              </button>
-            )
-          })}
-        </div>
+        <>
+          {suggesting && (
+            <div className="flex items-center justify-center gap-2 py-2">
+              <div className="w-4 h-4 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
+              <span className="text-xs text-slate-400 font-medium">Analyzing your content...</span>
+            </div>
+          )}
+          <div className="flex flex-wrap gap-2 max-h-72 overflow-y-auto pr-1 dashboard-scrollbar">
+            {domains.map((d) => {
+              const isSelected = selectedIds.includes(d.id)
+              return (
+                <button
+                  key={d.id}
+                  onClick={() => onToggle(d.id)}
+                  className={`px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                    isSelected
+                      ? 'bg-pink-500/20 border border-pink-500/40 text-pink-300'
+                      : 'bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10 hover:text-white'
+                  }`}
+                >
+                  {d.name}
+                </button>
+              )
+            })}
+          </div>
+        </>
       )}
       <div className="flex gap-3">
         <button
@@ -386,7 +440,7 @@ function StepDomains({
         </button>
         <button
           onClick={onNext}
-          disabled={selectedIds.length === 0 || saving}
+          disabled={selectedIds.length === 0 || saving || suggesting}
           className="flex-1 py-3.5 bg-gradient-to-r from-pink-500 to-orange-400 rounded-2xl text-sm font-black text-white disabled:opacity-40 transition-all hover:scale-[1.02]"
         >
           {saving ? 'Saving...' : 'Continue'}
@@ -844,6 +898,7 @@ export default function Onboarding() {
               {step === 5 && (
                 <StepDomains
                   categoryId={data.categoryId}
+                  contentDescription={data.contentDescription}
                   selectedIds={data.selectedDomainIds}
                   onToggle={(id) =>
                     setData((prev) => ({
@@ -852,6 +907,9 @@ export default function Onboarding() {
                         ? prev.selectedDomainIds.filter((d) => d !== id)
                         : [...prev.selectedDomainIds, id],
                     }))
+                  }
+                  onSetSelected={(ids) =>
+                    setData((prev) => ({ ...prev, selectedDomainIds: ids }))
                   }
                   onNext={() => handleNext(5, { domainIds: data.selectedDomainIds })}
                   onBack={() => setStep(4)}

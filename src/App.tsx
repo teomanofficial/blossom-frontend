@@ -38,6 +38,7 @@ import SupportManagement from './pages/SupportManagement'
 import Categories from './pages/Categories'
 import BulkAnalysisManagement from './pages/BulkAnalysisManagement'
 import OnboardingManagement from './pages/OnboardingManagement'
+import AIModelLab from './pages/AIModelLab'
 import CategoryDomains from './pages/CategoryDomains'
 import ChoosePlan from './pages/ChoosePlan'
 import TrendingPosts from './pages/TrendingPosts'
@@ -137,6 +138,7 @@ function App() {
         <Route path="support-management" element={<AdminGate><SupportManagement /></AdminGate>} />
         <Route path="bulk-management" element={<AdminGate><BulkAnalysisManagement /></AdminGate>} />
         <Route path="onboarding-management" element={<AdminGate><OnboardingManagement /></AdminGate>} />
+        <Route path="ai-model-lab" element={<AdminGate><AIModelLab /></AdminGate>} />
       </Route>
     </Routes>
   )

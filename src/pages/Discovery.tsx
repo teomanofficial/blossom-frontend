@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react'
+import React, { useEffect, useState, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { authFetch, API_URL } from '../lib/api'
 import { supabase } from '../lib/supabase'
@@ -68,6 +68,13 @@ interface SchedulerRun {
   created_at: string
 }
 
+interface LogEntry {
+  ts: string
+  level: 'info' | 'warn' | 'error'
+  msg: string
+  data?: any
+}
+
 interface SchedulerRunHashtag {
   id: number
   hashtag_id: number
@@ -81,6 +88,7 @@ interface SchedulerRunHashtag {
   error: string | null
   started_at: string | null
   finished_at: string | null
+  logs: LogEntry[] | null
 }
 
 interface DiscoveryProgress {
@@ -338,6 +346,7 @@ export default function Discovery() {
   const [expandedRun, setExpandedRun] = useState<number | null>(null)
   const [runDetail, setRunDetail] = useState<SchedulerRunHashtag[]>([])
   const [loadingRunDetail, setLoadingRunDetail] = useState(false)
+  const [expandedLogs, setExpandedLogs] = useState<number | null>(null)
 
   // Running schedulers (for polling)
   const [runningSchedulerIds, setRunningSchedulerIds] = useState<Set<number>>(new Set())
@@ -1270,41 +1279,90 @@ export default function Discovery() {
                               <td className="pb-2">Status</td>
                               <td className="pb-2 text-right">Fetched</td>
                               <td className="pb-2 text-right">New</td>
-                              <td className="pb-2 text-right">Analyzed</td>
-                              <td className="pb-2">Duration</td>
+                              <td className="pb-2 text-right">Analyzed Duration</td>
                               <td className="pb-2">Error</td>
                             </tr>
                           </thead>
                           <tbody>
                             {runDetail.map(rh => {
                               const rhDuration = formatDuration(rh.started_at, rh.finished_at)
+                              const hasLogs = rh.logs && rh.logs.length > 0
+                              const isLogsExpanded = expandedLogs === rh.id
                               return (
-                                <tr key={rh.id} className="text-xs border-b border-white/[0.03] last:border-0">
-                                  <td className="py-2">
-                                    <span className={`text-[10px] font-black uppercase px-1.5 py-0.5 rounded tracking-wider ${
-                                      rh.platform === 'tiktok' ? 'bg-pink-500/10 text-pink-400' : 'bg-orange-500/10 text-orange-400'
-                                    }`}>
-                                      {rh.platform}
-                                    </span>
-                                  </td>
-                                  <td className="py-2 font-bold text-white">#{rh.hashtag}</td>
-                                  <td className="py-2">
-                                    <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${statusColor(rh.status)}`}>
-                                      {rh.status}
-                                    </span>
-                                  </td>
-                                  <td className="py-2 text-right font-bold text-slate-400">{rh.videos_fetched}</td>
-                                  <td className="py-2 text-right font-bold text-teal-400">{rh.new_videos}</td>
-                                  <td className="py-2 text-right font-bold text-cyan-400">{rh.videos_analyzed}</td>
-                                  <td className="py-2 font-bold text-violet-400">{rhDuration || '-'}</td>
-                                  <td className="py-2">
-                                    {rh.error && (
-                                      <span className="text-red-400 text-[10px] truncate max-w-[200px] inline-block" title={rh.error}>
-                                        {rh.error}
+                                <React.Fragment key={rh.id}>
+                                  <tr className="text-xs border-b border-white/[0.03] last:border-0">
+                                    <td className="py-2">
+                                      <span className={`text-[10px] font-black uppercase px-1.5 py-0.5 rounded tracking-wider ${
+                                        rh.platform === 'tiktok' ? 'bg-pink-500/10 text-pink-400' : 'bg-orange-500/10 text-orange-400'
+                                      }`}>
+                                        {rh.platform}
                                       </span>
-                                    )}
-                                  </td>
-                                </tr>
+                                    </td>
+                                    <td className="py-2 font-bold text-white">#{rh.hashtag}</td>
+                                    <td className="py-2">
+                                      <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${statusColor(rh.status)}`}>
+                                        {rh.status}
+                                      </span>
+                                    </td>
+                                    <td className="py-2 text-right font-bold text-slate-400">{rh.videos_fetched}</td>
+                                    <td className="py-2 text-right font-bold text-teal-400">{rh.new_videos}</td>
+                                    <td className="py-2 text-right">
+                                      <span className="font-bold text-cyan-400">{rh.videos_analyzed}</span>
+                                      <span className="font-bold text-violet-400 ml-3">{rhDuration || '-'}</span>
+                                    </td>
+                                    <td className="py-2">
+                                      <div className="flex items-center gap-2">
+                                        {rh.error && (
+                                          <span className="text-red-400 text-[10px] truncate max-w-[200px] inline-block" title={rh.error}>
+                                            {rh.error}
+                                          </span>
+                                        )}
+                                        {hasLogs && (
+                                          <button
+                                            onClick={() => setExpandedLogs(isLogsExpanded ? null : rh.id)}
+                                            className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded transition-colors ${
+                                              isLogsExpanded
+                                                ? 'bg-amber-500/20 text-amber-400'
+                                                : 'bg-slate-500/10 text-slate-500 hover:text-slate-400'
+                                            }`}
+                                          >
+                                            <i className={`fas fa-${isLogsExpanded ? 'chevron-up' : 'terminal'} mr-1`}></i>
+                                            {rh.logs!.length} logs
+                                          </button>
+                                        )}
+                                      </div>
+                                    </td>
+                                  </tr>
+                                  {isLogsExpanded && hasLogs && (
+                                    <tr>
+                                      <td colSpan={7} className="p-0">
+                                        <div className="bg-black/40 border border-white/5 rounded-lg mx-2 mb-2 p-3 max-h-[400px] overflow-y-auto font-mono text-[11px] leading-relaxed">
+                                          {rh.logs!.map((entry, i) => {
+                                            const time = new Date(entry.ts).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3 } as any)
+                                            const levelColor = entry.level === 'error' ? 'text-red-400'
+                                              : entry.level === 'warn' ? 'text-amber-400'
+                                              : 'text-slate-500'
+                                            const msgColor = entry.level === 'error' ? 'text-red-300'
+                                              : entry.level === 'warn' ? 'text-amber-300'
+                                              : 'text-slate-300'
+                                            return (
+                                              <div key={i} className="flex gap-2 hover:bg-white/[0.02] px-1 rounded">
+                                                <span className="text-slate-600 shrink-0">{time}</span>
+                                                <span className={`${levelColor} shrink-0 w-10 text-right uppercase`}>{entry.level}</span>
+                                                <span className={msgColor}>{entry.msg}</span>
+                                                {entry.data && (
+                                                  <span className="text-slate-600 truncate" title={JSON.stringify(entry.data)}>
+                                                    {JSON.stringify(entry.data)}
+                                                  </span>
+                                                )}
+                                              </div>
+                                            )
+                                          })}
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  )}
+                                </React.Fragment>
                               )
                             })}
                           </tbody>

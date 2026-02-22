@@ -34,6 +34,7 @@ const managementItems = [
   { to: '/dashboard/support-management', icon: 'fa-ticket', label: 'Support Tickets', color: 'text-slate-300', bg: 'bg-white/5', hasBadge: true },
   { to: '/dashboard/bulk-management', icon: 'fa-arrows-rotate', label: 'Bulk Retrain', color: 'text-slate-300', bg: 'bg-white/5' },
   { to: '/dashboard/onboarding-management', icon: 'fa-clipboard-check', label: 'Onboarding', color: 'text-slate-300', bg: 'bg-white/5' },
+  { to: '/dashboard/ai-model-lab', icon: 'fa-microchip', label: 'AI Model Lab', color: 'text-violet-400', bg: 'bg-violet-500/10' },
 ]
 
 function NavItem({
