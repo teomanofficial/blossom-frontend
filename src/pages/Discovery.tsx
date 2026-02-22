@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { authFetch } from '../lib/api'
+import { authFetch, API_URL } from '../lib/api'
+import { supabase } from '../lib/supabase'
 
 interface TrendingStats {
   total_hashtags: number
@@ -82,6 +83,29 @@ interface SchedulerRunHashtag {
   finished_at: string | null
 }
 
+interface DiscoveryProgress {
+  type: 'manual' | 'scheduler'
+  schedulerId?: number
+  phase: 'fetching' | 'analyzing' | 'downloading' | 'completed' | 'error'
+  totalHashtags: number
+  completedHashtags: number
+  currentHashtag?: string
+  currentHashtagPlatform?: string
+  currentHashtagVideosFetched: number
+  currentHashtagMaxVideos: number
+  currentHashtagNewVideos: number
+  currentHashtagVideosAnalyzed: number
+  currentHashtagVideosDownloaded: number
+  currentHashtagTotalToProcess: number
+  totalVideosFetched: number
+  totalNewVideos: number
+  totalVideosAnalyzed: number
+  totalVideosDownloaded: number
+  errors: Array<{ hashtag: string; error: string }>
+  startedAt: string
+  message?: string
+}
+
 function formatNumber(n: number): string {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M'
   if (n >= 1_000) return (n / 1_000).toFixed(1).replace(/\.0$/, '') + 'k'
@@ -150,6 +174,139 @@ function frequencyLabel(f: string): string {
   }
 }
 
+function ProgressPanel({ progress, label }: { progress: DiscoveryProgress; label: string }) {
+  const hashtagPercent = progress.totalHashtags > 0
+    ? Math.round((progress.completedHashtags / progress.totalHashtags) * 100)
+    : 0
+  const videoPercent = progress.currentHashtagTotalToProcess > 0
+    ? Math.round(
+        (Math.max(progress.currentHashtagVideosAnalyzed, progress.currentHashtagVideosDownloaded) /
+          progress.currentHashtagTotalToProcess) * 100
+      )
+    : 0
+  const elapsed = Math.floor((Date.now() - new Date(progress.startedAt).getTime()) / 1000)
+  const elapsedStr = elapsed >= 60 ? `${Math.floor(elapsed / 60)}m ${elapsed % 60}s` : `${elapsed}s`
+
+  const phaseColor: Record<string, string> = {
+    fetching: 'text-blue-400',
+    analyzing: 'text-amber-400',
+    downloading: 'text-cyan-400',
+    completed: 'text-teal-400',
+    error: 'text-red-400',
+  }
+
+  const phaseBg: Record<string, string> = {
+    fetching: 'bg-blue-500',
+    analyzing: 'bg-amber-500',
+    downloading: 'bg-cyan-500',
+    completed: 'bg-teal-500',
+    error: 'bg-red-500',
+  }
+
+  return (
+    <div className="glass-card rounded-[1.5rem] border-white/5 p-6 border border-blue-500/20 bg-blue-500/[0.02]">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className="w-2.5 h-2.5 rounded-full bg-blue-400 animate-pulse"></div>
+          <span className="text-xs font-black text-white uppercase tracking-widest">{label}</span>
+          <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${
+            progress.phase === 'fetching' ? 'bg-blue-500/10 text-blue-400' :
+            progress.phase === 'analyzing' ? 'bg-amber-500/10 text-amber-400' :
+            progress.phase === 'downloading' ? 'bg-cyan-500/10 text-cyan-400' :
+            'bg-slate-500/10 text-slate-400'
+          }`}>
+            {progress.phase}
+          </span>
+        </div>
+        <span className="text-[10px] font-bold text-slate-500">{elapsedStr} elapsed</span>
+      </div>
+
+      {/* Overall hashtag progress */}
+      <div className="mb-3">
+        <div className="flex items-center justify-between mb-1.5">
+          <span className="text-[10px] font-bold text-slate-400">
+            Hashtags: {progress.completedHashtags}/{progress.totalHashtags}
+          </span>
+          <span className="text-[10px] font-bold text-slate-500">{hashtagPercent}%</span>
+        </div>
+        <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-pink-500 to-orange-400 rounded-full transition-all duration-500"
+            style={{ width: `${hashtagPercent}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Current hashtag detail */}
+      {progress.currentHashtag && (
+        <div className="mb-3 p-3 rounded-xl bg-white/[0.02] border border-white/5">
+          <div className="flex items-center gap-2 mb-2">
+            <span className={`text-[10px] font-black uppercase px-1.5 py-0.5 rounded tracking-wider ${
+              progress.currentHashtagPlatform === 'tiktok' ? 'bg-pink-500/10 text-pink-400' : 'bg-orange-500/10 text-orange-400'
+            }`}>
+              {progress.currentHashtagPlatform}
+            </span>
+            <span className="text-xs font-black text-white">#{progress.currentHashtag}</span>
+            <span className={`text-[10px] font-bold ${phaseColor[progress.phase] || 'text-slate-400'}`}>
+              {progress.message}
+            </span>
+          </div>
+
+          {/* Per-video progress bar */}
+          {progress.currentHashtagTotalToProcess > 0 && (progress.phase === 'analyzing' || progress.phase === 'downloading') && (
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[10px] font-bold text-slate-500">
+                  {progress.phase === 'analyzing'
+                    ? `Analyzed: ${progress.currentHashtagVideosAnalyzed}/${progress.currentHashtagTotalToProcess}`
+                    : `Downloaded: ${progress.currentHashtagVideosDownloaded}/${progress.currentHashtagTotalToProcess}`
+                  }
+                </span>
+                <span className="text-[10px] font-bold text-slate-500">{videoPercent}%</span>
+              </div>
+              <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all duration-500 ${phaseBg[progress.phase] || 'bg-slate-500'}`}
+                  style={{ width: `${videoPercent}%` }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Fetching indicator */}
+          {progress.phase === 'fetching' && progress.currentHashtagVideosFetched === 0 && (
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 border border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+              <span className="text-[10px] font-bold text-blue-400">Fetching videos from API...</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Stats row */}
+      <div className="flex gap-4 text-[10px] font-bold">
+        <span className="text-slate-500">
+          <span className="text-cyan-400">{progress.totalVideosFetched}</span> fetched
+        </span>
+        <span className="text-slate-500">
+          <span className="text-teal-400">{progress.totalNewVideos}</span> new
+        </span>
+        <span className="text-slate-500">
+          <span className="text-amber-400">{progress.totalVideosAnalyzed}</span> analyzed
+        </span>
+        {progress.totalVideosDownloaded > 0 && (
+          <span className="text-slate-500">
+            <span className="text-violet-400">{progress.totalVideosDownloaded}</span> downloaded
+          </span>
+        )}
+        {progress.errors.length > 0 && (
+          <span className="text-red-400">{progress.errors.length} error{progress.errors.length > 1 ? 's' : ''}</span>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function Discovery() {
   const navigate = useNavigate()
 
@@ -184,6 +341,80 @@ export default function Discovery() {
 
   // Running schedulers (for polling)
   const [runningSchedulerIds, setRunningSchedulerIds] = useState<Set<number>>(new Set())
+
+  // Live progress from SSE
+  const [manualProgress, setManualProgress] = useState<DiscoveryProgress | null>(null)
+  const [schedulerProgress, setSchedulerProgress] = useState<Map<number, DiscoveryProgress>>(new Map())
+  const eventSourceRef = useRef<EventSource | null>(null)
+
+  // SSE connection for live progress
+  const connectSSE = useCallback(async () => {
+    // Close existing connection
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close()
+    }
+
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.access_token) return
+
+    const url = `${API_URL}/api/analysis/trending/progress?token=${encodeURIComponent(session.access_token)}`
+    const es = new EventSource(url)
+    eventSourceRef.current = es
+
+    es.onmessage = (event) => {
+      try {
+        const data: DiscoveryProgress = JSON.parse(event.data)
+
+        if (data.type === 'manual') {
+          if (data.phase === 'completed') {
+            setManualProgress(null)
+            setRunningManual(false)
+            loadAll()
+          } else {
+            setManualProgress(data)
+            setRunningManual(true)
+          }
+        } else if (data.type === 'scheduler' && data.schedulerId) {
+          if (data.phase === 'completed') {
+            setSchedulerProgress(prev => {
+              const next = new Map(prev)
+              next.delete(data.schedulerId!)
+              return next
+            })
+            setRunningSchedulerIds(prev => {
+              const next = new Set(prev)
+              next.delete(data.schedulerId!)
+              return next
+            })
+            loadAll()
+          } else {
+            setSchedulerProgress(prev => {
+              const next = new Map(prev)
+              next.set(data.schedulerId!, data)
+              return next
+            })
+            setRunningSchedulerIds(prev => new Set(prev).add(data.schedulerId!))
+          }
+        }
+      } catch (e) {
+        // Ignore parse errors (heartbeat comments etc.)
+      }
+    }
+
+    es.onerror = () => {
+      // EventSource auto-reconnects, no action needed
+    }
+  }, [])
+
+  // Connect SSE on mount, disconnect on unmount
+  useEffect(() => {
+    connectSSE()
+    return () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close()
+      }
+    }
+  }, [connectSSE])
 
   useEffect(() => { loadAll() }, [])
 
@@ -278,17 +509,7 @@ export default function Discovery() {
     try {
       setRunningManual(true)
       await authFetch('/api/analysis/trending/run-now', { method: 'POST' })
-      const poll = setInterval(async () => {
-        const data = await authFetch('/api/analysis/trending/stats').then(r => r.json())
-        setStats(data)
-        const running = await authFetch('/api/analysis/trending/runs?limit=5').then(r => r.json())
-        const hasRunning = Array.isArray(running) && running.some((r: any) => r.status === 'fetching' || r.status === 'analyzing')
-        if (!hasRunning) {
-          clearInterval(poll)
-          setRunningManual(false)
-          loadAll()
-        }
-      }, 5000)
+      // Progress updates come via SSE — no polling needed
     } catch (error) {
       console.error('Failed to trigger run:', error)
       setRunningManual(false)
@@ -413,19 +634,7 @@ export default function Discovery() {
     try {
       setRunningSchedulerIds(prev => new Set(prev).add(schedulerId))
       await authFetch(`/api/analysis/trending/schedulers/${schedulerId}/run`, { method: 'POST' })
-      // Poll for completion
-      const poll = setInterval(async () => {
-        const runs = await authFetch(`/api/analysis/trending/scheduler-runs?scheduler_id=${schedulerId}&limit=1`).then(r => r.json())
-        if (Array.isArray(runs) && runs.length > 0 && runs[0].status !== 'running') {
-          clearInterval(poll)
-          setRunningSchedulerIds(prev => {
-            const next = new Set(prev)
-            next.delete(schedulerId)
-            return next
-          })
-          loadAll()
-        }
-      }, 5000)
+      // Progress updates come via SSE — no polling needed
     } catch (error) {
       console.error('Failed to trigger scheduler run:', error)
       setRunningSchedulerIds(prev => {
@@ -512,6 +721,17 @@ export default function Discovery() {
           </button>
         </div>
       </div>
+
+      {/* Live Progress Panel */}
+      {(manualProgress || schedulerProgress.size > 0) && (
+        <div className="mb-8 space-y-3">
+          {manualProgress && <ProgressPanel progress={manualProgress} label="Manual Run" />}
+          {Array.from(schedulerProgress.entries()).map(([id, prog]) => {
+            const scheduler = schedulers.find(s => s.id === id)
+            return <ProgressPanel key={id} progress={prog} label={scheduler?.name || `Scheduler #${id}`} />
+          })}
+        </div>
+      )}
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-10">
@@ -844,73 +1064,141 @@ export default function Discovery() {
           <p className="text-slate-600 text-xs font-bold">No hashtags tracked yet. Add one above to get started.</p>
         ) : (
           <div className="space-y-2">
-            {hashtags.map(h => (
-              <div key={h.id} className="flex items-center justify-between p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.04] transition-colors">
-                <div className="flex items-center gap-3 flex-wrap">
-                  <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded tracking-wider ${
-                    h.platform === 'tiktok' ? 'bg-pink-500/10 text-pink-400' : 'bg-orange-500/10 text-orange-400'
-                  }`}>
-                    {h.platform}
-                  </span>
-                  <span className="text-sm font-black text-white">#{h.hashtag}</span>
-                  <span className="text-[10px] font-bold text-slate-600">{h.total_videos || 0} videos</span>
-                  {editingMaxVideos === h.id ? (
-                    <span className="flex items-center gap-1">
-                      <input
-                        type="number"
-                        min="5"
-                        max="100"
-                        value={editMaxValue}
-                        onChange={(e) => setEditMaxValue(parseInt(e.target.value) || 5)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') saveMaxVideos(h.id)
-                          if (e.key === 'Escape') setEditingMaxVideos(null)
-                        }}
-                        autoFocus
-                        className="bg-white/10 border border-violet-500/50 rounded px-1.5 py-0.5 text-[10px] font-bold text-white w-14 focus:outline-none"
-                      />
-                      <span className="text-[10px] font-bold text-slate-600">/run</span>
-                      <button onClick={() => saveMaxVideos(h.id)} className="text-[10px] text-teal-400 hover:text-teal-300"><i className="fas fa-check"></i></button>
-                      <button onClick={() => setEditingMaxVideos(null)} className="text-[10px] text-slate-500 hover:text-slate-400"><i className="fas fa-times"></i></button>
-                    </span>
-                  ) : (
-                    <span
-                      className="text-[10px] font-bold text-slate-600 cursor-pointer hover:text-slate-400 transition-colors"
-                      onClick={() => { setEditingMaxVideos(h.id); setEditMaxValue(h.max_videos_per_run) }}
-                      title="Click to edit max videos per run"
-                    >
-                      max {h.max_videos_per_run}/run
-                    </span>
-                  )}
-                  {h.last_run_status && (
-                    <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${statusColor(h.last_run_status)}`}>
-                      {h.last_run_status}
-                    </span>
-                  )}
-                  {h.last_run_at && (
-                    <span className="text-[10px] font-bold text-slate-600">{timeAgo(h.last_run_at)}</span>
+            {hashtags.map(h => {
+              // Check if this hashtag is currently being processed by any active job
+              const activeForThis = [manualProgress, ...Array.from(schedulerProgress.values())].find(
+                p => p && p.currentHashtag === h.hashtag && p.currentHashtagPlatform === h.platform && p.phase !== 'completed'
+              )
+
+              return (
+                <div key={h.id} className={`rounded-xl transition-colors ${
+                  activeForThis
+                    ? 'bg-blue-500/[0.04] border border-blue-500/20'
+                    : 'bg-white/[0.02] border border-white/5 hover:bg-white/[0.04]'
+                }`}>
+                  <div className="flex items-center justify-between p-4">
+                    <div className="flex items-center gap-3 flex-wrap">
+                      {activeForThis && (
+                        <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></div>
+                      )}
+                      <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded tracking-wider ${
+                        h.platform === 'tiktok' ? 'bg-pink-500/10 text-pink-400' : 'bg-orange-500/10 text-orange-400'
+                      }`}>
+                        {h.platform}
+                      </span>
+                      <span className="text-sm font-black text-white">#{h.hashtag}</span>
+                      <span className="text-[10px] font-bold text-slate-600">{h.total_videos || 0} videos</span>
+                      {editingMaxVideos === h.id ? (
+                        <span className="flex items-center gap-1">
+                          <input
+                            type="number"
+                            min="5"
+                            max="100"
+                            value={editMaxValue}
+                            onChange={(e) => setEditMaxValue(parseInt(e.target.value) || 5)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') saveMaxVideos(h.id)
+                              if (e.key === 'Escape') setEditingMaxVideos(null)
+                            }}
+                            autoFocus
+                            className="bg-white/10 border border-violet-500/50 rounded px-1.5 py-0.5 text-[10px] font-bold text-white w-14 focus:outline-none"
+                          />
+                          <span className="text-[10px] font-bold text-slate-600">/run</span>
+                          <button onClick={() => saveMaxVideos(h.id)} className="text-[10px] text-teal-400 hover:text-teal-300"><i className="fas fa-check"></i></button>
+                          <button onClick={() => setEditingMaxVideos(null)} className="text-[10px] text-slate-500 hover:text-slate-400"><i className="fas fa-times"></i></button>
+                        </span>
+                      ) : (
+                        <span
+                          className="text-[10px] font-bold text-slate-600 cursor-pointer hover:text-slate-400 transition-colors"
+                          onClick={() => { setEditingMaxVideos(h.id); setEditMaxValue(h.max_videos_per_run) }}
+                          title="Click to edit max videos per run"
+                        >
+                          max {h.max_videos_per_run}/run
+                        </span>
+                      )}
+                      {activeForThis ? (
+                        <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${
+                          activeForThis.phase === 'fetching' ? 'bg-blue-500/10 text-blue-400' :
+                          activeForThis.phase === 'analyzing' ? 'bg-amber-500/10 text-amber-400' :
+                          activeForThis.phase === 'downloading' ? 'bg-cyan-500/10 text-cyan-400' :
+                          'bg-slate-500/10 text-slate-400'
+                        }`}>
+                          {activeForThis.phase}
+                        </span>
+                      ) : (
+                        <>
+                          {h.last_run_status && (
+                            <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${statusColor(h.last_run_status)}`}>
+                              {h.last_run_status}
+                            </span>
+                          )}
+                          {h.last_run_at && (
+                            <span className="text-[10px] font-bold text-slate-600">{timeAgo(h.last_run_at)}</span>
+                          )}
+                        </>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => toggleActive(h)}
+                        className={`text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-lg transition-colors ${
+                          h.is_active
+                            ? 'bg-teal-500/10 text-teal-400 hover:bg-teal-500/20'
+                            : 'bg-slate-500/10 text-slate-500 hover:bg-slate-500/20'
+                        }`}
+                      >
+                        {h.is_active ? 'Active' : 'Paused'}
+                      </button>
+                      <button
+                        onClick={() => deleteHashtag(h.id)}
+                        className="text-[10px] font-bold text-red-400/60 hover:text-red-400 px-2 py-1.5 transition-colors"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Inline progress bar for active hashtag */}
+                  {activeForThis && (
+                    <div className="px-4 pb-3">
+                      <div className="flex items-center gap-3 mb-1">
+                        <span className="text-[10px] font-bold text-blue-400">
+                          {activeForThis.currentHashtagVideosFetched > 0
+                            ? `${activeForThis.currentHashtagVideosFetched} fetched`
+                            : 'Fetching...'}
+                          {activeForThis.currentHashtagNewVideos > 0 && (
+                            <> · <span className="text-teal-400">{activeForThis.currentHashtagNewVideos} new</span></>
+                          )}
+                          {activeForThis.currentHashtagVideosAnalyzed > 0 && (
+                            <> · <span className="text-amber-400">{activeForThis.currentHashtagVideosAnalyzed} analyzed</span></>
+                          )}
+                          {activeForThis.currentHashtagVideosDownloaded > 0 && (
+                            <> · <span className="text-violet-400">{activeForThis.currentHashtagVideosDownloaded} downloaded</span></>
+                          )}
+                        </span>
+                      </div>
+                      {activeForThis.currentHashtagTotalToProcess > 0 && (
+                        <div className="h-1 bg-white/5 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all duration-500 ${
+                              activeForThis.phase === 'analyzing' ? 'bg-amber-500' :
+                              activeForThis.phase === 'downloading' ? 'bg-cyan-500' :
+                              'bg-blue-500'
+                            }`}
+                            style={{
+                              width: `${Math.round(
+                                (Math.max(activeForThis.currentHashtagVideosAnalyzed, activeForThis.currentHashtagVideosDownloaded) /
+                                  activeForThis.currentHashtagTotalToProcess) * 100
+                              )}%`
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => toggleActive(h)}
-                    className={`text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-lg transition-colors ${
-                      h.is_active
-                        ? 'bg-teal-500/10 text-teal-400 hover:bg-teal-500/20'
-                        : 'bg-slate-500/10 text-slate-500 hover:bg-slate-500/20'
-                    }`}
-                  >
-                    {h.is_active ? 'Active' : 'Paused'}
-                  </button>
-                  <button
-                    onClick={() => deleteHashtag(h.id)}
-                    className="text-[10px] font-bold text-red-400/60 hover:text-red-400 px-2 py-1.5 transition-colors"
-                  >
-                    Remove
-                  </button>
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>

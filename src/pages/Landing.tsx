@@ -301,14 +301,8 @@ export default function Landing() {
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-pink-500/[0.03] to-transparent pointer-events-none" />
         <div className="max-w-6xl mx-auto relative">
           <div className="text-center mb-16 sm:mb-20">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-500/10 border border-green-500/20 text-green-400 text-[10px] font-black mb-6 tracking-widest uppercase">
-              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z" />
-              </svg>
-              REAL RESULTS
-            </div>
             <h2 className="text-3xl sm:text-4xl md:text-6xl font-black mb-4 tracking-tight">
-              FROM 10K TO <span className="gradient-text">1.5M VIEWS</span>
+              FROM 10K TO <span className="gradient-text">1M VIEWS</span>
             </h2>
             <p className="text-slate-400 text-base sm:text-lg md:text-xl max-w-2xl mx-auto font-medium">
               Creators using Blossom see explosive growth within 90 days. Here's what happens when you stop guessing.
