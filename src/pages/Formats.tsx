@@ -103,11 +103,6 @@ export default function Formats() {
     return () => observer.disconnect()
   }, [hasMore, loading, loadingMore, formats.length, fetchFormats])
 
-  const totalVideos = formats.reduce((sum, f) => sum + (f.video_count || 0), 0)
-  const globalAvgViews = formats.length > 0
-    ? formats.reduce((sum, f) => sum + (f.avg_views || 0) * (f.video_count || 0), 0) / Math.max(totalVideos, 1)
-    : 0
-
   const toggleSort = (field: SortField) => {
     if (sortBy === field) {
       setOrder((prev) => (prev === 'desc' ? 'asc' : 'desc'))
@@ -144,10 +139,6 @@ export default function Formats() {
           <div className="px-4 py-3 md:px-6 md:py-4 glass-card rounded-2xl md:rounded-[1.5rem] border-white/5 flex-1 md:flex-initial">
             <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Total Formats</div>
             <div className="text-xl md:text-2xl font-black text-white">{total}</div>
-          </div>
-          <div className="px-4 py-3 md:px-6 md:py-4 glass-card rounded-2xl md:rounded-[1.5rem] border-white/5 flex-1 md:flex-initial">
-            <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Global Avg Views</div>
-            <div className="text-xl md:text-2xl font-black text-white">{formatNumber(globalAvgViews)}</div>
           </div>
         </div>
       </div>

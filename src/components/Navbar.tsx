@@ -46,7 +46,7 @@ export default function Navbar() {
                 to="/signup"
                 className="bg-white text-slate-900 font-bold py-2.5 px-6 rounded-2xl glow-button text-sm tracking-tight"
               >
-                Get Viral Now
+                Start Now
               </Link>
             </>
           )}

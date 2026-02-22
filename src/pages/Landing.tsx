@@ -23,9 +23,19 @@ const features = [
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 18a3.75 3.75 0 00.495-7.468 5.99 5.99 0 00-1.925 3.547 5.975 5.975 0 01-2.133-1.001A3.75 3.75 0 0012 18z" />
       </svg>
     ),
-    title: 'Viral Formats & Hooks',
+    title: 'Viral Formats',
     description:
-      'Learn the exact tricks and secrets top influencers use to go viral and get millions of views with zero effort.',
+      'Discover the exact content structures that drive millions of views. See which formats dominate your niche and replicate their success.',
+  },
+  {
+    icon: (
+      <svg className="w-6 h-6 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+      </svg>
+    ),
+    title: 'Hooks',
+    description:
+      'Master the first 3 seconds. Analyze what stops the scroll — every visual, sound, and word that turns viewers into followers.',
   },
   {
     icon: (
@@ -46,6 +56,26 @@ const features = [
     title: 'Trends',
     description:
       'Learn what is trending worldwide. Master new hooks and tactics to stay one step ahead of everyone else.',
+  },
+  {
+    icon: (
+      <svg className="w-6 h-6 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" />
+      </svg>
+    ),
+    title: 'Content Suggestions',
+    description:
+      'Get 5 fresh, filmable content ideas daily — powered by AI analysis of what actually performs in your niche.',
+  },
+  {
+    icon: (
+      <svg className="w-6 h-6 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5m.75-9l3-3 2.148 2.148A12.061 12.061 0 0116.5 7.605" />
+      </svg>
+    ),
+    title: 'Account Monitoring',
+    description:
+      'Connect your Instagram and TikTok. Track follower growth, post performance, and spot trends before they happen.',
   },
 ]
 
@@ -101,7 +131,7 @@ export default function Landing() {
     return () => observer.disconnect()
   }, [])
 
-  const views = useCountUp(1_500_000, 2000, chartVisible)
+  const views = useCountUp(1_000_000, 2000, chartVisible)
   const followers = useCountUp(47_000, 2000, chartVisible)
   const engagement = useCountUp(340, 2000, chartVisible)
 
@@ -127,7 +157,7 @@ export default function Landing() {
             <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
               <path d="M13.5.67s.74 2.65.74 4.8c0 2.06-1.35 3.73-3.41 3.73-2.07 0-3.63-1.67-3.63-3.73l.03-.36C5.21 7.51 4 10.62 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8C20 8.61 17.41 3.8 13.5.67z" />
             </svg>
-            THE VIRAL BLUEPRINT
+            OWN THE SPOTLIGHT
           </div>
 
           <h1 className="text-5xl sm:text-6xl md:text-8xl font-black mb-8 leading-[1.1] tracking-tight uppercase">
@@ -139,10 +169,9 @@ export default function Landing() {
           </h1>
 
           <p className="text-slate-400 text-base sm:text-lg md:text-xl max-w-3xl mx-auto mb-12 font-medium">
-            Do you want to get millions of views? Of course you do—who doesn't!
-            <br className="hidden md:block" />
-            Learn how to influence people in just 10 seconds. Discover how tiny,
-            subtle changes turn hundreds of views into millions of fans.
+            Then stop leaving your potential to chance.
+            Learn how to influence people in seconds. Discover how
+            little changes turn hundreds of views into millions.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
@@ -161,11 +190,11 @@ export default function Landing() {
           <div className="mt-24 relative px-0 sm:px-4 max-w-5xl mx-auto">
             <div className="absolute inset-0 bg-pink-500/10 blur-[120px] rounded-full" />
             <div className="glass-card rounded-[2rem] sm:rounded-[3.5rem] p-4 sm:p-6 md:p-12 relative overflow-hidden shadow-2xl">
-              <div className="flex flex-col lg:flex-row gap-10 items-stretch text-left">
+              <div className="flex flex-col lg:flex-row gap-10 items-start text-left">
                 {/* Post Preview with Scanner */}
-                <div className="w-full lg:w-5/12 flex">
+                <div className="w-full lg:w-5/12 lg:sticky lg:top-8">
                   <div className="relative bg-slate-950 rounded-[2rem] sm:rounded-[2.5rem] p-1.5 border-[4px] border-slate-800 shadow-2xl w-full">
-                    <div className="analysis-phone-frame rounded-[1.5rem] sm:rounded-[2rem] h-full overflow-hidden relative" style={{ aspectRatio: '9/16' }}>
+                    <div className="analysis-phone-frame rounded-[1.5rem] sm:rounded-[2rem] overflow-hidden relative" style={{ aspectRatio: '9/16' }}>
                       <img
                         src="/landing-cover.jpg"
                         alt="Content example"
@@ -218,11 +247,11 @@ export default function Landing() {
                 {/* Weakness Breakdown */}
                 <div className="w-full lg:w-7/12 space-y-6">
                   <h3 className="text-2xl sm:text-3xl font-black tracking-tight">
-                    VIRALITY ANALYSIS
+                    THE CHEAT CODE
                   </h3>
                   <p className="text-slate-400 font-medium">
-                    We found why your post is stuck at 200 views. Cover these
-                    mistakes now.
+                    We don't just look at pixels. We analyze the visceral triggers and narrative hooks that drive retention.
+                    Know exactly why a video will flop before you even hit 'Post'
                   </p>
 
                   <div className="space-y-4">
@@ -248,6 +277,21 @@ export default function Landing() {
                         Fix: Incorporate a brief personal anecdote to add a
                         relatable element.
                       </div>
+                      {/* Example viral videos badge */}
+                      <div className="mt-3 flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06] cursor-pointer hover:bg-white/[0.06] transition-colors group">
+                        <svg className="w-3 h-3 text-purple-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                        </svg>
+                        <span className="text-[10px] font-bold text-slate-400 group-hover:text-slate-300 transition-colors">See example viral hooks</span>
+                        <div className="flex items-center gap-1.5 ml-auto">
+                          <span className="text-[9px] font-bold text-teal-400/70">2.4M views</span>
+                          <span className="text-slate-600">·</span>
+                          <span className="text-[9px] font-bold text-pink-400/70">340K likes</span>
+                        </div>
+                        <svg className="w-3 h-3 text-slate-600 group-hover:text-slate-400 transition-colors flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </div>
                     </div>
 
                     {/* Pacing Error */}
@@ -267,27 +311,23 @@ export default function Landing() {
                         Your frames are too static. Viewers are scrolling away at
                         0.04s because there is no pattern interrupt.
                       </p>
+                      {/* Example viral videos badge */}
+                      <div className="mt-3 flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06] cursor-pointer hover:bg-white/[0.06] transition-colors group">
+                        <svg className="w-3 h-3 text-purple-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                        </svg>
+                        <span className="text-[10px] font-bold text-slate-400 group-hover:text-slate-300 transition-colors">See example transitions</span>
+                        <div className="flex items-center gap-1.5 ml-auto">
+                          <span className="text-[9px] font-bold text-teal-400/70">1.1M views</span>
+                          <span className="text-slate-600">·</span>
+                          <span className="text-[9px] font-bold text-pink-400/70">180K likes</span>
+                        </div>
+                        <svg className="w-3 h-3 text-slate-600 group-hover:text-slate-400 transition-colors flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </div>
                     </div>
 
-                    {/* Score Cards */}
-                    <div className="flex gap-4">
-                      <div className="flex-1 p-4 sm:p-5 rounded-2xl bg-white/5 border border-white/10 text-center">
-                        <div className="text-[10px] font-black text-slate-500 uppercase mb-1">
-                          Current Reach
-                        </div>
-                        <div className="text-xl sm:text-2xl font-black text-red-500">
-                          LOW
-                        </div>
-                      </div>
-                      <div className="flex-1 p-4 sm:p-5 rounded-2xl bg-white/5 border border-white/10 text-center">
-                        <div className="text-[10px] font-black text-slate-500 uppercase mb-1">
-                          Shareability
-                        </div>
-                        <div className="text-xl sm:text-2xl font-black text-orange-500">
-                          POOR
-                        </div>
-                      </div>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -302,10 +342,10 @@ export default function Landing() {
         <div className="max-w-6xl mx-auto relative">
           <div className="text-center mb-16 sm:mb-20">
             <h2 className="text-3xl sm:text-4xl md:text-6xl font-black mb-4 tracking-tight">
-              FROM 10K TO <span className="gradient-text">1M VIEWS</span>
+              HUNDREDS TO <span className="gradient-text">MILLIONS</span>
             </h2>
             <p className="text-slate-400 text-base sm:text-lg md:text-xl max-w-2xl mx-auto font-medium">
-              Creators using Blossom see explosive growth within 90 days. Here's what happens when you stop guessing.
+              Creators using Blossom see explosive growth within 6 months. Here's what happens when you stop guessing.
             </p>
           </div>
 
@@ -316,9 +356,9 @@ export default function Landing() {
               <div className="text-4xl sm:text-5xl md:text-6xl font-black gradient-text mb-2">{formatCompact(views)}</div>
               <div className="flex items-center justify-center gap-1.5 text-green-400 text-sm font-bold">
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M7 14l5-5 5 5z" /></svg>
-                +14,900%
+                +9,900%
               </div>
-              <div className="text-[11px] text-slate-500 mt-1 font-medium">from 10K in 3 months</div>
+              <div className="text-[11px] text-slate-500 mt-1 font-medium">from 10K in 6 months</div>
             </div>
 
             <div className="glass-card rounded-[2rem] p-6 sm:p-8 text-center group hover:bg-white/[0.04] transition-all">
@@ -338,7 +378,7 @@ export default function Landing() {
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M7 14l5-5 5 5z" /></svg>
                 +340% increase
               </div>
-              <div className="text-[11px] text-slate-500 mt-1 font-medium">vs. industry avg. 1.5%</div>
+              <div className="text-[11px] text-slate-500 mt-1 font-medium">vs. avgerage 1.5%</div>
             </div>
           </div>
 
@@ -346,7 +386,7 @@ export default function Landing() {
           <div className="glass-card rounded-[2.5rem] sm:rounded-[3rem] p-6 sm:p-8 md:p-12">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
               <div>
-                <h3 className="text-lg sm:text-xl font-black mb-1">VIEWS OVER 90 DAYS</h3>
+                <h3 className="text-lg sm:text-xl font-black mb-1">VIEWS OVER 6 MONTHS</h3>
                 <p className="text-slate-500 text-sm font-medium">Average creator growth after joining Blossom</p>
               </div>
               <div className="flex items-center gap-4 text-xs font-bold">
@@ -358,18 +398,16 @@ export default function Landing() {
             {/* Bar Chart */}
             <div className="flex items-end gap-2 sm:gap-3 h-56 sm:h-72 md:h-80">
               {[
-                { label: 'Week 1', before: 8, after: 12, val: '10K' },
-                { label: 'Week 2', before: 9, after: 22, val: '35K' },
-                { label: 'Week 3', before: 8, after: 35, val: '85K' },
-                { label: 'Week 4', before: 10, after: 48, val: '150K' },
-                { label: 'Week 6', before: 9, after: 62, val: '320K' },
-                { label: 'Week 8', before: 11, after: 78, val: '580K' },
-                { label: 'Week 10', before: 10, after: 88, val: '900K' },
-                { label: 'Week 12', before: 12, after: 100, val: '1.5M' },
+                { label: 'Month 1', before: 8, after: 12, val: '10K' },
+                { label: 'Month 2', before: 9, after: 25, val: '50K' },
+                { label: 'Month 3', before: 8, after: 42, val: '120K' },
+                { label: 'Month 4', before: 10, after: 60, val: '300K' },
+                { label: 'Month 5', before: 9, after: 80, val: '600K' },
+                { label: 'Month 6', before: 11, after: 100, val: '1M' },
               ].map((bar, i) => (
                 <div key={bar.label} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
                   {/* Value label */}
-                  <span className={`text-[9px] sm:text-[10px] font-black transition-all duration-1000 ${chartVisible ? 'opacity-100' : 'opacity-0'} ${i === 7 ? 'text-pink-400' : 'text-slate-500'}`}
+                  <span className={`text-[9px] sm:text-[10px] font-black transition-all duration-1000 ${chartVisible ? 'opacity-100' : 'opacity-0'} ${i === 5 ? 'text-pink-400' : 'text-slate-500'}`}
                     style={{ transitionDelay: `${i * 120 + 800}ms` }}>
                     {bar.val}
                   </span>
@@ -404,7 +442,7 @@ export default function Landing() {
                 </svg>
                 <span className="font-black text-sm sm:text-base">Average creators hit 1M+ views</span>
               </div>
-              <span className="text-pink-400 font-black text-lg sm:text-xl">within 90 days</span>
+              <span className="text-pink-400 font-black text-lg sm:text-xl">within 6 months</span>
             </div>
           </div>
         </div>
@@ -415,10 +453,10 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16 sm:mb-24">
             <h2 className="text-3xl sm:text-4xl md:text-6xl font-black mb-4 tracking-tight">
-              THE MAGICAL RECEIPT.
+              THE VIRALITY PLAYBOOK
             </h2>
             <p className="text-slate-400 text-base sm:text-lg md:text-xl max-w-xl mx-auto font-medium">
-              We don't just predict views—we predict success.
+              We don't just predict views. We guarantee success.
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -447,7 +485,7 @@ export default function Landing() {
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16 sm:mb-20">
             <h2 className="text-3xl sm:text-4xl md:text-6xl font-black mb-4 tracking-tight">
-              THE SYSTEM.
+              THE SYSTEM
             </h2>
             <p className="text-slate-400 text-base sm:text-lg md:text-xl max-w-xl mx-auto font-medium">
               Three steps. Zero guesswork. Maximum influence.
@@ -488,7 +526,7 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16 sm:mb-24">
             <h2 className="text-3xl sm:text-4xl md:text-6xl font-black mb-4 tracking-tight">
-              PRICING.
+              PRICING
             </h2>
             <p className="text-slate-400 text-base sm:text-lg md:text-xl max-w-xl mx-auto font-medium">
               Choose the plan that matches your ambition.
@@ -573,7 +611,7 @@ export default function Landing() {
             to="/signup"
             className="inline-block px-10 sm:px-14 py-5 sm:py-6 bg-white text-black font-black text-xl sm:text-2xl rounded-[2.5rem] glow-button hover:scale-105 transition-transform uppercase tracking-tighter"
           >
-            Show Me The Secrets
+            Claim Your Spot on the FYP
             <svg className="w-5 h-5 inline-block ml-2" fill="currentColor" viewBox="0 0 24 24">
               <path d="M13.5.67s.74 2.65.74 4.8c0 2.06-1.35 3.73-3.41 3.73-2.07 0-3.63-1.67-3.63-3.73l.03-.36C5.21 7.51 4 10.62 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8C20 8.61 17.41 3.8 13.5.67z" />
             </svg>

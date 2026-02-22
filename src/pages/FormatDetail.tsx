@@ -138,7 +138,7 @@ export default function FormatDetail() {
   const [expandedTactic, setExpandedTactic] = useState<number | null>(null)
   const loaderRef = useRef<HTMLDivElement>(null)
 
-  const fetchFormat = () => {
+  const fetchFormat = useCallback(() => {
     setLoading(true)
     authFetch(`/api/analysis/formats/${id}?page=1&limit=20`)
       .then((r) => {
@@ -152,7 +152,7 @@ export default function FormatDetail() {
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false))
-  }
+  }, [id])
 
   const loadMore = useCallback(() => {
     if (loadingMore || !pagination?.hasMore) return
@@ -179,16 +179,16 @@ export default function FormatDetail() {
     return () => observer.disconnect()
   }, [loadMore])
 
-  const fetchTactics = () => {
+  const fetchTactics = useCallback(() => {
     setTacticsLoading(true)
     authFetch(`/api/analysis/formats/${id}/tactics?limit=20&video_limit=10`)
       .then((r) => r.json())
       .then((data) => setFormatTactics(data.tactics || []))
       .catch(() => {})
       .finally(() => setTacticsLoading(false))
-  }
+  }, [id])
 
-  useEffect(() => { fetchFormat(); fetchTactics() }, [id])
+  useEffect(() => { fetchFormat(); fetchTactics() }, [fetchFormat, fetchTactics])
 
   const triggerAnalysis = () => {
     setAnalyzing(true)
