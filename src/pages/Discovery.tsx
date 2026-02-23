@@ -327,6 +327,11 @@ export default function Discovery() {
   const [runningManual, setRunningManual] = useState(false)
   const [newHashtag, setNewHashtag] = useState({ platform: 'tiktok', hashtag: '', max_videos_per_run: 30 })
 
+  // Run dialog
+  const [showRunDialog, setShowRunDialog] = useState(false)
+  const [runDialogPlatformFilter, setRunDialogPlatformFilter] = useState<'all' | 'tiktok' | 'instagram'>('all')
+  const [selectedHashtagIds, setSelectedHashtagIds] = useState<Set<number>>(new Set())
+
   // Scheduler form
   const [showSchedulerForm, setShowSchedulerForm] = useState(false)
   const [editingScheduler, setEditingScheduler] = useState<number | null>(null)
@@ -512,18 +517,34 @@ export default function Discovery() {
     }
   }
 
-  // ---- Manual Run (all hashtags) ----
+  // ---- Manual Run (selected hashtags) ----
 
-  async function triggerManualRun() {
+  async function triggerManualRun(hashtagIds: number[]) {
     try {
       setRunningManual(true)
-      await authFetch('/api/analysis/trending/run-now', { method: 'POST' })
+      setShowRunDialog(false)
+      await authFetch('/api/analysis/trending/run-now', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hashtag_ids: hashtagIds }),
+      })
       // Progress updates come via SSE — no polling needed
     } catch (error) {
       console.error('Failed to trigger run:', error)
       setRunningManual(false)
     }
   }
+
+  function openRunDialog() {
+    const activeIds = new Set(hashtags.filter(h => h.is_active).map(h => h.id))
+    setSelectedHashtagIds(activeIds)
+    setRunDialogPlatformFilter('all')
+    setShowRunDialog(true)
+  }
+
+  const filteredRunDialogHashtags = hashtags.filter(h =>
+    runDialogPlatformFilter === 'all' || h.platform === runDialogPlatformFilter
+  )
 
   // ---- Scheduler CRUD ----
 
@@ -709,12 +730,12 @@ export default function Discovery() {
             </span>
           </button>
           <button
-            onClick={triggerManualRun}
-            disabled={runningManual}
+            onClick={openRunDialog}
+            disabled={runningManual || hashtags.length === 0}
             className={`h-fit px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
               runningManual
                 ? 'bg-amber-500/10 text-amber-400 cursor-wait'
-                : 'bg-gradient-to-r from-pink-500 to-orange-400 text-white hover:opacity-90'
+                : 'bg-gradient-to-r from-pink-500 to-orange-400 text-white hover:opacity-90 disabled:opacity-50'
             }`}
           >
             {runningManual ? (
@@ -724,7 +745,7 @@ export default function Discovery() {
               </span>
             ) : (
               <span className="flex items-center gap-2">
-                <i className="fas fa-bolt"></i> RUN ALL NOW
+                <i className="fas fa-bolt"></i> RUN HASHTAGS
               </span>
             )}
           </button>
@@ -1395,6 +1416,150 @@ export default function Discovery() {
           </button>
         </div>
       </div>
+
+      {/* Run Hashtags Dialog */}
+      {showRunDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowRunDialog(false)} />
+          <div className="relative w-full max-w-lg glass-card rounded-[1.5rem] border border-white/10 p-6 max-h-[80vh] flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h3 className="text-lg font-black text-white tracking-tight">Run Hashtags</h3>
+                <p className="text-[10px] font-bold text-slate-500 mt-0.5">Select which hashtags to run</p>
+              </div>
+              <button
+                onClick={() => setShowRunDialog(false)}
+                className="text-slate-500 hover:text-white transition-colors p-1"
+              >
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+
+            {/* Platform Filter */}
+            <div className="flex gap-2 mb-4">
+              {(['all', 'tiktok', 'instagram'] as const).map(p => (
+                <button
+                  key={p}
+                  onClick={() => setRunDialogPlatformFilter(p)}
+                  className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-colors ${
+                    runDialogPlatformFilter === p
+                      ? p === 'tiktok' ? 'bg-pink-500/20 text-pink-400 border border-pink-500/30'
+                        : p === 'instagram' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+                        : 'bg-white/10 text-white border border-white/20'
+                      : 'bg-white/5 text-slate-500 border border-white/5 hover:bg-white/10'
+                  }`}
+                >
+                  {p === 'all' ? 'All' : p === 'tiktok' ? 'TikTok' : 'Instagram'}
+                </button>
+              ))}
+            </div>
+
+            {/* Select All / None */}
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-[10px] font-bold text-slate-400">
+                {selectedHashtagIds.size} of {hashtags.length} selected
+              </span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    const ids = new Set(filteredRunDialogHashtags.map(h => h.id))
+                    setSelectedHashtagIds(prev => {
+                      const next = new Set(prev)
+                      ids.forEach(id => next.add(id))
+                      return next
+                    })
+                  }}
+                  className="text-[10px] font-bold text-slate-400 hover:text-white transition-colors"
+                >
+                  Select all visible
+                </button>
+                <span className="text-slate-600">|</span>
+                <button
+                  onClick={() => {
+                    const ids = new Set(filteredRunDialogHashtags.map(h => h.id))
+                    setSelectedHashtagIds(prev => {
+                      const next = new Set(prev)
+                      ids.forEach(id => next.delete(id))
+                      return next
+                    })
+                  }}
+                  className="text-[10px] font-bold text-slate-400 hover:text-white transition-colors"
+                >
+                  Deselect all visible
+                </button>
+              </div>
+            </div>
+
+            {/* Hashtag List */}
+            <div className="flex-1 overflow-y-auto space-y-1.5 mb-5 pr-1 min-h-0">
+              {filteredRunDialogHashtags.length === 0 ? (
+                <p className="text-slate-600 text-xs font-bold text-center py-8">No hashtags match this filter.</p>
+              ) : (
+                filteredRunDialogHashtags.map(h => {
+                  const selected = selectedHashtagIds.has(h.id)
+                  return (
+                    <button
+                      key={h.id}
+                      onClick={() => {
+                        setSelectedHashtagIds(prev => {
+                          const next = new Set(prev)
+                          if (next.has(h.id)) next.delete(h.id)
+                          else next.add(h.id)
+                          return next
+                        })
+                      }}
+                      className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors text-left ${
+                        selected
+                          ? 'bg-pink-500/10 border border-pink-500/20'
+                          : 'bg-white/[0.02] border border-white/5 hover:bg-white/[0.04]'
+                      }`}
+                    >
+                      <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                        selected ? 'bg-pink-500 border-pink-500' : 'border-white/20'
+                      }`}>
+                        {selected && <i className="fas fa-check text-[8px] text-white"></i>}
+                      </div>
+                      <span className={`text-[10px] font-black uppercase px-1.5 py-0.5 rounded tracking-wider flex-shrink-0 ${
+                        h.platform === 'tiktok' ? 'bg-pink-500/10 text-pink-400' : 'bg-orange-500/10 text-orange-400'
+                      }`}>
+                        {h.platform === 'tiktok' ? 'TT' : 'IG'}
+                      </span>
+                      <span className="text-sm font-bold text-white flex-1">#{h.hashtag}</span>
+                      <span className="text-[10px] font-bold text-slate-600 flex-shrink-0">{h.total_videos || 0} videos</span>
+                      <span className="text-[10px] font-bold text-slate-600 flex-shrink-0">max {h.max_videos_per_run}/run</span>
+                      {!h.is_active && (
+                        <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-500/10 text-slate-500 flex-shrink-0">
+                          paused
+                        </span>
+                      )}
+                    </button>
+                  )
+                })
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-between pt-4 border-t border-white/5">
+              <button
+                onClick={() => setShowRunDialog(false)}
+                className="text-[10px] font-bold text-slate-500 hover:text-slate-300 px-4 py-2 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => triggerManualRun(Array.from(selectedHashtagIds))}
+                disabled={selectedHashtagIds.size === 0}
+                className="bg-gradient-to-r from-pink-500 to-orange-400 text-white px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest hover:opacity-90 transition-opacity disabled:opacity-50"
+              >
+                <span className="flex items-center gap-2">
+                  <i className="fas fa-bolt"></i> Run {selectedHashtagIds.size} Hashtag{selectedHashtagIds.size !== 1 ? 's' : ''}
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }

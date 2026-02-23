@@ -30,6 +30,7 @@ const managementItems = [
   { to: '/dashboard/bulk-management', icon: 'fa-arrows-rotate', label: 'Bulk Retrain' },
   { to: '/dashboard/onboarding-management', icon: 'fa-clipboard-check', label: 'Onboarding' },
   { to: '/dashboard/ai-model-lab', icon: 'fa-microchip', label: 'AI Model Lab' },
+  { to: '/dashboard/hashtags', icon: 'fa-hashtag', label: 'Hashtags' },
 ]
 
 /* Bottom tab items for mobile — the 4 most-used features + More */
@@ -66,6 +67,7 @@ const drawerRoutes = [
   '/dashboard/bulk-management',
   '/dashboard/onboarding-management',
   '/dashboard/ai-model-lab',
+  '/dashboard/hashtags',
 ]
 
 export default function DashboardLayout() {
@@ -172,6 +174,10 @@ export default function DashboardLayout() {
             </div>
           )}
         </nav>
+
+        <div className="px-6 py-4 border-t border-white/5">
+          <p className="text-[10px] text-slate-600 font-medium tracking-wide">blossom v1.0.0</p>
+        </div>
       </aside>
 
       {/* ═══════════ Main Content ═══════════ */}

@@ -146,17 +146,27 @@ export default function SearchOverlay() {
     ? results.formats.length + results.hooks.length + results.tactics.length + results.influencers.length
     : 0
 
+  const isCreatorSearch = query.trimStart().startsWith('@')
+
   const search = useCallback(async (q: string) => {
-    if (q.trim().length < 2) {
+    const trimmed = q.trim()
+    const creatorMode = trimmed.startsWith('@')
+    const searchQuery = creatorMode ? trimmed.slice(1).trim() : trimmed
+
+    if (searchQuery.length < 2) {
       setResults(null)
       return
     }
     setLoading(true)
     try {
-      const res = await authFetch(`/api/analysis/search?q=${encodeURIComponent(q.trim())}&limit=5`)
+      const res = await authFetch(`/api/analysis/search?q=${encodeURIComponent(searchQuery)}&limit=5`)
       const data = await res.json()
       if (data.formats && data.hooks && data.tactics && data.influencers) {
-        setResults(data)
+        // Filter results based on search mode
+        setResults(creatorMode
+          ? { formats: [], hooks: [], tactics: [], influencers: data.influencers }
+          : { formats: data.formats, hooks: data.hooks, tactics: data.tactics, influencers: [] }
+        )
       } else {
         setResults(null)
       }
@@ -220,7 +230,7 @@ export default function SearchOverlay() {
           value={query}
           onChange={(e) => { setQuery(e.target.value); setOpen(true) }}
           onFocus={() => setOpen(true)}
-          placeholder="Search formats, hooks, tactics, creators..."
+          placeholder="Search formats, hooks, tactics or @creators..."
           className="bg-transparent border-none outline-none text-sm w-full placeholder:text-slate-600 font-medium"
         />
         {query && (
@@ -455,7 +465,7 @@ export default function SearchOverlay() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-bold text-white truncate">
-                              {inf.display_name || inf.username}
+                              @{inf.display_name || inf.username}
                             </span>
                             {inf.is_verified && <i className="fas fa-check-circle text-blue-400 text-[10px] flex-shrink-0"></i>}
                             {inf.tier && (
