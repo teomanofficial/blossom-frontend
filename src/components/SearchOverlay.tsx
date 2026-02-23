@@ -146,7 +146,6 @@ export default function SearchOverlay() {
     ? results.formats.length + results.hooks.length + results.tactics.length + results.influencers.length
     : 0
 
-  const isCreatorSearch = query.trimStart().startsWith('@')
 
   const search = useCallback(async (q: string) => {
     const trimmed = q.trim()

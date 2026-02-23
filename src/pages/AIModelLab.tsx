@@ -139,7 +139,7 @@ export default function AIModelLab() {
   const [costStats, setCostStats] = useState<CostStat[]>([])
   const [operationStats, setOperationStats] = useState<OperationStat[]>([])
   const [dailyCost, setDailyCost] = useState<DailyCost[]>([])
-  const [qualityStats, setQualityStats] = useState<QualityStat[]>([])
+  const [, setQualityStats] = useState<QualityStat[]>([])
   const [recentAnalyses, setRecentAnalyses] = useState<RecentAnalysis[]>([])
   const [analyticsLoading, setAnalyticsLoading] = useState(false)
   const [analyticsDays, setAnalyticsDays] = useState(30)
@@ -773,7 +773,7 @@ export default function AIModelLab() {
                         opCostMap.set(stat.operation, (opCostMap.get(stat.operation) || 0) + cost)
                       }
                       const sorted = Array.from(opCostMap.entries()).sort((a, b) => b[1] - a[1])
-                      const maxCost = sorted.length > 0 ? sorted[0][1] : 0.01
+                      const maxCost = sorted.length > 0 ? sorted[0]![1] : 0.01
 
                       const barColors = [
                         'bg-purple-500', 'bg-blue-500', 'bg-emerald-500', 'bg-amber-500',
@@ -804,7 +804,7 @@ export default function AIModelLab() {
                             })}
                           </div>
                           <div className="flex gap-1.5 mt-2 border-t border-white/5 pt-2">
-                            {sorted.map(([op], i) => (
+                            {sorted.map(([op]) => (
                               <div key={op} className="flex-1 min-w-0">
                                 <div className="text-[8px] text-slate-500 font-mono truncate text-center" title={op}>
                                   {op.replace(/_/g, '\u200B_')}
