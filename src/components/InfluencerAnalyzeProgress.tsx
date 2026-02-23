@@ -93,7 +93,7 @@ export default function InfluencerAnalyzeProgress({ compact }: Props) {
   const isDone = progress.phase === 'done'
   const isError = progress.phase === 'error'
   const isCancelled = progress.phase === 'cancelled'
-  const showDismiss = !isActive && (isDone || isError || isCancelled)
+  const showDismiss = !isActive
 
   const handleCancel = async () => {
     setCancelling(true)
@@ -123,7 +123,7 @@ export default function InfluencerAnalyzeProgress({ compact }: Props) {
               isDone ? 'text-teal-400' : isError ? 'text-red-400' : 'text-pink-400'
             }`}></i>
             <span className="text-[11px] font-bold text-slate-300 truncate">
-              {progress.phaseLabel || `Analyzing @${progress.influencerUsername}...`}
+              {progress.phaseLabel || (progress.influencerUsername ? `Analyzing @${progress.influencerUsername}...` : 'Analyzing...')}
             </span>
           </div>
           <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -180,7 +180,7 @@ export default function InfluencerAnalyzeProgress({ compact }: Props) {
               {isDone ? 'Analysis Complete' :
                isError ? 'Analysis Failed' :
                isCancelled ? 'Analysis Cancelled' :
-               `Analyzing @${progress.influencerUsername}`}
+               progress.influencerUsername ? `Analyzing @${progress.influencerUsername}` : 'Analyzing...'}
             </div>
             <div className="text-[11px] text-slate-500">
               {progress.phaseLabel}
