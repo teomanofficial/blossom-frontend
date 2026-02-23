@@ -12,7 +12,7 @@ export default function Privacy() {
 
           <div className="space-y-8 text-slate-300 text-sm leading-relaxed">
             <section>
-              <p>Blossom AI ("we," "us," or "our") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, store, and share your information when you use our social media intelligence platform ("the Service"). By using the Service, you consent to the practices described in this policy.</p>
+              <p>Blossom ("we," "us," or "our") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, store, and share your information when you use our social media intelligence platform ("the Service"). By using the Service, you consent to the practices described in this policy.</p>
             </section>
 
             <section>
@@ -140,7 +140,7 @@ export default function Privacy() {
               <ul className="list-disc list-inside space-y-1 text-slate-400">
                 <li><strong className="text-slate-300">Service providers:</strong> With third-party services listed above, solely for the purpose of operating the Service</li>
                 <li><strong className="text-slate-300">Legal requirements:</strong> When required by law, regulation, legal process, or governmental request</li>
-                <li><strong className="text-slate-300">Safety:</strong> To protect the rights, property, or safety of Blossom AI, our users, or the public</li>
+                <li><strong className="text-slate-300">Safety:</strong> To protect the rights, property, or safety of Blossom, our users, or the public</li>
                 <li><strong className="text-slate-300">Business transfers:</strong> In connection with a merger, acquisition, or sale of assets, in which case your data would remain subject to this Privacy Policy</li>
                 <li><strong className="text-slate-300">Aggregated data:</strong> We may share anonymized, aggregated statistics that cannot be used to identify individual users</li>
               </ul>

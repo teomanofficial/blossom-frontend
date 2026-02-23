@@ -44,8 +44,8 @@ export default function Login() {
       <div className="relative w-full max-w-md">
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center gap-2 mb-6">
-            <img src="/logo-light.png" alt="Blossom AI" className="w-8 h-8" />
-            <span className="text-xl font-bold gradient-text">Blossom AI</span>
+            <img src="/logo-light.png" alt="Blossom" className="w-8 h-8" />
+            <span className="text-xl font-bold gradient-text">Blossom</span>
           </Link>
           <h1 className="text-2xl font-bold">Welcome back</h1>
           <p className="mt-2 text-gray-400 text-sm">Sign in to your account</p>

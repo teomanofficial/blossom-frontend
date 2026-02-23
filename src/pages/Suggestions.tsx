@@ -79,6 +79,7 @@ export default function Suggestions() {
   const [formatFilter, setFormatFilter] = useState('')
   const [filterKeywords, setFilterKeywords] = useState<FilterOption[]>([])
   const [filterFormats, setFilterFormats] = useState<FilterOption[]>([])
+  const [categoryName, setCategoryName] = useState<string | null>(null)
 
   useEffect(() => { loadAll() }, [])
   useEffect(() => { loadSuggestions() }, [tab, sortBy, keywordFilter, formatFilter])
@@ -86,13 +87,15 @@ export default function Suggestions() {
   async function loadAll() {
     try {
       setLoading(true)
-      const [statsRes, filtersRes] = await Promise.all([
+      const [statsRes, filtersRes, prefsRes] = await Promise.all([
         authFetch('/api/analysis/suggestions/stats').then(r => r.json()),
         authFetch('/api/analysis/suggestions/filters').then(r => r.json()),
+        authFetch('/api/onboarding/preferences').then(r => r.json()),
       ])
       setStats(statsRes)
       setFilterKeywords(filtersRes.keywords || [])
       setFilterFormats(filtersRes.formats || [])
+      setCategoryName(prefsRes.category?.title || null)
       await loadSuggestions()
     } catch (error) {
       console.error('Failed to load suggestions data:', error)
@@ -174,10 +177,15 @@ export default function Suggestions() {
             <span className="px-2 py-0.5 bg-pink-500/10 text-pink-400 text-[10px] font-black uppercase tracking-widest rounded">
               AI Powered
             </span>
+            {categoryName && (
+              <span className="px-2 py-0.5 bg-purple-500/10 text-purple-400 text-[10px] font-black uppercase tracking-widest rounded">
+                {categoryName}
+              </span>
+            )}
           </div>
           <h1 className="text-2xl md:text-4xl font-black tracking-tighter mb-1 md:mb-2">CONTENT SUGGESTIONS</h1>
           <p className="text-slate-500 text-xs md:text-sm font-medium">
-            Daily content ideas based on trending patterns. Film them today.
+            Daily content ideas based on trending patterns{categoryName ? ` in ${categoryName}` : ''}. Film them today.
           </p>
         </div>
 

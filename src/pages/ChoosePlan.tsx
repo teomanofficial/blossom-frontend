@@ -165,8 +165,8 @@ export default function ChoosePlan() {
       {/* Top bar */}
       <div className="relative z-10 flex items-center justify-between px-8 py-6">
         <div className="flex items-center gap-3">
-          <img src="/logo-light.png" alt="Blossom AI" className="w-9 h-9" />
-          <span className="text-xl font-bold tracking-tighter">Blossom AI</span>
+          <img src="/logo-light.png" alt="Blossom" className="w-9 h-9" />
+          <span className="text-xl font-bold tracking-tighter">Blossom</span>
         </div>
         <div className="flex items-center gap-4">
           <span className="text-sm text-slate-400 font-medium">

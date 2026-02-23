@@ -13,13 +13,13 @@ export default function Terms() {
           <div className="space-y-8 text-slate-300 text-sm leading-relaxed">
             <section>
               <h2 className="text-lg font-bold text-white mb-3">1. Acceptance of Terms</h2>
-              <p className="mb-2">By creating an account, accessing, or using Blossom AI ("the Service," "we," "us," or "our"), you agree to be bound by these Terms of Use. If you do not agree to all of these terms, you must not access or use the Service.</p>
+              <p className="mb-2">By creating an account, accessing, or using Blossom ("the Service," "we," "us," or "our"), you agree to be bound by these Terms of Use. If you do not agree to all of these terms, you must not access or use the Service.</p>
               <p>These terms apply to all users, whether on a free or paid subscription plan. We may update these terms at any time — continued use of the Service after changes constitutes acceptance of the revised terms.</p>
             </section>
 
             <section>
               <h2 className="text-lg font-bold text-white mb-3">2. Description of Service</h2>
-              <p className="mb-2">Blossom AI is a social media intelligence platform that provides:</p>
+              <p className="mb-2">Blossom is a social media intelligence platform that provides:</p>
               <ul className="list-disc list-inside space-y-1 text-slate-400">
                 <li><strong className="text-slate-300">Content Analysis:</strong> AI-powered analysis of social media content including visual, audio, narrative, engagement, and strategic dimensions</li>
                 <li><strong className="text-slate-300">Viral Format Discovery:</strong> Curated library of proven viral content formats, hooks, and tactics</li>
@@ -33,7 +33,7 @@ export default function Terms() {
 
             <section>
               <h2 className="text-lg font-bold text-white mb-3">3. Eligibility</h2>
-              <p>You must be at least 16 years of age to use the Service. By using Blossom AI, you represent that you meet this requirement and have the legal capacity to enter into these terms. If you are using the Service on behalf of an organization, you represent that you have the authority to bind that organization to these terms.</p>
+              <p>You must be at least 16 years of age to use the Service. By using Blossom, you represent that you meet this requirement and have the legal capacity to enter into these terms. If you are using the Service on behalf of an organization, you represent that you have the authority to bind that organization to these terms.</p>
             </section>
 
             <section>
@@ -50,7 +50,7 @@ export default function Terms() {
 
             <section>
               <h2 className="text-lg font-bold text-white mb-3">5. Subscription Plans and Billing</h2>
-              <p className="mb-2">Blossom AI offers multiple subscription tiers with varying features and usage limits. Key billing terms:</p>
+              <p className="mb-2">Blossom offers multiple subscription tiers with varying features and usage limits. Key billing terms:</p>
               <ul className="list-disc list-inside space-y-1 text-slate-400">
                 <li>Paid subscriptions are billed on a recurring monthly or annual basis through Paddle, our payment processor</li>
                 <li>You may upgrade, downgrade, or cancel your subscription at any time from your account settings</li>
@@ -129,9 +129,9 @@ export default function Terms() {
 
             <section>
               <h2 className="text-lg font-bold text-white mb-3">11. Intellectual Property</h2>
-              <p className="mb-2">The Service and its original content, features, algorithms, design, and branding are and will remain the exclusive property of Blossom AI. This includes but is not limited to:</p>
+              <p className="mb-2">The Service and its original content, features, algorithms, design, and branding are and will remain the exclusive property of Blossom. This includes but is not limited to:</p>
               <ul className="list-disc list-inside space-y-1 text-slate-400">
-                <li>The Blossom AI name, logo, and visual identity</li>
+                <li>The Blossom name, logo, and visual identity</li>
                 <li>Analysis algorithms, scoring systems, and AI models</li>
                 <li>Curated viral formats, hooks, and tactics databases</li>
                 <li>User interface design and user experience patterns</li>
@@ -153,7 +153,7 @@ export default function Terms() {
 
             <section>
               <h2 className="text-lg font-bold text-white mb-3">13. Limitation of Liability</h2>
-              <p className="mb-2">To the maximum extent permitted by law, Blossom AI and its officers, directors, employees, and agents shall not be liable for:</p>
+              <p className="mb-2">To the maximum extent permitted by law, Blossom and its officers, directors, employees, and agents shall not be liable for:</p>
               <ul className="list-disc list-inside space-y-1 text-slate-400">
                 <li>Any indirect, incidental, special, consequential, or punitive damages</li>
                 <li>Loss of profits, revenue, data, or business opportunities</li>
@@ -166,7 +166,7 @@ export default function Terms() {
 
             <section>
               <h2 className="text-lg font-bold text-white mb-3">14. Indemnification</h2>
-              <p>You agree to indemnify and hold harmless Blossom AI from any claims, damages, losses, or expenses (including reasonable legal fees) arising from your use of the Service, your violation of these terms, or your violation of any rights of a third party.</p>
+              <p>You agree to indemnify and hold harmless Blossom from any claims, damages, losses, or expenses (including reasonable legal fees) arising from your use of the Service, your violation of these terms, or your violation of any rights of a third party.</p>
             </section>
 
             <section>

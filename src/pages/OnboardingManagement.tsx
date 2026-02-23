@@ -307,8 +307,8 @@ function OnboardingSimulation() {
         {/* Top bar */}
         <div className="flex items-center justify-between px-8 py-5 border-b border-white/5">
           <div className="flex items-center gap-3">
-            <img src="/logo-light.png" alt="Blossom AI" className="w-8 h-8" />
-            <span className="text-lg font-bold tracking-tighter">Blossom AI</span>
+            <img src="/logo-light.png" alt="Blossom" className="w-8 h-8" />
+            <span className="text-lg font-bold tracking-tighter">Blossom</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-black text-slate-600 uppercase tracking-wider bg-yellow-400/10 text-yellow-400 px-3 py-1 rounded-full">

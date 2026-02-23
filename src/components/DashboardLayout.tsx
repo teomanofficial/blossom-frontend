@@ -116,8 +116,8 @@ export default function DashboardLayout() {
       <aside className="hidden lg:flex w-64 flex-shrink-0 border-r border-white/5 flex-col">
         <div className="p-8">
           <div className="flex items-center gap-3">
-            <img src="/logo-light.png" alt="Blossom AI" className="w-9 h-9" />
-            <span className="text-xl font-bold tracking-tighter">Blossom AI</span>
+            <img src="/logo-light.png" alt="Blossom" className="w-9 h-9" />
+            <span className="text-xl font-bold tracking-tighter">Blossom</span>
           </div>
         </div>
 
@@ -206,8 +206,8 @@ export default function DashboardLayout() {
         {/* ── Mobile Top Header (<lg) ── */}
         <header className="flex lg:hidden h-14 border-b border-white/5 items-center justify-between px-4 bg-slate-950/80 backdrop-blur-xl z-30 shrink-0">
           <div className="flex items-center gap-2.5">
-            <img src="/logo-light.png" alt="Blossom AI" className="w-7 h-7" />
-            <span className="text-base font-bold tracking-tighter">Blossom AI</span>
+            <img src="/logo-light.png" alt="Blossom" className="w-7 h-7" />
+            <span className="text-base font-bold tracking-tighter">Blossom</span>
           </div>
           <div className="flex items-center gap-2">
             <button

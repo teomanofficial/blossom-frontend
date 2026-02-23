@@ -19,6 +19,7 @@ interface AuthContextType {
   profile: Profile | null
   userType: string | null
   planSlug: string | null
+  categoryId: number | null
   onboardingCompleted: boolean | null
   loading: boolean
   signOut: () => Promise<void>
@@ -33,6 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [userType, setUserType] = useState<string | null>(null)
   const [planSlug, setPlanSlug] = useState<string | null>(null)
+  const [categoryId, setCategoryId] = useState<number | null>(null)
   const [onboardingCompleted, setOnboardingCompleted] = useState<boolean | null>(null)
   const [loading, setLoading] = useState(true)
   const initialLoadDone = useRef(false)
@@ -59,6 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (obRes.ok) {
             const obData = await obRes.json()
             setOnboardingCompleted(obData.isCompleted)
+            setCategoryId(obData.data?.categoryId || null)
           } else {
             setOnboardingCompleted(true) // fail open
           }
@@ -96,6 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setProfile(null)
         setUserType(null)
         setPlanSlug(null)
+        setCategoryId(null)
         setOnboardingCompleted(null)
       }
     })
@@ -115,7 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, session, profile, userType, planSlug, onboardingCompleted, loading, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ user, session, profile, userType, planSlug, categoryId, onboardingCompleted, loading, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   )

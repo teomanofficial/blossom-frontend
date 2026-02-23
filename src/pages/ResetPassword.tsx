@@ -45,7 +45,7 @@ export default function ResetPassword() {
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-pink-500 to-orange-400 flex items-center justify-center">
               <span className="text-white font-bold text-sm">B</span>
             </div>
-            <span className="text-xl font-bold gradient-text">Blossom AI</span>
+            <span className="text-xl font-bold gradient-text">Blossom</span>
           </Link>
           <h1 className="text-2xl font-bold">Set new password</h1>
           <p className="mt-2 text-gray-400 text-sm">

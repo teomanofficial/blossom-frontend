@@ -2373,7 +2373,7 @@ export default function ContentAnalysis() {
               <div className="flex justify-center mt-6 opacity-20">
                 <div className="flex items-center gap-3">
                   <div className="h-[1px] w-6 bg-white/50" />
-                  <span className="text-[8px] font-mono uppercase tracking-[0.4em]">Blossom AI &bull; 2026 Build</span>
+                  <span className="text-[8px] font-mono uppercase tracking-[0.4em]">Blossom &bull; 2026 Build</span>
                   <div className="h-[1px] w-6 bg-white/50" />
                 </div>
               </div>

@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext'
 
 const accountNavItems = [
   { to: '/dashboard/account', label: 'Profile', icon: 'fa-user', end: true },
+  { to: '/dashboard/account/preferences', label: 'Preferences', icon: 'fa-sliders-h', end: false },
   { to: '/dashboard/account/security', label: 'Security', icon: 'fa-shield-alt', end: false },
   { to: '/dashboard/account/integrations', label: 'Integrations', icon: 'fa-plug', end: false },
   { to: '/dashboard/account/billing', label: 'Billing & Plans', icon: 'fa-credit-card', end: false },

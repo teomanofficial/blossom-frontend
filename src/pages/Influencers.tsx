@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { authFetch } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
+import InfluencerAnalyzeProgress from '../components/InfluencerAnalyzeProgress'
 
 interface Influencer {
   id: number
@@ -69,6 +70,7 @@ export default function Influencers() {
   const [tierOpen, setTierOpen] = useState(false)
   const [page, setPage] = useState(0)
   const [refetching, setRefetching] = useState(false)
+  const [analyzingId, setAnalyzingId] = useState<number | null>(null)
   const tierRef = useRef<HTMLDivElement>(null)
   const limit = 30
 
@@ -139,6 +141,29 @@ export default function Influencers() {
       toast.error('Failed to start profile refetch')
     } finally {
       setRefetching(false)
+    }
+  }
+
+  const handleAnalyzeInfluencer = async (e: React.MouseEvent, infId: number, username: string) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setAnalyzingId(infId)
+    try {
+      const res = await authFetch(`/api/analysis/influencers/${infId}/full-analyze`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: 100 }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data.error || 'Failed to start analysis')
+      } else {
+        toast.success(`Started full analysis for @${username}`)
+      }
+    } catch {
+      toast.error('Failed to start analysis')
+    } finally {
+      setAnalyzingId(null)
     }
   }
 
@@ -281,6 +306,13 @@ export default function Influencers() {
         )}
       </div>
 
+      {/* Influencer Analyze Progress */}
+      {userType === 'admin' && (
+        <div className="mb-4">
+          <InfluencerAnalyzeProgress compact />
+        </div>
+      )}
+
       {loading ? (
         <div className="flex items-center justify-center py-20">
           <div className="w-6 h-6 border-2 border-pink-500 border-t-transparent rounded-full animate-spin"></div>
@@ -345,7 +377,7 @@ export default function Influencers() {
                         <i className={`fab fa-${inf.platform === 'tiktok' ? 'tiktok' : 'instagram'} text-[8px] ${inf.platform === 'tiktok' ? 'text-slate-400' : 'text-pink-400'}`}></i>
                       </div>
                     </div>
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
                         <span className="text-sm font-semibold truncate group-hover:text-pink-400 transition-colors">
                           {inf.display_name || inf.username}
@@ -359,6 +391,17 @@ export default function Influencers() {
                       </div>
                       <div className="text-[11px] text-slate-500 truncate">@{inf.username}</div>
                     </div>
+                    {userType === 'admin' && inf.platform === 'instagram' && (
+                      <button
+                        onClick={(e) => handleAnalyzeInfluencer(e, inf.id, inf.username)}
+                        disabled={analyzingId === inf.id}
+                        className="opacity-0 group-hover:opacity-100 flex-shrink-0 px-2 py-1 rounded-lg text-[10px] font-bold text-pink-400 bg-pink-500/10 hover:bg-pink-500/20 border border-pink-500/20 transition-all disabled:opacity-50"
+                        title="Analyze: fetch 100 videos, download & analyze all"
+                      >
+                        <i className={`fas ${analyzingId === inf.id ? 'fa-spinner fa-spin' : 'fa-microscope'} mr-1`}></i>
+                        ANALYZE
+                      </button>
+                    )}
                   </div>
 
                   {/* Metrics */}
@@ -464,6 +507,16 @@ export default function Influencers() {
                       </div>
                     </div>
                   </div>
+                  {userType === 'admin' && inf.platform === 'instagram' && (
+                    <button
+                      onClick={(e) => handleAnalyzeInfluencer(e, inf.id, inf.username)}
+                      disabled={analyzingId === inf.id}
+                      className="mt-2.5 w-full py-2 rounded-lg text-[10px] font-bold text-pink-400 bg-pink-500/10 hover:bg-pink-500/20 border border-pink-500/20 transition-all disabled:opacity-50"
+                    >
+                      <i className={`fas ${analyzingId === inf.id ? 'fa-spinner fa-spin' : 'fa-microscope'} mr-1.5`}></i>
+                      {analyzingId === inf.id ? 'STARTING...' : 'ANALYZE INFLUENCER'}
+                    </button>
+                  )}
                 </Link>
               )
             })}

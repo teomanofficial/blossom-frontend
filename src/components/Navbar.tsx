@@ -8,8 +8,8 @@ export default function Navbar() {
     <nav className="fixed w-full z-50 px-4 sm:px-6 py-4 sm:py-6">
       <div className="max-w-7xl mx-auto glass-card rounded-[2rem] px-6 sm:px-8 py-4 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-3">
-          <img src="/logo-light.png" alt="Blossom AI" className="w-10 h-10" />
-          <span className="text-2xl font-bold tracking-tighter">Blossom AI</span>
+          <img src="/logo-light.png" alt="Blossom" className="w-10 h-10" />
+          <span className="text-2xl font-bold tracking-tighter">Blossom</span>
         </Link>
 
         <div className="hidden lg:flex items-center gap-10 text-sm font-semibold text-slate-400">

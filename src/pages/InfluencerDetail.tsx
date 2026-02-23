@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { authFetch } from '../lib/api'
+import { useAuth } from '../context/AuthContext'
 import VideoStoryCarousel, { type CarouselVideo } from '../components/VideoStoryCarousel'
+import InfluencerAnalyzeProgress from '../components/InfluencerAnalyzeProgress'
 
 interface InfluencerVideo {
   id: number
@@ -156,6 +158,7 @@ function getPartnershipPotentialColor(potential: string): string {
 
 export default function InfluencerDetail() {
   const { id } = useParams()
+  const { userType } = useAuth()
   const [influencer, setInfluencer] = useState<InfluencerData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -163,6 +166,7 @@ export default function InfluencerDetail() {
   const [refreshing, setRefreshing] = useState(false)
   const [fetching, setFetching] = useState(false)
   const [scanning, setScanning] = useState(false)
+  const [analyzing, setAnalyzing] = useState(false)
   const [actionMessage, setActionMessage] = useState<string | null>(null)
 
   const fetchInfluencer = () => {
@@ -234,6 +238,26 @@ export default function InfluencerDetail() {
       .finally(() => setScanning(false))
   }
 
+  const handleFullAnalyze = () => {
+    setAnalyzing(true)
+    setActionMessage(null)
+    authFetch(`/api/analysis/influencers/${id}/full-analyze`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount: 100 }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.error) {
+          setActionMessage(data.error)
+        } else {
+          setActionMessage(`Started full analysis for @${data.username} - fetching 100 videos, downloading & analyzing`)
+        }
+      })
+      .catch((e) => setActionMessage(e.message))
+      .finally(() => setAnalyzing(false))
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -299,6 +323,16 @@ export default function InfluencerDetail() {
             <i className="fas fa-brain mr-1.5 text-[9px]"></i>
             {scanning ? 'SCANNING...' : 'DEEP SCAN'}
           </button>
+          {userType === 'admin' && influencer.platform === 'instagram' && (
+            <button
+              onClick={handleFullAnalyze}
+              disabled={analyzing}
+              className="bg-pink-600 hover:bg-pink-500 disabled:opacity-50 text-white text-[11px] font-black px-3 py-2 md:px-4 md:py-2.5 rounded-xl transition-all shrink-0"
+            >
+              <i className={`fas ${analyzing ? 'fa-spinner fa-spin' : 'fa-microscope'} mr-1.5 text-[9px]`}></i>
+              {analyzing ? 'STARTING...' : 'ANALYZE INFLUENCER'}
+            </button>
+          )}
         </div>
       </div>
 
@@ -309,6 +343,13 @@ export default function InfluencerDetail() {
           <button onClick={() => setActionMessage(null)} className="text-slate-500 hover:text-white text-xs ml-4">
             <i className="fas fa-times"></i>
           </button>
+        </div>
+      )}
+
+      {/* Influencer Analyze Progress */}
+      {userType === 'admin' && (
+        <div className="mb-6">
+          <InfluencerAnalyzeProgress />
         </div>
       )}
 

@@ -19,6 +19,17 @@ interface ModelConfig {
   updated_at: string
 }
 
+interface OperationOverride {
+  operation: string
+  model_name: string
+  updated_at: string
+}
+
+interface AvailableModel {
+  model_name: string
+  display_name: string
+}
+
 interface CostStat {
   model: string
   total_requests: string
@@ -107,6 +118,16 @@ const MODEL_COLORS: Record<string, string> = {
   'gemini-2.5-pro': 'bg-purple-500/10 text-purple-400 border-purple-500/20',
 }
 
+const MODEL_CHART_COLORS: Record<string, { bar: string; text: string; ring: string }> = {
+  'gemini-2.0-flash': { bar: 'bg-emerald-500', text: 'text-emerald-400', ring: 'ring-emerald-500/30' },
+  'gemini-2.5-flash': { bar: 'bg-blue-500', text: 'text-blue-400', ring: 'ring-blue-500/30' },
+  'gemini-2.5-pro': { bar: 'bg-purple-500', text: 'text-purple-400', ring: 'ring-purple-500/30' },
+}
+
+function getModelChartColor(model: string) {
+  return MODEL_CHART_COLORS[model] || { bar: 'bg-slate-500', text: 'text-slate-400', ring: 'ring-slate-500/30' }
+}
+
 function getModelColor(model: string): string {
   return MODEL_COLORS[model] || 'bg-slate-500/10 text-slate-400 border-slate-500/20'
 }
@@ -125,6 +146,12 @@ export default function AIModelLab() {
   const [expandedAnalysis, setExpandedAnalysis] = useState<number | null>(null)
   const [showAddModel, setShowAddModel] = useState(false)
   const [newModel, setNewModel] = useState({ model_name: '', display_name: '', provider: 'gemini', cost_per_1m_input: '', cost_per_1m_output: '', notes: '' })
+  const [operationOverrides, setOperationOverrides] = useState<OperationOverride[]>([])
+  const [knownOperations, setKnownOperations] = useState<string[]>([])
+  const [availableModels, setAvailableModels] = useState<AvailableModel[]>([])
+  const [defaultModelName, setDefaultModelName] = useState('')
+  const [overridesLoading, setOverridesLoading] = useState(false)
+  const [savingOperation, setSavingOperation] = useState<string | null>(null)
 
   const fetchModels = async () => {
     setModelsLoading(true)
@@ -217,6 +244,60 @@ export default function AIModelLab() {
       toast.error('Failed to add model')
     }
   }
+
+  const fetchOperationOverrides = async () => {
+    setOverridesLoading(true)
+    try {
+      const res = await authFetch('/api/admin/operation-model-overrides')
+      const data = await res.json()
+      setOperationOverrides(data.overrides || [])
+      setKnownOperations(data.operations || [])
+      setAvailableModels(data.availableModels || [])
+      setDefaultModelName(data.defaultModel || '')
+    } catch {
+      toast.error('Failed to load operation overrides')
+    } finally {
+      setOverridesLoading(false)
+    }
+  }
+
+  const updateOperationModel = async (operation: string, modelName: string) => {
+    setSavingOperation(operation)
+    // Optimistic update
+    const prevOverrides = operationOverrides
+    if (modelName === '') {
+      setOperationOverrides(prev => prev.filter(o => o.operation !== operation))
+    } else {
+      setOperationOverrides(prev => {
+        const exists = prev.find(o => o.operation === operation)
+        if (exists) return prev.map(o => o.operation === operation ? { ...o, model_name: modelName } : o)
+        return [...prev, { operation, model_name: modelName, updated_at: new Date().toISOString() }]
+      })
+    }
+    try {
+      if (modelName === '') {
+        await authFetch(`/api/admin/operation-model-overrides/${encodeURIComponent(operation)}`, { method: 'DELETE' })
+        toast.success(`${operation} reset to default`)
+      } else {
+        await authFetch('/api/admin/operation-model-overrides', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ operation, model_name: modelName }),
+        })
+        toast.success(`${operation} → ${modelName}`)
+      }
+    } catch {
+      // Rollback on error
+      setOperationOverrides(prevOverrides)
+      toast.error('Failed to update operation model')
+    } finally {
+      setSavingOperation(null)
+    }
+  }
+
+  useEffect(() => {
+    if (activeTab === 'config') fetchOperationOverrides()
+  }, [activeTab])
 
   const tabs = [
     { key: 'config' as const, label: 'Model Config', icon: 'fa-sliders' },
@@ -416,6 +497,67 @@ export default function AIModelLab() {
               ))}
             </div>
           )}
+
+          {/* Operation model assignments */}
+          <div className="mt-6">
+            <h2 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-3">Operation Model Assignments</h2>
+            <p className="text-xs text-slate-500 mb-3">
+              Override which model is used for each operation. Operations without an override use the default model.
+            </p>
+            {overridesLoading ? (
+              <div className="text-center py-8 text-slate-500 text-sm">Loading operations...</div>
+            ) : knownOperations.length === 0 ? (
+              <div className="text-center py-8 text-slate-500 text-sm">No operations found yet. Run some analyses first.</div>
+            ) : (
+              <div className="bg-white/[0.03] border border-white/10 rounded-2xl overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-white/5">
+                      <th className="text-left px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Operation</th>
+                      <th className="text-left px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Model</th>
+                      <th className="text-right px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest w-20">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {knownOperations.map(op => {
+                      const override = operationOverrides.find(o => o.operation === op)
+                      const currentModel = override?.model_name || ''
+                      return (
+                        <tr key={op} className="border-b border-white/5 last:border-0">
+                          <td className="px-4 py-2.5 text-slate-300 text-xs font-mono">{op}</td>
+                          <td className="px-4 py-2.5">
+                            <select
+                              value={currentModel}
+                              onChange={e => updateOperationModel(op, e.target.value)}
+                              className={`w-full max-w-[260px] px-2.5 py-1.5 rounded-lg text-xs font-bold border transition-colors cursor-pointer focus:outline-none focus:border-pink-500/40 ${
+                                override
+                                  ? 'bg-purple-500/10 border-purple-500/20 text-purple-300'
+                                  : 'bg-white/5 border-white/10 text-slate-400'
+                              }`}
+                            >
+                              <option value="">Default ({defaultModelName})</option>
+                              {availableModels.map(m => (
+                                <option key={m.model_name} value={m.model_name}>{m.display_name} ({m.model_name})</option>
+                              ))}
+                            </select>
+                          </td>
+                          <td className="px-4 py-2.5 text-right">
+                            {savingOperation === op ? (
+                              <i className="fas fa-spinner fa-spin text-pink-400 text-xs" />
+                            ) : override ? (
+                              <span className="px-2 py-0.5 bg-purple-500/10 text-purple-400 text-[10px] font-black rounded-full uppercase">Override</span>
+                            ) : (
+                              <span className="px-2 py-0.5 bg-white/5 text-slate-500 text-[10px] font-black rounded-full uppercase">Default</span>
+                            )}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -465,6 +607,79 @@ export default function AIModelLab() {
                   <div className="text-[10px] text-slate-500">with activity</div>
                 </div>
               </div>
+
+              {/* Cost by Model */}
+              {costStats.length > 0 && (
+                <div>
+                  <h2 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-3">Cost by Model</h2>
+                  <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5 space-y-4">
+                    {/* Proportional bar */}
+                    <div className="h-8 rounded-xl overflow-hidden flex">
+                      {costStats
+                        .filter(s => parseFloat(s.total_cost_usd || '0') > 0)
+                        .sort((a, b) => parseFloat(b.total_cost_usd || '0') - parseFloat(a.total_cost_usd || '0'))
+                        .map(stat => {
+                          const cost = parseFloat(stat.total_cost_usd || '0')
+                          const pct = totalCost > 0 ? (cost / totalCost) * 100 : 0
+                          const colors = getModelChartColor(stat.model)
+                          return (
+                            <div
+                              key={stat.model}
+                              className={`${colors.bar} opacity-80 hover:opacity-100 transition-opacity relative group`}
+                              style={{ width: `${Math.max(pct, 2)}%` }}
+                            >
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                {pct >= 12 && (
+                                  <span className="text-[10px] font-black text-white drop-shadow-sm">
+                                    {pct.toFixed(0)}%
+                                  </span>
+                                )}
+                              </div>
+                              <div className="absolute -top-9 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800 border border-white/10 rounded-lg px-2 py-1 text-[10px] text-white font-mono whitespace-nowrap z-10 pointer-events-none">
+                                {stat.model}: {formatCost(cost)} ({pct.toFixed(1)}%)
+                              </div>
+                            </div>
+                          )
+                        })}
+                    </div>
+
+                    {/* Per-model horizontal bars */}
+                    <div className="space-y-3">
+                      {costStats
+                        .sort((a, b) => parseFloat(b.total_cost_usd || '0') - parseFloat(a.total_cost_usd || '0'))
+                        .map(stat => {
+                          const cost = parseFloat(stat.total_cost_usd || '0')
+                          const maxModelCost = Math.max(...costStats.map(s => parseFloat(s.total_cost_usd || '0')), 0.01)
+                          const pct = totalCost > 0 ? (cost / totalCost) * 100 : 0
+                          const barPct = maxModelCost > 0 ? (cost / maxModelCost) * 100 : 0
+                          const colors = getModelChartColor(stat.model)
+                          const requests = parseInt(stat.total_requests || '0')
+                          return (
+                            <div key={stat.model} className="group">
+                              <div className="flex items-center justify-between mb-1">
+                                <div className="flex items-center gap-2">
+                                  <span className={`w-2.5 h-2.5 rounded-sm ${colors.bar}`} />
+                                  <span className={`text-xs font-bold ${colors.text}`}>{stat.model}</span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <span className="text-[10px] text-slate-500">{formatNumber(requests)} reqs</span>
+                                  <span className="text-xs font-black">{formatCost(cost)}</span>
+                                  <span className="text-[10px] text-slate-500 w-10 text-right">{pct.toFixed(1)}%</span>
+                                </div>
+                              </div>
+                              <div className="h-2.5 bg-white/5 rounded-full overflow-hidden">
+                                <div
+                                  className={`h-full rounded-full ${colors.bar} opacity-70 group-hover:opacity-100 transition-all`}
+                                  style={{ width: `${Math.max(barPct, 1)}%` }}
+                                />
+                              </div>
+                            </div>
+                          )
+                        })}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Per-model breakdown */}
               <div>
@@ -545,33 +760,61 @@ export default function AIModelLab() {
                 </div>
               </div>
 
-              {/* Quality stats */}
-              {qualityStats.length > 0 && (
+              {/* Operation Cost Trend - vertical bar chart */}
+              {operationStats.length > 0 && (
                 <div>
-                  <h2 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-3">Analysis Quality by Model</h2>
-                  <div className="grid grid-cols-1 gap-3">
-                    {qualityStats.map((stat, i) => (
-                      <div key={i} className="bg-white/[0.03] border border-white/10 rounded-2xl p-4 flex flex-wrap items-center gap-4">
-                        <span className={`px-2.5 py-1 rounded-lg text-xs font-bold border ${getModelColor(stat.model_used)}`}>
-                          {stat.model_used}
-                        </span>
-                        <span className="text-xs text-slate-400">
-                          {ANALYSIS_TYPE_LABELS[stat.analysis_type] || stat.analysis_type}
-                        </span>
-                        <span className="text-xs font-bold">{stat.analysis_count} analyses</span>
-                        <span className="text-xs text-slate-400">
-                          Avg {(stat.avg_duration_ms / 1000).toFixed(1)}s
-                        </span>
-                        <span className="text-xs text-slate-400">
-                          Avg {formatNumber(parseInt(stat.avg_tokens || '0'))} tokens
-                        </span>
-                        {stat.avg_virality_score && (
-                          <span className="text-xs font-bold text-amber-400">
-                            Virality: {parseFloat(stat.avg_virality_score).toFixed(1)}
-                          </span>
-                        )}
-                      </div>
-                    ))}
+                  <h2 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-3">Operation Cost Trend</h2>
+                  <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-4 overflow-x-auto">
+                    {(() => {
+                      // Aggregate cost by operation across all models
+                      const opCostMap = new Map<string, number>()
+                      for (const stat of operationStats) {
+                        const cost = parseFloat(stat.total_cost_usd || '0')
+                        opCostMap.set(stat.operation, (opCostMap.get(stat.operation) || 0) + cost)
+                      }
+                      const sorted = Array.from(opCostMap.entries()).sort((a, b) => b[1] - a[1])
+                      const maxCost = sorted.length > 0 ? sorted[0][1] : 0.01
+
+                      const barColors = [
+                        'bg-purple-500', 'bg-blue-500', 'bg-emerald-500', 'bg-amber-500',
+                        'bg-rose-500', 'bg-cyan-500', 'bg-indigo-500', 'bg-pink-500',
+                        'bg-teal-500', 'bg-orange-500', 'bg-violet-500', 'bg-lime-500',
+                        'bg-fuchsia-500', 'bg-sky-500', 'bg-red-500', 'bg-green-500'
+                      ]
+
+                      return (
+                        <div className="min-w-[500px]">
+                          <div className="flex items-end gap-1.5" style={{ height: 200 }}>
+                            {sorted.map(([op, cost], i) => {
+                              const pct = maxCost > 0 ? (cost / maxCost) * 100 : 0
+                              return (
+                                <div key={op} className="flex-1 flex flex-col items-center justify-end h-full group relative min-w-0">
+                                  <div className="absolute -top-1 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800 border border-white/10 rounded-lg px-2 py-1 text-[10px] text-white font-mono whitespace-nowrap z-10 pointer-events-none">
+                                    {op}: {formatCost(cost)}
+                                  </div>
+                                  <div className="text-[9px] text-slate-400 font-mono mb-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    {formatCost(cost)}
+                                  </div>
+                                  <div
+                                    className={`w-full rounded-t-md ${barColors[i % barColors.length]} opacity-70 hover:opacity-100 transition-opacity cursor-default`}
+                                    style={{ height: `${Math.max(pct, 2)}%` }}
+                                  />
+                                </div>
+                              )
+                            })}
+                          </div>
+                          <div className="flex gap-1.5 mt-2 border-t border-white/5 pt-2">
+                            {sorted.map(([op], i) => (
+                              <div key={op} className="flex-1 min-w-0">
+                                <div className="text-[8px] text-slate-500 font-mono truncate text-center" title={op}>
+                                  {op.replace(/_/g, '\u200B_')}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )
+                    })()}
                   </div>
                 </div>
               )}
