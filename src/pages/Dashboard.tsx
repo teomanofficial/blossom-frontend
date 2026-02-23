@@ -234,7 +234,7 @@ export default function Dashboard() {
             {[
               { to: '/dashboard/analyze', icon: 'fa-bolt', label: 'Analyze Content', desc: 'Check viral potential' },
               { to: '/dashboard/suggestions', icon: 'fa-lightbulb', label: 'Get Ideas', desc: 'AI content suggestions' },
-              { to: '/dashboard/formats', icon: 'fa-fire', label: 'Viral Formats', desc: 'Browse winning formats' },
+              { to: '/dashboard/formats', icon: 'fa-fire', label: 'Formats', desc: 'Browse winning formats' },
               { to: '/dashboard/influencers', icon: 'fa-user-secret', label: 'Study Creators', desc: 'Track top performers' },
             ].map((a) => (
               <Link
@@ -342,14 +342,14 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* ── Viral Formats + Winning Hooks ── */}
+          {/* ── Formats + Winning Hooks ── */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 lg:mb-8">
-            {/* Viral Formats */}
+            {/* Formats */}
             <div className="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-7">
               <div className="flex items-center justify-between mb-4 sm:mb-5">
                 <div className="flex items-center gap-2">
                   <i className="fas fa-fire text-orange-400 text-xs" />
-                  <h2 className="text-xs sm:text-sm font-black uppercase tracking-widest text-slate-500">Viral Formats</h2>
+                  <h2 className="text-xs sm:text-sm font-black uppercase tracking-widest text-slate-500">Formats</h2>
                 </div>
                 <Link to="/dashboard/formats" className="text-[10px] font-black text-pink-400 uppercase tracking-widest hover:text-pink-300 transition-colors">
                   View All

@@ -208,7 +208,7 @@ export default function TacticDetail() {
       <div className="flex items-center justify-between mb-6 md:mb-10">
         <div className="flex items-center gap-2 min-w-0">
           <Link to="/dashboard/tactics" className="text-slate-500 text-xs font-bold uppercase tracking-widest hover:text-slate-300 transition-colors shrink-0">
-            Viral Tactics
+            Tactics
           </Link>
           <span className="text-slate-600 text-xs shrink-0">/</span>
           <span className="text-white text-xs font-black uppercase tracking-widest truncate">{tactic.name}</span>

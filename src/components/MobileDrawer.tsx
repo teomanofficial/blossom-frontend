@@ -12,8 +12,8 @@ interface MobileDrawerProps {
 /* ── Navigation groups with semantic organization ── */
 const exploreItems = [
   { to: '/dashboard/platforms', icon: 'fa-tower-broadcast', label: 'My Platforms', color: 'text-pink-400', bg: 'bg-pink-500/10' },
-  { to: '/dashboard/hooks', icon: 'fa-magnet', label: 'Viral Hooks', color: 'text-purple-400', bg: 'bg-purple-500/10' },
-  { to: '/dashboard/tactics', icon: 'fa-chess', label: 'Viral Tactics', color: 'text-amber-400', bg: 'bg-amber-500/10' },
+  { to: '/dashboard/hooks', icon: 'fa-magnet', label: 'Hooks', color: 'text-purple-400', bg: 'bg-purple-500/10' },
+  { to: '/dashboard/tactics', icon: 'fa-chess', label: 'Tactics', color: 'text-amber-400', bg: 'bg-amber-500/10' },
   { to: '/dashboard/trends', icon: 'fa-arrow-trend-up', label: 'Trends', color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
 ]
 

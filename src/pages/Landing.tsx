@@ -23,7 +23,7 @@ const features = [
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 18a3.75 3.75 0 00.495-7.468 5.99 5.99 0 00-1.925 3.547 5.975 5.975 0 01-2.133-1.001A3.75 3.75 0 0012 18z" />
       </svg>
     ),
-    title: 'Viral Formats',
+    title: 'Formats',
     description:
       'Discover the exact content structures that drive millions of views. See which formats dominate your niche and replicate their success.',
   },
