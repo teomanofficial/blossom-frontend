@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { authFetch } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
+import { getStorageUrl } from '../lib/media'
 import InfluencerAnalyzeProgress from '../components/InfluencerAnalyzeProgress'
 
 interface Influencer {
@@ -38,11 +39,7 @@ function fmt(n: number): string {
 }
 
 function getAvatarSrc(inf: Influencer): string | null {
-  if (inf.local_avatar_path) {
-    if (inf.local_avatar_path.startsWith('http')) return inf.local_avatar_path
-    return `/media/${inf.local_avatar_path.split('/').pop()}`
-  }
-  return inf.avatar_url
+  return getStorageUrl(inf.local_avatar_path)
 }
 
 function getTierColor(tier: string | null): string {

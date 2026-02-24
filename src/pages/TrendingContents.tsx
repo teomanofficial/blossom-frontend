@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { authFetch } from '../lib/api'
+import { getStorageUrl } from '../lib/media'
 
 /* ── Helpers ── */
 function fmt(n: number): string {
@@ -9,12 +10,6 @@ function fmt(n: number): string {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M'
   if (n >= 1_000) return (n / 1_000).toFixed(1).replace(/\.0$/, '') + 'k'
   return String(Math.round(n))
-}
-
-function getThumbnailSrc(path: string | null): string | null {
-  if (!path) return null
-  if (path.startsWith('http')) return path
-  return `/media/${path.split('/').pop()}`
 }
 
 interface TrendingContent {
@@ -114,7 +109,7 @@ export default function TrendingContents() {
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {contents.map((c) => {
-              const thumbs = (c.sample_thumbnails || []).map(getThumbnailSrc).filter(Boolean)
+              const thumbs = (c.sample_thumbnails || []).map(getStorageUrl).filter(Boolean)
 
               return (
                 <div

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef, type ReactNode } from 'react'
 import { authFetch } from '../lib/api'
+import { getStorageUrl } from '../lib/media'
 
 function formatCount(n: number | null | undefined): string {
   if (n == null) return '0'
@@ -58,19 +59,11 @@ interface VideoStoryCarouselProps {
 }
 
 function getThumbnailSrc(video: CarouselVideo): string | null {
-  if (video.local_thumbnail_path) {
-    if (video.local_thumbnail_path.startsWith('http')) return video.local_thumbnail_path
-    return `/media/${video.local_thumbnail_path.split('/').pop()}`
-  }
-  return video.thumbnail_url
+  return getStorageUrl(video.local_thumbnail_path)
 }
 
 function getVideoUrl(video: CarouselVideo): string | null {
-  if (video.local_video_path) {
-    if (video.local_video_path.startsWith('http')) return video.local_video_path
-    return `/media/${video.local_video_path.split('/').pop()}`
-  }
-  return null
+  return getStorageUrl(video.local_video_path)
 }
 
 export default function VideoStoryCarousel({ videos: initialVideos, initialIndex = 0, onClose, renderMeta, isAdmin }: VideoStoryCarouselProps) {

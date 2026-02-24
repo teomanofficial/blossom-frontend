@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { authFetch } from '../lib/api'
+import { getStorageUrl } from '../lib/media'
 
 interface SocialAccount {
   id: number
@@ -228,8 +229,8 @@ export default function PlatformPosts() {
           {posts.map((post) => (
             <Link key={post.id} to={`/dashboard/platforms/posts/${post.id}`} className="group">
               <div className="aspect-[9/16] bg-slate-900 rounded-xl overflow-hidden border border-white/5 group-hover:border-pink-500/30 transition-all relative">
-                {post.thumbnail_url ? (
-                  <img src={post.thumbnail_url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                {getStorageUrl(post.thumbnail_url) ? (
+                  <img src={getStorageUrl(post.thumbnail_url)!} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
                     <i className="fas fa-film text-slate-700 text-2xl" />
@@ -267,8 +268,8 @@ export default function PlatformPosts() {
               className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:border-pink-500/20 transition-all group"
             >
               <div className="w-12 h-16 rounded-lg overflow-hidden bg-slate-900 shrink-0">
-                {post.thumbnail_url ? (
-                  <img src={post.thumbnail_url} alt="" className="w-full h-full object-cover" />
+                {getStorageUrl(post.thumbnail_url) ? (
+                  <img src={getStorageUrl(post.thumbnail_url)!} alt="" className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
                     <i className="fas fa-film text-slate-700 text-sm" />

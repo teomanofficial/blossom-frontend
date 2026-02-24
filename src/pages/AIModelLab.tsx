@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { authFetch } from '../lib/api'
 import toast from 'react-hot-toast'
+import { getStorageUrl } from '../lib/media'
 
 interface ModelConfig {
   id: number
@@ -78,6 +79,7 @@ interface RecentAnalysis {
   platform: string
   views: number
   thumbnail_url: string | null
+  local_thumbnail_path: string | null
 }
 
 function formatNumber(n: number): string {
@@ -919,8 +921,8 @@ export default function AIModelLab() {
                     onClick={() => setExpandedAnalysis(expandedAnalysis === a.id ? null : a.id)}
                     className="w-full text-left p-4 flex items-center gap-3 hover:bg-white/5 transition-colors"
                   >
-                    {a.thumbnail_url && (
-                      <img src={a.thumbnail_url} alt="" className="w-12 h-12 rounded-lg object-cover shrink-0" />
+                    {getStorageUrl(a.local_thumbnail_path) && (
+                      <img src={getStorageUrl(a.local_thumbnail_path)!} alt="" className="w-12 h-12 rounded-lg object-cover shrink-0" />
                     )}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">

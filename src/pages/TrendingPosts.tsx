@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { authFetch } from '../lib/api'
+import { getStorageUrl } from '../lib/media'
 import VideoStoryCarousel, { type CarouselVideo } from '../components/VideoStoryCarousel'
 
 /* ── Helpers ── */
@@ -23,11 +24,7 @@ function platformIcon(p: string) {
 }
 
 function getThumbnailSrc(v: CarouselVideo): string | null {
-  if (v.local_thumbnail_path) {
-    if (v.local_thumbnail_path.startsWith('http')) return v.local_thumbnail_path
-    return `/media/${v.local_thumbnail_path.split('/').pop()}`
-  }
-  return v.thumbnail_url
+  return getStorageUrl(v.local_thumbnail_path)
 }
 
 function formatDate(d: string | null | undefined): string {

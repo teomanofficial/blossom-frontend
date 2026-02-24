@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { API_URL } from '../lib/api'
 import VideoStoryCarousel, { type CarouselVideo } from '../components/VideoStoryCarousel'
+import { getStorageUrl } from '../lib/media'
 
 // === Helper Functions ===
 
@@ -478,7 +479,7 @@ export default function ContentAnalysis() {
     };
 
     const ExampleVideoCard = ({ video, videos, index }: { video: any; videos: any[]; index: number }) => {
-      const thumb = video.thumbnail_url;
+      const thumb = getStorageUrl(video.local_thumbnail_path);
       return (
         <div
           onClick={() => openExampleCarousel(videos, index)}

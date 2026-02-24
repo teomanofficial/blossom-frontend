@@ -21,6 +21,7 @@ import AnalysisHistory from './pages/AnalysisHistory'
 import Influencers from './pages/Influencers'
 import InfluencerDetail from './pages/InfluencerDetail'
 import Discovery from './pages/Discovery'
+import TrackedHashtags from './pages/TrackedHashtags'
 import DiscoveredItems from './pages/DiscoveredItems'
 import Suggestions from './pages/Suggestions'
 import SuggestionDetail from './pages/SuggestionDetail'
@@ -113,6 +114,7 @@ function App() {
         <Route path="influencers" element={<FeatureGate><Influencers /></FeatureGate>} />
         <Route path="influencers/:id" element={<FeatureGate><InfluencerDetail /></FeatureGate>} />
         <Route path="discovery" element={<AdminGate><Discovery /></AdminGate>} />
+        <Route path="discovery/hashtags" element={<AdminGate><TrackedHashtags /></AdminGate>} />
         <Route path="discovery/items" element={<AdminGate><DiscoveredItems /></AdminGate>} />
         <Route path="trends" element={<Trends />} />
         <Route path="trends/posts" element={<TrendingPosts />} />

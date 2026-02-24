@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { authFetch } from '../lib/api'
+import { getStorageUrl } from '../lib/media'
 
 /* ── Helpers ── */
 function fmt(n: number): string {
@@ -115,9 +116,7 @@ export default function TrendingSongs() {
         <>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
             {songs.map((s) => {
-              const coverSrc = s.local_cover_path
-                ? `/media/${s.local_cover_path.split('/').pop()}`
-                : s.cover_url
+              const coverSrc = getStorageUrl(s.local_cover_path)
 
               return (
                 <div

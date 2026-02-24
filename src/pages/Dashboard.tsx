@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { useAuth } from '../context/AuthContext'
 import { authFetch } from '../lib/api'
+import { getStorageUrl } from '../lib/media'
 import VideoStoryCarousel, { type CarouselVideo } from '../components/VideoStoryCarousel'
 
 /* ── Types ── */
@@ -63,11 +64,7 @@ function platformIcon(p: string) {
 }
 
 function getThumbnailSrc(v: CarouselVideo): string | null {
-  if (v.local_thumbnail_path) {
-    if (v.local_thumbnail_path.startsWith('http')) return v.local_thumbnail_path
-    return `/media/${v.local_thumbnail_path.split('/').pop()}`
-  }
-  return v.thumbnail_url
+  return getStorageUrl(v.local_thumbnail_path)
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -423,8 +420,8 @@ export default function Dashboard() {
               <div className="space-y-1 sm:space-y-2">
                 {stats.trending_music.length > 0 ? stats.trending_music.map((m) => (
                   <div key={m.id} className="flex items-center gap-2.5 sm:gap-3 py-2 sm:py-2.5 px-2 sm:px-3 rounded-xl hover:bg-white/5 active:bg-white/5 transition-colors">
-                    {(m.local_cover_path || m.cover_url) ? (
-                      <img src={m.local_cover_path || m.cover_url} alt="" className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg object-cover shrink-0" />
+                    {getStorageUrl(m.local_cover_path) ? (
+                      <img src={getStorageUrl(m.local_cover_path) || ''} alt="" className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg object-cover shrink-0" />
                     ) : (
                       <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
                         <i className="fas fa-music text-slate-600 text-xs" />

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { authFetch } from '../lib/api'
+import { getStorageUrl } from '../lib/media'
 import CreatorScoreGauge from '../components/charts/CreatorScoreGauge'
 import FollowerGrowthChart from '../components/charts/FollowerGrowthChart'
 import EngagementChart from '../components/charts/EngagementChart'
@@ -308,7 +309,7 @@ export default function Platforms() {
               <div key={account.id} className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
                 <div className="w-10 h-10 rounded-full overflow-hidden bg-white/5 shrink-0">
                   {account.avatar_url ? (
-                    <img src={account.avatar_url} alt={account.username} className="w-full h-full object-cover" />
+                    <img src={getStorageUrl(account.avatar_url) || ''} alt={account.username} className="w-full h-full object-cover" />
                   ) : (
                     <div className={`w-full h-full bg-gradient-to-br ${platformGradient(account.platform)} flex items-center justify-center text-sm font-bold text-white`}>
                       {account.username.charAt(0).toUpperCase()}
@@ -490,7 +491,7 @@ export default function Platforms() {
                   >
                     <div className="aspect-[9/16] bg-slate-900 rounded-xl overflow-hidden border border-white/5 group-hover:border-pink-500/30 transition-all relative">
                       {post.thumbnail_url ? (
-                        <img src={post.thumbnail_url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                        <img src={getStorageUrl(post.thumbnail_url) || ''} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
                           <i className="fas fa-film text-slate-700 text-2xl" />

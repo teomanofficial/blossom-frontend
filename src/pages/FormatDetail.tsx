@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { authFetch } from '../lib/api'
+import { getStorageUrl } from '../lib/media'
 import VideoStoryCarousel, { type CarouselVideo } from '../components/VideoStoryCarousel'
 
 interface FormatVideo {
@@ -108,19 +109,11 @@ function timeAgo(dateStr: string): string {
 }
 
 function getThumbnailSrc(video: FormatVideo): string | null {
-  if (video.local_thumbnail_path) {
-    if (video.local_thumbnail_path.startsWith('http')) return video.local_thumbnail_path
-    return `/media/${video.local_thumbnail_path.split('/').pop()}`
-  }
-  return video.thumbnail_url
+  return getStorageUrl(video.local_thumbnail_path)
 }
 
 function getTacticVideoThumb(video: TacticVideo): string | null {
-  if (video.local_thumbnail_path) {
-    if (video.local_thumbnail_path.startsWith('http')) return video.local_thumbnail_path
-    return `/media/${video.local_thumbnail_path.split('/').pop()}`
-  }
-  return video.thumbnail_url
+  return getStorageUrl(video.local_thumbnail_path)
 }
 
 export default function FormatDetail() {
@@ -526,12 +519,7 @@ export default function FormatDetail() {
                                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                     loading="lazy"
                                     onError={(e) => {
-                                      const target = e.currentTarget
-                                      if (video.thumbnail_url && target.src !== video.thumbnail_url) {
-                                        target.src = video.thumbnail_url
-                                      } else {
-                                        target.style.display = 'none'
-                                      }
+                                      e.currentTarget.style.display = 'none'
                                     }}
                                   />
                                 ) : (
@@ -645,12 +633,7 @@ export default function FormatDetail() {
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         loading="lazy"
                         onError={(e) => {
-                          const target = e.currentTarget
-                          if (video.thumbnail_url && target.src !== video.thumbnail_url) {
-                            target.src = video.thumbnail_url
-                          } else {
-                            target.style.display = 'none'
-                          }
+                          e.currentTarget.style.display = 'none'
                         }}
                       />
                     ) : (

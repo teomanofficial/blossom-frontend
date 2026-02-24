@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { authFetch } from '../lib/api'
+import { getStorageUrl } from '../lib/media'
 import VideoStoryCarousel, { type CarouselVideo } from '../components/VideoStoryCarousel'
 
 /* ── Helpers ── */
@@ -23,11 +24,7 @@ function platformIcon(p: string) {
 }
 
 function getThumbnailSrc(v: CarouselVideo): string | null {
-  if (v.local_thumbnail_path) {
-    if (v.local_thumbnail_path.startsWith('http')) return v.local_thumbnail_path
-    return `/media/${v.local_thumbnail_path.split('/').pop()}`
-  }
-  return v.thumbnail_url
+  return getStorageUrl(v.local_thumbnail_path)
 }
 
 function getFormatEmoji(name: string): string {
@@ -330,9 +327,7 @@ function ContentCard({ content }: { content: TrendingContent }) {
 }
 
 function SongCard({ song }: { song: TrendingSong }) {
-  const coverSrc = song.local_cover_path
-    ? `/media/${song.local_cover_path.split('/').pop()}`
-    : song.cover_url
+  const coverSrc = getStorageUrl(song.local_cover_path)
 
   return (
     <div className="shrink-0 w-[170px] sm:w-[190px] glass-card rounded-xl overflow-hidden border border-white/5 hover:border-cyan-500/30 transition-all group cursor-pointer">

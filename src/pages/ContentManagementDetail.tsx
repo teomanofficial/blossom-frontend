@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { authFetch } from '../lib/api'
+import { getStorageUrl } from '../lib/media'
 
 interface Domain {
   id: number
@@ -80,16 +81,12 @@ function formatNumber(n: number): string {
   return String(Math.round(n))
 }
 
-const BACKEND = ''
-
 function thumbnailSrc(v: { local_thumbnail_path?: string | null; thumbnail_url?: string | null }): string {
-  if (v.local_thumbnail_path) return `${BACKEND}/media/${v.local_thumbnail_path}`
-  return v.thumbnail_url || ''
+  return getStorageUrl(v.local_thumbnail_path) || ''
 }
 
 function profilePicSrc(inf: { local_profile_pic_path?: string | null; profile_pic_url?: string | null }): string {
-  if (inf.local_profile_pic_path) return `${BACKEND}/media/${inf.local_profile_pic_path}`
-  return inf.profile_pic_url || ''
+  return getStorageUrl(inf.local_profile_pic_path) || ''
 }
 
 export default function ContentManagementDetail() {

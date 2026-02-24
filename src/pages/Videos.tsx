@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useCallback } from 'react'
 import toast from 'react-hot-toast'
 import { authFetch } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
+import { getStorageUrl } from '../lib/media'
 import VideoStoryCarousel, { type CarouselVideo } from '../components/VideoStoryCarousel'
 
 interface Video {
@@ -91,11 +92,7 @@ function formatNumber(n: number): string {
 }
 
 function getThumbnailSrc(video: Video): string | null {
-  if (video.local_thumbnail_path) {
-    if (video.local_thumbnail_path.startsWith('http')) return video.local_thumbnail_path
-    return `/media/${video.local_thumbnail_path.split('/').pop()}`
-  }
-  return video.thumbnail_url
+  return getStorageUrl(video.local_thumbnail_path)
 }
 
 function elapsedSince(dateStr: string): string {
@@ -779,8 +776,8 @@ export default function Videos() {
                   <div className="flex flex-wrap gap-2">
                     {(expandDlDownloading ? dlDownloading : dlDownloading.slice(0, 8)).map((v) => (
                       <div key={v.id} className="flex items-center gap-2 px-2.5 py-1.5 bg-blue-400/5 border border-blue-400/20 rounded-lg">
-                        {v.thumbnail_url ? (
-                          <img src={v.thumbnail_url} alt="" className="w-6 h-6 rounded object-cover" />
+                        {getStorageUrl(v.thumbnail_url) ? (
+                          <img src={getStorageUrl(v.thumbnail_url)!} alt="" className="w-6 h-6 rounded object-cover" />
                         ) : (
                           <div className="w-6 h-6 rounded bg-white/5 flex items-center justify-center">
                             <i className="fas fa-film text-slate-600 text-[7px]"></i>
@@ -816,8 +813,8 @@ export default function Videos() {
                   <div className="flex flex-wrap gap-2">
                     {(expandDlDone ? dlDone : dlDone.slice(0, 8)).map((v) => (
                       <div key={v.id} className="flex items-center gap-2 px-2.5 py-1.5 bg-teal-400/5 border border-teal-400/10 rounded-lg">
-                        {v.thumbnail_url ? (
-                          <img src={v.thumbnail_url} alt="" className="w-6 h-6 rounded object-cover" />
+                        {getStorageUrl(v.thumbnail_url) ? (
+                          <img src={getStorageUrl(v.thumbnail_url)!} alt="" className="w-6 h-6 rounded object-cover" />
                         ) : (
                           <div className="w-6 h-6 rounded bg-white/5 flex items-center justify-center">
                             <i className="fas fa-film text-slate-600 text-[7px]"></i>
@@ -853,8 +850,8 @@ export default function Videos() {
                   <div className="flex flex-wrap gap-2">
                     {dlFailed.map((v) => (
                       <div key={v.id} className="flex items-center gap-2 px-2.5 py-1.5 bg-red-400/5 border border-red-400/10 rounded-lg group relative">
-                        {v.thumbnail_url ? (
-                          <img src={v.thumbnail_url} alt="" className="w-6 h-6 rounded object-cover opacity-60" />
+                        {getStorageUrl(v.thumbnail_url) ? (
+                          <img src={getStorageUrl(v.thumbnail_url)!} alt="" className="w-6 h-6 rounded object-cover opacity-60" />
                         ) : (
                           <div className="w-6 h-6 rounded bg-white/5 flex items-center justify-center">
                             <i className="fas fa-film text-slate-600 text-[7px]"></i>
@@ -987,8 +984,8 @@ export default function Videos() {
                   <div className="flex flex-wrap gap-3">
                     {analyzingNow.map((v) => (
                       <div key={v.id} className="flex items-center gap-2.5 px-3 py-2 bg-orange-400/5 border border-orange-400/20 rounded-xl">
-                        {v.thumbnail_url ? (
-                          <img src={v.thumbnail_url} alt="" className="w-8 h-8 rounded-lg object-cover" />
+                        {getStorageUrl(v.thumbnail_url) ? (
+                          <img src={getStorageUrl(v.thumbnail_url)!} alt="" className="w-8 h-8 rounded-lg object-cover" />
                         ) : (
                           <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center">
                             <i className="fas fa-film text-slate-600 text-[8px]"></i>
@@ -1015,8 +1012,8 @@ export default function Videos() {
                   <div className="flex flex-wrap gap-2">
                     {doneVideos.map((v) => (
                       <div key={v.id} className="flex items-center gap-2 px-2.5 py-1.5 bg-teal-400/5 border border-teal-400/10 rounded-lg">
-                        {v.thumbnail_url ? (
-                          <img src={v.thumbnail_url} alt="" className="w-6 h-6 rounded object-cover" />
+                        {getStorageUrl(v.thumbnail_url) ? (
+                          <img src={getStorageUrl(v.thumbnail_url)!} alt="" className="w-6 h-6 rounded object-cover" />
                         ) : (
                           <div className="w-6 h-6 rounded bg-white/5 flex items-center justify-center">
                             <i className="fas fa-film text-slate-600 text-[7px]"></i>
@@ -1040,8 +1037,8 @@ export default function Videos() {
                   <div className="flex flex-wrap gap-2">
                     {errorVideos.map((v) => (
                       <div key={v.id} className="flex items-center gap-2 px-2.5 py-1.5 bg-red-400/5 border border-red-400/10 rounded-lg group relative">
-                        {v.thumbnail_url ? (
-                          <img src={v.thumbnail_url} alt="" className="w-6 h-6 rounded object-cover opacity-60" />
+                        {getStorageUrl(v.thumbnail_url) ? (
+                          <img src={getStorageUrl(v.thumbnail_url)!} alt="" className="w-6 h-6 rounded object-cover opacity-60" />
                         ) : (
                           <div className="w-6 h-6 rounded bg-white/5 flex items-center justify-center">
                             <i className="fas fa-film text-slate-600 text-[7px]"></i>
@@ -1070,8 +1067,8 @@ export default function Videos() {
                   <div className="flex flex-wrap gap-2">
                     {pendingVideos.slice(0, 40).map((v) => (
                       <div key={v.id} className="flex items-center gap-2 px-2.5 py-1.5 bg-white/[0.02] border border-white/5 rounded-lg">
-                        {v.thumbnail_url ? (
-                          <img src={v.thumbnail_url} alt="" className="w-6 h-6 rounded object-cover opacity-40" />
+                        {getStorageUrl(v.thumbnail_url) ? (
+                          <img src={getStorageUrl(v.thumbnail_url)!} alt="" className="w-6 h-6 rounded object-cover opacity-40" />
                         ) : (
                           <div className="w-6 h-6 rounded bg-white/5 flex items-center justify-center">
                             <i className="fas fa-film text-slate-700 text-[7px]"></i>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { authFetch } from '../lib/api'
+import { getStorageUrl } from '../lib/media'
 import { useAuth } from '../context/AuthContext'
 import VideoStoryCarousel, { type CarouselVideo } from '../components/VideoStoryCarousel'
 import InfluencerAnalyzeProgress from '../components/InfluencerAnalyzeProgress'
@@ -112,19 +113,11 @@ function timeAgo(dateStr: string): string {
 }
 
 function getThumbnailSrc(video: InfluencerVideo): string | null {
-  if (video.local_thumbnail_path) {
-    if (video.local_thumbnail_path.startsWith('http')) return video.local_thumbnail_path
-    return `/media/${video.local_thumbnail_path.split('/').pop()}`
-  }
-  return video.thumbnail_url
+  return getStorageUrl(video.local_thumbnail_path)
 }
 
 function getAvatarSrc(influencer: InfluencerData): string | null {
-  if (influencer.local_avatar_path) {
-    if (influencer.local_avatar_path.startsWith('http')) return influencer.local_avatar_path
-    return `/media/${influencer.local_avatar_path.split('/').pop()}`
-  }
-  return influencer.avatar_url
+  return getStorageUrl(influencer.local_avatar_path)
 }
 
 function getTierColor(tier: string | null): string {
@@ -168,6 +161,9 @@ export default function InfluencerDetail() {
   const [scanning, setScanning] = useState(false)
   const [analyzing, setAnalyzing] = useState(false)
   const [actionMessage, setActionMessage] = useState<string | null>(null)
+  const [suggestedUsers, setSuggestedUsers] = useState<any[] | null>(null)
+  const [loadingSuggested, setLoadingSuggested] = useState(false)
+  const [savingUsers, setSavingUsers] = useState<Set<string>>(new Set())
 
   const fetchInfluencer = () => {
     setLoading(true)
@@ -258,6 +254,44 @@ export default function InfluencerDetail() {
       .finally(() => setAnalyzing(false))
   }
 
+  const handleFetchSuggested = () => {
+    setLoadingSuggested(true)
+    setActionMessage(null)
+    authFetch(`/api/analysis/influencers/${id}/suggested-users`, { method: 'POST' })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.error) {
+          setActionMessage(data.error)
+        } else {
+          setSuggestedUsers(data.suggested_users || [])
+          setActionMessage(`Found ${data.total} suggested users`)
+        }
+      })
+      .catch((e) => setActionMessage(e.message))
+      .finally(() => setLoadingSuggested(false))
+  }
+
+  const handleSaveSuggested = (user: any) => {
+    setSavingUsers((prev) => new Set(prev).add(user.username))
+    authFetch('/api/analysis/influencers/save-suggested', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(user),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.error) {
+          setActionMessage(data.error)
+        } else {
+          setSuggestedUsers((prev) =>
+            prev?.map((u) => u.username === user.username ? { ...u, already_saved: true, saved_id: data.id } : u) ?? null
+          )
+        }
+      })
+      .catch((e) => setActionMessage(e.message))
+      .finally(() => setSavingUsers((prev) => { const n = new Set(prev); n.delete(user.username); return n }))
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -331,6 +365,16 @@ export default function InfluencerDetail() {
             >
               <i className={`fas ${analyzing ? 'fa-spinner fa-spin' : 'fa-microscope'} mr-1.5 text-[9px]`}></i>
               {analyzing ? 'STARTING...' : 'ANALYZE INFLUENCER'}
+            </button>
+          )}
+          {userType === 'admin' && (
+            <button
+              onClick={handleFetchSuggested}
+              disabled={loadingSuggested}
+              className="bg-orange-600 hover:bg-orange-500 disabled:opacity-50 text-white text-[11px] font-black px-3 py-2 md:px-4 md:py-2.5 rounded-xl transition-all shrink-0"
+            >
+              <i className={`fas ${loadingSuggested ? 'fa-spinner fa-spin' : 'fa-users'} mr-1.5 text-[9px]`}></i>
+              {loadingSuggested ? 'LOADING...' : 'SUGGESTED'}
             </button>
           )}
         </div>
@@ -661,6 +705,98 @@ export default function InfluencerDetail() {
               </span>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Suggested Users */}
+      {suggestedUsers && suggestedUsers.length > 0 && (
+        <div className="glass-card rounded-2xl md:rounded-[2rem] p-5 md:p-8 mb-8 md:mb-10">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-sm font-black text-orange-400 uppercase tracking-[0.2em] flex items-center gap-2">
+              <i className="fas fa-users"></i> Suggested Profiles
+            </h2>
+            <div className="flex items-center gap-3">
+              <span className="text-[10px] font-bold text-slate-500">{suggestedUsers.length} profiles</span>
+              <button
+                onClick={() => setSuggestedUsers(null)}
+                className="text-slate-500 hover:text-white text-xs"
+              >
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+            {suggestedUsers.map((user) => (
+              <div key={user.username} className="p-4 bg-black/20 rounded-2xl border border-white/5 hover:border-white/10 transition-all">
+                <div className="flex items-start gap-3">
+                  {user.avatar_url ? (
+                    <img
+                      src={user.avatar_url}
+                      alt={`@${user.username}`}
+                      className="w-11 h-11 rounded-xl object-cover border border-white/10 flex-shrink-0"
+                    />
+                  ) : (
+                    <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-orange-500/20 to-pink-400/20 flex items-center justify-center border border-white/10 flex-shrink-0">
+                      <span className="text-sm font-black text-white/60">
+                        {(user.display_name || user.username).charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm font-bold text-white truncate">{user.display_name || user.username}</span>
+                      {user.is_verified && <i className="fas fa-check-circle text-blue-400 text-[10px] flex-shrink-0"></i>}
+                    </div>
+                    <div className="text-[11px] text-slate-500 font-bold">@{user.username}</div>
+                    {user.follower_count && (
+                      <div className="text-[10px] text-slate-400 font-bold mt-1">
+                        {formatNumber(user.follower_count)} followers
+                      </div>
+                    )}
+                    {user.bio && (
+                      <p className="text-[10px] text-slate-500 mt-1.5 line-clamp-2 leading-relaxed">{user.bio}</p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 mt-3">
+                  {user.already_saved ? (
+                    <Link
+                      to={user.saved_id ? `/dashboard/influencers/${user.saved_id}` : '#'}
+                      className="flex-1 text-center bg-teal-500/10 text-teal-400 text-[10px] font-black px-3 py-2 rounded-lg"
+                    >
+                      <i className="fas fa-check mr-1"></i> SAVED
+                    </Link>
+                  ) : (
+                    <button
+                      onClick={() => handleSaveSuggested(user)}
+                      disabled={savingUsers.has(user.username)}
+                      className="flex-1 bg-orange-500/10 hover:bg-orange-500/20 disabled:opacity-50 text-orange-400 text-[10px] font-black px-3 py-2 rounded-lg transition-all"
+                    >
+                      <i className={`fas ${savingUsers.has(user.username) ? 'fa-spinner fa-spin' : 'fa-plus'} mr-1`}></i>
+                      {savingUsers.has(user.username) ? 'SAVING...' : 'SAVE'}
+                    </button>
+                  )}
+                  <a
+                    href={user.platform === 'tiktok' ? `https://www.tiktok.com/@${user.username}` : `https://www.instagram.com/${user.username}/`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-white/5 hover:bg-white/10 text-white text-[10px] font-black px-3 py-2 rounded-lg transition-all"
+                  >
+                    <i className={`fab fa-${user.platform === 'tiktok' ? 'tiktok' : 'instagram'} text-[9px]`}></i>
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Suggested Users Empty State */}
+      {suggestedUsers && suggestedUsers.length === 0 && (
+        <div className="glass-card rounded-2xl p-6 mb-8 text-center">
+          <i className="fas fa-users text-slate-600 text-xl mb-2"></i>
+          <p className="text-sm text-slate-500 font-medium">No suggested profiles found for this account.</p>
+          <button onClick={() => setSuggestedUsers(null)} className="text-xs text-slate-500 hover:text-white mt-2">Dismiss</button>
         </div>
       )}
 

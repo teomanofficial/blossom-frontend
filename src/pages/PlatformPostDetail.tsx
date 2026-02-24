@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { authFetch } from '../lib/api'
+import { getStorageUrl } from '../lib/media'
 
 function fmt(n: number): string {
   if (!n) return '0'
@@ -160,7 +161,7 @@ export default function PlatformPostDetail() {
           <div className="glass-card rounded-2xl overflow-hidden">
             <div className="aspect-[9/16] bg-slate-900 relative">
               {post.thumbnail_url ? (
-                <img src={post.thumbnail_url} alt="" className="w-full h-full object-cover" />
+                <img src={getStorageUrl(post.thumbnail_url) || ''} alt="" className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
                   <i className="fas fa-film text-slate-700 text-4xl" />

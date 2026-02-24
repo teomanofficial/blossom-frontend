@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { authFetch } from '../lib/api'
+import { getStorageUrl } from '../lib/media'
 
 interface SocialAccount {
   id: number
@@ -293,7 +294,7 @@ export default function AccountIntegrations() {
                       {/* Avatar */}
                       <div className="w-10 h-10 rounded-full overflow-hidden bg-white/5 flex-shrink-0">
                         {account.avatar_url ? (
-                          <img src={account.avatar_url} alt={account.username} className="w-full h-full object-cover" />
+                          <img src={getStorageUrl(account.avatar_url) || ''} alt={account.username} className="w-full h-full object-cover" />
                         ) : (
                           <div className={`w-full h-full bg-gradient-to-br ${platform.gradient} flex items-center justify-center text-sm font-bold text-white`}>
                             {account.username.charAt(0).toUpperCase()}

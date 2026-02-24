@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { authFetch } from '../lib/api'
+import { getStorageUrl } from '../lib/media'
 
 interface CategoryDomainSummary {
   id: number
@@ -384,7 +385,7 @@ export default function Categories() {
                 {cat.thumbnail_url && (
                   <div className="h-36 overflow-hidden">
                     <img
-                      src={cat.thumbnail_url}
+                      src={getStorageUrl(cat.thumbnail_url) || ''}
                       alt={cat.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />

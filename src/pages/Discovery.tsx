@@ -91,6 +91,15 @@ interface SchedulerRunHashtag {
   logs: LogEntry[] | null
 }
 
+interface SchedulerRunGroup {
+  scheduler_id: number
+  scheduler_name: string
+  is_active: boolean
+  total_runs: number
+  last_run_at: string
+  runs: SchedulerRun[]
+}
+
 interface DiscoveryProgress {
   type: 'manual' | 'scheduler'
   schedulerId?: number
@@ -321,11 +330,11 @@ export default function Discovery() {
   const [stats, setStats] = useState<TrendingStats | null>(null)
   const [hashtags, setHashtags] = useState<TrackedHashtag[]>([])
   const [schedulers, setSchedulers] = useState<Scheduler[]>([])
-  const [schedulerRuns, setSchedulerRuns] = useState<SchedulerRun[]>([])
+  const [runGroups, setRunGroups] = useState<SchedulerRunGroup[]>([])
+  const [expandedGroup, setExpandedGroup] = useState<number | null>(null)
   const [videosTotal, setVideosTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [runningManual, setRunningManual] = useState(false)
-  const [newHashtag, setNewHashtag] = useState({ platform: 'tiktok', hashtag: '', max_videos_per_run: 30 })
 
   // Run dialog
   const [showRunDialog, setShowRunDialog] = useState(false)
@@ -343,10 +352,6 @@ export default function Discovery() {
     hashtag_ids: [] as number[],
   })
 
-  // Inline edit max videos
-  const [editingMaxVideos, setEditingMaxVideos] = useState<number | null>(null)
-  const [editMaxValue, setEditMaxValue] = useState(30)
-
   // Run detail expansion
   const [expandedRun, setExpandedRun] = useState<number | null>(null)
   const [runDetail, setRunDetail] = useState<SchedulerRunHashtag[]>([])
@@ -360,6 +365,19 @@ export default function Discovery() {
   const [manualProgress, setManualProgress] = useState<DiscoveryProgress | null>(null)
   const [schedulerProgress, setSchedulerProgress] = useState<Map<number, DiscoveryProgress>>(new Map())
   const eventSourceRef = useRef<EventSource | null>(null)
+
+  // Compact layout state
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set(['history']))
+
+
+  function toggleSection(section: string) {
+    setCollapsedSections(prev => {
+      const next = new Set(prev)
+      if (next.has(section)) next.delete(section)
+      else next.add(section)
+      return next
+    })
+  }
 
   // SSE connection for live progress
   const connectSSE = useCallback(async () => {
@@ -439,12 +457,12 @@ export default function Discovery() {
         authFetch('/api/analysis/trending/stats').then(r => r.json()),
         authFetch('/api/analysis/trending/hashtags').then(r => r.json()),
         authFetch('/api/analysis/trending/schedulers').then(r => r.json()).catch(() => []),
-        authFetch('/api/analysis/trending/scheduler-runs?limit=20').then(r => r.json()).catch(() => []),
+        authFetch('/api/analysis/trending/scheduler-runs/grouped?limit=5').then(r => r.json()).catch(() => []),
       ])
       setStats(statsRes)
       setHashtags(Array.isArray(hashtagsRes) ? hashtagsRes : [])
       setSchedulers(Array.isArray(schedulersRes) ? schedulersRes : [])
-      setSchedulerRuns(Array.isArray(runsRes) ? runsRes : [])
+      setRunGroups(Array.isArray(runsRes) ? runsRes : [])
       await loadVideosTotal()
     } catch (error) {
       console.error('Failed to load discovery data:', error)
@@ -463,59 +481,6 @@ export default function Discovery() {
   }
 
   // ---- Hashtag CRUD ----
-
-  async function handleAddHashtag(e: React.FormEvent) {
-    e.preventDefault()
-    if (!newHashtag.hashtag.trim()) return
-    try {
-      await authFetch('/api/analysis/trending/hashtags', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newHashtag),
-      })
-      setNewHashtag({ platform: 'tiktok', hashtag: '', max_videos_per_run: 30 })
-      loadAll()
-    } catch (error) {
-      console.error('Failed to add hashtag:', error)
-    }
-  }
-
-  async function toggleActive(h: TrackedHashtag) {
-    try {
-      await authFetch(`/api/analysis/trending/hashtags/${h.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ is_active: !h.is_active }),
-      })
-      loadAll()
-    } catch (error) {
-      console.error('Failed to toggle hashtag:', error)
-    }
-  }
-
-  async function deleteHashtag(id: number) {
-    if (!confirm('Remove this hashtag? It will also be removed from all schedulers.')) return
-    try {
-      await authFetch(`/api/analysis/trending/hashtags/${id}`, { method: 'DELETE' })
-      loadAll()
-    } catch (error) {
-      console.error('Failed to delete hashtag:', error)
-    }
-  }
-
-  async function saveMaxVideos(hashtagId: number) {
-    try {
-      await authFetch(`/api/analysis/trending/hashtags/${hashtagId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ max_videos_per_run: editMaxValue }),
-      })
-      setEditingMaxVideos(null)
-      loadAll()
-    } catch (error) {
-      console.error('Failed to update max videos:', error)
-    }
-  }
 
   // ---- Manual Run (selected hashtags) ----
 
@@ -696,6 +661,108 @@ export default function Discovery() {
     }
   }
 
+  function renderRunRow(run: SchedulerRun, isLatest: boolean) {
+    const duration = formatDuration(run.started_at, run.finished_at)
+    const isRunExpanded = expandedRun === run.id
+    const dim = isLatest ? '' : '/60'
+    return (
+      <>
+        <div
+          className={`flex items-center justify-between px-5 py-3 transition-colors cursor-pointer ${
+            isRunExpanded ? 'bg-violet-500/[0.04]' : isLatest ? 'bg-white/[0.01] hover:bg-white/[0.03]' : 'bg-black/10 hover:bg-white/[0.02]'
+          }`}
+          onClick={() => toggleRunExpand(run.id)}
+        >
+          <div className="flex items-center gap-3">
+            <i className={`fas fa-chevron-${isRunExpanded ? 'down' : 'right'} text-[7px] ${isLatest ? 'text-slate-600' : 'text-slate-700'}`}></i>
+            {isLatest && <span className="text-[10px] font-black text-pink-400/80 uppercase tracking-widest">Latest</span>}
+            <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${statusColor(run.status)}`}>{run.status}</span>
+          </div>
+          <div className={`flex items-center gap-4 text-[10px] font-bold ${isLatest ? 'text-slate-500' : 'text-slate-600'}`}>
+            <span>
+              <span className={`text-teal-400${dim}`}>{run.completed_hashtags}</span>
+              {run.failed_hashtags > 0 && <span className={`text-red-400${dim}`}>/{run.failed_hashtags} failed</span>}
+              <span className={isLatest ? 'text-slate-600' : 'text-slate-700'}>/{run.total_hashtags} hashtags</span>
+            </span>
+            <span>{run.total_videos_fetched} fetched</span>
+            <span className={`text-teal-400${dim}`}>{run.total_new_videos} new</span>
+            <span className={`text-cyan-400${dim}`}>{run.total_videos_analyzed} analyzed</span>
+            {duration && <span className={`text-violet-400${dim}`}>{duration}</span>}
+            <span>{timeAgo(run.created_at)}</span>
+            <button
+              onClick={(e) => { e.stopPropagation(); navigate(`/dashboard/discovery/items?scheduler_run_id=${run.id}`) }}
+              className={`${isLatest ? 'text-pink-400/60' : 'text-pink-400/40'} hover:text-pink-400 transition-colors`}
+            >View Videos</button>
+          </div>
+        </div>
+        {isRunExpanded && (
+          <div className="px-5 pb-4">
+            <div className="p-4 rounded-xl bg-violet-500/[0.02] border border-violet-500/10">
+              {loadingRunDetail ? (
+                <div className="flex items-center justify-center py-4">
+                  <div className="w-5 h-5 border-2 border-violet-500 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+              ) : runDetail.length === 0 ? (
+                <p className="text-slate-600 text-xs font-bold text-center py-3">No hashtag results for this run.</p>
+              ) : (
+                <table className="w-full">
+                  <thead>
+                    <tr className="text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-white/5">
+                      <td className="pb-2">Platform</td><td className="pb-2">Hashtag</td><td className="pb-2">Status</td>
+                      <td className="pb-2 text-right">Fetched</td><td className="pb-2 text-right">New</td>
+                      <td className="pb-2 text-right">Analyzed Duration</td><td className="pb-2">Error</td>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {runDetail.map(rh => {
+                      const rhDur = formatDuration(rh.started_at, rh.finished_at)
+                      const hasLogs = rh.logs && rh.logs.length > 0
+                      const logsOpen = expandedLogs === rh.id
+                      return (
+                        <React.Fragment key={rh.id}>
+                          <tr className="text-xs border-b border-white/[0.03] last:border-0">
+                            <td className="py-2"><span className={`text-[10px] font-black uppercase px-1.5 py-0.5 rounded tracking-wider ${rh.platform === 'tiktok' ? 'bg-pink-500/10 text-pink-400' : 'bg-orange-500/10 text-orange-400'}`}>{rh.platform}</span></td>
+                            <td className="py-2 font-bold text-white">#{rh.hashtag}</td>
+                            <td className="py-2"><span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${statusColor(rh.status)}`}>{rh.status}</span></td>
+                            <td className="py-2 text-right font-bold text-slate-400">{rh.videos_fetched}</td>
+                            <td className="py-2 text-right font-bold text-teal-400">{rh.new_videos}</td>
+                            <td className="py-2 text-right"><span className="font-bold text-cyan-400">{rh.videos_analyzed}</span><span className="font-bold text-violet-400 ml-3">{rhDur || '-'}</span></td>
+                            <td className="py-2">
+                              <div className="flex items-center gap-2">
+                                {rh.error && <span className="text-red-400 text-[10px] truncate max-w-[200px] inline-block" title={rh.error}>{rh.error}</span>}
+                                {hasLogs && (
+                                  <button onClick={() => setExpandedLogs(logsOpen ? null : rh.id)} className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded transition-colors ${logsOpen ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-500/10 text-slate-500 hover:text-slate-400'}`}>
+                                    <i className={`fas fa-${logsOpen ? 'chevron-up' : 'terminal'} mr-1`}></i>{rh.logs!.length} logs
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                          {logsOpen && hasLogs && (
+                            <tr><td colSpan={7} className="p-0" style={{ maxWidth: 0 }}>
+                              <div className="bg-black/40 border border-white/5 rounded-lg mx-2 mb-2 p-3 max-h-[400px] overflow-y-auto overflow-x-hidden font-mono text-[11px] leading-relaxed">
+                                {rh.logs!.map((entry, i) => {
+                                  const time = new Date(entry.ts).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3 } as any)
+                                  const lc = entry.level === 'error' ? 'text-red-400' : entry.level === 'warn' ? 'text-amber-400' : 'text-slate-500'
+                                  const mc = entry.level === 'error' ? 'text-red-300' : entry.level === 'warn' ? 'text-amber-300' : 'text-slate-300'
+                                  return (<div key={i} className="flex gap-2 hover:bg-white/[0.02] px-1 rounded min-w-0"><span className="text-slate-600 shrink-0">{time}</span><span className={`${lc} shrink-0 w-10 text-right uppercase`}>{entry.level}</span><span className={`${mc} break-all min-w-0`}>{entry.msg}</span>{entry.data && <span className="text-slate-600 min-w-0 break-all" title={JSON.stringify(entry.data)}>{JSON.stringify(entry.data)}</span>}</div>)
+                                })}
+                              </div>
+                            </td></tr>
+                          )}
+                        </React.Fragment>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        )}
+      </>
+    )
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -707,7 +774,7 @@ export default function Discovery() {
   return (
     <>
       {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
         <div>
           <div className="flex items-center gap-2 mb-3">
             <span className="px-2 py-0.5 bg-pink-500/10 text-pink-400 text-[10px] font-black uppercase tracking-widest rounded">
@@ -764,7 +831,7 @@ export default function Discovery() {
       )}
 
       {/* Stats Row */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-10">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
         <div className="px-6 py-4 glass-card rounded-[1.5rem] border-white/5">
           <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Active Hashtags</div>
           <div className="text-2xl font-black text-purple-400">{stats?.active_hashtags ?? 0}</div>
@@ -793,22 +860,30 @@ export default function Discovery() {
       </div>
 
       {/* Schedulers */}
-      <div className="glass-card rounded-[1.5rem] border-white/5 p-8 mb-10">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Schedulers</h2>
-          <button
-            onClick={() => openSchedulerForm()}
-            className="bg-gradient-to-r from-violet-500 to-purple-500 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:opacity-90 transition-opacity"
-          >
-            <span className="flex items-center gap-2">
-              <i className="fas fa-plus"></i> Create Scheduler
+      <div className="glass-card rounded-[1.5rem] border-white/5 p-6 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <button onClick={() => toggleSection('schedulers')} className="flex items-center gap-2.5 group">
+            <i className={`fas fa-chevron-${collapsedSections.has('schedulers') ? 'right' : 'down'} text-[8px] text-slate-600 group-hover:text-slate-400 transition-colors`}></i>
+            <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Schedulers</h2>
+            <span className="text-[10px] font-bold text-slate-600 bg-white/5 px-2 py-0.5 rounded">
+              {schedulers.filter(s => s.is_active).length}/{schedulers.length}
             </span>
           </button>
+          {!collapsedSections.has('schedulers') && (
+            <button
+              onClick={() => openSchedulerForm()}
+              className="bg-gradient-to-r from-violet-500 to-purple-500 text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest hover:opacity-90 transition-opacity"
+            >
+              <span className="flex items-center gap-1.5">
+                <i className="fas fa-plus text-[8px]"></i> New
+              </span>
+            </button>
+          )}
         </div>
 
         {/* Scheduler Form (inline create/edit) */}
-        {showSchedulerForm && (
-          <div className="mb-6 p-6 rounded-xl bg-violet-500/[0.03] border border-violet-500/10">
+        {!collapsedSections.has('schedulers') && showSchedulerForm && (
+          <div className="mb-4 p-5 rounded-xl bg-violet-500/[0.03] border border-violet-500/10">
             <div className="flex items-center gap-2 mb-5">
               <i className="fas fa-calendar-alt text-violet-400 text-xs"></i>
               <span className="text-[10px] font-black text-violet-400 uppercase tracking-widest">
@@ -974,14 +1049,14 @@ export default function Discovery() {
         )}
 
         {/* Scheduler List */}
-        {schedulers.length === 0 && !showSchedulerForm ? (
+        {!collapsedSections.has('schedulers') && (schedulers.length === 0 && !showSchedulerForm ? (
           <p className="text-slate-600 text-xs font-bold">No schedulers yet. Create one to group hashtags and schedule discovery runs.</p>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {schedulers.map(s => {
               const isRunning = runningSchedulerIds.has(s.id)
               return (
-                <div key={s.id} className="flex items-center justify-between p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.04] transition-colors">
+                <div key={s.id} className="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.04] transition-colors">
                   <div className="flex items-center gap-3 flex-wrap">
                     <span className="text-sm font-black text-white">{s.name}</span>
                     <span className="text-[10px] font-bold text-violet-400 bg-violet-500/10 px-2 py-0.5 rounded">
@@ -1048,370 +1123,168 @@ export default function Discovery() {
               )
             })}
           </div>
-        )}
+        ))}
       </div>
 
-      {/* Tracked Hashtags */}
-      <div className="glass-card rounded-[1.5rem] border-white/5 p-8 mb-10">
-        <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6">Tracked Hashtags</h2>
-
-        {/* Add Form */}
-        <form onSubmit={handleAddHashtag} className="flex gap-3 mb-6 flex-wrap">
-          <select
-            value={newHashtag.platform}
-            onChange={(e) => setNewHashtag({ ...newHashtag, platform: e.target.value })}
-            className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-xs font-bold text-white focus:outline-none focus:border-pink-500/50 transition-colors"
-          >
-            <option value="tiktok">TikTok</option>
-            <option value="instagram">Instagram</option>
-          </select>
-          <input
-            type="text"
-            placeholder="#hashtag"
-            value={newHashtag.hashtag}
-            onChange={(e) => setNewHashtag({ ...newHashtag, hashtag: e.target.value })}
-            className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-xs font-bold text-white flex-1 min-w-[200px] focus:outline-none focus:border-pink-500/50 placeholder-slate-600 transition-colors"
-          />
-          <input
-            type="number"
-            min="5"
-            max="100"
-            value={newHashtag.max_videos_per_run}
-            onChange={(e) => setNewHashtag({ ...newHashtag, max_videos_per_run: parseInt(e.target.value) || 30 })}
-            className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-xs font-bold text-white w-20 focus:outline-none focus:border-pink-500/50 transition-colors"
-            title="Max videos per run"
-          />
-          <button
-            type="submit"
-            className="bg-gradient-to-r from-pink-500 to-orange-400 text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest hover:opacity-90 transition-opacity"
-          >
-            Add
-          </button>
-        </form>
-
-        {/* Hashtag List */}
-        {hashtags.length === 0 ? (
-          <p className="text-slate-600 text-xs font-bold">No hashtags tracked yet. Add one above to get started.</p>
-        ) : (
-          <div className="space-y-2">
-            {hashtags.map(h => {
-              // Check if this hashtag is currently being processed by any active job
-              const activeForThis = [manualProgress, ...Array.from(schedulerProgress.values())].find(
-                p => p && p.currentHashtag === h.hashtag && p.currentHashtagPlatform === h.platform && p.phase !== 'completed'
-              )
-
-              return (
-                <div key={h.id} className={`rounded-xl transition-colors ${
-                  activeForThis
-                    ? 'bg-blue-500/[0.04] border border-blue-500/20'
-                    : 'bg-white/[0.02] border border-white/5 hover:bg-white/[0.04]'
-                }`}>
-                  <div className="flex items-center justify-between p-4">
-                    <div className="flex items-center gap-3 flex-wrap">
-                      {activeForThis && (
-                        <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></div>
-                      )}
-                      <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded tracking-wider ${
-                        h.platform === 'tiktok' ? 'bg-pink-500/10 text-pink-400' : 'bg-orange-500/10 text-orange-400'
-                      }`}>
-                        {h.platform}
-                      </span>
-                      <span className="text-sm font-black text-white">#{h.hashtag}</span>
-                      <span className="text-[10px] font-bold text-slate-600">{h.total_videos || 0} videos</span>
-                      {editingMaxVideos === h.id ? (
-                        <span className="flex items-center gap-1">
-                          <input
-                            type="number"
-                            min="5"
-                            max="100"
-                            value={editMaxValue}
-                            onChange={(e) => setEditMaxValue(parseInt(e.target.value) || 5)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') saveMaxVideos(h.id)
-                              if (e.key === 'Escape') setEditingMaxVideos(null)
-                            }}
-                            autoFocus
-                            className="bg-white/10 border border-violet-500/50 rounded px-1.5 py-0.5 text-[10px] font-bold text-white w-14 focus:outline-none"
-                          />
-                          <span className="text-[10px] font-bold text-slate-600">/run</span>
-                          <button onClick={() => saveMaxVideos(h.id)} className="text-[10px] text-teal-400 hover:text-teal-300"><i className="fas fa-check"></i></button>
-                          <button onClick={() => setEditingMaxVideos(null)} className="text-[10px] text-slate-500 hover:text-slate-400"><i className="fas fa-times"></i></button>
-                        </span>
-                      ) : (
-                        <span
-                          className="text-[10px] font-bold text-slate-600 cursor-pointer hover:text-slate-400 transition-colors"
-                          onClick={() => { setEditingMaxVideos(h.id); setEditMaxValue(h.max_videos_per_run) }}
-                          title="Click to edit max videos per run"
-                        >
-                          max {h.max_videos_per_run}/run
-                        </span>
-                      )}
-                      {activeForThis ? (
-                        <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${
-                          activeForThis.phase === 'fetching' ? 'bg-blue-500/10 text-blue-400' :
-                          activeForThis.phase === 'analyzing' ? 'bg-amber-500/10 text-amber-400' :
-                          activeForThis.phase === 'downloading' ? 'bg-cyan-500/10 text-cyan-400' :
-                          'bg-slate-500/10 text-slate-400'
-                        }`}>
-                          {activeForThis.phase}
-                        </span>
-                      ) : (
-                        <>
-                          {h.last_run_status && (
-                            <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${statusColor(h.last_run_status)}`}>
-                              {h.last_run_status}
-                            </span>
-                          )}
-                          {h.last_run_at && (
-                            <span className="text-[10px] font-bold text-slate-600">{timeAgo(h.last_run_at)}</span>
-                          )}
-                        </>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => toggleActive(h)}
-                        className={`text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-lg transition-colors ${
-                          h.is_active
-                            ? 'bg-teal-500/10 text-teal-400 hover:bg-teal-500/20'
-                            : 'bg-slate-500/10 text-slate-500 hover:bg-slate-500/20'
-                        }`}
-                      >
-                        {h.is_active ? 'Active' : 'Paused'}
-                      </button>
-                      <button
-                        onClick={() => deleteHashtag(h.id)}
-                        className="text-[10px] font-bold text-red-400/60 hover:text-red-400 px-2 py-1.5 transition-colors"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Inline progress bar for active hashtag */}
-                  {activeForThis && (
-                    <div className="px-4 pb-3">
-                      <div className="flex items-center gap-3 mb-1">
-                        <span className="text-[10px] font-bold text-blue-400">
-                          {activeForThis.currentHashtagVideosFetched > 0
-                            ? `${activeForThis.currentHashtagVideosFetched} fetched`
-                            : 'Fetching...'}
-                          {activeForThis.currentHashtagNewVideos > 0 && (
-                            <> · <span className="text-teal-400">{activeForThis.currentHashtagNewVideos} new</span></>
-                          )}
-                          {activeForThis.currentHashtagVideosAnalyzed > 0 && (
-                            <> · <span className="text-amber-400">{activeForThis.currentHashtagVideosAnalyzed} analyzed</span></>
-                          )}
-                          {activeForThis.currentHashtagVideosDownloaded > 0 && (
-                            <> · <span className="text-violet-400">{activeForThis.currentHashtagVideosDownloaded} downloaded</span></>
-                          )}
-                        </span>
-                      </div>
-                      {activeForThis.currentHashtagTotalToProcess > 0 && (
-                        <div className="h-1 bg-white/5 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full rounded-full transition-all duration-500 ${
-                              activeForThis.phase === 'analyzing' ? 'bg-amber-500' :
-                              activeForThis.phase === 'downloading' ? 'bg-cyan-500' :
-                              'bg-blue-500'
-                            }`}
-                            style={{
-                              width: `${Math.round(
-                                (Math.max(activeForThis.currentHashtagVideosAnalyzed, activeForThis.currentHashtagVideosDownloaded) /
-                                  activeForThis.currentHashtagTotalToProcess) * 100
-                              )}%`
-                            }}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )
-            })}
+      {/* Tracked Hashtags — Summary Card */}
+      <div className="glass-card rounded-[1.5rem] border-white/5 p-6 mb-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Tracked Hashtags</h2>
+            <span className="text-[10px] font-bold text-slate-600 bg-white/5 px-2 py-0.5 rounded">
+              {hashtags.length} total
+            </span>
+            <span className="text-[10px] font-bold text-teal-400/70 bg-teal-500/5 px-2 py-0.5 rounded">
+              {hashtags.filter(h => h.is_active).length} active
+            </span>
+            <span className="text-[10px] font-bold text-pink-400/70 bg-pink-500/5 px-2 py-0.5 rounded">
+              TT {hashtags.filter(h => h.platform === 'tiktok').length}
+            </span>
+            <span className="text-[10px] font-bold text-orange-400/70 bg-orange-500/5 px-2 py-0.5 rounded">
+              IG {hashtags.filter(h => h.platform === 'instagram').length}
+            </span>
           </div>
-        )}
+          <button
+            onClick={() => navigate('/dashboard/discovery/hashtags')}
+            className="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+          >
+            Manage <i className="fas fa-arrow-right text-[8px] ml-1"></i>
+          </button>
+        </div>
+
+        {/* Currently running hashtag jobs */}
+        {(() => {
+          const allProgress = [manualProgress, ...Array.from(schedulerProgress.values())].filter(
+            (p): p is DiscoveryProgress => !!p && p.phase !== 'completed' && !!p.currentHashtag
+          )
+          if (allProgress.length === 0) return null
+          return (
+            <div className="mt-3 pt-3 border-t border-white/5">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></div>
+                <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Running</span>
+              </div>
+              <div className="space-y-1.5">
+                {allProgress.map((p, i) => (
+                  <div key={i} className="flex items-center gap-2 text-[11px]">
+                    <span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded ${
+                      p.currentHashtagPlatform === 'tiktok' ? 'bg-pink-500/10 text-pink-400' : 'bg-orange-500/10 text-orange-400'
+                    }`}>{p.currentHashtagPlatform === 'tiktok' ? 'TT' : 'IG'}</span>
+                    <span className="font-bold text-white">#{p.currentHashtag}</span>
+                    <span className={`text-[10px] font-black uppercase px-1.5 py-0.5 rounded ${statusColor(p.phase)}`}>{p.phase}</span>
+                    <span className="text-slate-500 font-bold">
+                      {p.phase === 'fetching' && p.currentHashtagVideosFetched > 0 && `${p.currentHashtagVideosFetched} fetched`}
+                      {p.phase === 'analyzing' && p.currentHashtagTotalToProcess > 0 && `${p.currentHashtagVideosAnalyzed}/${p.currentHashtagTotalToProcess}`}
+                      {p.phase === 'downloading' && p.currentHashtagTotalToProcess > 0 && `${p.currentHashtagVideosDownloaded}/${p.currentHashtagTotalToProcess}`}
+                    </span>
+                    {p.currentHashtagTotalToProcess > 0 && (p.phase === 'analyzing' || p.phase === 'downloading') && (
+                      <div className="flex-1 max-w-[120px] h-1 bg-white/5 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-500 ${
+                            p.phase === 'analyzing' ? 'bg-amber-500' : 'bg-cyan-500'
+                          }`}
+                          style={{
+                            width: `${Math.round(
+                              (Math.max(p.currentHashtagVideosAnalyzed, p.currentHashtagVideosDownloaded) /
+                                p.currentHashtagTotalToProcess) * 100
+                            )}%`
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })()}
       </div>
 
       {/* Scheduler Run History */}
-      <div className="glass-card rounded-[1.5rem] border-white/5 p-8 mb-10">
-        <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6">Run History</h2>
+      <div className="glass-card rounded-[1.5rem] border-white/5 p-6 mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <button onClick={() => toggleSection('history')} className="flex items-center gap-2.5 group">
+            <i className={`fas fa-chevron-${collapsedSections.has('history') ? 'right' : 'down'} text-[8px] text-slate-600 group-hover:text-slate-400 transition-colors`}></i>
+            <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Run History</h2>
+            <span className="text-[10px] font-bold text-slate-600 bg-white/5 px-2 py-0.5 rounded">{runGroups.reduce((s, g) => s + g.total_runs, 0)}</span>
+          </button>
+        </div>
 
-        {schedulerRuns.length === 0 ? (
-          <p className="text-slate-600 text-xs font-bold">No scheduler runs yet. Create a scheduler and run it to see history here.</p>
+        {!collapsedSections.has('history') && (runGroups.length === 0 ? (
+          <p className="text-slate-600 text-xs font-bold">No scheduler runs yet.</p>
         ) : (
-          <div className="space-y-2">
-            {schedulerRuns.map(run => {
-              const duration = formatDuration(run.started_at, run.finished_at)
-              const isExpanded = expandedRun === run.id
+          <div className="space-y-3">
+            {runGroups.map(group => {
+              const isGroupOpen = expandedGroup === group.scheduler_id
+              const latestRun = group.runs[0]
+              const olderRuns = group.runs.slice(1)
               return (
-                <div key={run.id}>
+                <div key={group.scheduler_id} className="rounded-xl border border-white/5 overflow-hidden">
+                  {/* Group header */}
                   <div
-                    className={`flex items-center justify-between p-4 rounded-xl bg-white/[0.02] border transition-colors cursor-pointer ${
-                      isExpanded ? 'border-violet-500/20 bg-white/[0.04]' : 'border-white/5 hover:bg-white/[0.04]'
-                    }`}
-                    onClick={() => toggleRunExpand(run.id)}
+                    className="flex items-center justify-between px-5 py-3 bg-white/[0.02] cursor-pointer hover:bg-white/[0.04] transition-colors"
+                    onClick={() => setExpandedGroup(isGroupOpen ? null : group.scheduler_id)}
                   >
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <i className={`fas fa-chevron-${isExpanded ? 'down' : 'right'} text-[8px] text-slate-500`}></i>
-                      <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${statusColor(run.status)}`}>
-                        {run.status}
-                      </span>
-                      <span className="text-sm font-bold text-white">{run.scheduler_name}</span>
+                    <div className="flex items-center gap-3">
+                      <i className={`fas fa-chevron-${isGroupOpen ? 'down' : 'right'} text-[8px] text-slate-500`}></i>
+                      <span className="text-sm font-bold text-white">{group.scheduler_name}</span>
+                      <span className="text-[10px] font-bold text-slate-600">{group.total_runs} run{group.total_runs !== 1 ? 's' : ''}</span>
                     </div>
-                    <div className="flex items-center gap-4 text-[10px] font-bold text-slate-500">
-                      <span>
-                        <span className="text-teal-400">{run.completed_hashtags}</span>
-                        {run.failed_hashtags > 0 && <span className="text-red-400">/{run.failed_hashtags} failed</span>}
-                        <span className="text-slate-600">/{run.total_hashtags} hashtags</span>
-                      </span>
-                      <span>{run.total_videos_fetched} fetched</span>
-                      <span className="text-teal-400">{run.total_new_videos} new</span>
-                      <span className="text-cyan-400">{run.total_videos_analyzed} analyzed</span>
-                      {duration && <span className="text-violet-400">{duration}</span>}
-                      <span>{timeAgo(run.created_at)}</span>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          navigate(`/dashboard/discovery/items?scheduler_run_id=${run.id}`)
-                        }}
-                        className="text-pink-400/60 hover:text-pink-400 transition-colors"
-                      >
-                        View Videos
-                      </button>
+                    <div className="flex items-center gap-3 text-[10px] font-bold text-slate-500">
+                      {latestRun && (
+                        <>
+                          <span className={`font-black uppercase px-2 py-0.5 rounded ${statusColor(latestRun.status)}`}>{latestRun.status}</span>
+                          <span>{timeAgo(latestRun.created_at)}</span>
+                        </>
+                      )}
                     </div>
                   </div>
-
-                  {/* Expanded Detail */}
-                  {isExpanded && (
-                    <div className="mt-1 p-4 rounded-xl bg-violet-500/[0.02] border border-violet-500/10">
-                      {loadingRunDetail ? (
-                        <div className="flex items-center justify-center py-4">
-                          <div className="w-5 h-5 border-2 border-violet-500 border-t-transparent rounded-full animate-spin"></div>
-                        </div>
-                      ) : runDetail.length === 0 ? (
-                        <p className="text-slate-600 text-xs font-bold text-center py-3">No hashtag results for this run.</p>
-                      ) : (
-                        <table className="w-full">
-                          <thead>
-                            <tr className="text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-white/5">
-                              <td className="pb-2">Platform</td>
-                              <td className="pb-2">Hashtag</td>
-                              <td className="pb-2">Status</td>
-                              <td className="pb-2 text-right">Fetched</td>
-                              <td className="pb-2 text-right">New</td>
-                              <td className="pb-2 text-right">Analyzed Duration</td>
-                              <td className="pb-2">Error</td>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {runDetail.map(rh => {
-                              const rhDuration = formatDuration(rh.started_at, rh.finished_at)
-                              const hasLogs = rh.logs && rh.logs.length > 0
-                              const isLogsExpanded = expandedLogs === rh.id
-                              return (
-                                <React.Fragment key={rh.id}>
-                                  <tr className="text-xs border-b border-white/[0.03] last:border-0">
-                                    <td className="py-2">
-                                      <span className={`text-[10px] font-black uppercase px-1.5 py-0.5 rounded tracking-wider ${
-                                        rh.platform === 'tiktok' ? 'bg-pink-500/10 text-pink-400' : 'bg-orange-500/10 text-orange-400'
-                                      }`}>
-                                        {rh.platform}
-                                      </span>
-                                    </td>
-                                    <td className="py-2 font-bold text-white">#{rh.hashtag}</td>
-                                    <td className="py-2">
-                                      <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${statusColor(rh.status)}`}>
-                                        {rh.status}
-                                      </span>
-                                    </td>
-                                    <td className="py-2 text-right font-bold text-slate-400">{rh.videos_fetched}</td>
-                                    <td className="py-2 text-right font-bold text-teal-400">{rh.new_videos}</td>
-                                    <td className="py-2 text-right">
-                                      <span className="font-bold text-cyan-400">{rh.videos_analyzed}</span>
-                                      <span className="font-bold text-violet-400 ml-3">{rhDuration || '-'}</span>
-                                    </td>
-                                    <td className="py-2">
-                                      <div className="flex items-center gap-2">
-                                        {rh.error && (
-                                          <span className="text-red-400 text-[10px] truncate max-w-[200px] inline-block" title={rh.error}>
-                                            {rh.error}
-                                          </span>
-                                        )}
-                                        {hasLogs && (
-                                          <button
-                                            onClick={() => setExpandedLogs(isLogsExpanded ? null : rh.id)}
-                                            className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded transition-colors ${
-                                              isLogsExpanded
-                                                ? 'bg-amber-500/20 text-amber-400'
-                                                : 'bg-slate-500/10 text-slate-500 hover:text-slate-400'
-                                            }`}
-                                          >
-                                            <i className={`fas fa-${isLogsExpanded ? 'chevron-up' : 'terminal'} mr-1`}></i>
-                                            {rh.logs!.length} logs
-                                          </button>
-                                        )}
-                                      </div>
-                                    </td>
-                                  </tr>
-                                  {isLogsExpanded && hasLogs && (
-                                    <tr>
-                                      <td colSpan={7} className="p-0" style={{ maxWidth: 0 }}>
-                                        <div className="bg-black/40 border border-white/5 rounded-lg mx-2 mb-2 p-3 max-h-[400px] overflow-y-auto overflow-x-hidden font-mono text-[11px] leading-relaxed">
-                                          {rh.logs!.map((entry, i) => {
-                                            const time = new Date(entry.ts).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3 } as any)
-                                            const levelColor = entry.level === 'error' ? 'text-red-400'
-                                              : entry.level === 'warn' ? 'text-amber-400'
-                                              : 'text-slate-500'
-                                            const msgColor = entry.level === 'error' ? 'text-red-300'
-                                              : entry.level === 'warn' ? 'text-amber-300'
-                                              : 'text-slate-300'
-                                            return (
-                                              <div key={i} className="flex gap-2 hover:bg-white/[0.02] px-1 rounded min-w-0">
-                                                <span className="text-slate-600 shrink-0">{time}</span>
-                                                <span className={`${levelColor} shrink-0 w-10 text-right uppercase`}>{entry.level}</span>
-                                                <span className={`${msgColor} break-all min-w-0`}>{entry.msg}</span>
-                                                {entry.data && (
-                                                  <span className="text-slate-600 min-w-0 break-all" title={JSON.stringify(entry.data)}>
-                                                    {JSON.stringify(entry.data)}
-                                                  </span>
-                                                )}
-                                              </div>
-                                            )
-                                          })}
-                                        </div>
-                                      </td>
-                                    </tr>
-                                  )}
-                                </React.Fragment>
-                              )
-                            })}
-                          </tbody>
-                        </table>
-                      )}
+                  {/* Latest run — always visible */}
+                  {latestRun && <div className="border-t border-white/5">{renderRunRow(latestRun, true)}</div>}
+                  {/* Older runs — shown when group expanded */}
+                  {isGroupOpen && olderRuns.length > 0 && (
+                    <div className="border-t border-white/[0.03]">
+                      {olderRuns.map(run => (
+                        <div key={run.id} className="border-t border-white/[0.02] first:border-t-0">{renderRunRow(run, false)}</div>
+                      ))}
+                    </div>
+                  )}
+                  {/* Expand/collapse toggle */}
+                  {olderRuns.length > 0 && (
+                    <div className="flex items-center justify-center py-2 border-t border-white/[0.03] cursor-pointer hover:bg-white/[0.02] transition-colors"
+                      onClick={() => setExpandedGroup(isGroupOpen ? null : group.scheduler_id)}>
+                      <span className="text-[10px] font-bold text-slate-600">
+                        {isGroupOpen
+                          ? <><i className="fas fa-chevron-up mr-1"></i>Hide older runs</>
+                          : <><i className="fas fa-chevron-down mr-1"></i>{olderRuns.length} older run{olderRuns.length !== 1 ? 's' : ''}</>}
+                      </span>
                     </div>
                   )}
                 </div>
               )
             })}
           </div>
-        )}
+        ))}
       </div>
 
-      {/* Discovered Items Summary */}
-      <div className="glass-card rounded-[1.5rem] border-white/5 p-8">
-        <div className="flex flex-col items-center justify-center py-8">
-          <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-pink-500/10 to-violet-500/10 rounded-full flex items-center justify-center">
-            <i className="fas fa-compass text-pink-400 text-xl"></i>
+      {/* Discovered Items — Compact */}
+      <div className="glass-card rounded-[1.5rem] border-white/5 p-5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 bg-gradient-to-br from-pink-500/10 to-violet-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
+              <i className="fas fa-compass text-pink-400 text-sm"></i>
+            </div>
+            <div>
+              <div className="text-lg font-black text-white leading-tight">{formatNumber(videosTotal)}</div>
+              <p className="text-[10px] font-bold text-slate-500">Total Discovered Items</p>
+            </div>
           </div>
-          <div className="text-3xl font-black text-white mb-1">{formatNumber(videosTotal)}</div>
-          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6">Total Discovered Items</p>
           <button
             onClick={() => navigate('/dashboard/discovery/items')}
-            className="bg-gradient-to-r from-pink-500 to-orange-400 text-white px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest hover:opacity-90 transition-opacity"
+            className="bg-gradient-to-r from-pink-500 to-orange-400 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:opacity-90 transition-opacity"
           >
-            <span className="flex items-center gap-2">
-              View Discovered Items <i className="fas fa-arrow-right"></i>
+            <span className="flex items-center gap-1.5">
+              View All <i className="fas fa-arrow-right text-[8px]"></i>
             </span>
           </button>
         </div>

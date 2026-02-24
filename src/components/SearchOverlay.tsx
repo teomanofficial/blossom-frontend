@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { authFetch } from '../lib/api'
+import { getStorageUrl } from '../lib/media'
 
 interface FormatResult {
   id: number
@@ -125,11 +126,7 @@ function getTierColor(tier: string | null): string {
 }
 
 function getAvatarSrc(influencer: InfluencerResult): string | null {
-  if (influencer.local_avatar_path) {
-    if (influencer.local_avatar_path.startsWith('http')) return influencer.local_avatar_path
-    return `/media/${influencer.local_avatar_path.split('/').pop()}`
-  }
-  return influencer.avatar_url
+  return getStorageUrl(influencer.local_avatar_path)
 }
 
 export default function SearchOverlay() {

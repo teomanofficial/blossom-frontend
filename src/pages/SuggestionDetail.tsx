@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { authFetch } from '../lib/api'
+import { getStorageUrl } from '../lib/media'
 import VideoStoryCarousel, { type CarouselVideo } from '../components/VideoStoryCarousel'
 
 interface SourceVideo {
@@ -81,11 +82,7 @@ function difficultyColor(d: string | null): string {
 }
 
 function getThumbnailSrc(video: SourceVideo): string | null {
-  if (video.local_thumbnail_path) {
-    if (video.local_thumbnail_path.startsWith('http')) return video.local_thumbnail_path
-    return `/media/${video.local_thumbnail_path.split('/').pop()}`
-  }
-  return video.thumbnail_url
+  return getStorageUrl(video.local_thumbnail_path)
 }
 
 export default function SuggestionDetail() {
