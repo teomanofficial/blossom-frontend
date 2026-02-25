@@ -99,7 +99,7 @@ export default function PlatformPostCreate() {
 
   if (accounts.length === 0) {
     return (
-      <div className="glass-card rounded-2xl p-12 text-center">
+      <div className="glass-card rounded-3xl p-12 text-center">
         <div className="w-14 h-14 rounded-2xl bg-pink-500/10 flex items-center justify-center mx-auto mb-3">
           <i className="fas fa-plug text-pink-400 text-xl" />
         </div>
@@ -123,18 +123,18 @@ export default function PlatformPostCreate() {
         <Link to="/dashboard/platforms/posts" className="text-slate-500 hover:text-white transition-colors">
           <i className="fas fa-arrow-left text-xs" />
         </Link>
-        <h1 className="text-xl font-black tracking-tighter">Create Post</h1>
+        <h1 className="text-xl font-black tracking-tighter font-display">Create Post</h1>
       </div>
 
       <div className="max-w-2xl">
-        <div className="glass-card rounded-2xl p-5 sm:p-7 space-y-5">
+        <div className="glass-card rounded-3xl p-5 sm:p-7 space-y-5">
           {/* Account Selector */}
           <div>
             <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Account</label>
             <select
               value={form.account_id}
               onChange={(e) => setForm(f => ({ ...f, account_id: e.target.value }))}
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm font-medium text-white outline-none focus:border-pink-500/30 transition-colors"
+              className="glass-input w-full rounded-xl px-4 py-3 text-sm font-medium text-white"
             >
               {accounts.map(a => (
                 <option key={a.id} value={a.id}>
@@ -177,7 +177,7 @@ export default function PlatformPostCreate() {
               onChange={(e) => setForm(f => ({ ...f, caption: e.target.value }))}
               placeholder="Write your caption..."
               rows={6}
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 outline-none focus:border-pink-500/30 transition-colors resize-none"
+              className="glass-input w-full rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 resize-none"
             />
           </div>
 
@@ -188,7 +188,7 @@ export default function PlatformPostCreate() {
               type="datetime-local"
               value={form.scheduled_for}
               onChange={(e) => setForm(f => ({ ...f, scheduled_for: e.target.value }))}
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-pink-500/30 transition-colors"
+              className="glass-input w-full rounded-xl px-4 py-3 text-sm text-white"
             />
             <p className="text-[10px] text-slate-500 mt-1">Leave empty to save as draft</p>
           </div>
@@ -201,7 +201,7 @@ export default function PlatformPostCreate() {
               value={form.notes}
               onChange={(e) => setForm(f => ({ ...f, notes: e.target.value }))}
               placeholder="Internal notes..."
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 outline-none focus:border-pink-500/30 transition-colors"
+              className="glass-input w-full rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600"
             />
           </div>
 

@@ -199,7 +199,7 @@ export default function SuggestionDetail() {
         {/* Main content - left 2 cols */}
         <div className="xl:col-span-2 space-y-4 md:space-y-6">
           {/* Header card */}
-          <div className="glass-card rounded-[1.5rem] border-white/5 p-5 md:p-8">
+          <div className="glass-card rounded-3xl p-5 md:p-8">
             {/* Badges */}
             <div className="flex items-center gap-2 flex-wrap mb-4">
               {s.keyword_name && (
@@ -227,7 +227,7 @@ export default function SuggestionDetail() {
             </div>
 
             {/* Title */}
-            <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight mb-3">{s.title}</h1>
+            <h1 className="text-2xl md:text-3xl font-black font-display text-white tracking-tight mb-3">{s.title}</h1>
             <p className="text-sm text-slate-400 font-medium leading-relaxed mb-6">{s.description}</p>
 
             {/* Meta row */}
@@ -254,7 +254,7 @@ export default function SuggestionDetail() {
 
           {/* Hook */}
           {s.suggested_hook && (
-            <div className="glass-card rounded-[1.5rem] border-white/5 p-5 md:p-8">
+            <div className="glass-card rounded-3xl p-5 md:p-8">
               <div className="text-[10px] font-black text-pink-400 uppercase tracking-widest mb-3">
                 <i className="fas fa-bolt mr-1"></i> Hook (First 3 Seconds)
               </div>
@@ -266,7 +266,7 @@ export default function SuggestionDetail() {
 
           {/* Script Outline */}
           {s.script_outline && (
-            <div className="glass-card rounded-[1.5rem] border-white/5 p-5 md:p-8">
+            <div className="glass-card rounded-3xl p-5 md:p-8">
               <div className="text-[10px] font-black text-cyan-400 uppercase tracking-widest mb-3">
                 <i className="fas fa-film mr-1"></i> Script Outline
               </div>
@@ -278,7 +278,7 @@ export default function SuggestionDetail() {
 
           {/* Tactics + Hashtags */}
           {((s.suggested_tactics && s.suggested_tactics.length > 0) || (s.suggested_hashtags && s.suggested_hashtags.length > 0)) && (
-            <div className="glass-card rounded-[1.5rem] border-white/5 p-5 md:p-8">
+            <div className="glass-card rounded-3xl p-5 md:p-8">
               {s.suggested_tactics && s.suggested_tactics.length > 0 && (
                 <div className="mb-4">
                   <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Tactics</div>
@@ -316,7 +316,7 @@ export default function SuggestionDetail() {
 
           {/* Source Videos */}
           {s.source_videos && s.source_videos.length > 0 && (
-            <div className="glass-card rounded-[1.5rem] border-white/5 p-5 md:p-8">
+            <div className="glass-card rounded-3xl p-5 md:p-8">
               <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">
                 Source Videos ({s.source_videos.length})
               </div>
@@ -365,7 +365,7 @@ export default function SuggestionDetail() {
         {/* Sidebar - right col */}
         <div className="space-y-4">
           {/* Actions card */}
-          <div className="glass-card rounded-[1.5rem] border-white/5 p-5 md:p-6 xl:sticky xl:top-6">
+          <div className="glass-card rounded-3xl p-5 md:p-6 xl:sticky xl:top-6">
             <div className="space-y-3">
               {/* Upvote */}
               <button

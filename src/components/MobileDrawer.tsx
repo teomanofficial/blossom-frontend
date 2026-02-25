@@ -127,19 +127,23 @@ export default function MobileDrawer({ open, onClose, supportUnreadCount, hasAna
     // Only allow drag from the handle area or when scroll is at top
     const scrollEl = scrollRef.current
     const isScrolledToTop = !scrollEl || scrollEl.scrollTop <= 0
-    const touchY = e.touches[0].clientY
+    const touch = e.touches[0]
+    if (!touch) return
+    const touchY = touch.clientY
     const panelTop = panelRef.current?.getBoundingClientRect().top ?? 0
     const isNearTop = touchY - panelTop < 60
 
     if (isNearTop || isScrolledToTop) {
-      dragStartY.current = e.touches[0].clientY
+      dragStartY.current = touch.clientY
       isDragging.current = true
     }
   }, [])
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
     if (!isDragging.current) return
-    const currentY = e.touches[0].clientY
+    const touch = e.touches[0]
+    if (!touch) return
+    const currentY = touch.clientY
     const diff = currentY - dragStartY.current
     // Only allow dragging downward
     if (diff > 0) {

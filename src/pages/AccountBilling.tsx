@@ -65,7 +65,7 @@ function ConfirmModal({
       onClick={onClose}
     >
       <div
-        className="glass-card rounded-2xl p-8 w-full max-w-md"
+        className="glass-card rounded-3xl p-8 w-full max-w-md"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-3 mb-4">
@@ -273,7 +273,7 @@ export default function AccountBilling() {
 
       {/* Current Subscription Card */}
       {subscription && subStatus !== 'none' ? (
-        <div className="glass-card rounded-2xl p-7">
+        <div className="glass-card rounded-3xl p-5 sm:p-7">
           <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-5">
             Current Plan
           </h3>
@@ -313,7 +313,7 @@ export default function AccountBilling() {
 
           {/* Features list */}
           {subscription.features && subscription.features.length > 0 && (
-            <div className="mt-6 pt-6 border-t border-white/5">
+            <div className="mt-6 pt-6 border-t border-white/[0.06]">
               <div className="text-xs font-black uppercase tracking-widest text-slate-500 mb-3">
                 Your Features
               </div>
@@ -357,7 +357,7 @@ export default function AccountBilling() {
           </div>
         </div>
       ) : (
-        <div className="glass-card rounded-2xl p-7 text-center">
+        <div className="glass-card rounded-3xl p-5 sm:p-7 text-center">
           <p className="text-slate-400 font-medium">
             No active subscription found.
           </p>
@@ -367,7 +367,7 @@ export default function AccountBilling() {
       {/* Change Plan Section */}
       {showChangePlan && canChangePlan && (
         <div className="mt-6">
-          <div className="glass-card rounded-2xl p-7">
+          <div className="glass-card rounded-3xl p-5 sm:p-7">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xs font-black uppercase tracking-widest text-slate-500">
                 Available Plans

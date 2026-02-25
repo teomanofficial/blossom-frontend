@@ -75,13 +75,13 @@ export default function TrendingSongs() {
 
       <div className="mb-8">
         <div className="flex items-center gap-2 mb-3">
-          <span className="px-2 py-0.5 bg-cyan-500/10 text-cyan-400 text-[10px] font-black uppercase tracking-widest rounded">
+          <span className="badge-glass text-cyan-400 font-black">
             Songs
           </span>
         </div>
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
-            <h1 className="text-3xl font-black tracking-tighter mb-2">Trending Songs</h1>
+            <h1 className="text-3xl font-black font-display tracking-tighter mb-2">Trending Songs</h1>
             <p className="text-slate-500 text-sm font-medium">
               Songs and audio used in recent posts. {total > 0 && <span className="text-slate-400">{total} songs</span>}
             </p>
@@ -105,7 +105,7 @@ export default function TrendingSongs() {
           <div className="w-8 h-8 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : songs.length === 0 ? (
-        <div className="glass-card rounded-2xl p-12 text-center">
+        <div className="glass-card rounded-3xl p-12 text-center">
           <div className="w-16 h-16 rounded-2xl bg-cyan-500/10 flex items-center justify-center mx-auto mb-4">
             <i className="fas fa-music text-cyan-400 text-xl" />
           </div>
@@ -121,7 +121,7 @@ export default function TrendingSongs() {
               return (
                 <div
                   key={s.id}
-                  className="glass-card rounded-xl overflow-hidden border border-white/5 hover:border-cyan-500/30 transition-all group cursor-pointer"
+                  className="glass-card rounded-2xl overflow-hidden hover:border-cyan-500/30 transition-all group cursor-pointer"
                 >
                   <div className="aspect-square bg-slate-900 relative overflow-hidden">
                     {coverSrc ? (

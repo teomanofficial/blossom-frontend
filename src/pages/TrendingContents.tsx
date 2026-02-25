@@ -68,13 +68,13 @@ export default function TrendingContents() {
 
       <div className="mb-8">
         <div className="flex items-center gap-2 mb-3">
-          <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 text-[10px] font-black uppercase tracking-widest rounded">
+          <span className="badge-glass text-blue-400 font-black">
             Contents
           </span>
         </div>
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
-            <h1 className="text-3xl font-black tracking-tighter mb-2">Trending Contents</h1>
+            <h1 className="text-3xl font-black font-display tracking-tighter mb-2">Trending Contents</h1>
             <p className="text-slate-500 text-sm font-medium">
               Content topics and trends ranked by recent usage. {total > 0 && <span className="text-slate-400">{total} topics</span>}
             </p>
@@ -98,7 +98,7 @@ export default function TrendingContents() {
           <div className="w-8 h-8 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : contents.length === 0 ? (
-        <div className="glass-card rounded-2xl p-12 text-center">
+        <div className="glass-card rounded-3xl p-12 text-center">
           <div className="w-16 h-16 rounded-2xl bg-blue-500/10 flex items-center justify-center mx-auto mb-4">
             <i className="fas fa-hashtag text-blue-400 text-xl" />
           </div>
@@ -114,7 +114,7 @@ export default function TrendingContents() {
               return (
                 <div
                   key={c.id}
-                  className="glass-card rounded-xl overflow-hidden border border-white/5 hover:border-blue-500/30 transition-all group"
+                  className="glass-card rounded-2xl overflow-hidden hover:border-blue-500/30 transition-all group"
                 >
                   {/* Thumbnail collage */}
                   <div className="h-[120px] bg-slate-900 relative overflow-hidden">

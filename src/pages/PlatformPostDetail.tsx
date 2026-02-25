@@ -133,7 +133,7 @@ export default function PlatformPostDetail() {
 
   if (!post) {
     return (
-      <div className="glass-card rounded-2xl p-12 text-center">
+      <div className="glass-card rounded-3xl p-12 text-center">
         <p className="text-sm font-bold mb-2">Post not found</p>
         <Link to="/dashboard/platforms/posts" className="text-xs font-bold text-pink-400">
           <i className="fas fa-arrow-left mr-1" />Back to Posts
@@ -152,13 +152,13 @@ export default function PlatformPostDetail() {
         <Link to="/dashboard/platforms/posts" className="text-slate-500 hover:text-white transition-colors">
           <i className="fas fa-arrow-left text-xs" />
         </Link>
-        <h1 className="text-xl font-black tracking-tighter">Post Detail</h1>
+        <h1 className="text-xl font-black tracking-tighter font-display">Post Detail</h1>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left: Post Preview */}
         <div>
-          <div className="glass-card rounded-2xl overflow-hidden">
+          <div className="glass-card rounded-3xl overflow-hidden">
             <div className="aspect-[9/16] bg-slate-900 relative">
               {post.thumbnail_url ? (
                 <img src={getStorageUrl(post.thumbnail_url) || ''} alt="" className="w-full h-full object-cover" />
@@ -231,7 +231,7 @@ export default function PlatformPostDetail() {
         <div className="lg:col-span-2 space-y-4">
           {/* Analysis Status */}
           {!analysis || analysis.analysis_status === 'error' ? (
-            <div className="glass-card rounded-2xl p-6 text-center">
+            <div className="glass-card rounded-3xl p-5 sm:p-7 text-center">
               <div className="w-14 h-14 rounded-2xl bg-pink-500/10 flex items-center justify-center mx-auto mb-3">
                 <i className="fas fa-wand-magic-sparkles text-pink-400 text-xl" />
               </div>
@@ -251,7 +251,7 @@ export default function PlatformPostDetail() {
               )}
             </div>
           ) : isAnalyzing ? (
-            <div className="glass-card rounded-2xl p-6">
+            <div className="glass-card rounded-3xl p-5 sm:p-7">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-8 h-8 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
                 <div>
@@ -282,10 +282,10 @@ export default function PlatformPostDetail() {
             <>
               {/* Viral Score Banner */}
               {analysis.viralityAnalysis && (
-                <div className="glass-card rounded-2xl p-5">
+                <div className="glass-card rounded-3xl p-5 sm:p-7">
                   <div className="flex items-center gap-2 mb-3">
                     <i className="fas fa-fire text-orange-400 text-xs" />
-                    <h3 className="text-xs font-black uppercase tracking-widest text-slate-500">Virality Score</h3>
+                    <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 font-display">Virality Score</h3>
                   </div>
                   <div className="flex items-center gap-4 mb-4">
                     <div className={`text-4xl font-black ${analysis.viral_score != null ? viralColor(analysis.viral_score).split(' ')[0] : 'text-slate-400'}`}>
@@ -315,10 +315,10 @@ export default function PlatformPostDetail() {
 
               {/* Full Analysis */}
               {analysis.fullAnalysis && (
-                <div className="glass-card rounded-2xl p-5">
+                <div className="glass-card rounded-3xl p-5 sm:p-7">
                   <div className="flex items-center gap-2 mb-3">
                     <i className="fas fa-microscope text-blue-400 text-xs" />
-                    <h3 className="text-xs font-black uppercase tracking-widest text-slate-500">Full Analysis</h3>
+                    <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 font-display">Full Analysis</h3>
                   </div>
                   {analysis.fullAnalysis.format_class && (
                     <div className="flex items-center gap-2 mb-3">
@@ -360,10 +360,10 @@ export default function PlatformPostDetail() {
 
               {/* Hook Analysis */}
               {analysis.hookAnalysis && (
-                <div className="glass-card rounded-2xl p-5">
+                <div className="glass-card rounded-3xl p-5 sm:p-7">
                   <div className="flex items-center gap-2 mb-3">
                     <i className="fas fa-magnet text-purple-400 text-xs" />
-                    <h3 className="text-xs font-black uppercase tracking-widest text-slate-500">Hook Analysis</h3>
+                    <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 font-display">Hook Analysis</h3>
                   </div>
                   {analysis.hookAnalysis.hook_class && (
                     <div className="flex items-center gap-2 mb-2">
@@ -385,11 +385,11 @@ export default function PlatformPostDetail() {
 
               {/* Improvements */}
               {analysis.improvements && (
-                <div className="glass-card rounded-2xl p-5">
+                <div className="glass-card rounded-3xl p-5 sm:p-7">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                       <i className="fas fa-lightbulb text-yellow-400 text-xs" />
-                      <h3 className="text-xs font-black uppercase tracking-widest text-slate-500">Improvements</h3>
+                      <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 font-display">Improvements</h3>
                     </div>
                     {analysis.optimizationScore != null && (
                       <span className="text-xs font-black text-yellow-400">

@@ -328,11 +328,11 @@ export default function ContentAnalysis() {
         <div className="flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <span className="px-2 py-0.5 bg-pink-500/10 text-pink-400 text-[10px] font-black uppercase tracking-widest rounded">
+              <span className="badge-glass text-pink-400 font-black">
                 Analysis
               </span>
             </div>
-            <h1 className="text-4xl font-black tracking-tighter mb-2">
+            <h1 className="text-4xl font-black font-display tracking-tighter mb-2">
               Analyze <span className="gradient-text">Your Content</span>
             </h1>
             <p className="text-slate-500 text-sm font-medium">
@@ -544,7 +544,7 @@ export default function ContentAnalysis() {
         {/* ═══════════════════════════════════════════════════════════ */}
         <div className="space-y-6">
           {/* Video info card */}
-          <div className="glass-card rounded-2xl p-6">
+          <div className="glass-card rounded-3xl p-6">
             <div className="flex flex-col md:flex-row gap-6">
               {/* Thumbnail */}
               {upload?.thumbnail_path && (
@@ -613,7 +613,7 @@ export default function ContentAnalysis() {
           {(improv?.optimization_score != null || virality?.overall_virality_score != null) && (
             <div className={`grid ${improv?.optimization_score != null && virality?.overall_virality_score != null ? 'grid-cols-2' : 'grid-cols-1'} gap-4`}>
               {improv?.optimization_score != null && (
-                <div className="glass-card rounded-2xl p-8 text-center">
+                <div className="glass-card rounded-3xl p-8 text-center">
                   <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">
                     Optimization Score
                   </div>
@@ -624,7 +624,7 @@ export default function ContentAnalysis() {
                 </div>
               )}
               {virality?.overall_virality_score != null && (
-                <div className="glass-card rounded-2xl p-8 text-center">
+                <div className="glass-card rounded-3xl p-8 text-center">
                   <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">
                     <i className="fas fa-fire mr-1 text-orange-400"></i>Virality Score
                   </div>
@@ -647,7 +647,7 @@ export default function ContentAnalysis() {
                 { label: 'Shareability', value: scoreBreakdown.shareability, icon: 'fa-share-alt' },
                 { label: 'Tactic Execution', value: scoreBreakdown.tactic_execution, icon: 'fa-crosshairs' },
               ].map((card) => (
-                <div key={card.label} className="glass-card rounded-2xl p-5 text-center">
+                <div key={card.label} className="glass-card rounded-3xl p-5 text-center">
                   <div className={`w-16 h-16 mx-auto rounded-full border-2 flex items-center justify-center mb-3 ${
                     (card.value || 0) >= 70
                       ? 'border-teal-400/50'
@@ -1111,7 +1111,7 @@ export default function ContentAnalysis() {
           <div className="space-y-6">
             {/* Scroll-stop power score */}
             {hook?.first_frame && (
-              <div className="glass-card rounded-2xl p-8 text-center">
+              <div className="glass-card rounded-3xl p-8 text-center">
                 <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">
                   Scroll-Stop Power
                 </div>
@@ -1123,7 +1123,7 @@ export default function ContentAnalysis() {
             )}
 
             {/* Hook class + verdict */}
-            <div className="glass-card rounded-2xl p-6 space-y-3">
+            <div className="glass-card rounded-3xl p-6 space-y-3">
               {hook?.hook_class && (
                 <div className="flex items-center gap-3">
                   <span className="px-3 py-1 rounded-full text-xs font-black bg-purple-500/15 text-purple-400 capitalize">
@@ -1138,7 +1138,7 @@ export default function ContentAnalysis() {
 
             {/* First Frame Analysis */}
             {hook?.first_frame && (
-              <div className="glass-card rounded-2xl p-6">
+              <div className="glass-card rounded-3xl p-6">
                 <h3 className="text-lg font-bold text-white mb-4">
                   <i className="fas fa-image mr-2 text-pink-400 text-sm"></i>First Frame
                 </h3>
@@ -1157,7 +1157,7 @@ export default function ContentAnalysis() {
 
             {/* Hook Tactics */}
             {hook?.tactics && hook.tactics.length > 0 && (
-              <div className="glass-card rounded-2xl p-6">
+              <div className="glass-card rounded-3xl p-6">
                 <h3 className="text-lg font-bold text-white mb-4">
                   <i className="fas fa-chess mr-2 text-indigo-400 text-sm"></i>Hook Tactics
                 </h3>
@@ -1204,7 +1204,7 @@ export default function ContentAnalysis() {
 
             {/* Promise Setup */}
             {hook?.promise_setup && (
-              <div className="glass-card rounded-2xl p-6">
+              <div className="glass-card rounded-3xl p-6">
                 <h3 className="text-lg font-bold text-white mb-4">
                   <i className="fas fa-bullseye mr-2 text-orange-400 text-sm"></i>Promise Setup
                 </h3>
@@ -1255,7 +1255,7 @@ export default function ContentAnalysis() {
 
             {/* Audio in First 3s */}
             {hook?.audio_in_first_3s && (
-              <div className="glass-card rounded-2xl p-6">
+              <div className="glass-card rounded-3xl p-6">
                 <h3 className="text-lg font-bold text-white mb-4">
                   <i className="fas fa-volume-up mr-2 text-violet-400 text-sm"></i>Audio (First 3 Seconds)
                 </h3>
@@ -1278,7 +1278,7 @@ export default function ContentAnalysis() {
 
             {/* Anti-Patterns */}
             {hook?.anti_patterns_detected && hook.anti_patterns_detected.length > 0 && (
-              <div className="glass-card rounded-2xl p-6">
+              <div className="glass-card rounded-3xl p-6">
                 <h3 className="text-lg font-bold text-white mb-4">
                   <i className="fas fa-shield-alt mr-2 text-red-400 text-sm"></i>Anti-Patterns Detected
                 </h3>
@@ -1302,7 +1302,7 @@ export default function ContentAnalysis() {
           <div className="space-y-6">
             {/* Format Class */}
             {full?.format_class && (
-              <div className="glass-card rounded-2xl p-6">
+              <div className="glass-card rounded-3xl p-6">
                 <h3 className="text-lg font-bold text-white mb-2">
                   <i className="fas fa-shapes mr-2 text-pink-400 text-sm"></i>Format Class
                 </h3>
@@ -1314,7 +1314,7 @@ export default function ContentAnalysis() {
 
             {/* Timeline Visualization */}
             {full?.structural_breakdown && (
-              <div className="glass-card rounded-2xl p-6">
+              <div className="glass-card rounded-3xl p-6">
                 <h3 className="text-lg font-bold text-white mb-4">
                   <i className="fas fa-stream mr-2 text-indigo-400 text-sm"></i>Timeline Breakdown
                 </h3>
@@ -1386,7 +1386,7 @@ export default function ContentAnalysis() {
                   { label: 'Movement Frequency', value: full.structural_breakdown.movement_frequency, icon: 'fa-running' },
                   { label: 'Open Loop', value: full.structural_breakdown.has_open_loop ? 'Yes' : 'No', icon: 'fa-redo' },
                 ].map((stat) => (
-                  <div key={stat.label} className="glass-card rounded-2xl p-5">
+                  <div key={stat.label} className="glass-card rounded-3xl p-5">
                     <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">
                       <i className={`fas ${stat.icon} mr-1`}></i>{stat.label}
                     </div>
@@ -1398,7 +1398,7 @@ export default function ContentAnalysis() {
 
             {/* Loop Description */}
             {full?.structural_breakdown?.loop_description && (
-              <div className="glass-card rounded-2xl p-6">
+              <div className="glass-card rounded-3xl p-6">
                 <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">
                   <i className="fas fa-redo mr-1"></i>Loop Description
                 </div>
@@ -1408,7 +1408,7 @@ export default function ContentAnalysis() {
 
             {/* Promise Analysis */}
             {full?.promise && (
-              <div className="glass-card rounded-2xl p-6">
+              <div className="glass-card rounded-3xl p-6">
                 <h3 className="text-lg font-bold text-white mb-4">
                   <i className="fas fa-bullseye mr-2 text-orange-400 text-sm"></i>Promise Analysis
                 </h3>
@@ -1449,7 +1449,7 @@ export default function ContentAnalysis() {
 
             {/* Shareability */}
             {full?.shareability && (
-              <div className="glass-card rounded-2xl p-6">
+              <div className="glass-card rounded-3xl p-6">
                 <h3 className="text-lg font-bold text-white mb-4">
                   <i className="fas fa-share-alt mr-2 text-orange-400 text-sm"></i>Shareability
                 </h3>
@@ -1541,7 +1541,7 @@ export default function ContentAnalysis() {
             {/* Tactic Cards */}
             <div className="space-y-4">
               {filteredTactics.map((tactic: any, idx: number) => (
-                <div key={idx} className="glass-card rounded-2xl p-5">
+                <div key={idx} className="glass-card rounded-3xl p-5">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-black text-white">{tactic.name}</span>
@@ -1597,7 +1597,7 @@ export default function ContentAnalysis() {
               ))}
 
               {filteredTactics.length === 0 && (
-                <div className="glass-card rounded-2xl p-8 text-center">
+                <div className="glass-card rounded-3xl p-8 text-center">
                   <p className="text-sm text-slate-500">No tactics found for this filter.</p>
                 </div>
               )}
@@ -1612,7 +1612,7 @@ export default function ContentAnalysis() {
           <div className="space-y-6">
             {/* Primary Emotion */}
             {full?.emotional_architecture?.primary_emotion && (
-              <div className="glass-card rounded-2xl p-8 text-center">
+              <div className="glass-card rounded-3xl p-8 text-center">
                 <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">Primary Emotion</div>
                 <div className="text-4xl font-black gradient-text capitalize">{full.emotional_architecture.primary_emotion}</div>
               </div>
@@ -1620,7 +1620,7 @@ export default function ContentAnalysis() {
 
             {/* Emotion Shifts */}
             {full?.emotional_architecture?.emotion_shifts && full.emotional_architecture.emotion_shifts.length > 0 && (
-              <div className="glass-card rounded-2xl p-6">
+              <div className="glass-card rounded-3xl p-6">
                 <h3 className="text-lg font-bold text-white mb-4">
                   <i className="fas fa-exchange-alt mr-2 text-rose-400 text-sm"></i>Emotion Shifts
                 </h3>
@@ -1642,7 +1642,7 @@ export default function ContentAnalysis() {
             {/* Emotional Architecture Details */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {full?.emotional_architecture?.arousal_curve && (
-                <div className="glass-card rounded-2xl p-5">
+                <div className="glass-card rounded-3xl p-5">
                   <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">
                     <i className="fas fa-chart-line mr-1"></i>Arousal Curve
                   </div>
@@ -1650,7 +1650,7 @@ export default function ContentAnalysis() {
                 </div>
               )}
               {full?.emotional_architecture?.specificity_level && (
-                <div className="glass-card rounded-2xl p-5">
+                <div className="glass-card rounded-3xl p-5">
                   <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">
                     <i className="fas fa-microscope mr-1"></i>Specificity Level
                   </div>
@@ -1658,7 +1658,7 @@ export default function ContentAnalysis() {
                 </div>
               )}
               {full?.emotional_architecture?.opinion_strength && (
-                <div className="glass-card rounded-2xl p-5">
+                <div className="glass-card rounded-3xl p-5">
                   <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">
                     <i className="fas fa-fist-raised mr-1"></i>Opinion Strength
                   </div>
@@ -1666,7 +1666,7 @@ export default function ContentAnalysis() {
                 </div>
               )}
               {full?.emotional_architecture?.relatability_moment && (
-                <div className="glass-card rounded-2xl p-5">
+                <div className="glass-card rounded-3xl p-5">
                   <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">
                     <i className="fas fa-users mr-1"></i>Relatability Moment
                   </div>
@@ -1683,7 +1683,7 @@ export default function ContentAnalysis() {
         {activeTab === 'virality' && virality && (
           <div className="space-y-6">
             {/* Overall Virality Score */}
-            <div className="glass-card rounded-2xl p-8 text-center">
+            <div className="glass-card rounded-3xl p-8 text-center">
               <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">
                 <i className="fas fa-fire mr-1 text-orange-400"></i>Overall Virality Score
               </div>
@@ -1702,7 +1702,7 @@ export default function ContentAnalysis() {
                 { label: 'Authenticity', value: virality.authenticity?.score, icon: 'fa-fingerprint', color: 'teal' },
                 { label: 'Emotional ROI', value: virality.emotional_roi?.score, icon: 'fa-heart', color: 'pink' },
               ].map((card) => (
-                <div key={card.label} className="glass-card rounded-2xl p-5 text-center">
+                <div key={card.label} className="glass-card rounded-3xl p-5 text-center">
                   <div className={`w-16 h-16 mx-auto rounded-full border-2 flex items-center justify-center mb-3 ${
                     (card.value || 0) >= 70 ? 'border-teal-400/50' : (card.value || 0) >= 40 ? 'border-yellow-400/50' : 'border-red-400/50'
                   }`}>
@@ -1720,7 +1720,7 @@ export default function ContentAnalysis() {
 
             {/* Shareability Details */}
             {virality.shareability && (
-              <div className="glass-card rounded-2xl p-6">
+              <div className="glass-card rounded-3xl p-6">
                 <h3 className="text-lg font-bold text-white mb-4">
                   <i className="fas fa-share-alt mr-2 text-orange-400 text-sm"></i>Shareability
                 </h3>
@@ -1749,7 +1749,7 @@ export default function ContentAnalysis() {
 
             {/* Rewatch Analysis */}
             {virality.rewatch && (
-              <div className="glass-card rounded-2xl p-6">
+              <div className="glass-card rounded-3xl p-6">
                 <h3 className="text-lg font-bold text-white mb-4">
                   <i className="fas fa-redo mr-2 text-purple-400 text-sm"></i>Rewatch Analysis
                 </h3>
@@ -1787,7 +1787,7 @@ export default function ContentAnalysis() {
 
             {/* Authenticity */}
             {virality.authenticity && (
-              <div className="glass-card rounded-2xl p-6">
+              <div className="glass-card rounded-3xl p-6">
                 <h3 className="text-lg font-bold text-white mb-4">
                   <i className="fas fa-fingerprint mr-2 text-teal-400 text-sm"></i>Authenticity
                 </h3>
@@ -1819,7 +1819,7 @@ export default function ContentAnalysis() {
 
             {/* Save Value */}
             {virality.save_value && virality.save_value.save_triggers && virality.save_value.save_triggers.length > 0 && (
-              <div className="glass-card rounded-2xl p-6">
+              <div className="glass-card rounded-3xl p-6">
                 <h3 className="text-lg font-bold text-white mb-4">
                   <i className="fas fa-bookmark mr-2 text-blue-400 text-sm"></i>Save Value
                   {virality.save_value.save_category && virality.save_value.save_category !== 'none' && (
@@ -1840,7 +1840,7 @@ export default function ContentAnalysis() {
 
             {/* Emotional ROI */}
             {virality.emotional_roi && (
-              <div className="glass-card rounded-2xl p-6">
+              <div className="glass-card rounded-3xl p-6">
                 <h3 className="text-lg font-bold text-white mb-4">
                   <i className="fas fa-heart mr-2 text-pink-400 text-sm"></i>Emotional ROI
                 </h3>
@@ -1872,7 +1872,7 @@ export default function ContentAnalysis() {
 
             {/* Retention Danger Zones */}
             {virality.retention_danger_zones && virality.retention_danger_zones.length > 0 && (
-              <div className="glass-card rounded-2xl p-6">
+              <div className="glass-card rounded-3xl p-6">
                 <h3 className="text-lg font-bold text-white mb-4">
                   <i className="fas fa-exclamation-triangle mr-2 text-yellow-400 text-sm"></i>Retention Danger Zones
                 </h3>
@@ -1911,7 +1911,7 @@ export default function ContentAnalysis() {
 
             {/* Platform-Specific: TikTok */}
             {upload?.platform === 'tiktok' && virality.tiktok_specific && virality.tiktok_specific.seo_score != null && (
-              <div className="glass-card rounded-2xl p-6">
+              <div className="glass-card rounded-3xl p-6">
                 <h3 className="text-lg font-bold text-white mb-4">
                   <i className="fab fa-tiktok mr-2 text-sm"></i>TikTok-Specific Scores
                 </h3>
@@ -1977,7 +1977,7 @@ export default function ContentAnalysis() {
 
             {/* Platform-Specific: Instagram */}
             {upload?.platform === 'instagram' && virality.instagram_specific && virality.instagram_specific.dm_shareability_score != null && (
-              <div className="glass-card rounded-2xl p-6">
+              <div className="glass-card rounded-3xl p-6">
                 <h3 className="text-lg font-bold text-white mb-4">
                   <i className="fab fa-instagram mr-2 text-sm"></i>Instagram-Specific Scores
                 </h3>
@@ -2047,7 +2047,7 @@ export default function ContentAnalysis() {
           <div className="space-y-4">
             {full?.weaknesses && full.weaknesses.length > 0 ? (
               full.weaknesses.map((w: any, idx: number) => (
-                <div key={idx} className="glass-card rounded-2xl p-6">
+                <div key={idx} className="glass-card rounded-3xl p-6">
                   {/* Weakness heading */}
                   <div className="flex items-start gap-3 mb-4">
                     <div className="w-8 h-8 rounded-full bg-red-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -2080,7 +2080,7 @@ export default function ContentAnalysis() {
                 </div>
               ))
             ) : (
-              <div className="glass-card rounded-2xl p-8 text-center">
+              <div className="glass-card rounded-3xl p-8 text-center">
                 <div className="w-16 h-16 mx-auto mb-4 bg-teal-400/10 rounded-full flex items-center justify-center">
                   <i className="fas fa-check text-teal-400 text-xl"></i>
                 </div>
@@ -2103,7 +2103,7 @@ export default function ContentAnalysis() {
               <div className="mb-6 h-4 w-32 bg-white/5 rounded animate-pulse"></div>
               <div className="space-y-6">
                 {/* Skeleton: Video info card */}
-                <div className="glass-card rounded-2xl p-6">
+                <div className="glass-card rounded-3xl p-6">
                   <div className="flex flex-col md:flex-row gap-6">
                     <div className="w-full md:w-48 flex-shrink-0">
                       <div className="aspect-[9/16] rounded-xl bg-white/5 animate-pulse"></div>
@@ -2130,12 +2130,12 @@ export default function ContentAnalysis() {
 
                 {/* Skeleton: Score cards */}
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="glass-card rounded-2xl p-8 text-center space-y-3">
+                  <div className="glass-card rounded-3xl p-8 text-center space-y-3">
                     <div className="h-3 w-28 mx-auto bg-white/5 rounded animate-pulse"></div>
                     <div className="h-14 w-20 mx-auto bg-white/5 rounded animate-pulse"></div>
                     <div className="h-3 w-16 mx-auto bg-white/5 rounded animate-pulse"></div>
                   </div>
-                  <div className="glass-card rounded-2xl p-8 text-center space-y-3">
+                  <div className="glass-card rounded-3xl p-8 text-center space-y-3">
                     <div className="h-3 w-28 mx-auto bg-white/5 rounded animate-pulse"></div>
                     <div className="h-14 w-20 mx-auto bg-white/5 rounded animate-pulse"></div>
                     <div className="h-3 w-16 mx-auto bg-white/5 rounded animate-pulse"></div>
@@ -2145,7 +2145,7 @@ export default function ContentAnalysis() {
                 {/* Skeleton: Score breakdown */}
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                   {[...Array(5)].map((_, i) => (
-                    <div key={i} className="glass-card rounded-2xl p-5 text-center space-y-3">
+                    <div key={i} className="glass-card rounded-3xl p-5 text-center space-y-3">
                       <div className="w-16 h-16 mx-auto rounded-full border-2 border-white/5 animate-pulse"></div>
                       <div className="h-3 w-16 mx-auto bg-white/5 rounded animate-pulse"></div>
                     </div>
@@ -2382,7 +2382,7 @@ export default function ContentAnalysis() {
 
           ) : (
             /* === UPLOAD FORM === */
-            <div className="glass-card rounded-2xl p-8">
+            <div className="glass-card rounded-3xl p-8">
               {/* Mode Toggle Pills */}
               <div className="flex items-center gap-1 bg-white/5 rounded-xl p-1 mb-8 w-fit">
                 <button

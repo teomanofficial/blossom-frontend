@@ -22,7 +22,7 @@ export default function AccountLayout() {
             Account
           </span>
         </div>
-        <h1 className="text-2xl lg:text-4xl font-black tracking-tighter mb-1 lg:mb-2">
+        <h1 className="text-2xl lg:text-4xl font-black font-display tracking-tighter mb-1 lg:mb-2">
           {displayName}
         </h1>
         <p className="text-slate-500 text-xs lg:text-sm font-medium">

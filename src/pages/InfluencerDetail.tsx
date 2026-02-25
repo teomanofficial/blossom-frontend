@@ -302,10 +302,10 @@ export default function InfluencerDetail() {
 
   if (error || !influencer) {
     return (
-      <div className="glass-card rounded-2xl p-12 text-center">
+      <div className="glass-card rounded-3xl p-12 text-center">
         <p className="text-slate-500 text-sm">{error || 'Influencer not found'}</p>
         <Link to="/dashboard/influencers" className="text-pink-400 text-xs font-bold mt-4 inline-block hover:text-pink-300">
-          Back to Influencers
+          Back to Creators
         </Link>
       </div>
     )
@@ -398,7 +398,7 @@ export default function InfluencerDetail() {
       )}
 
       {/* Profile Hero */}
-      <div className="glass-card rounded-2xl md:rounded-[2rem] p-5 md:p-8 mb-8 md:mb-10">
+      <div className="glass-card rounded-3xl p-5 md:p-8 mb-8 md:mb-10">
         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 md:gap-6">
           {/* Avatar */}
           <div className="relative flex-shrink-0">
@@ -423,7 +423,7 @@ export default function InfluencerDetail() {
           {/* Info */}
           <div className="flex-1 text-center sm:text-left">
             <div className="flex items-center justify-center sm:justify-start gap-2 md:gap-3 mb-1">
-              <h1 className="text-2xl md:text-3xl font-black tracking-tighter">
+              <h1 className="text-2xl md:text-3xl font-black font-display tracking-tighter">
                 {influencer.display_name || influencer.username}
               </h1>
               {influencer.is_verified && (
@@ -483,21 +483,21 @@ export default function InfluencerDetail() {
 
       {/* Performance Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-3 md:gap-4 mb-8 md:mb-10">
-        <div className="p-4 md:p-5 glass-card rounded-2xl">
+        <div className="p-4 md:p-5 glass-card rounded-3xl">
           <div className="flex items-center gap-2 mb-2">
             <i className="fas fa-eye text-slate-500 text-xs"></i>
             <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Total Views</div>
           </div>
           <div className="text-xl md:text-2xl font-black">{influencer.total_views ? formatNumber(influencer.total_views) : '--'}</div>
         </div>
-        <div className="p-4 md:p-5 glass-card rounded-2xl">
+        <div className="p-4 md:p-5 glass-card rounded-3xl">
           <div className="flex items-center gap-2 mb-2">
             <i className="fas fa-chart-line text-slate-500 text-xs"></i>
             <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Avg Views</div>
           </div>
           <div className="text-xl md:text-2xl font-black">{influencer.avg_views ? formatNumber(Math.round(influencer.avg_views)) : '--'}</div>
         </div>
-        <div className="p-4 md:p-5 glass-card rounded-2xl">
+        <div className="p-4 md:p-5 glass-card rounded-3xl">
           <div className="flex items-center gap-2 mb-2">
             <i className="fas fa-percentage text-slate-500 text-xs"></i>
             <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Engagement</div>
@@ -506,21 +506,21 @@ export default function InfluencerDetail() {
             {influencer.avg_engagement_rate ? Number(influencer.avg_engagement_rate).toFixed(1) + '%' : '--'}
           </div>
         </div>
-        <div className="p-4 md:p-5 glass-card rounded-2xl">
+        <div className="p-4 md:p-5 glass-card rounded-3xl">
           <div className="flex items-center gap-2 mb-2">
             <i className="fas fa-fire text-slate-500 text-xs"></i>
             <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Viral Videos</div>
           </div>
           <div className="text-xl md:text-2xl font-black text-pink-400">{influencer.viral_video_count ?? '--'}</div>
         </div>
-        <div className="p-4 md:p-5 glass-card rounded-2xl">
+        <div className="p-4 md:p-5 glass-card rounded-3xl">
           <div className="flex items-center gap-2 mb-2">
             <i className="fas fa-heart text-slate-500 text-xs"></i>
             <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Avg Likes</div>
           </div>
           <div className="text-xl md:text-2xl font-black">{influencer.avg_likes ? formatNumber(Math.round(influencer.avg_likes)) : '--'}</div>
         </div>
-        <div className="p-4 md:p-5 glass-card rounded-2xl">
+        <div className="p-4 md:p-5 glass-card rounded-3xl">
           <div className="flex items-center gap-2 mb-2">
             <i className="fas fa-comment text-slate-500 text-xs"></i>
             <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Avg Comments</div>
@@ -534,7 +534,7 @@ export default function InfluencerDetail() {
         <>
           {/* AI Analysis Section */}
           {ds.ai_analysis && (
-            <div className="glass-card rounded-2xl md:rounded-[2rem] p-5 md:p-8 mb-8 md:mb-10 relative overflow-hidden">
+            <div className="glass-card rounded-3xl p-5 md:p-8 mb-8 md:mb-10 relative overflow-hidden">
               <div className="absolute top-0 right-0 p-4 md:p-8 opacity-10">
                 <i className="fas fa-brain text-5xl md:text-8xl text-pink-400"></i>
               </div>
@@ -603,25 +603,25 @@ export default function InfluencerDetail() {
           {/* Performance Metrics */}
           {ds.performance && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8 md:mb-10">
-              <div className="p-4 md:p-6 glass-card rounded-2xl md:rounded-3xl border-white/5">
+              <div className="p-4 md:p-6 glass-card rounded-3xl">
                 <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Viral Hit Rate</div>
                 <div className="text-xl md:text-2xl font-black text-pink-400">
                   {(ds.performance.viral_hit_rate * 100).toFixed(1)}%
                 </div>
               </div>
-              <div className="p-4 md:p-6 glass-card rounded-2xl md:rounded-3xl border-white/5">
+              <div className="p-4 md:p-6 glass-card rounded-3xl">
                 <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Consistency</div>
                 <div className="text-xl md:text-2xl font-black text-teal-400">
                   {(ds.performance.consistency_score * 100).toFixed(0)}%
                 </div>
               </div>
-              <div className="p-4 md:p-6 glass-card rounded-2xl md:rounded-3xl border-white/5">
+              <div className="p-4 md:p-6 glass-card rounded-3xl">
                 <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Audience Quality</div>
                 <div className="text-xl md:text-2xl font-black text-orange-400">
                   {(ds.performance.audience_quality_score * 100).toFixed(0)}%
                 </div>
               </div>
-              <div className="p-4 md:p-6 glass-card rounded-2xl md:rounded-3xl border-white/5">
+              <div className="p-4 md:p-6 glass-card rounded-3xl">
                 <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Posts / Week</div>
                 <div className="text-xl md:text-2xl font-black text-white">
                   {ds.performance.posting_frequency.toFixed(1)}
@@ -634,7 +634,7 @@ export default function InfluencerDetail() {
           {ds.content && (ds.content.top_formats?.length > 0 || ds.content.top_hooks?.length > 0) && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-8 md:mb-10">
               {ds.content.top_formats && ds.content.top_formats.length > 0 && (
-                <div className="glass-card rounded-2xl p-5 md:p-7">
+                <div className="glass-card rounded-3xl p-5 md:p-7">
                   <h3 className="text-sm font-black uppercase tracking-widest text-slate-500 mb-5">Top Formats Used</h3>
                   <div className="space-y-3">
                     {ds.content.top_formats.slice(0, 8).map((f, i) => (
@@ -650,7 +650,7 @@ export default function InfluencerDetail() {
                 </div>
               )}
               {ds.content.top_hooks && ds.content.top_hooks.length > 0 && (
-                <div className="glass-card rounded-2xl p-5 md:p-7">
+                <div className="glass-card rounded-3xl p-5 md:p-7">
                   <h3 className="text-sm font-black uppercase tracking-widest text-slate-500 mb-5">Top Hooks Used</h3>
                   <div className="space-y-3">
                     {ds.content.top_hooks.slice(0, 8).map((h, i) => (
@@ -672,7 +672,7 @@ export default function InfluencerDetail() {
 
       {/* No deep scan prompt */}
       {!ds && (
-        <div className="glass-card rounded-[1.5rem] md:rounded-[2rem] p-6 md:p-10 mb-8 md:mb-10 text-center">
+        <div className="glass-card rounded-3xl p-6 md:p-10 mb-8 md:mb-10 text-center">
           <div className="w-16 h-16 mx-auto mb-4 bg-white/5 rounded-full flex items-center justify-center">
             <i className="fas fa-brain text-slate-500 text-xl"></i>
           </div>
@@ -696,7 +696,7 @@ export default function InfluencerDetail() {
 
       {/* Top Hashtags */}
       {hashtags.length > 0 && (
-        <div className="glass-card rounded-2xl p-7 mb-10">
+        <div className="glass-card rounded-3xl p-7 mb-10">
           <h2 className="text-sm font-black uppercase tracking-widest text-slate-500 mb-5">Top Hashtags</h2>
           <div className="flex flex-wrap gap-2">
             {hashtags.slice(0, 20).map((tag, i) => (
@@ -710,7 +710,7 @@ export default function InfluencerDetail() {
 
       {/* Suggested Users */}
       {suggestedUsers && suggestedUsers.length > 0 && (
-        <div className="glass-card rounded-2xl md:rounded-[2rem] p-5 md:p-8 mb-8 md:mb-10">
+        <div className="glass-card rounded-3xl p-5 md:p-8 mb-8 md:mb-10">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-sm font-black text-orange-400 uppercase tracking-[0.2em] flex items-center gap-2">
               <i className="fas fa-users"></i> Suggested Profiles
@@ -793,7 +793,7 @@ export default function InfluencerDetail() {
 
       {/* Suggested Users Empty State */}
       {suggestedUsers && suggestedUsers.length === 0 && (
-        <div className="glass-card rounded-2xl p-6 mb-8 text-center">
+        <div className="glass-card rounded-3xl p-6 mb-8 text-center">
           <i className="fas fa-users text-slate-600 text-xl mb-2"></i>
           <p className="text-sm text-slate-500 font-medium">No suggested profiles found for this account.</p>
           <button onClick={() => setSuggestedUsers(null)} className="text-xs text-slate-500 hover:text-white mt-2">Dismiss</button>
@@ -805,7 +805,7 @@ export default function InfluencerDetail() {
         <div className="mb-12 md:mb-20">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-2 mb-6 md:mb-8">
             <div>
-              <h2 className="text-2xl md:text-3xl font-black tracking-tight uppercase">Content</h2>
+              <h2 className="text-2xl md:text-3xl font-black font-display tracking-tight uppercase">Content</h2>
               <p className="text-slate-500 text-xs md:text-sm font-medium">Videos from @{influencer.username}, sorted by views.</p>
             </div>
             <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">

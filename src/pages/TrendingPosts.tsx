@@ -169,11 +169,11 @@ export default function TrendingPosts() {
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-2 mb-3">
-          <span className="px-2 py-0.5 bg-pink-500/10 text-pink-400 text-[10px] font-black uppercase tracking-widest rounded">
+          <span className="badge-glass text-pink-400 font-black">
             Trends
           </span>
         </div>
-        <h1 className="text-3xl font-black tracking-tighter mb-2">All Trending Posts</h1>
+        <h1 className="text-3xl font-black font-display tracking-tighter mb-2">All Trending Posts</h1>
         <p className="text-slate-500 text-sm font-medium">
           Recently analyzed content sorted by analysis date. {total > 0 && <span className="text-slate-400">{total} posts</span>}
         </p>
@@ -227,7 +227,7 @@ export default function TrendingPosts() {
           <div className="w-8 h-8 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : videos.length === 0 ? (
-        <div className="glass-card rounded-2xl p-12 text-center">
+        <div className="glass-card rounded-3xl p-12 text-center">
           <div className="w-16 h-16 rounded-2xl bg-pink-500/10 flex items-center justify-center mx-auto mb-4">
             <i className="fas fa-chart-line text-pink-400 text-xl" />
           </div>

@@ -283,7 +283,7 @@ export default function Platforms() {
     <>
       {/* Page Header */}
       <div className="mb-6 lg:mb-10">
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tighter mb-1 lg:mb-2">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tighter mb-1 lg:mb-2 font-display">
           Your <span className="gradient-text">Platforms</span>
         </h1>
         <p className="text-slate-500 text-xs sm:text-sm font-medium">
@@ -292,11 +292,11 @@ export default function Platforms() {
       </div>
 
       {/* ── Connected Accounts Strip ── */}
-      <div className="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-6 mb-6 lg:mb-8">
+      <div className="glass-card rounded-3xl p-5 sm:p-7 mb-6 lg:mb-8">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <i className="fas fa-link text-pink-400 text-xs" />
-            <h2 className="text-xs sm:text-sm font-black uppercase tracking-widest text-slate-500">Connected Accounts</h2>
+            <h2 className="text-xs sm:text-sm font-black uppercase tracking-widest text-slate-500 font-display">Connected Accounts</h2>
           </div>
           <Link to="/dashboard/account/integrations" className="text-[10px] font-black text-pink-400 uppercase tracking-widest hover:text-pink-300 transition-colors">
             Manage
@@ -375,10 +375,10 @@ export default function Platforms() {
           {/* ── Creator Score + Key Metrics ── */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 lg:mb-8">
             {/* Creator Score */}
-            <div className="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-6 flex flex-col items-center justify-center">
+            <div className="glass-card rounded-3xl p-5 sm:p-7 flex flex-col items-center justify-center">
               <div className="flex items-center gap-2 mb-4 self-start">
                 <i className="fas fa-trophy text-yellow-400 text-xs" />
-                <h2 className="text-xs font-black uppercase tracking-widest text-slate-500">Creator Score</h2>
+                <h2 className="text-xs font-black uppercase tracking-widest text-slate-500 font-display">Creator Score</h2>
               </div>
               <CreatorScoreGauge score={creatorScore?.score ?? null} />
               {creatorScore?.components && (
@@ -442,30 +442,30 @@ export default function Platforms() {
           {/* ── Charts Row ── */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 lg:mb-8">
             {/* Follower Growth */}
-            <div className="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-6">
+            <div className="glass-card rounded-3xl p-5 sm:p-7">
               <div className="flex items-center gap-2 mb-4">
                 <i className="fas fa-chart-line text-emerald-400 text-xs" />
-                <h2 className="text-xs font-black uppercase tracking-widest text-slate-500">Follower Growth</h2>
+                <h2 className="text-xs font-black uppercase tracking-widest text-slate-500 font-display">Follower Growth</h2>
               </div>
               <FollowerGrowthChart data={stats?.followerTrend || []} />
             </div>
 
             {/* Engagement Over Time */}
-            <div className="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-6">
+            <div className="glass-card rounded-3xl p-5 sm:p-7">
               <div className="flex items-center gap-2 mb-4">
                 <i className="fas fa-chart-area text-pink-400 text-xs" />
-                <h2 className="text-xs font-black uppercase tracking-widest text-slate-500">Engagement</h2>
+                <h2 className="text-xs font-black uppercase tracking-widest text-slate-500 font-display">Engagement</h2>
               </div>
               <EngagementChart data={stats?.engagementTrend || []} />
             </div>
           </div>
 
           {/* ── Recent Posts ── */}
-          <div className="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-6 mb-6 lg:mb-8">
+          <div className="glass-card rounded-3xl p-5 sm:p-7 mb-6 lg:mb-8">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <i className="fas fa-images text-orange-400 text-xs" />
-                <h2 className="text-xs font-black uppercase tracking-widest text-slate-500">Recent Posts</h2>
+                <h2 className="text-xs font-black uppercase tracking-widest text-slate-500 font-display">Recent Posts</h2>
               </div>
               <div className="flex items-center gap-3">
                 <button
@@ -536,10 +536,10 @@ export default function Platforms() {
 
           {/* ── Best Posting Times ── */}
           {bestTimes.length > 0 && (
-            <div className="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-6 mb-6 lg:mb-8">
+            <div className="glass-card rounded-3xl p-5 sm:p-7 mb-6 lg:mb-8">
               <div className="flex items-center gap-2 mb-4">
                 <i className="fas fa-clock text-violet-400 text-xs" />
-                <h2 className="text-xs font-black uppercase tracking-widest text-slate-500">Best Posting Times</h2>
+                <h2 className="text-xs font-black uppercase tracking-widest text-slate-500 font-display">Best Posting Times</h2>
               </div>
               <BestTimesHeatmap data={bestTimes} />
             </div>
@@ -551,7 +551,7 @@ export default function Platforms() {
               <button
                 onClick={() => { const first = accounts[0]; if (first) handleSync(first.id) }}
                 disabled={syncing !== null}
-                className="glass-card rounded-xl p-3.5 sm:p-5 hover:bg-white/[0.04] transition-all group border border-transparent hover:border-pink-500/20 active:scale-[0.97] text-left disabled:opacity-50"
+                className="glass-card rounded-3xl p-3.5 sm:p-5 hover:bg-white/[0.04] transition-all group hover:border-pink-500/20 active:scale-[0.97] text-left disabled:opacity-50"
               >
                 <div className="flex items-center gap-2.5 mb-1.5">
                   <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
@@ -564,7 +564,7 @@ export default function Platforms() {
             )}
             <Link
               to="/dashboard/platforms/posts/new"
-              className="glass-card rounded-xl p-3.5 sm:p-5 hover:bg-white/[0.04] transition-all group border border-transparent hover:border-pink-500/20 active:scale-[0.97]"
+              className="glass-card rounded-3xl p-3.5 sm:p-5 hover:bg-white/[0.04] transition-all group hover:border-pink-500/20 active:scale-[0.97]"
             >
               <div className="flex items-center gap-2.5 mb-1.5">
                 <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
@@ -576,7 +576,7 @@ export default function Platforms() {
             </Link>
             <Link
               to="/dashboard/platforms/posts"
-              className="glass-card rounded-xl p-3.5 sm:p-5 hover:bg-white/[0.04] transition-all group border border-transparent hover:border-pink-500/20 active:scale-[0.97]"
+              className="glass-card rounded-3xl p-3.5 sm:p-5 hover:bg-white/[0.04] transition-all group hover:border-pink-500/20 active:scale-[0.97]"
             >
               <div className="flex items-center gap-2.5 mb-1.5">
                 <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
@@ -589,7 +589,7 @@ export default function Platforms() {
             <button
               onClick={handleAnalyzeAll}
               disabled={analyzingAll}
-              className="glass-card rounded-xl p-3.5 sm:p-5 hover:bg-white/[0.04] transition-all group border border-transparent hover:border-pink-500/20 active:scale-[0.97] text-left disabled:opacity-50"
+              className="glass-card rounded-3xl p-3.5 sm:p-5 hover:bg-white/[0.04] transition-all group hover:border-pink-500/20 active:scale-[0.97] text-left disabled:opacity-50"
             >
               <div className="flex items-center gap-2.5 mb-1.5">
                 <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center">

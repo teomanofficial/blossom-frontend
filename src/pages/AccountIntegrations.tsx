@@ -232,7 +232,7 @@ export default function AccountIntegrations() {
             return (
               <div
                 key={platform.key}
-                className="border border-white/[0.08] rounded-2xl bg-white/[0.02] overflow-hidden"
+                className="glass-card rounded-3xl overflow-hidden"
               >
                 {/* Platform header */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 sm:p-5">

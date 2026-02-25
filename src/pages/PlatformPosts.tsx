@@ -138,7 +138,7 @@ export default function PlatformPosts() {
             <Link to="/dashboard/platforms" className="text-slate-500 hover:text-white transition-colors">
               <i className="fas fa-arrow-left text-xs" />
             </Link>
-            <h1 className="text-xl sm:text-2xl font-black tracking-tighter">All Posts</h1>
+            <h1 className="text-xl sm:text-2xl font-black tracking-tighter font-display">All Posts</h1>
           </div>
           <p className="text-slate-500 text-xs font-medium">{posts.length} posts from your connected accounts</p>
         </div>
@@ -164,7 +164,7 @@ export default function PlatformPosts() {
         <select
           value={filter.account_id}
           onChange={(e) => setFilter(f => ({ ...f, account_id: e.target.value }))}
-          className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs font-medium text-white outline-none focus:border-pink-500/30"
+          className="glass-input rounded-xl px-3 py-2 text-xs font-medium text-white"
         >
           <option value="">All Accounts</option>
           {accounts.map(a => (
@@ -174,7 +174,7 @@ export default function PlatformPosts() {
         <select
           value={filter.status}
           onChange={(e) => setFilter(f => ({ ...f, status: e.target.value }))}
-          className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs font-medium text-white outline-none focus:border-pink-500/30"
+          className="glass-input rounded-xl px-3 py-2 text-xs font-medium text-white"
         >
           <option value="">All Status</option>
           <option value="published">Published</option>
@@ -184,7 +184,7 @@ export default function PlatformPosts() {
         <select
           value={filter.sort}
           onChange={(e) => setFilter(f => ({ ...f, sort: e.target.value }))}
-          className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs font-medium text-white outline-none focus:border-pink-500/30"
+          className="glass-input rounded-xl px-3 py-2 text-xs font-medium text-white"
         >
           <option value="published_at">Recent</option>
           <option value="views">Most Views</option>
@@ -214,7 +214,7 @@ export default function PlatformPosts() {
           <div className="w-8 h-8 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : posts.length === 0 ? (
-        <div className="glass-card rounded-2xl p-12 text-center">
+        <div className="glass-card rounded-3xl p-12 text-center">
           <div className="w-14 h-14 rounded-2xl bg-pink-500/10 flex items-center justify-center mx-auto mb-3">
             <i className="fas fa-images text-pink-400 text-xl" />
           </div>
@@ -237,7 +237,7 @@ export default function PlatformPosts() {
                   </div>
                 )}
                 <div className="absolute top-2 left-2 right-2 flex items-center justify-between">
-                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded backdrop-blur-sm ${statusBadge(post.status)}`}>
+                  <span className={`badge-glass text-[9px] font-bold ${statusBadge(post.status)}`}>
                     {post.status}
                   </span>
                   <i className={`${platformIcon(post.account_platform)} text-[10px] text-white/70`} />
@@ -280,7 +280,7 @@ export default function PlatformPosts() {
                 <div className="flex items-center gap-1.5 mb-0.5">
                   <i className={`${platformIcon(post.account_platform)} text-[10px] ${platformColor(post.account_platform)}`} />
                   <span className="text-xs font-bold truncate">@{post.account_username}</span>
-                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${statusBadge(post.status)}`}>{post.status}</span>
+                  <span className={`badge-glass text-[9px] font-bold ${statusBadge(post.status)}`}>{post.status}</span>
                 </div>
                 <div className="text-[11px] text-slate-400 truncate mb-1">{post.caption || 'No caption'}</div>
                 <div className="flex items-center gap-3 text-[10px] text-slate-500 font-bold">

@@ -87,13 +87,13 @@ export default function TrendingFormats() {
 
       <div className="mb-8">
         <div className="flex items-center gap-2 mb-3">
-          <span className="px-2 py-0.5 bg-orange-500/10 text-orange-400 text-[10px] font-black uppercase tracking-widest rounded">
+          <span className="badge-glass text-orange-400 font-black">
             Formats
           </span>
         </div>
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
-            <h1 className="text-3xl font-black tracking-tighter mb-2">Trending Formats</h1>
+            <h1 className="text-3xl font-black font-display tracking-tighter mb-2">Trending Formats</h1>
             <p className="text-slate-500 text-sm font-medium">
               Content formats ranked by recent usage. {total > 0 && <span className="text-slate-400">{total} formats</span>}
             </p>
@@ -117,7 +117,7 @@ export default function TrendingFormats() {
           <div className="w-8 h-8 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : formats.length === 0 ? (
-        <div className="glass-card rounded-2xl p-12 text-center">
+        <div className="glass-card rounded-3xl p-12 text-center">
           <div className="w-16 h-16 rounded-2xl bg-orange-500/10 flex items-center justify-center mx-auto mb-4">
             <i className="fas fa-shapes text-orange-400 text-xl" />
           </div>
@@ -131,7 +131,7 @@ export default function TrendingFormats() {
               <Link
                 key={f.id}
                 to={`/dashboard/formats/${f.id}`}
-                className="glass-card rounded-xl p-5 border border-white/5 hover:border-orange-500/30 transition-all group"
+                className="glass-card rounded-2xl p-5 hover:border-orange-500/30 transition-all group"
               >
                 <div className="flex items-center gap-3 mb-3">
                   <span className="text-2xl">{getFormatEmoji(f.name)}</span>

@@ -122,7 +122,7 @@ export default function AccountSecurity() {
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
                 placeholder="Enter current password"
-                className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-slate-600 focus:outline-none focus:border-pink-500/50 focus:ring-1 focus:ring-pink-500/20 transition-colors"
+                className="glass-input w-full"
               />
             </div>
           )}
@@ -136,7 +136,7 @@ export default function AccountSecurity() {
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="At least 6 characters"
-              className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-slate-600 focus:outline-none focus:border-pink-500/50 focus:ring-1 focus:ring-pink-500/20 transition-colors"
+              className="glass-input w-full"
             />
           </div>
 
@@ -149,7 +149,7 @@ export default function AccountSecurity() {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Confirm new password"
-              className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-slate-600 focus:outline-none focus:border-pink-500/50 focus:ring-1 focus:ring-pink-500/20 transition-colors"
+              className="glass-input w-full"
             />
           </div>
         </div>
@@ -171,7 +171,7 @@ export default function AccountSecurity() {
         <p className="text-xs text-slate-500 mb-4">
           Your current active session information.
         </p>
-        <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+        <div className="glass-card rounded-3xl p-5 sm:p-7">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-teal-500/10 flex items-center justify-center">
               <i className="fas fa-desktop text-teal-400 text-xs"></i>

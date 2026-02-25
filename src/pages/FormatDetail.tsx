@@ -283,21 +283,21 @@ export default function FormatDetail() {
 
       {/* High Level Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8 md:mb-12">
-        <div className="p-4 md:p-6 glass-card rounded-2xl md:rounded-3xl border-white/5">
+        <div className="p-4 md:p-6 glass-card rounded-3xl">
           <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Avg Views</div>
           <div className="text-xl md:text-2xl font-black text-white">{formatNumber(Math.round(format.avg_views || 0))}</div>
         </div>
-        <div className="p-4 md:p-6 glass-card rounded-2xl md:rounded-3xl border-white/5">
+        <div className="p-4 md:p-6 glass-card rounded-3xl">
           <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Engagement</div>
           <div className="text-xl md:text-2xl font-black text-teal-400">
             {format.avg_engagement_rate ? Number(format.avg_engagement_rate).toFixed(1) + '%' : '--'}
           </div>
         </div>
-        <div className="p-4 md:p-6 glass-card rounded-2xl md:rounded-3xl border-white/5">
+        <div className="p-4 md:p-6 glass-card rounded-3xl">
           <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Videos</div>
           <div className="text-xl md:text-2xl font-black text-white">{totalVideoCount}</div>
         </div>
-        <div className="p-4 md:p-6 glass-card rounded-2xl md:rounded-3xl border-white/5">
+        <div className="p-4 md:p-6 glass-card rounded-3xl">
           <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Viral Prob.</div>
           <div className="text-xl md:text-2xl font-black text-pink-400">
             {avgViralProb > 0 ? Math.round(avgViralProb * 100) + '%' : '--'}
@@ -310,7 +310,7 @@ export default function FormatDetail() {
         <>
           {/* The Blueprint */}
           {blueprintSteps.length > 0 && (
-            <div className="blueprint-box p-5 md:p-8 rounded-[1.5rem] md:rounded-[2.5rem] mb-10 md:mb-16 relative overflow-hidden glass-card">
+            <div className="blueprint-box p-5 md:p-8 rounded-3xl mb-10 md:mb-16 relative overflow-hidden glass-card">
               <div className="absolute top-0 right-0 p-4 md:p-8 opacity-10">
                 <i className="fas fa-pencil-ruler text-5xl md:text-8xl text-orange-400"></i>
               </div>
@@ -428,7 +428,7 @@ export default function FormatDetail() {
         <div className="mb-12 md:mb-20">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-2 mb-6 md:mb-8">
             <div>
-              <h2 className="text-2xl md:text-3xl font-black tracking-tight uppercase">Most Used Tactics</h2>
+              <h2 className="text-2xl md:text-3xl font-black font-display tracking-tight uppercase">Most Used Tactics</h2>
               <p className="text-slate-500 text-xs md:text-sm font-medium">Tactics most frequently used in this format, with example videos.</p>
             </div>
             <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">
@@ -580,7 +580,7 @@ export default function FormatDetail() {
 
       {/* No analysis prompt */}
       {!analysis && (
-        <div className="glass-card rounded-[1.5rem] md:rounded-[2.5rem] p-6 md:p-10 mb-10 md:mb-16 text-center">
+        <div className="glass-card rounded-3xl p-6 md:p-10 mb-10 md:mb-16 text-center">
           <div className="w-16 h-16 mx-auto mb-4 bg-white/5 rounded-full flex items-center justify-center">
             <i className="fas fa-brain text-slate-500 text-xl"></i>
           </div>
@@ -607,7 +607,7 @@ export default function FormatDetail() {
         <div className="mb-12 md:mb-20">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-2 mb-6 md:mb-8">
             <div>
-              <h2 className="text-2xl md:text-3xl font-black tracking-tight uppercase">The Receipts</h2>
+              <h2 className="text-2xl md:text-3xl font-black font-display tracking-tight uppercase">The Receipts</h2>
               <p className="text-slate-500 text-xs md:text-sm font-medium">Real videos using this format, ranked by views.</p>
             </div>
             <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">

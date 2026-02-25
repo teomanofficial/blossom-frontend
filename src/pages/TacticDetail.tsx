@@ -177,7 +177,7 @@ export default function TacticDetail() {
 
   if (error || !tactic) {
     return (
-      <div className="glass-card rounded-2xl p-12 text-center">
+      <div className="glass-card rounded-3xl p-12 text-center">
         <p className="text-slate-500 text-sm">{error || 'Tactic not found'}</p>
         <Link to="/dashboard/tactics" className="text-amber-400 text-xs font-bold mt-4 inline-block hover:text-amber-300">
           Back to Tactics
@@ -227,7 +227,7 @@ export default function TacticDetail() {
             Indexed {timeAgo(tactic.created_at)}
           </span>
         </div>
-        <h1 className="text-3xl md:text-5xl font-black tracking-tighter mb-3 md:mb-4 uppercase">{tactic.name}</h1>
+        <h1 className="text-3xl md:text-5xl font-black font-display tracking-tighter mb-3 md:mb-4 uppercase">{tactic.name}</h1>
         {tactic.description && (
           <p className="text-slate-400 text-sm md:text-lg font-medium max-w-3xl leading-relaxed">{tactic.description}</p>
         )}
@@ -235,7 +235,7 @@ export default function TacticDetail() {
 
       {/* High Level Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8 md:mb-12">
-        <div className="p-4 md:p-6 glass-card rounded-2xl md:rounded-3xl border-white/5">
+        <div className="p-4 md:p-6 glass-card rounded-3xl">
           <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Avg Exec Score</div>
           <div className={`text-xl md:text-2xl font-black ${getScoreColor(score)}`}>
             {score > 0 ? Math.round(score) : '--'}
@@ -246,15 +246,15 @@ export default function TacticDetail() {
             </div>
           )}
         </div>
-        <div className="p-4 md:p-6 glass-card rounded-2xl md:rounded-3xl border-white/5">
+        <div className="p-4 md:p-6 glass-card rounded-3xl">
           <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Avg Views</div>
           <div className="text-xl md:text-2xl font-black text-white">{formatNumber(Math.round(avgViews))}</div>
         </div>
-        <div className="p-4 md:p-6 glass-card rounded-2xl md:rounded-3xl border-white/5">
+        <div className="p-4 md:p-6 glass-card rounded-3xl">
           <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Videos Using</div>
           <div className="text-xl md:text-2xl font-black text-white">{totalVideoCount}</div>
         </div>
-        <div className="p-4 md:p-6 glass-card rounded-2xl md:rounded-3xl border-white/5">
+        <div className="p-4 md:p-6 glass-card rounded-3xl">
           <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Score Dist</div>
           <div className="flex items-center gap-2 mt-1">
             <span className="text-teal-400 text-xs font-black">{scoreRanges.high}</span>
@@ -271,7 +271,7 @@ export default function TacticDetail() {
       {(tactic.why_it_works || tactic.viewer_effect) && (
         <div className="grid md:grid-cols-2 gap-4 md:gap-6 mb-8 md:mb-12">
           {tactic.why_it_works && (
-            <div className="p-5 md:p-8 glass-card rounded-[1.5rem] md:rounded-[2rem] border-l-4 border-l-amber-500">
+            <div className="p-5 md:p-8 glass-card rounded-3xl border-l-4 border-l-amber-500">
               <h3 className="text-amber-400 text-xs font-black uppercase tracking-widest flex items-center gap-2 mb-3 md:mb-4">
                 <i className="fas fa-lightbulb"></i> Why It Works
               </h3>
@@ -279,7 +279,7 @@ export default function TacticDetail() {
             </div>
           )}
           {tactic.viewer_effect && (
-            <div className="p-5 md:p-8 glass-card rounded-[1.5rem] md:rounded-[2rem] border-l-4 border-l-purple-500">
+            <div className="p-5 md:p-8 glass-card rounded-3xl border-l-4 border-l-purple-500">
               <h3 className="text-purple-400 text-xs font-black uppercase tracking-widest flex items-center gap-2 mb-3 md:mb-4">
                 <i className="fas fa-brain"></i> Viewer Effect
               </h3>
@@ -300,7 +300,7 @@ export default function TacticDetail() {
               <Link
                 key={fd.id}
                 to={`/dashboard/formats/${fd.id}`}
-                className="px-4 py-2.5 glass-card rounded-xl border-white/5 hover:border-white/20 transition-all group"
+                className="px-4 py-2.5 glass-card rounded-xl hover:border-white/20 transition-all group"
               >
                 <span className="text-xs font-black text-white group-hover:text-amber-400 transition-colors uppercase">
                   {fd.name}
@@ -317,7 +317,7 @@ export default function TacticDetail() {
         <div className="mb-12 md:mb-20">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-2 mb-6 md:mb-8">
             <div>
-              <h2 className="text-2xl md:text-3xl font-black tracking-tight uppercase">The Receipts</h2>
+              <h2 className="text-2xl md:text-3xl font-black font-display tracking-tight uppercase">The Receipts</h2>
               <p className="text-slate-500 text-xs md:text-sm font-medium">Videos using this tactic, ranked by execution score.</p>
             </div>
             <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">
@@ -409,7 +409,7 @@ export default function TacticDetail() {
 
       {/* No videos */}
       {videos.length === 0 && !loading && (
-        <div className="glass-card rounded-[1.5rem] md:rounded-[2.5rem] p-6 md:p-10 mb-10 md:mb-16 text-center">
+        <div className="glass-card rounded-3xl p-6 md:p-10 mb-10 md:mb-16 text-center">
           <div className="w-16 h-16 mx-auto mb-4 bg-white/5 rounded-full flex items-center justify-center">
             <i className="fas fa-film text-slate-500 text-xl"></i>
           </div>

@@ -119,11 +119,11 @@ export default function AnalysisHistory() {
         <div className="flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <span className="px-2 py-0.5 bg-pink-500/10 text-pink-400 text-[10px] font-black uppercase tracking-widest rounded">
+              <span className="badge-glass text-pink-400 font-black">
                 History
               </span>
             </div>
-            <h1 className="text-4xl font-black tracking-tighter mb-2">
+            <h1 className="text-4xl font-black font-display tracking-tighter mb-2">
               Analysis <span className="gradient-text">History</span>
             </h1>
             <p className="text-slate-500 text-sm font-medium">
@@ -142,17 +142,17 @@ export default function AnalysisHistory() {
 
       {/* Stats Bar */}
       <div className="grid grid-cols-3 gap-4 mb-8">
-        <div className="glass-card rounded-2xl p-5">
+        <div className="glass-card rounded-3xl p-5">
           <div className="text-slate-500 text-xs font-bold uppercase tracking-widest mb-1">Total Analyses</div>
           <div className="text-2xl font-black text-white">{total}</div>
         </div>
-        <div className="glass-card rounded-2xl p-5">
+        <div className="glass-card rounded-3xl p-5">
           <div className="text-slate-500 text-xs font-bold uppercase tracking-widest mb-1">Completed</div>
           <div className="text-2xl font-black text-green-400">
             {history.filter(h => h.status === 'completed').length}
           </div>
         </div>
-        <div className="glass-card rounded-2xl p-5">
+        <div className="glass-card rounded-3xl p-5">
           <div className="text-slate-500 text-xs font-bold uppercase tracking-widest mb-1">Avg Score</div>
           <div className="text-2xl font-black text-pink-400">
             {(() => {
@@ -172,7 +172,7 @@ export default function AnalysisHistory() {
           <span className="text-slate-400">Loading history...</span>
         </div>
       ) : history.length === 0 ? (
-        <div className="glass-card rounded-2xl p-16 text-center">
+        <div className="glass-card rounded-3xl p-16 text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white/5 mb-4">
             <i className="fas fa-inbox text-3xl text-slate-600"></i>
           </div>
@@ -192,7 +192,7 @@ export default function AnalysisHistory() {
             <button
               key={item.id}
               onClick={() => handleViewResult(item)}
-              className="w-full text-left glass-card rounded-2xl p-5 hover:bg-white/[0.06] transition-all group border border-transparent hover:border-white/10"
+              className="w-full text-left glass-card rounded-3xl p-5 hover:bg-white/[0.06] transition-all group border border-transparent hover:border-white/10"
             >
               <div className="flex items-center gap-5">
                 {/* Thumbnail */}

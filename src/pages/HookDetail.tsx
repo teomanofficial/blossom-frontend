@@ -208,7 +208,7 @@ export default function HookDetail() {
 
   if (error || !hook) {
     return (
-      <div className="glass-card rounded-2xl p-12 text-center">
+      <div className="glass-card rounded-3xl p-12 text-center">
         <p className="text-slate-500 text-sm">{error || 'Hook not found'}</p>
         <Link to="/dashboard/hooks" className="text-pink-400 text-xs font-bold mt-4 inline-block hover:text-pink-300">
           Back to Hooks
@@ -247,7 +247,7 @@ export default function HookDetail() {
       {/* Hook Hero */}
       <div className="mb-8 md:mb-12">
         <div className="flex items-center gap-3 mb-3 md:mb-4">
-          <span className="px-2 py-0.5 bg-pink-500/10 text-pink-400 text-[10px] font-black uppercase tracking-widest rounded">
+          <span className="badge-glass text-pink-400 font-black">
             {analysis ? 'Analyzed' : 'Hook Class'}
           </span>
           {hook.analysis_updated_at && (
@@ -256,7 +256,7 @@ export default function HookDetail() {
             </span>
           )}
         </div>
-        <h1 className="text-3xl md:text-5xl font-black tracking-tighter mb-3 md:mb-4 uppercase">{hook.name}</h1>
+        <h1 className="text-3xl md:text-5xl font-black font-display tracking-tighter mb-3 md:mb-4 uppercase">{hook.name}</h1>
         <p className="text-slate-400 text-sm md:text-lg font-medium max-w-3xl leading-relaxed">
           {analysis?.class_description || hook.hook_technique || hook.description || 'No description yet. Run AI analysis to generate insights.'}
         </p>
@@ -264,21 +264,21 @@ export default function HookDetail() {
 
       {/* High Level Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8 md:mb-12">
-        <div className="p-4 md:p-6 glass-card rounded-2xl md:rounded-3xl border-white/5">
+        <div className="p-4 md:p-6 glass-card rounded-3xl">
           <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Avg Views</div>
           <div className="text-xl md:text-2xl font-black text-white">{formatNumber(Math.round(hook.avg_views || 0))}</div>
         </div>
-        <div className="p-4 md:p-6 glass-card rounded-2xl md:rounded-3xl border-white/5">
+        <div className="p-4 md:p-6 glass-card rounded-3xl">
           <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Engagement</div>
           <div className="text-xl md:text-2xl font-black text-teal-400">
             {hook.avg_engagement_rate ? Number(hook.avg_engagement_rate).toFixed(1) + '%' : '--'}
           </div>
         </div>
-        <div className="p-4 md:p-6 glass-card rounded-2xl md:rounded-3xl border-white/5">
+        <div className="p-4 md:p-6 glass-card rounded-3xl">
           <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Videos</div>
           <div className="text-xl md:text-2xl font-black text-white">{totalVideoCount}</div>
         </div>
-        <div className="p-4 md:p-6 glass-card rounded-2xl md:rounded-3xl border-white/5">
+        <div className="p-4 md:p-6 glass-card rounded-3xl">
           <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Hook Power</div>
           <div className="text-xl md:text-2xl font-black text-pink-400">
             {avgHookEffectiveness > 0 ? Math.round(avgHookEffectiveness * 100) + '%' : '--'}
@@ -291,7 +291,7 @@ export default function HookDetail() {
         <>
           {/* The Blueprint */}
           {blueprintSteps.length > 0 && (
-            <div className="blueprint-box p-5 md:p-8 rounded-[1.5rem] md:rounded-[2.5rem] mb-10 md:mb-16 relative overflow-hidden glass-card">
+            <div className="blueprint-box p-5 md:p-8 rounded-3xl mb-10 md:mb-16 relative overflow-hidden glass-card">
               <div className="absolute top-0 right-0 p-4 md:p-8 opacity-10">
                 <i className="fas fa-magnet text-5xl md:text-8xl text-orange-400"></i>
               </div>
@@ -412,7 +412,7 @@ export default function HookDetail() {
 
       {/* No analysis prompt */}
       {!analysis && (
-        <div className="glass-card rounded-[1.5rem] md:rounded-[2.5rem] p-6 md:p-10 mb-10 md:mb-16 text-center">
+        <div className="glass-card rounded-3xl p-6 md:p-10 mb-10 md:mb-16 text-center">
           <div className="w-16 h-16 mx-auto mb-4 bg-white/5 rounded-full flex items-center justify-center">
             <i className="fas fa-brain text-slate-500 text-xl"></i>
           </div>
@@ -439,7 +439,7 @@ export default function HookDetail() {
         <div className="mb-12 md:mb-20">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-2 mb-6 md:mb-8">
             <div>
-              <h2 className="text-2xl md:text-3xl font-black tracking-tight uppercase">The Receipts</h2>
+              <h2 className="text-2xl md:text-3xl font-black font-display tracking-tight uppercase">The Receipts</h2>
               <p className="text-slate-500 text-xs md:text-sm font-medium">Real videos using this hook, ranked by views.</p>
             </div>
             <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">

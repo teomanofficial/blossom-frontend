@@ -170,7 +170,7 @@ export default function AccountPreferences() {
               Category
             </label>
             {category ? (
-              <div className="flex items-center gap-4 p-4 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+              <div className="flex items-center gap-4 glass-card rounded-3xl p-5 sm:p-7">
                 {category.icon && <span className="text-2xl">{category.icon}</span>}
                 <div>
                   <p className="text-sm font-bold">{category.title}</p>
@@ -211,7 +211,7 @@ export default function AccountPreferences() {
               Content Description
             </label>
             {contentDescription ? (
-              <p className="text-sm text-slate-300 leading-relaxed bg-white/[0.03] border border-white/[0.06] rounded-xl p-4">
+              <p className="text-sm text-slate-300 leading-relaxed glass-card rounded-3xl p-5 sm:p-7">
                 {contentDescription}
               </p>
             ) : (
@@ -239,7 +239,7 @@ export default function AccountPreferences() {
               onChange={(e) => setEditDescription(e.target.value)}
               placeholder="Describe the type of content you create..."
               rows={3}
-              className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-slate-600 focus:outline-none focus:border-pink-500/50 focus:ring-1 focus:ring-pink-500/20 transition-colors resize-none"
+              className="glass-input w-full resize-none"
             />
           </div>
 
