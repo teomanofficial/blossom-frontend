@@ -417,7 +417,7 @@ export default function Trends() {
 
   if (!data) {
     return (
-      <div className="glass-card rounded-2xl p-12 text-center">
+      <div className="glass-card rounded-3xl p-12 text-center">
         <div className="w-16 h-16 rounded-2xl bg-pink-500/10 flex items-center justify-center mx-auto mb-4">
           <i className="fas fa-arrow-trend-up text-pink-400 text-xl" />
         </div>
@@ -434,13 +434,13 @@ export default function Trends() {
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-2 mb-3">
-          <span className="px-2 py-0.5 bg-pink-500/10 text-pink-400 text-[10px] font-black uppercase tracking-widest rounded">
+          <span className="badge-glass text-pink-400 font-black">
             Trends
           </span>
         </div>
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
-            <h1 className="text-3xl font-black tracking-tighter mb-2">Trends</h1>
+            <h1 className="text-3xl font-black font-display tracking-tighter mb-2">Trends</h1>
             <p className="text-slate-500 text-sm font-medium">
               What's trending across posts, formats, hooks, content topics, and songs.
             </p>
@@ -451,7 +451,7 @@ export default function Trends() {
               <button
                 key={d}
                 onClick={() => setDays(d)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
                   days === d
                     ? 'bg-pink-500/20 text-pink-400'
                     : 'text-slate-500 hover:text-white hover:bg-white/5'
@@ -465,7 +465,7 @@ export default function Trends() {
       </div>
 
       {/* ── Section 1: Trending Posts ── */}
-      <div className="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-7 mb-6 lg:mb-8">
+      <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-7 mb-6 lg:mb-8">
         <SectionHeader
           icon="fa-fire"
           iconColor="text-emerald-400"
@@ -494,7 +494,7 @@ export default function Trends() {
       </div>
 
       {/* ── Section 2: Trending Formats ── */}
-      <div className="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-7 mb-6 lg:mb-8">
+      <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-7 mb-6 lg:mb-8">
         <SectionHeader
           icon="fa-shapes"
           iconColor="text-orange-400"
@@ -519,7 +519,7 @@ export default function Trends() {
       </div>
 
       {/* ── Section 3: Trending Hooks ── */}
-      <div className="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-7 mb-6 lg:mb-8">
+      <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-7 mb-6 lg:mb-8">
         <SectionHeader
           icon="fa-magnet"
           iconColor="text-purple-400"
@@ -544,7 +544,7 @@ export default function Trends() {
       </div>
 
       {/* ── Section 4: Trending Contents ── */}
-      <div className="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-7 mb-6 lg:mb-8">
+      <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-7 mb-6 lg:mb-8">
         <SectionHeader
           icon="fa-hashtag"
           iconColor="text-blue-400"
@@ -569,7 +569,7 @@ export default function Trends() {
       </div>
 
       {/* ── Section 5: Trending Songs ── */}
-      <div className="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-7 mb-6 lg:mb-8">
+      <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-7 mb-6 lg:mb-8">
         <SectionHeader
           icon="fa-music"
           iconColor="text-cyan-400"

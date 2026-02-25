@@ -227,7 +227,7 @@ export default function FormatDetail() {
 
   if (error || !format) {
     return (
-      <div className="glass-card rounded-2xl p-12 text-center">
+      <div className="glass-card rounded-3xl p-12 text-center">
         <p className="text-slate-500 text-sm">{error || 'Format not found'}</p>
         <Link to="/dashboard/formats" className="text-pink-400 text-xs font-bold mt-4 inline-block hover:text-pink-300">
           Back to Formats
@@ -266,7 +266,7 @@ export default function FormatDetail() {
       {/* Format Hero */}
       <div className="mb-8 md:mb-12">
         <div className="flex items-center gap-3 mb-3 md:mb-4">
-          <span className="px-2 py-0.5 bg-pink-500/10 text-pink-400 text-[10px] font-black uppercase tracking-widest rounded">
+          <span className="badge-glass text-pink-400 font-black">
             {analysis ? 'Analyzed' : 'Format Class'}
           </span>
           {format.analysis_updated_at && (
@@ -275,7 +275,7 @@ export default function FormatDetail() {
             </span>
           )}
         </div>
-        <h1 className="text-3xl md:text-5xl font-black tracking-tighter mb-3 md:mb-4 uppercase">{format.name}</h1>
+        <h1 className="text-3xl md:text-5xl font-black font-display tracking-tighter mb-3 md:mb-4 uppercase">{format.name}</h1>
         <p className="text-slate-400 text-sm md:text-lg font-medium max-w-3xl leading-relaxed">
           {analysis?.class_description || format.description || 'No description yet. Run AI analysis to generate insights.'}
         </p>

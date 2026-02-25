@@ -174,16 +174,16 @@ export default function Suggestions() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 md:gap-6 mb-6 md:mb-8">
         <div>
           <div className="flex items-center gap-2 mb-2 md:mb-3">
-            <span className="px-2 py-0.5 bg-pink-500/10 text-pink-400 text-[10px] font-black uppercase tracking-widest rounded">
+            <span className="badge-glass text-pink-400 font-black">
               AI Powered
             </span>
             {categoryName && (
-              <span className="px-2 py-0.5 bg-purple-500/10 text-purple-400 text-[10px] font-black uppercase tracking-widest rounded">
+              <span className="badge-glass text-purple-400 font-black">
                 {categoryName}
               </span>
             )}
           </div>
-          <h1 className="text-2xl md:text-4xl font-black tracking-tighter mb-1 md:mb-2">CONTENT SUGGESTIONS</h1>
+          <h1 className="text-2xl md:text-4xl font-black font-display tracking-tighter mb-1 md:mb-2">CONTENT SUGGESTIONS</h1>
           <p className="text-slate-500 text-xs md:text-sm font-medium">
             Daily content ideas based on trending patterns{categoryName ? ` in ${categoryName}` : ''}. Film them today.
           </p>
@@ -213,27 +213,27 @@ export default function Suggestions() {
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 mb-6 md:mb-8">
-        <div className="px-4 py-3 md:px-6 md:py-4 glass-card rounded-2xl md:rounded-[1.5rem] border-white/5">
+        <div className="px-4 py-3 md:px-6 md:py-4 glass-card rounded-3xl">
           <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Today's Ideas</div>
           <div className="text-xl md:text-2xl font-black text-pink-400">{stats?.today_count ?? 0}</div>
           <div className="text-[10px] font-bold text-slate-600 mt-1 hidden md:block">{stats?.total_active ?? 0} active total</div>
         </div>
-        <div className="px-4 py-3 md:px-6 md:py-4 glass-card rounded-2xl md:rounded-[1.5rem] border-white/5">
+        <div className="px-4 py-3 md:px-6 md:py-4 glass-card rounded-3xl">
           <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Active Topics</div>
           <div className="text-xl md:text-2xl font-black text-purple-400">{stats?.active_topics ?? 0}</div>
           <div className="text-[10px] font-bold text-slate-600 mt-1 hidden md:block">keyword clusters</div>
         </div>
-        <div className="px-4 py-3 md:px-6 md:py-4 glass-card rounded-2xl md:rounded-[1.5rem] border-white/5">
+        <div className="px-4 py-3 md:px-6 md:py-4 glass-card rounded-3xl">
           <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Total Upvotes</div>
           <div className="text-xl md:text-2xl font-black text-cyan-400">{formatNumber(stats?.total_upvotes ?? 0)}</div>
           <div className="text-[10px] font-bold text-slate-600 mt-1 hidden md:block">across all ideas</div>
         </div>
-        <div className="px-4 py-3 md:px-6 md:py-4 glass-card rounded-2xl md:rounded-[1.5rem] border-white/5">
+        <div className="px-4 py-3 md:px-6 md:py-4 glass-card rounded-3xl">
           <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Videos Analyzed</div>
           <div className="text-xl md:text-2xl font-black text-teal-400">{formatNumber(stats?.videos_analyzed ?? 0)}</div>
           <div className="text-[10px] font-bold text-slate-600 mt-1 hidden md:block">source videos</div>
         </div>
-        <div className="col-span-2 md:col-span-1 px-4 py-3 md:px-6 md:py-4 glass-card rounded-2xl md:rounded-[1.5rem] border-white/5">
+        <div className="col-span-2 md:col-span-1 px-4 py-3 md:px-6 md:py-4 glass-card rounded-3xl">
           <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Last Generated</div>
           <div className="text-lg font-black text-white mt-1">{timeAgo(stats?.last_generated_at ?? null)}</div>
         </div>
@@ -246,7 +246,7 @@ export default function Suggestions() {
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+              className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
                 tab === t
                   ? 'bg-white/10 text-white'
                   : 'text-slate-500 hover:text-slate-300'
@@ -261,7 +261,7 @@ export default function Suggestions() {
           <select
             value={keywordFilter}
             onChange={(e) => setKeywordFilter(e.target.value)}
-            className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[10px] font-bold text-white focus:outline-none focus:border-pink-500/50 transition-colors"
+            className="glass-input px-3 py-1.5 text-[10px] font-bold text-white"
           >
             <option value="">All Topics</option>
             {filterKeywords.map(k => (
@@ -271,7 +271,7 @@ export default function Suggestions() {
           <select
             value={formatFilter}
             onChange={(e) => setFormatFilter(e.target.value)}
-            className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[10px] font-bold text-white focus:outline-none focus:border-pink-500/50 transition-colors"
+            className="glass-input px-3 py-1.5 text-[10px] font-bold text-white"
           >
             <option value="">All Formats</option>
             {filterFormats.map(f => (
@@ -281,7 +281,7 @@ export default function Suggestions() {
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[10px] font-bold text-white focus:outline-none focus:border-pink-500/50 transition-colors"
+            className="glass-input px-3 py-1.5 text-[10px] font-bold text-white"
           >
             <option value="trend_strength">Trending</option>
             <option value="upvotes">Most Upvoted</option>
@@ -293,7 +293,7 @@ export default function Suggestions() {
 
       {/* Suggestions List - Reddit-style compact */}
       {suggestions.length === 0 ? (
-        <div className="glass-card rounded-[1.5rem] border-white/5 p-12 text-center">
+        <div className="glass-card rounded-3xl p-12 text-center">
           <div className="w-16 h-16 mx-auto mb-4 bg-white/5 rounded-full flex items-center justify-center">
             <i className="fas fa-lightbulb text-slate-500 text-xl"></i>
           </div>
@@ -316,7 +316,7 @@ export default function Suggestions() {
           )}
         </div>
       ) : (
-        <div className="glass-card rounded-[1.5rem] border-white/5 overflow-hidden">
+        <div className="glass-card rounded-3xl overflow-hidden">
           <div className="px-6 py-3 border-b border-white/5">
             <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
               {suggestionsTotal} suggestion{suggestionsTotal !== 1 ? 's' : ''}

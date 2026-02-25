@@ -48,9 +48,9 @@ function fmt(n: number): string {
 }
 
 function difficultyColor(d: string) {
-  if (d === 'easy') return 'bg-emerald-500/10 text-emerald-400'
-  if (d === 'medium') return 'bg-yellow-500/10 text-yellow-400'
-  return 'bg-red-500/10 text-red-400'
+  if (d === 'easy') return 'text-emerald-400 border-emerald-500/20'
+  if (d === 'medium') return 'text-yellow-400 border-yellow-500/20'
+  return 'text-red-400 border-red-500/20'
 }
 
 function viralBadge(prob: number) {
@@ -78,6 +78,30 @@ const CATEGORY_COLORS: Record<string, string> = {
   product: 'text-rose-400',
   emotion: 'text-yellow-400',
 }
+
+/* ── Quick Action Card Data ── */
+const quickActions = [
+  {
+    to: '/dashboard/analyze', icon: 'fa-bolt', label: 'Analyze Content', desc: 'Check viral potential instantly',
+    glow: 'bg-purple-500/10', glowHover: 'group-hover:bg-purple-500/20',
+    iconBg: 'bg-purple-500/20', iconColor: 'text-purple-400',
+  },
+  {
+    to: '/dashboard/suggestions', icon: 'fa-lightbulb', label: 'Get Ideas', desc: 'AI-driven creative sparks',
+    glow: 'bg-pink-500/10', glowHover: 'group-hover:bg-pink-500/20',
+    iconBg: 'bg-pink-500/20', iconColor: 'text-pink-400',
+  },
+  {
+    to: '/dashboard/formats', icon: 'fa-fire', label: 'Formats', desc: 'Browse high-retention frameworks',
+    glow: 'bg-orange-500/10', glowHover: 'group-hover:bg-orange-500/20',
+    iconBg: 'bg-orange-500/20', iconColor: 'text-orange-400',
+  },
+  {
+    to: '/dashboard/influencers', icon: 'fa-user-group', label: 'Study Creators', desc: 'Deconstruct the top 1%',
+    glow: 'bg-blue-500/10', glowHover: 'group-hover:bg-blue-500/20',
+    iconBg: 'bg-blue-500/20', iconColor: 'text-blue-400',
+  },
+]
 
 /* ── Keyword Cloud Component ── */
 function KeywordCloud({ keywords }: { keywords: TrendingKeyword[] }) {
@@ -138,7 +162,7 @@ function PostCard({
       onClick={onClick}
       className="shrink-0 w-[130px] sm:w-[160px] cursor-pointer group"
     >
-      <div className="aspect-[9/16] bg-slate-900 rounded-2xl overflow-hidden border border-white/5 group-hover:border-pink-500/30 transition-all relative">
+      <div className="aspect-[9/16] bg-slate-900/50 rounded-2xl overflow-hidden border border-white/[0.06] group-hover:border-pink-500/30 transition-all relative">
         {src ? (
           <img src={src} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
         ) : (
@@ -213,11 +237,13 @@ export default function Dashboard() {
   return (
     <>
       {/* Page Header */}
-      <div className="mb-6 lg:mb-10">
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tighter mb-1 lg:mb-2">
-          Welcome, <span className="gradient-text">{displayName}</span>
+      <div className="mb-8 lg:mb-12">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight mb-2 lg:mb-3">
+          Welcome, <span className="gradient-text font-display">{displayName}</span>
         </h1>
-        <p className="text-slate-500 text-xs sm:text-sm font-medium">Your viral intelligence hub. Study what works, create what's next.</p>
+        <p className="text-slate-400 text-xs sm:text-sm font-medium tracking-wide uppercase">
+          Your viral intelligence hub. Study what works, create what's next.
+        </p>
       </div>
 
       {loading ? (
@@ -226,106 +252,117 @@ export default function Dashboard() {
         </div>
       ) : stats ? (
         <>
-          {/* ── Quick Actions ── */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 mb-6 lg:mb-8">
-            {[
-              { to: '/dashboard/analyze', icon: 'fa-bolt', label: 'Analyze Content', desc: 'Check viral potential' },
-              { to: '/dashboard/suggestions', icon: 'fa-lightbulb', label: 'Get Ideas', desc: 'AI content suggestions' },
-              { to: '/dashboard/formats', icon: 'fa-fire', label: 'Formats', desc: 'Browse winning formats' },
-              { to: '/dashboard/influencers', icon: 'fa-user-secret', label: 'Study Creators', desc: 'Track top performers' },
-            ].map((a) => (
+          {/* ── Quick Actions Grid ── */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-8 lg:mb-12">
+            {quickActions.map((a) => (
               <Link
                 key={a.to}
                 to={a.to}
-                className="glass-card rounded-xl sm:rounded-2xl p-3.5 sm:p-5 hover:bg-white/[0.04] transition-all group border border-transparent hover:border-pink-500/20 active:scale-[0.97]"
+                className="glass-card-lift p-4 sm:p-6 group cursor-pointer overflow-hidden relative"
               >
-                <div className="flex items-center gap-2.5 sm:gap-3 mb-1.5 sm:mb-2">
-                  <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-pink-500/10 flex items-center justify-center">
-                    <i className={`fas ${a.icon} text-pink-400 text-xs sm:text-sm`} />
+                <div className={`absolute -right-4 -top-4 w-24 h-24 ${a.glow} rounded-full blur-2xl ${a.glowHover} transition-colors`} />
+                <div className="relative">
+                  <div className={`w-10 h-10 sm:w-12 sm:h-12 ${a.iconBg} rounded-2xl flex items-center justify-center mb-3 sm:mb-4 ${a.iconColor}`}>
+                    <i className={`fas ${a.icon} text-base sm:text-lg`} />
                   </div>
-                  <div className="text-xs sm:text-sm font-bold group-hover:text-pink-400 transition-colors leading-tight">{a.label}</div>
+                  <h3 className="text-sm sm:text-lg font-semibold mb-0.5 sm:mb-1">{a.label}</h3>
+                  <p className="text-slate-400 text-[10px] sm:text-xs hidden sm:block">{a.desc}</p>
                 </div>
-                <div className="text-[10px] sm:text-[11px] text-slate-500 font-medium hidden sm:block">{a.desc}</div>
               </Link>
             ))}
           </div>
 
-          {/* ── Featured Content Idea ── */}
+          {/* ── Featured Content Idea (Editorial Hero) ── */}
           {stats.featured_suggestion && (
-            <Link
-              to={`/dashboard/suggestions/${stats.featured_suggestion.id}`}
-              className="block glass-card rounded-xl sm:rounded-2xl p-4 sm:p-7 mb-6 lg:mb-8 border border-pink-500/10 hover:border-pink-500/30 transition-all group relative overflow-hidden active:scale-[0.99]"
-            >
-              <div className="absolute top-0 right-0 w-64 h-64 bg-pink-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-              <div className="relative">
-                <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                  <i className="fas fa-sparkles text-pink-400 text-xs" />
-                  <span className="text-[10px] font-black text-pink-400 uppercase tracking-widest">Today's Top Content Idea</span>
+            <div className="glass-card p-5 sm:p-8 lg:p-10 mb-8 lg:mb-12 relative overflow-hidden group">
+              {/* Background Glow */}
+              <div className="absolute -top-40 -right-40 w-96 h-96 bg-pink-500/10 rounded-full blur-[120px] group-hover:bg-pink-500/20 transition-all duration-700 pointer-events-none" />
+
+              <div className="relative z-10">
+                <div className="flex items-center gap-3 mb-4 sm:mb-6">
+                  <span className="text-[10px] sm:text-xs font-bold text-pink-400 tracking-widest uppercase">
+                    Today's Top Content Idea
+                  </span>
+                  <div className="h-px flex-1 bg-gradient-to-r from-pink-500/30 to-transparent" />
                 </div>
-                <h2 className="text-base sm:text-xl font-black mb-1.5 sm:mb-2 group-hover:text-pink-400 transition-colors leading-snug">
-                  {stats.featured_suggestion.title}
-                </h2>
-                <p className="text-xs sm:text-sm text-slate-400 mb-3 sm:mb-4 line-clamp-2">{stats.featured_suggestion.description}</p>
-                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+
+                <Link to={`/dashboard/suggestions/${stats.featured_suggestion.id}`} className="block">
+                  <h2 className="text-xl sm:text-3xl lg:text-4xl font-extrabold mb-3 sm:mb-4 leading-tight font-display group-hover:text-pink-100 transition-colors">
+                    {stats.featured_suggestion.title}
+                  </h2>
+                </Link>
+
+                <p className="text-slate-300 text-sm sm:text-base mb-5 sm:mb-8 leading-relaxed max-w-3xl line-clamp-3">
+                  {stats.featured_suggestion.description}
+                </p>
+
+                <div className="flex flex-wrap gap-2 sm:gap-3 mb-6 sm:mb-8">
                   {stats.featured_suggestion.difficulty && (
-                    <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded ${difficultyColor(stats.featured_suggestion.difficulty)}`}>
+                    <span className={`badge-glass ${difficultyColor(stats.featured_suggestion.difficulty)} font-bold`}>
                       {stats.featured_suggestion.difficulty}
                     </span>
                   )}
                   {stats.featured_suggestion.format_name && (
-                    <span className="text-[10px] font-bold text-slate-500 bg-white/5 px-2 py-0.5 rounded capitalize">
-                      <i className="fas fa-shapes mr-1" />{stats.featured_suggestion.format_name}
+                    <span className="badge-glass text-blue-400 border-blue-500/20 font-bold capitalize">
+                      <i className="fas fa-shapes mr-1.5" />{stats.featured_suggestion.format_name}
                     </span>
                   )}
                   {stats.featured_suggestion.platform_hint && (
-                    <span className="text-[10px] font-bold text-slate-500 bg-white/5 px-2 py-0.5 rounded">
-                      <i className={`${platformIcon(stats.featured_suggestion.platform_hint)} mr-1`} />
+                    <span className="badge-glass text-purple-400 border-purple-500/20 font-bold">
+                      <i className={`${platformIcon(stats.featured_suggestion.platform_hint)} mr-1.5`} />
                       {stats.featured_suggestion.platform_hint}
                     </span>
                   )}
                   {stats.featured_suggestion.trend_strength > 0 && (
-                    <span className="text-[10px] font-black text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">
-                      <i className="fas fa-arrow-trend-up mr-1" />
-                      {Math.round(stats.featured_suggestion.trend_strength * 100)}% trend
+                    <span className="badge-glass text-orange-400 border-orange-500/20 font-bold">
+                      <i className="fas fa-arrow-trend-up mr-1.5" />
+                      {Math.round(stats.featured_suggestion.trend_strength * 100)}% Trend
                     </span>
                   )}
-                  <span className="text-[10px] font-black text-pink-400 uppercase tracking-wider ml-auto group-hover:translate-x-1 transition-transform hidden sm:inline">
-                    View Blueprint <i className="fas fa-arrow-right ml-1" />
-                  </span>
                 </div>
+
+                <Link
+                  to={`/dashboard/suggestions/${stats.featured_suggestion.id}`}
+                  className="inline-flex items-center gap-2 px-6 sm:px-8 py-3 sm:py-4 bg-white text-black font-bold rounded-2xl transition-transform hover:scale-105 active:scale-95"
+                >
+                  VIEW BLUEPRINT
+                  <i className="fas fa-arrow-right text-sm" />
+                </Link>
               </div>
-            </Link>
+            </div>
           )}
 
           {/* ── Top Performing Content (Horizontal Carousel) ── */}
           {stats.top_viral_videos.length > 0 && (
-            <div className="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-7 mb-6 lg:mb-8">
-              <div className="flex items-center justify-between mb-4 sm:mb-5">
-                <div className="flex items-center gap-2">
-                  <i className="fas fa-crown text-yellow-400 text-xs" />
-                  <h2 className="text-xs sm:text-sm font-black uppercase tracking-widest text-slate-500">Top Content</h2>
+            <div className="glass-card p-5 sm:p-7 mb-8 lg:mb-12">
+              <div className="flex items-center justify-between mb-5 sm:mb-6">
+                <div className="flex items-center gap-3">
+                  <i className="fas fa-star text-yellow-500 text-sm" />
+                  <h2 className="text-lg sm:text-xl font-bold font-display uppercase tracking-wide">Top Viral Content</h2>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => scrollCarousel('left')}
-                    className="hidden sm:flex w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 items-center justify-center transition-colors"
-                  >
-                    <i className="fas fa-chevron-left text-[10px] text-slate-400" />
-                  </button>
-                  <button
-                    onClick={() => scrollCarousel('right')}
-                    className="hidden sm:flex w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 items-center justify-center transition-colors"
-                  >
-                    <i className="fas fa-chevron-right text-[10px] text-slate-400" />
-                  </button>
-                  <Link to="/dashboard/trends" className="text-[10px] font-black text-pink-400 uppercase tracking-widest hover:text-pink-300 transition-colors sm:ml-2">
+                <div className="flex items-center gap-3">
+                  <div className="hidden sm:flex gap-2">
+                    <button
+                      onClick={() => scrollCarousel('left')}
+                      className="w-8 h-8 glass-card rounded-full flex items-center justify-center hover:bg-white/10 transition-colors"
+                    >
+                      <i className="fas fa-chevron-left text-[10px] text-slate-400" />
+                    </button>
+                    <button
+                      onClick={() => scrollCarousel('right')}
+                      className="w-8 h-8 glass-card rounded-full flex items-center justify-center hover:bg-white/10 transition-colors"
+                    >
+                      <i className="fas fa-chevron-right text-[10px] text-slate-400" />
+                    </button>
+                  </div>
+                  <Link to="/dashboard/trends" className="text-[10px] font-black text-slate-500 uppercase tracking-widest hover:text-white transition-colors">
                     View All
                   </Link>
                 </div>
               </div>
               <div
                 ref={scrollRef}
-                className="flex gap-2.5 sm:gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0"
+                className="flex gap-3 sm:gap-4 overflow-x-auto pb-2 scrollbar-hide -mx-5 px-5 sm:-mx-7 sm:px-7"
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
               >
                 {stats.top_viral_videos.map((v, idx) => (
@@ -340,30 +377,32 @@ export default function Dashboard() {
           )}
 
           {/* ── Formats + Winning Hooks ── */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 lg:mb-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-8 lg:mb-12">
             {/* Formats */}
-            <div className="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-7">
-              <div className="flex items-center justify-between mb-4 sm:mb-5">
-                <div className="flex items-center gap-2">
-                  <i className="fas fa-fire text-orange-400 text-xs" />
-                  <h2 className="text-xs sm:text-sm font-black uppercase tracking-widest text-slate-500">Formats</h2>
+            <div className="glass-card rounded-3xl p-5 sm:p-7">
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 bg-orange-500/20 rounded-xl flex items-center justify-center">
+                    <i className="fas fa-fire text-orange-400 text-xs" />
+                  </div>
+                  <h2 className="text-sm sm:text-base font-bold">Formats</h2>
                 </div>
-                <Link to="/dashboard/formats" className="text-[10px] font-black text-pink-400 uppercase tracking-widest hover:text-pink-300 transition-colors">
+                <Link to="/dashboard/formats" className="text-[10px] font-black text-slate-500 uppercase tracking-widest hover:text-white transition-colors">
                   View All
                 </Link>
               </div>
-              <div className="space-y-1 sm:space-y-2">
+              <div className="space-y-1">
                 {stats.top_formats.length > 0 ? stats.top_formats.map((f, i) => (
                   <Link
                     key={f.id}
                     to="/dashboard/formats"
-                    className="flex items-center justify-between py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl hover:bg-white/5 active:bg-white/5 transition-colors group"
+                    className="flex items-center justify-between py-3 px-3 rounded-xl hover:bg-white/[0.04] transition-colors group"
                   >
-                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                    <div className="flex items-center gap-3 min-w-0">
                       <span className="text-[10px] font-black text-slate-600 w-5 shrink-0">#{i + 1}</span>
                       <span className="text-xs sm:text-sm font-bold group-hover:text-pink-400 transition-colors capitalize truncate">{f.name}</span>
                     </div>
-                    <div className="flex items-center gap-2 sm:gap-3 text-[10px] sm:text-xs shrink-0 ml-2 sm:ml-3">
+                    <div className="flex items-center gap-3 text-[10px] sm:text-xs shrink-0 ml-3">
                       <span className="text-emerald-400 font-black">{f.video_count} <span className="hidden sm:inline">vids</span></span>
                       <span className="text-slate-500 font-bold">{fmt(Math.round(f.avg_views))}</span>
                     </div>
@@ -375,27 +414,29 @@ export default function Dashboard() {
             </div>
 
             {/* Winning Hooks */}
-            <div className="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-7">
-              <div className="flex items-center justify-between mb-4 sm:mb-5">
-                <div className="flex items-center gap-2">
-                  <i className="fas fa-magnet text-purple-400 text-xs" />
-                  <h2 className="text-xs sm:text-sm font-black uppercase tracking-widest text-slate-500">Winning Hooks</h2>
+            <div className="glass-card rounded-3xl p-5 sm:p-7">
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 bg-purple-500/20 rounded-xl flex items-center justify-center">
+                    <i className="fas fa-magnet text-purple-400 text-xs" />
+                  </div>
+                  <h2 className="text-sm sm:text-base font-bold">Winning Hooks</h2>
                 </div>
-                <Link to="/dashboard/hooks" className="text-[10px] font-black text-pink-400 uppercase tracking-widest hover:text-pink-300 transition-colors">
+                <Link to="/dashboard/hooks" className="text-[10px] font-black text-slate-500 uppercase tracking-widest hover:text-white transition-colors">
                   View All
                 </Link>
               </div>
-              <div className="space-y-1 sm:space-y-2">
+              <div className="space-y-1">
                 {stats.top_hooks.length > 0 ? stats.top_hooks.map((h, i) => (
                   <div
                     key={h.id}
-                    className="flex items-center justify-between py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl hover:bg-white/5 active:bg-white/5 transition-colors group"
+                    className="flex items-center justify-between py-3 px-3 rounded-xl hover:bg-white/[0.04] transition-colors group"
                   >
-                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                    <div className="flex items-center gap-3 min-w-0">
                       <span className="text-[10px] font-black text-slate-600 w-5 shrink-0">#{i + 1}</span>
                       <span className="text-xs sm:text-sm font-bold group-hover:text-pink-400 transition-colors capitalize truncate">{h.name}</span>
                     </div>
-                    <div className="flex items-center gap-2 sm:gap-3 text-[10px] sm:text-xs shrink-0 ml-2 sm:ml-3">
+                    <div className="flex items-center gap-3 text-[10px] sm:text-xs shrink-0 ml-3">
                       <span className="text-emerald-400 font-black">{h.video_count} <span className="hidden sm:inline">vids</span></span>
                       <span className="text-slate-500 font-bold">{fmt(Math.round(h.avg_views))}</span>
                     </div>
@@ -408,22 +449,24 @@ export default function Dashboard() {
           </div>
 
           {/* ── Trending Sounds + Top Tactics ── */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 lg:mb-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-8 lg:mb-12">
             {/* Trending Sounds */}
-            <div className="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-7">
-              <div className="flex items-center justify-between mb-4 sm:mb-5">
-                <div className="flex items-center gap-2">
-                  <i className="fas fa-music text-cyan-400 text-xs" />
-                  <h2 className="text-xs sm:text-sm font-black uppercase tracking-widest text-slate-500">Trending Sounds</h2>
+            <div className="glass-card rounded-3xl p-5 sm:p-7">
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 bg-cyan-500/20 rounded-xl flex items-center justify-center">
+                    <i className="fas fa-music text-cyan-400 text-xs" />
+                  </div>
+                  <h2 className="text-sm sm:text-base font-bold">Trending Sounds</h2>
                 </div>
               </div>
-              <div className="space-y-1 sm:space-y-2">
+              <div className="space-y-1">
                 {stats.trending_music.length > 0 ? stats.trending_music.map((m) => (
-                  <div key={m.id} className="flex items-center gap-2.5 sm:gap-3 py-2 sm:py-2.5 px-2 sm:px-3 rounded-xl hover:bg-white/5 active:bg-white/5 transition-colors">
+                  <div key={m.id} className="flex items-center gap-3 py-2.5 px-3 rounded-xl hover:bg-white/[0.04] transition-colors">
                     {getStorageUrl(m.local_cover_path) ? (
-                      <img src={getStorageUrl(m.local_cover_path) || ''} alt="" className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg object-cover shrink-0" />
+                      <img src={getStorageUrl(m.local_cover_path) || ''} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />
                     ) : (
-                      <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
+                      <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
                         <i className="fas fa-music text-slate-600 text-xs" />
                       </div>
                     )}
@@ -443,28 +486,30 @@ export default function Dashboard() {
             </div>
 
             {/* Top Tactics */}
-            <div className="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-7">
-              <div className="flex items-center justify-between mb-4 sm:mb-5">
-                <div className="flex items-center gap-2">
-                  <i className="fas fa-bullseye text-amber-400 text-xs" />
-                  <h2 className="text-xs sm:text-sm font-black uppercase tracking-widest text-slate-500">Proven Tactics</h2>
+            <div className="glass-card rounded-3xl p-5 sm:p-7">
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 bg-amber-500/20 rounded-xl flex items-center justify-center">
+                    <i className="fas fa-bullseye text-amber-400 text-xs" />
+                  </div>
+                  <h2 className="text-sm sm:text-base font-bold">Proven Tactics</h2>
                 </div>
-                <Link to="/dashboard/tactics" className="text-[10px] font-black text-pink-400 uppercase tracking-widest hover:text-pink-300 transition-colors">
+                <Link to="/dashboard/tactics" className="text-[10px] font-black text-slate-500 uppercase tracking-widest hover:text-white transition-colors">
                   View All
                 </Link>
               </div>
-              <div className="space-y-1 sm:space-y-2">
+              <div className="space-y-1">
                 {stats.top_tactics.length > 0 ? stats.top_tactics.map((t) => (
                   <Link
                     key={t.id}
                     to="/dashboard/tactics"
-                    className="flex items-center justify-between py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl hover:bg-white/5 active:bg-white/5 transition-colors group"
+                    className="flex items-center justify-between py-3 px-3 rounded-xl hover:bg-white/[0.04] transition-colors group"
                   >
                     <div className="min-w-0 flex-1">
                       <div className="text-xs sm:text-sm font-bold group-hover:text-pink-400 transition-colors capitalize truncate">{t.name}</div>
                       <div className="text-[10px] text-slate-500 font-medium capitalize">{t.category}</div>
                     </div>
-                    <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-2 sm:ml-3">
+                    <div className="flex items-center gap-3 shrink-0 ml-3">
                       <span className="text-[10px] sm:text-xs text-emerald-400 font-black">{t.video_count} <span className="hidden sm:inline">vids</span></span>
                       <span className="text-[10px] sm:text-xs text-slate-500 font-bold">{fmt(Math.round(t.avg_views_when_present))}</span>
                     </div>
@@ -477,12 +522,14 @@ export default function Dashboard() {
           </div>
 
           {/* ── Trending Keywords Cloud + Your Accounts ── */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 lg:mb-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-8 lg:mb-12">
             {/* Trending Keywords Cloud */}
-            <div className="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-7">
-              <div className="flex items-center gap-2 mb-4 sm:mb-5">
-                <i className="fas fa-cloud text-violet-400 text-xs" />
-                <h2 className="text-xs sm:text-sm font-black uppercase tracking-widest text-slate-500">Trending Topics</h2>
+            <div className="glass-card rounded-3xl p-5 sm:p-7">
+              <div className="flex items-center gap-2.5 mb-5">
+                <div className="w-8 h-8 bg-violet-500/20 rounded-xl flex items-center justify-center">
+                  <i className="fas fa-cloud text-violet-400 text-xs" />
+                </div>
+                <h2 className="text-sm sm:text-base font-bold">Trending Topics</h2>
               </div>
               <KeywordCloud keywords={stats.trending_keywords} />
               {stats.trending_keywords.length > 0 && (
@@ -501,21 +548,23 @@ export default function Dashboard() {
             </div>
 
             {/* Your Accounts */}
-            <div className="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-7">
-              <div className="flex items-center gap-2 mb-4 sm:mb-5">
-                <i className="fas fa-chart-line text-pink-400 text-xs" />
-                <h2 className="text-xs sm:text-sm font-black uppercase tracking-widest text-slate-500">Your Accounts</h2>
+            <div className="glass-card rounded-3xl p-5 sm:p-7">
+              <div className="flex items-center gap-2.5 mb-5">
+                <div className="w-8 h-8 bg-pink-500/20 rounded-xl flex items-center justify-center">
+                  <i className="fas fa-chart-line text-pink-400 text-xs" />
+                </div>
+                <h2 className="text-sm sm:text-base font-bold">Your Accounts</h2>
               </div>
               {stats.connected_accounts.active > 0 ? (
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                    <div className="bg-white/5 rounded-xl p-3 sm:p-4">
+                    <div className="bg-white/[0.04] rounded-2xl p-4">
                       <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Connected</div>
-                      <div className="text-xl sm:text-2xl font-black">{stats.connected_accounts.active}</div>
+                      <div className="text-2xl font-black">{stats.connected_accounts.active}</div>
                     </div>
-                    <div className="bg-white/5 rounded-xl p-3 sm:p-4">
+                    <div className="bg-white/[0.04] rounded-2xl p-4">
                       <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Followers</div>
-                      <div className="text-xl sm:text-2xl font-black">{fmt(stats.connected_accounts.total_followers)}</div>
+                      <div className="text-2xl font-black">{fmt(stats.connected_accounts.total_followers)}</div>
                     </div>
                   </div>
                   <Link
@@ -545,16 +594,18 @@ export default function Dashboard() {
 
           {/* ── Trending Hashtags (Full Width) ── */}
           {stats.trending_hashtags.length > 0 && (
-            <div className="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-7">
-              <div className="flex items-center gap-2 mb-4 sm:mb-5">
-                <i className="fas fa-hashtag text-blue-400 text-xs" />
-                <h2 className="text-xs sm:text-sm font-black uppercase tracking-widest text-slate-500">Top Hashtags</h2>
+            <div className="glass-card rounded-3xl p-5 sm:p-7">
+              <div className="flex items-center gap-2.5 mb-5">
+                <div className="w-8 h-8 bg-blue-500/20 rounded-xl flex items-center justify-center">
+                  <i className="fas fa-hashtag text-blue-400 text-xs" />
+                </div>
+                <h2 className="text-sm sm:text-base font-bold">Top Hashtags</h2>
               </div>
-              <div className="flex flex-wrap gap-1.5 sm:gap-2">
+              <div className="flex flex-wrap gap-2 sm:gap-2.5">
                 {stats.trending_hashtags.map((h) => (
                   <div
                     key={h.tag}
-                    className="bg-white/5 hover:bg-white/[0.08] active:bg-white/[0.08] rounded-lg sm:rounded-xl px-2.5 sm:px-3 py-1.5 sm:py-2 transition-colors cursor-default"
+                    className="bg-white/[0.04] hover:bg-white/[0.08] rounded-xl px-3 py-2 transition-colors cursor-default"
                   >
                     <div className="text-xs sm:text-sm font-bold text-blue-400">#{h.tag}</div>
                     <div className="text-[9px] sm:text-[10px] text-slate-500 font-bold mt-0.5">
@@ -567,7 +618,7 @@ export default function Dashboard() {
           )}
         </>
       ) : (
-        <div className="glass-card rounded-xl sm:rounded-2xl p-8 sm:p-12 text-center">
+        <div className="glass-card rounded-3xl p-8 sm:p-12 text-center">
           <p className="text-slate-500 text-sm">Failed to load stats. Make sure the backend is running.</p>
         </div>
       )}

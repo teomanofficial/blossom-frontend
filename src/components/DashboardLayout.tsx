@@ -5,24 +5,31 @@ import { authFetch } from '../lib/api'
 import SearchOverlay from './SearchOverlay'
 import MobileDrawer from './MobileDrawer'
 
-const navItems = [
-  { to: '/dashboard', icon: 'fa-chart-pie', label: 'Dashboard', end: true },
+/* ── Nav item groups matching the sidebar screenshots ── */
+const generalItems = [
+  { to: '/dashboard', icon: 'fa-house', label: 'Dashboard', end: true },
   { to: '/dashboard/platforms', icon: 'fa-tower-broadcast', label: 'Platforms' },
-  { to: '/dashboard/analyze', icon: 'fa-microscope', label: 'Analysis' },
-  { to: '/dashboard/formats', icon: 'fa-shapes', label: 'Formats' },
-  { to: '/dashboard/hooks', icon: 'fa-magnet', label: 'Hooks' },
-  { to: '/dashboard/tactics', icon: 'fa-chess', label: 'Tactics' },
-  { to: '/dashboard/trends', icon: 'fa-arrow-trend-up', label: 'Trends' },
-  { to: '/dashboard/influencers', icon: 'fa-users', label: 'Influencers' },
+  { to: '/dashboard/trends', icon: 'fa-bolt', label: 'Trends' },
+  { to: '/dashboard/influencers', icon: 'fa-users', label: 'Creators' },
+]
+
+const intelligenceItems = [
+  { to: '/dashboard/analyze', icon: 'fa-chart-simple', label: 'Analysis' },
   { to: '/dashboard/suggestions', icon: 'fa-lightbulb', label: 'Suggestions' },
+  { to: '/dashboard/formats', icon: 'fa-shapes', label: 'Formats' },
+  { to: '/dashboard/hooks', icon: 'fa-comment-dots', label: 'Hooks' },
+  { to: '/dashboard/tactics', icon: 'fa-chess', label: 'Tactics' },
+]
+
+const bottomItems = [
   { to: '/dashboard/support', icon: 'fa-headset', label: 'Support' },
-  { to: '/dashboard/account', icon: 'fa-gear', label: 'Account' },
+  { to: '/dashboard/account', icon: 'fa-gear', label: 'Settings' },
 ]
 
 const managementItems = [
   { to: '/dashboard/users', icon: 'fa-users-gear', label: 'Users' },
-  { to: '/dashboard/subscription-plans', icon: 'fa-credit-card', label: 'Subscription Plans' },
-  { to: '/dashboard/content-management', icon: 'fa-layer-group', label: 'Content Management' },
+  { to: '/dashboard/subscription-plans', icon: 'fa-credit-card', label: 'Plans' },
+  { to: '/dashboard/content-management', icon: 'fa-layer-group', label: 'Content' },
   { to: '/dashboard/categories', icon: 'fa-folder-tree', label: 'Categories' },
   { to: '/dashboard/videos', icon: 'fa-satellite-dish', label: 'Scan & Analyze' },
   { to: '/dashboard/discovery', icon: 'fa-bolt', label: 'Discovery' },
@@ -33,7 +40,7 @@ const managementItems = [
   { to: '/dashboard/hashtags', icon: 'fa-hashtag', label: 'Hashtags' },
 ]
 
-/* Bottom tab items for mobile — the 4 most-used features + More */
+/* Bottom tab items for mobile */
 const bottomTabs = [
   { to: '/dashboard', icon: 'fa-chart-pie', label: 'Home', end: true },
   { to: '/dashboard/analyze', icon: 'fa-microscope', label: 'Analyze' },
@@ -42,7 +49,7 @@ const bottomTabs = [
   { to: '__more__', icon: 'fa-grid-2', label: 'More' },
 ]
 
-/* Routes that live in the "More" drawer — used to highlight the More tab */
+/* Routes that live in the "More" drawer */
 const drawerRoutes = [
   '/dashboard/platforms',
   '/dashboard/platforms/posts',
@@ -70,6 +77,40 @@ const drawerRoutes = [
   '/dashboard/hashtags',
 ]
 
+/* ── Nav Rail Link Component ── */
+function RailLink({
+  item,
+  supportUnreadCount,
+}: {
+  item: { to: string; icon: string; label: string; end?: boolean }
+  supportUnreadCount: number
+}) {
+  return (
+    <NavLink
+      to={item.to}
+      end={item.end}
+      className={({ isActive }) =>
+        `relative flex items-center gap-3 mx-2 px-3 py-2.5 rounded-2xl transition-all duration-200 overflow-hidden whitespace-nowrap ${
+          isActive
+            ? 'nav-link-active bg-white/[0.08] text-white'
+            : 'text-slate-400 hover:bg-white/[0.06] hover:text-white'
+        }`
+      }
+    >
+      <div className="w-6 shrink-0 flex items-center justify-center">
+        <i className={`fas ${item.icon} text-[15px]`} />
+      </div>
+      <span className="nav-label text-sm font-medium">{item.label}</span>
+      {(item.to === '/dashboard/support' || item.to === '/dashboard/support-management') &&
+        supportUnreadCount > 0 && (
+          <span className="nav-label ml-auto px-2 py-0.5 bg-pink-500 text-white text-[10px] font-black rounded-full min-w-[20px] text-center">
+            {supportUnreadCount}
+          </span>
+        )}
+    </NavLink>
+  )
+}
+
 export default function DashboardLayout() {
   const { user, signOut, userType, planSlug } = useAuth()
   const location = useLocation()
@@ -94,7 +135,6 @@ export default function DashboardLayout() {
     return () => clearInterval(interval)
   }, [])
 
-  // Close drawer & search on navigation
   useEffect(() => {
     setDrawerOpen(false)
     setMobileSearchOpen(false)
@@ -103,7 +143,7 @@ export default function DashboardLayout() {
   const hasAnalysis = userType === 'admin' || planSlug === 'premium' || planSlug === 'platin'
   const showManagement = userType === 'admin'
 
-  const visibleNavItems = navItems.filter((item) => {
+  const visibleGeneralItems = generalItems.filter((item) => {
     if (item.to === '/dashboard/influencers') return hasAnalysis
     return true
   })
@@ -111,100 +151,95 @@ export default function DashboardLayout() {
   const isDrawerRouteActive = drawerRoutes.some((r) => location.pathname.startsWith(r))
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#020617]">
-      {/* ═══════════ Desktop Sidebar (lg+) ═══════════ */}
-      <aside className="hidden lg:flex w-64 flex-shrink-0 border-r border-white/5 flex-col">
-        <div className="p-8">
-          <div className="flex items-center gap-3">
-            <img src="/logo-light.png" alt="Blossom" className="w-9 h-9" />
-            <span className="text-xl font-bold tracking-tighter">Blossom</span>
-          </div>
+    <div className="h-screen overflow-hidden bg-[#050508]">
+      {/* Mesh Gradient Background */}
+      <div className="mesh-bg" />
+
+      {/* ═══════════ Desktop Nav Rail (lg+) ═══════════ */}
+      <aside className="nav-rail-sidebar hidden lg:flex fixed left-0 top-0 h-screen z-50 flex-col bg-[rgba(10,10,15,0.85)] backdrop-blur-2xl border-r border-white/[0.06]">
+        {/* Logo */}
+        <div className="flex items-center h-20 px-[18px] gap-3 shrink-0">
+          <img src="/logo-light.png" alt="Blossom" className="w-9 h-9 shrink-0" />
+          <span className="nav-label text-xl font-bold tracking-tighter">Blossom</span>
         </div>
 
-        <nav className="flex-1 px-4 space-y-1.5 overflow-y-auto">
-          {visibleNavItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.end}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all duration-200 ${
-                  isActive
-                    ? 'bg-gradient-to-r from-pink-500/20 via-orange-400/20 to-yellow-400/20 text-white shadow-[inset_0_0_10px_rgba(244,114,182,0.15)] font-bold border border-pink-500/20'
-                    : 'text-slate-400 hover:bg-white/5 hover:text-white border border-transparent'
-                }`
-              }
-            >
-              <i className={`fas ${item.icon} w-5`}></i>
-              {item.label}
-              {item.to === '/dashboard/support' && supportUnreadCount > 0 && (
-                <span className="ml-auto px-2 py-0.5 bg-pink-500 text-white text-[10px] font-black rounded-full min-w-[20px] text-center">
-                  {supportUnreadCount}
-                </span>
-              )}
-            </NavLink>
-          ))}
+        {/* Scrollable Nav */}
+        <nav className="flex-1 overflow-y-auto overflow-x-hidden py-2 dashboard-scrollbar">
+          {/* General Section */}
+          <div className="px-5 py-2">
+            <span className="nav-section-label text-[10px] font-black text-slate-500 uppercase tracking-widest">
+              General
+            </span>
+          </div>
+          <div className="space-y-0.5">
+            {visibleGeneralItems.map((item) => (
+              <RailLink key={item.to} item={item} supportUnreadCount={supportUnreadCount} />
+            ))}
+          </div>
 
+          {/* Intelligence Section */}
+          <div className="px-5 pt-5 pb-2">
+            <span className="nav-section-label text-[10px] font-black text-slate-500 uppercase tracking-widest">
+              Intelligence
+            </span>
+          </div>
+          <div className="space-y-0.5">
+            {intelligenceItems.map((item) => (
+              <RailLink key={item.to} item={item} supportUnreadCount={supportUnreadCount} />
+            ))}
+          </div>
+
+          {/* Management Section (Admin) */}
           {showManagement && (
-            <div className="pt-4 mt-4 border-t border-white/5">
-              <div className="px-4 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                Management
+            <>
+              <div className="px-5 pt-5 pb-2">
+                <span className="nav-section-label text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                  Management
+                </span>
               </div>
-              {managementItems.map((item) => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all duration-200 ${
-                      isActive
-                        ? 'bg-gradient-to-r from-pink-500/20 via-orange-400/20 to-yellow-400/20 text-white shadow-[inset_0_0_10px_rgba(244,114,182,0.15)] font-bold border border-pink-500/20'
-                        : 'text-slate-400 hover:bg-white/5 hover:text-white border border-transparent'
-                    }`
-                  }
-                >
-                  <i className={`fas ${item.icon} w-5`}></i>
-                  {item.label}
-                  {item.to === '/dashboard/support-management' && supportUnreadCount > 0 && (
-                    <span className="ml-auto px-2 py-0.5 bg-pink-500 text-white text-[10px] font-black rounded-full min-w-[20px] text-center">
-                      {supportUnreadCount}
-                    </span>
-                  )}
-                </NavLink>
-              ))}
-            </div>
+              <div className="space-y-0.5">
+                {managementItems.map((item) => (
+                  <RailLink key={item.to} item={item} supportUnreadCount={supportUnreadCount} />
+                ))}
+              </div>
+            </>
           )}
         </nav>
 
-        <div className="px-6 py-4 border-t border-white/5">
-          <p className="text-[10px] text-slate-600 font-medium tracking-wide">blossom v1.0.0</p>
+        {/* Bottom Section */}
+        <div className="shrink-0 border-t border-white/[0.06] py-3">
+          <div className="space-y-0.5">
+            {bottomItems.map((item) => (
+              <RailLink key={item.to} item={item} supportUnreadCount={supportUnreadCount} />
+            ))}
+          </div>
+          {/* User Profile */}
+          <div className="mx-2 mt-2 flex items-center gap-3 px-3 py-2.5 rounded-2xl cursor-pointer hover:bg-white/[0.06] transition-colors overflow-hidden whitespace-nowrap group/profile">
+            <div className="w-8 h-8 shrink-0 rounded-full bg-gradient-to-br from-pink-500 to-orange-400 flex items-center justify-center text-xs font-bold">
+              {displayName.charAt(0).toUpperCase()}
+            </div>
+            <div className="nav-label min-w-0">
+              <div className="text-xs font-bold text-white truncate">{displayName}</div>
+              <button
+                onClick={signOut}
+                className="text-[9px] font-black text-slate-500 uppercase tracking-tighter hover:text-pink-400 transition-colors"
+              >
+                Sign Out
+              </button>
+            </div>
+          </div>
         </div>
       </aside>
 
       {/* ═══════════ Main Content ═══════════ */}
-      <main className="flex-1 flex flex-col overflow-hidden">
-        {/* ── Desktop Top Header (lg+) ── */}
-        <header className="hidden lg:flex h-20 border-b border-white/5 items-center justify-between px-10 bg-slate-950/20 backdrop-blur-xl z-10">
+      <main className="flex flex-col h-screen overflow-hidden lg:pl-[72px] relative z-10">
+        {/* Desktop Top Header (lg+) */}
+        <header className="hidden lg:flex h-16 items-center px-10 bg-transparent backdrop-blur-sm z-10 shrink-0">
           <SearchOverlay />
-          <div className="flex items-center gap-4 ml-6">
-            <div className="flex items-center gap-3 px-4 py-2 bg-white/5 rounded-2xl border border-white/5">
-              <div className="text-right">
-                <div className="text-[11px] font-black text-white">{displayName}</div>
-                <button
-                  onClick={signOut}
-                  className="text-[9px] font-black text-slate-500 uppercase tracking-tighter hover:text-pink-400 transition-colors"
-                >
-                  Sign Out
-                </button>
-              </div>
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-pink-500 to-orange-400 flex items-center justify-center text-xs font-bold">
-                {displayName.charAt(0).toUpperCase()}
-              </div>
-            </div>
-          </div>
         </header>
 
-        {/* ── Mobile Top Header (<lg) ── */}
-        <header className="flex lg:hidden h-14 border-b border-white/5 items-center justify-between px-4 bg-slate-950/80 backdrop-blur-xl z-30 shrink-0">
+        {/* Mobile Top Header (<lg) */}
+        <header className="flex lg:hidden h-14 border-b border-white/5 items-center justify-between px-4 bg-[#050508]/80 backdrop-blur-xl z-30 shrink-0">
           <div className="flex items-center gap-2.5">
             <img src="/logo-light.png" alt="Blossom" className="w-7 h-7" />
             <span className="text-base font-bold tracking-tighter">Blossom</span>
@@ -225,14 +260,14 @@ export default function DashboardLayout() {
           </div>
         </header>
 
-        {/* ── Mobile Search Dropdown ── */}
+        {/* Mobile Search Dropdown */}
         {mobileSearchOpen && (
-          <div className="lg:hidden px-4 py-3 bg-slate-950/95 backdrop-blur-xl border-b border-white/5 z-20">
+          <div className="lg:hidden px-4 py-3 bg-[#050508]/95 backdrop-blur-xl border-b border-white/5 z-20">
             <SearchOverlay />
           </div>
         )}
 
-        {/* ── Page Content ── */}
+        {/* Page Content */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-10 pb-24 lg:pb-10 dashboard-scrollbar">
           <div className="max-w-7xl mx-auto">
             <Outlet />
@@ -241,7 +276,7 @@ export default function DashboardLayout() {
       </main>
 
       {/* ═══════════ Mobile Bottom Tab Bar (<lg) ═══════════ */}
-      <nav className="fixed bottom-0 left-0 right-0 lg:hidden z-40 bg-[#020617]/95 backdrop-blur-xl border-t border-white/10 safe-bottom">
+      <nav className="fixed bottom-0 left-0 right-0 lg:hidden z-40 bg-[#050508]/95 backdrop-blur-xl border-t border-white/10 safe-bottom">
         <div className="flex items-stretch justify-around h-16 px-2">
           {bottomTabs.map((tab) => {
             if (tab.to === '__more__') {

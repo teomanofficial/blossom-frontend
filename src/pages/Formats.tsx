@@ -125,18 +125,18 @@ export default function Formats() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 md:gap-6 mb-6 md:mb-12">
         <div>
           <div className="flex items-center gap-2 mb-2 md:mb-3">
-            <span className="px-2 py-0.5 bg-pink-500/10 text-pink-400 text-[10px] font-black uppercase tracking-widest rounded">
+            <span className="badge-glass text-pink-400 font-black">
               The Receipts
             </span>
           </div>
-          <h1 className="text-2xl md:text-4xl font-black tracking-tighter mb-1 md:mb-2">VIRAL FORMATS</h1>
+          <h1 className="text-2xl md:text-4xl font-black font-display tracking-tighter mb-1 md:mb-2">VIRAL FORMATS</h1>
           <p className="text-slate-500 text-xs md:text-sm font-medium">
             The most successful content structures currently winning on the global feed.
           </p>
         </div>
 
         <div className="flex gap-3 md:gap-4">
-          <div className="px-4 py-3 md:px-6 md:py-4 glass-card rounded-2xl md:rounded-[1.5rem] border-white/5 flex-1 md:flex-initial">
+          <div className="px-4 py-3 md:px-6 md:py-4 glass-card rounded-3xl flex-1 md:flex-initial">
             <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Total Formats</div>
             <div className="text-xl md:text-2xl font-black text-white">{total}</div>
           </div>
@@ -150,10 +150,10 @@ export default function Formats() {
           <button
             key={opt.field}
             onClick={() => toggleSort(opt.field)}
-            className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-colors ${
+            className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-colors border ${
               sortBy === opt.field
-                ? 'bg-white/10 text-white'
-                : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
+                ? 'bg-white/10 text-white border-white/10'
+                : 'text-slate-500 hover:text-slate-300 hover:bg-white/5 border-transparent'
             }`}
           >
             {opt.label}
@@ -169,7 +169,7 @@ export default function Formats() {
           <div className="w-8 h-8 border-2 border-pink-500 border-t-transparent rounded-full animate-spin"></div>
         </div>
       ) : formats.length === 0 ? (
-        <div className="glass-card rounded-2xl p-12 text-center">
+        <div className="glass-card rounded-3xl p-12 text-center">
           <div className="w-16 h-16 mx-auto mb-4 bg-white/5 rounded-full flex items-center justify-center">
             <i className="fas fa-shapes text-slate-500 text-xl"></i>
           </div>

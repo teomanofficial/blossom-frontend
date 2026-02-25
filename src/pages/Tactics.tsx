@@ -139,28 +139,28 @@ export default function Tactics() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 md:gap-6 mb-6 md:mb-12">
         <div>
           <div className="flex items-center gap-2 mb-2 md:mb-3">
-            <span className="px-2 py-0.5 bg-amber-500/10 text-amber-400 text-[10px] font-black uppercase tracking-widest rounded">
+            <span className="badge-glass text-amber-400 font-black">
               Engagement Playbook
             </span>
           </div>
-          <h1 className="text-2xl md:text-4xl font-black tracking-tighter mb-1 md:mb-2">VIRAL TACTICS</h1>
+          <h1 className="text-2xl md:text-4xl font-black font-display tracking-tighter mb-1 md:mb-2">VIRAL TACTICS</h1>
           <p className="text-slate-500 text-xs md:text-sm font-medium">
             The specific techniques that drive views, shares, and engagement across top-performing content.
           </p>
         </div>
 
         <div className="flex gap-2 md:gap-4 overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
-          <div className="px-4 py-3 md:px-6 md:py-4 glass-card rounded-2xl md:rounded-[1.5rem] border-white/5 shrink-0">
+          <div className="px-4 py-3 md:px-6 md:py-4 glass-card rounded-3xl shrink-0">
             <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Total Tactics</div>
             <div className="text-xl md:text-2xl font-black text-white">{total}</div>
           </div>
-          <div className="px-4 py-3 md:px-6 md:py-4 glass-card rounded-2xl md:rounded-[1.5rem] border-white/5 shrink-0">
+          <div className="px-4 py-3 md:px-6 md:py-4 glass-card rounded-3xl shrink-0">
             <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Avg Exec Score</div>
             <div className={`text-xl md:text-2xl font-black ${getScoreColor(globalAvgScore)}`}>
               {globalAvgScore > 0 ? Math.round(globalAvgScore) : '--'}
             </div>
           </div>
-          <div className="px-4 py-3 md:px-6 md:py-4 glass-card rounded-2xl md:rounded-[1.5rem] border-white/5 shrink-0">
+          <div className="px-4 py-3 md:px-6 md:py-4 glass-card rounded-3xl shrink-0">
             <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Video Uses</div>
             <div className="text-xl md:text-2xl font-black text-white">{formatNumber(totalVideos)}</div>
           </div>
@@ -171,7 +171,7 @@ export default function Tactics() {
       <div className="flex flex-col md:flex-row items-start md:items-center gap-3 md:gap-4 mb-6 md:mb-8">
         {/* Search */}
         <form onSubmit={handleSearchSubmit} className="flex items-center gap-2 w-full md:w-auto">
-          <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2 rounded-xl flex-1 md:flex-initial">
+          <div className="flex items-center gap-2 glass-input px-4 py-2 flex-1 md:flex-initial">
             <i className="fas fa-search text-slate-500 text-xs"></i>
             <input
               type="text"
@@ -198,7 +198,7 @@ export default function Tactics() {
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            className="px-3 py-1.5 rounded-lg text-[11px] font-bold bg-white/5 border border-white/10 text-white appearance-none cursor-pointer hover:bg-white/10 transition-colors pr-8"
+            className="glass-input px-3 py-1.5 text-[11px] font-bold text-white appearance-none cursor-pointer hover:bg-white/10 transition-colors pr-8"
             style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center' }}
           >
             <option value="all" className="bg-slate-900 text-white">All</option>
@@ -218,8 +218,8 @@ export default function Tactics() {
           <button
             key={opt.field}
             onClick={() => toggleSort(opt.field)}
-            className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-colors ${
-              sortBy === opt.field ? 'bg-white/10 text-white' : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
+            className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-colors border ${
+              sortBy === opt.field ? 'bg-white/10 text-white border-white/10' : 'text-slate-500 hover:text-slate-300 hover:bg-white/5 border-transparent'
             }`}
           >
             {opt.label}
@@ -235,7 +235,7 @@ export default function Tactics() {
           <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
         </div>
       ) : tactics.length === 0 ? (
-        <div className="glass-card rounded-2xl p-12 text-center">
+        <div className="glass-card rounded-3xl p-12 text-center">
           <div className="w-16 h-16 mx-auto mb-4 bg-white/5 rounded-full flex items-center justify-center">
             <i className="fas fa-chess text-slate-500 text-xl"></i>
           </div>

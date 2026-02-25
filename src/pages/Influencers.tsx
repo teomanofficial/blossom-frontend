@@ -186,7 +186,7 @@ export default function Influencers() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <div className="flex items-center gap-4">
-          <h1 className="text-xl font-bold tracking-tight">Influencers</h1>
+          <h1 className="text-xl font-bold font-display tracking-tight">Creators</h1>
           <div className="flex items-center gap-3 text-xs text-slate-400">
             <span><span className="text-white font-semibold">{total}</span> creators</span>
             <span className="text-slate-600 hidden sm:inline">|</span>
@@ -209,7 +209,7 @@ export default function Influencers() {
 
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2 mb-4">
-        <form onSubmit={handleSearch} className="flex items-center bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 w-full sm:w-56 focus-within:border-white/20 transition-colors">
+        <form onSubmit={handleSearch} className="flex items-center glass-input px-3 py-1.5 w-full sm:w-56">
           <i className="fas fa-search text-slate-600 text-[10px] mr-2"></i>
           <input
             type="text"
@@ -315,14 +315,17 @@ export default function Influencers() {
           <div className="w-6 h-6 border-2 border-pink-500 border-t-transparent rounded-full animate-spin"></div>
         </div>
       ) : influencers.length === 0 ? (
-        <div className="text-center py-16 text-slate-500">
-          <i className="fas fa-users text-2xl mb-3 block"></i>
-          <p className="text-sm font-medium">{search ? 'No creators match your search.' : 'No influencers found. Scan some videos first.'}</p>
+        <div className="glass-card rounded-3xl p-12 text-center">
+          <div className="w-16 h-16 mx-auto mb-4 bg-white/5 rounded-full flex items-center justify-center">
+            <i className="fas fa-users text-slate-500 text-xl"></i>
+          </div>
+          <h3 className="font-black text-lg mb-2">No Creators Found</h3>
+          <p className="text-sm text-slate-500 font-medium">{search ? 'No creators match your search.' : 'No influencers found. Scan some videos first.'}</p>
         </div>
       ) : (
         <>
           {/* Desktop Table View */}
-          <div className="hidden lg:block border border-white/[0.06] rounded-xl overflow-hidden">
+          <div className="hidden lg:block glass-card rounded-2xl overflow-hidden">
             {/* Table Header */}
             <div className="grid items-center gap-3 px-4 py-2.5 bg-white/[0.02] border-b border-white/[0.06] text-[10px] font-semibold text-slate-500 uppercase tracking-wider"
               style={{ gridTemplateColumns: '2.5fr repeat(6, 1fr)' }}
@@ -433,7 +436,7 @@ export default function Influencers() {
                 <Link
                   key={inf.id}
                   to={`/dashboard/influencers/${inf.id}`}
-                  className="block bg-white/[0.03] border border-white/[0.06] rounded-xl p-3.5 active:bg-white/[0.06] transition-colors"
+                  className="block glass-card rounded-2xl p-3.5 active:bg-white/[0.06] transition-colors"
                 >
                   {/* Top: Avatar + Name + Followers */}
                   <div className="flex items-center gap-3 mb-3">

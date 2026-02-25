@@ -86,10 +86,16 @@ export default function InfluencerAnalyzeProgress({ compact }: Props) {
     return () => clearInterval(interval)
   }, [poll, progress?.running, progress?.phase])
 
+  // Reset cancelling state when analysis stops
+  useEffect(() => {
+    if (progress && !progress.running) setCancelling(false)
+  }, [progress?.running])
+
   if (!progress || progress.phase === 'idle') return null
 
   const pct = getOverallPercent(progress)
   const isActive = progress.running
+  const isCancelling = progress.cancelled && progress.running
   const isDone = progress.phase === 'done'
   const isError = progress.phase === 'error'
   const isCancelled = progress.phase === 'cancelled'
@@ -99,8 +105,10 @@ export default function InfluencerAnalyzeProgress({ compact }: Props) {
     setCancelling(true)
     try {
       await authFetch('/api/analysis/influencers/full-analyze-cancel', { method: 'POST' })
-    } catch {}
-    setCancelling(false)
+    } catch {
+      setCancelling(false)
+    }
+    // Keep cancelling=true until next poll shows cancelled state
   }
 
   const handleDismiss = async () => {
@@ -133,10 +141,11 @@ export default function InfluencerAnalyzeProgress({ compact }: Props) {
             {isActive && (
               <button
                 onClick={handleCancel}
-                disabled={cancelling}
-                className="text-[10px] text-slate-500 hover:text-red-400 transition-colors"
+                disabled={cancelling || isCancelling}
+                className="text-[10px] text-red-400/70 hover:text-red-400 transition-colors disabled:opacity-40"
+                title={cancelling || isCancelling ? 'Cancelling...' : 'Cancel analysis'}
               >
-                <i className="fas fa-times"></i>
+                <i className={`fas ${cancelling || isCancelling ? 'fa-spinner fa-spin' : 'fa-stop-circle'}`}></i>
               </button>
             )}
             {showDismiss && (
@@ -191,10 +200,20 @@ export default function InfluencerAnalyzeProgress({ compact }: Props) {
           {isActive && (
             <button
               onClick={handleCancel}
-              disabled={cancelling}
-              className="px-2.5 py-1 rounded-lg text-[10px] font-bold text-slate-400 hover:text-red-400 bg-white/5 hover:bg-red-500/10 border border-white/10 transition-all disabled:opacity-40"
+              disabled={cancelling || isCancelling}
+              className="px-3 py-1.5 rounded-lg text-[11px] font-black text-red-400 hover:text-white bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 transition-all disabled:opacity-40 flex items-center gap-1.5"
             >
-              {cancelling ? 'CANCELLING...' : 'CANCEL'}
+              <i className={`fas ${cancelling || isCancelling ? 'fa-spinner fa-spin' : 'fa-stop-circle'} text-[9px]`}></i>
+              {cancelling || isCancelling ? 'CANCELLING...' : 'CANCEL'}
+            </button>
+          )}
+          {isActive && (
+            <button
+              onClick={handleDismiss}
+              className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-white/5 transition-all"
+              title="Dismiss (analysis continues)"
+            >
+              <i className="fas fa-times text-[10px]"></i>
             </button>
           )}
           {showDismiss && (

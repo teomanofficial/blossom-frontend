@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useRef, useState, useCallback, useEffect } from 'react'
 
 interface MobileDrawerProps {
   open: boolean
@@ -10,14 +11,20 @@ interface MobileDrawerProps {
 }
 
 /* ── Navigation groups with semantic organization ── */
-const exploreItems = [
-  { to: '/dashboard/platforms', icon: 'fa-tower-broadcast', label: 'My Platforms', color: 'text-pink-400', bg: 'bg-pink-500/10' },
-  { to: '/dashboard/hooks', icon: 'fa-magnet', label: 'Hooks', color: 'text-purple-400', bg: 'bg-purple-500/10' },
-  { to: '/dashboard/tactics', icon: 'fa-chess', label: 'Tactics', color: 'text-amber-400', bg: 'bg-amber-500/10' },
+const generalItems = [
+  { to: '/dashboard/platforms', icon: 'fa-tower-broadcast', label: 'Platforms', color: 'text-pink-400', bg: 'bg-pink-500/10' },
   { to: '/dashboard/trends', icon: 'fa-arrow-trend-up', label: 'Trends', color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
 ]
 
-const influencerItem = { to: '/dashboard/influencers', icon: 'fa-users', label: 'Influencers', color: 'text-cyan-400', bg: 'bg-cyan-500/10' }
+const creatorsItem = { to: '/dashboard/influencers', icon: 'fa-users', label: 'Creators', color: 'text-cyan-400', bg: 'bg-cyan-500/10' }
+
+const intelligenceItems = [
+  { to: '/dashboard/analyze', icon: 'fa-chart-simple', label: 'Analysis', color: 'text-orange-400', bg: 'bg-orange-500/10' },
+  { to: '/dashboard/suggestions', icon: 'fa-lightbulb', label: 'Suggestions', color: 'text-yellow-400', bg: 'bg-yellow-500/10' },
+  { to: '/dashboard/formats', icon: 'fa-shapes', label: 'Formats', color: 'text-indigo-400', bg: 'bg-indigo-500/10' },
+  { to: '/dashboard/hooks', icon: 'fa-magnet', label: 'Hooks', color: 'text-purple-400', bg: 'bg-purple-500/10' },
+  { to: '/dashboard/tactics', icon: 'fa-chess', label: 'Tactics', color: 'text-amber-400', bg: 'bg-amber-500/10' },
+]
 
 const accountItems = [
   { to: '/dashboard/support', icon: 'fa-headset', label: 'Support', color: 'text-blue-400', bg: 'bg-blue-500/10', hasBadge: true },
@@ -89,27 +96,104 @@ function SectionHeader({ label }: { label: string }) {
   )
 }
 
+const CLOSE_THRESHOLD = 120
+
 export default function MobileDrawer({ open, onClose, supportUnreadCount, hasAnalysis, showManagement }: MobileDrawerProps) {
   const { user, signOut } = useAuth()
   const displayName = user?.user_metadata?.full_name ?? user?.email?.split('@')[0] ?? 'Creator'
   const email = user?.email ?? ''
 
+  const [closing, setClosing] = useState(false)
+  const [dragY, setDragY] = useState(0)
+  const dragStartY = useRef(0)
+  const isDragging = useRef(false)
+  const panelRef = useRef<HTMLDivElement>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
+
+  // Reset state when drawer opens
+  useEffect(() => {
+    if (open) {
+      setClosing(false)
+      setDragY(0)
+    }
+  }, [open])
+
+  const handleClose = useCallback(() => {
+    setClosing(true)
+    setTimeout(onClose, 280)
+  }, [onClose])
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    // Only allow drag from the handle area or when scroll is at top
+    const scrollEl = scrollRef.current
+    const isScrolledToTop = !scrollEl || scrollEl.scrollTop <= 0
+    const touchY = e.touches[0].clientY
+    const panelTop = panelRef.current?.getBoundingClientRect().top ?? 0
+    const isNearTop = touchY - panelTop < 60
+
+    if (isNearTop || isScrolledToTop) {
+      dragStartY.current = e.touches[0].clientY
+      isDragging.current = true
+    }
+  }, [])
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!isDragging.current) return
+    const currentY = e.touches[0].clientY
+    const diff = currentY - dragStartY.current
+    // Only allow dragging downward
+    if (diff > 0) {
+      setDragY(diff)
+    }
+  }, [])
+
+  const handleTouchEnd = useCallback(() => {
+    if (!isDragging.current) return
+    isDragging.current = false
+    if (dragY > CLOSE_THRESHOLD) {
+      handleClose()
+    } else {
+      setDragY(0)
+    }
+  }, [dragY, handleClose])
+
   if (!open) return null
+
+  const dragProgress = Math.min(dragY / CLOSE_THRESHOLD, 1)
+  const backdropOpacity = 1 - dragProgress * 0.6
 
   return (
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden animate-fade-in"
-        onClick={onClose}
+        className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] lg:hidden ${closing ? 'animate-fade-out' : 'animate-fade-in'}`}
+        style={dragY > 0 ? { opacity: backdropOpacity } : undefined}
+        onClick={handleClose}
       />
 
-      {/* Drawer Panel */}
-      <div className="fixed bottom-16 left-0 right-0 z-50 lg:hidden animate-slide-up">
-        <div className="bg-[#070d1a] backdrop-blur-2xl border-t border-white/[0.12] rounded-t-[28px] max-h-[75vh] flex flex-col">
-          {/* Drag Handle */}
-          <div className="flex justify-center pt-3 pb-1 shrink-0">
+      {/* Fullscreen Drawer Panel */}
+      <div
+        ref={panelRef}
+        className={`fixed inset-0 z-[70] lg:hidden ${closing ? 'animate-slide-down' : 'animate-slide-up'}`}
+        style={dragY > 0 && !closing ? { transform: `translateY(${dragY}px)`, transition: 'none' } : undefined}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        <div className="h-full bg-[#070d1a] flex flex-col">
+          {/* Header with drag handle + close button */}
+          <div className="flex items-center justify-between px-5 pt-[max(env(safe-area-inset-top),12px)] pb-2 shrink-0">
+            {/* Drag Handle centered */}
+            <div className="flex-1" />
             <div className="w-9 h-[3px] bg-white/15 rounded-full" />
+            <div className="flex-1 flex justify-end">
+              <button
+                onClick={handleClose}
+                className="w-9 h-9 rounded-xl bg-white/[0.06] flex items-center justify-center active:bg-white/10 transition-colors"
+              >
+                <i className="fas fa-xmark text-base text-slate-300" />
+              </button>
+            </div>
           </div>
 
           {/* User Profile Card */}
@@ -124,7 +208,7 @@ export default function MobileDrawer({ open, onClose, supportUnreadCount, hasAna
               </div>
               <NavLink
                 to="/dashboard/account"
-                onClick={onClose}
+                onClick={handleClose}
                 className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center shrink-0"
               >
                 <i className="fas fa-pen text-[10px] text-slate-400" />
@@ -133,23 +217,31 @@ export default function MobileDrawer({ open, onClose, supportUnreadCount, hasAna
           </div>
 
           {/* Scrollable Nav Items */}
-          <div className="flex-1 overflow-y-auto px-4 pb-6 drawer-scrollbar">
-            {/* Explore Section */}
-            <SectionHeader label="Explore" />
+          <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 pb-[max(env(safe-area-inset-bottom),24px)] drawer-scrollbar">
+            {/* General Section */}
+            <SectionHeader label="General" />
             <div className="space-y-0.5">
-              {exploreItems.map((item) => (
-                <NavItem key={item.to} item={item} supportUnreadCount={supportUnreadCount} onClose={onClose} />
+              {generalItems.map((item) => (
+                <NavItem key={item.to} item={item} supportUnreadCount={supportUnreadCount} onClose={handleClose} />
               ))}
               {hasAnalysis && (
-                <NavItem item={influencerItem} supportUnreadCount={supportUnreadCount} onClose={onClose} />
+                <NavItem item={creatorsItem} supportUnreadCount={supportUnreadCount} onClose={handleClose} />
               )}
+            </div>
+
+            {/* Intelligence Section */}
+            <SectionHeader label="Intelligence" />
+            <div className="space-y-0.5">
+              {intelligenceItems.map((item) => (
+                <NavItem key={item.to} item={item} supportUnreadCount={supportUnreadCount} onClose={handleClose} />
+              ))}
             </div>
 
             {/* Account Section */}
             <SectionHeader label="Account" />
             <div className="space-y-0.5">
               {accountItems.map((item) => (
-                <NavItem key={item.to} item={item} supportUnreadCount={supportUnreadCount} onClose={onClose} />
+                <NavItem key={item.to} item={item} supportUnreadCount={supportUnreadCount} onClose={handleClose} />
               ))}
             </div>
 
@@ -159,7 +251,7 @@ export default function MobileDrawer({ open, onClose, supportUnreadCount, hasAna
                 <SectionHeader label="Management" />
                 <div className="space-y-0.5">
                   {managementItems.map((item) => (
-                    <NavItem key={item.to} item={item} supportUnreadCount={supportUnreadCount} onClose={onClose} />
+                    <NavItem key={item.to} item={item} supportUnreadCount={supportUnreadCount} onClose={handleClose} />
                   ))}
                 </div>
               </>
@@ -168,7 +260,7 @@ export default function MobileDrawer({ open, onClose, supportUnreadCount, hasAna
             {/* Sign Out */}
             <div className="mt-5 pt-4 border-t border-white/5">
               <button
-                onClick={() => { onClose(); signOut() }}
+                onClick={() => { handleClose(); signOut() }}
                 className="flex items-center gap-3.5 px-3 py-3 rounded-2xl w-full active:bg-red-500/10 transition-all"
               >
                 <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center shrink-0">
