@@ -507,7 +507,7 @@ export default function BulkAnalysisManagement() {
         {/* Page Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-6">
-            <h1 className="text-2xl font-bold">Bulk Analysis Management</h1>
+            <h1 className="text-2xl font-bold font-display">Bulk Analysis Management</h1>
             <span className="px-2 py-0.5 bg-pink-500/10 text-pink-400 text-[10px] font-black uppercase rounded">management</span>
           </div>
           <div className="grid grid-cols-4 gap-4">
@@ -624,7 +624,7 @@ export default function BulkAnalysisManagement() {
               <div className="ml-auto">
                 <input type="text" placeholder="Search formats..." value={formatSearch}
                   onChange={(e) => setFormatSearch(e.target.value)}
-                  className="bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-pink-500/50 w-64" />
+                  className="glass-input rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-pink-500/50 w-64" />
               </div>
             </div>
             {formatsLoading && (
@@ -750,7 +750,7 @@ export default function BulkAnalysisManagement() {
               <div className="ml-auto">
                 <input type="text" placeholder="Search hooks..." value={hookSearch}
                   onChange={(e) => setHookSearch(e.target.value)}
-                  className="bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-pink-500/50 w-64" />
+                  className="glass-input rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-pink-500/50 w-64" />
               </div>
             </div>
             {hooksLoading && (
@@ -864,10 +864,10 @@ export default function BulkAnalysisManagement() {
                 <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-600 text-xs" />
                 <input type="text" value={tacticSearch} onChange={e => setTacticSearch(e.target.value)}
                   placeholder="Search tactics..."
-                  className="bg-white/5 border border-white/5 rounded-lg pl-9 pr-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-pink-500/50 w-64" />
+                  className="glass-input rounded-lg pl-9 pr-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-pink-500/50 w-64" />
               </div>
               <select value={tacticCategoryFilter} onChange={e => setTacticCategoryFilter(e.target.value)}
-                className="bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-pink-500/50">
+                className="glass-input rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-pink-500/50">
                 <option value="">All Categories</option>
                 {TACTIC_CATEGORIES.map(cat => <option key={cat} value={cat}>{cat.replace(/_/g, ' ')}</option>)}
               </select>
@@ -896,12 +896,12 @@ export default function BulkAnalysisManagement() {
                       <div key={tactic.id} className="grid grid-cols-[1fr_120px_80px_80px_80px_100px] gap-2 items-center px-4 py-2 bg-white/[0.07] border border-pink-500/30 rounded-xl">
                         <div>
                           <input type="text" value={editForm.name} onChange={e => setEditForm(prev => ({ ...prev, name: e.target.value }))}
-                            className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-pink-500/50" placeholder="Tactic name" />
+                            className="w-full glass-input rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-pink-500/50" placeholder="Tactic name" />
                           <textarea value={editForm.description} onChange={e => setEditForm(prev => ({ ...prev, description: e.target.value }))}
-                            className="w-full bg-white/5 border border-white/5 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-pink-500/50 mt-1 resize-none" rows={2} placeholder="Description..." />
+                            className="w-full glass-input rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-pink-500/50 mt-1 resize-none" rows={2} placeholder="Description..." />
                         </div>
                         <select value={editForm.category} onChange={e => setEditForm(prev => ({ ...prev, category: e.target.value }))}
-                          className="bg-white/5 border border-white/5 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-pink-500/50">
+                          className="glass-input rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-pink-500/50">
                           {TACTIC_CATEGORIES.map(cat => <option key={cat} value={cat}>{cat.replace(/_/g, ' ')}</option>)}
                         </select>
                         <div /><div /><div />
@@ -919,7 +919,7 @@ export default function BulkAnalysisManagement() {
                         <i className="fas fa-code-merge text-amber-400 text-xs" />
                         <span className="text-sm font-bold">Merge &quot;{tactic.name}&quot; into:</span>
                         <select value={mergeTarget || ''} onChange={e => setMergeTarget(e.target.value ? Number(e.target.value) : null)}
-                          className="bg-white/5 border border-white/5 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-pink-500/50 flex-1 max-w-xs">
+                          className="glass-input rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-pink-500/50 flex-1 max-w-xs">
                           <option value="">Select target...</option>
                           {tactics.filter(t => t.id !== tactic.id).map(t => <option key={t.id} value={t.id}>{t.name} ({t.video_count} videos)</option>)}
                         </select>
@@ -1071,7 +1071,7 @@ export default function BulkAnalysisManagement() {
         {/* ==================== VERSION COMPARE MODAL ==================== */}
         {compareVersions && (
           <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-8" onClick={() => setCompareVersions(null)}>
-            <div className="bg-[#0a0f1e] border border-white/10 rounded-2xl w-full max-w-5xl max-h-[80vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
+            <div className="glass-card rounded-3xl w-full max-w-5xl max-h-[80vh] overflow-y-auto p-6 sm:p-8" onClick={e => e.stopPropagation()}>
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
                   <i className="fas fa-code-compare text-pink-400" />

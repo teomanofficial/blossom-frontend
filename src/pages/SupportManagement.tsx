@@ -347,7 +347,7 @@ export default function SupportManagement() {
 
         {/* Empty state */}
         {!listLoading && !listError && tickets.length === 0 && (
-          <div className="p-6 rounded-2xl bg-white/[0.03] border border-white/[0.06] text-center">
+          <div className="p-6 glass-card rounded-2xl text-center">
             <div className="text-4xl mb-3 opacity-40">📭</div>
             <p className="text-slate-400 text-sm font-medium">No tickets found</p>
             <p className="text-slate-600 text-xs mt-1">
@@ -363,7 +363,7 @@ export default function SupportManagement() {
               <button
                 key={t.id}
                 onClick={() => openThread(t.id)}
-                className="w-full text-left p-5 rounded-2xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] transition-colors cursor-pointer group"
+                className="w-full text-left p-5 glass-card rounded-2xl hover:bg-white/[0.06] transition-colors cursor-pointer group"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
@@ -463,7 +463,7 @@ export default function SupportManagement() {
         </button>
 
         {/* Ticket header card */}
-        <div className="p-6 rounded-2xl bg-white/[0.03] border border-white/[0.06] space-y-4">
+        <div className="p-6 glass-card rounded-2xl space-y-4">
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div className="flex-1 min-w-0">
               <h2 className="text-xl font-bold text-white">{ticket.subject}</h2>
@@ -495,7 +495,7 @@ export default function SupportManagement() {
                 value={ticket.status}
                 onChange={e => handleStatusChange(e.target.value)}
                 disabled={changingStatus}
-                className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-sm font-medium text-white focus:border-pink-500/50 focus:outline-none transition-colors disabled:opacity-50 cursor-pointer appearance-none"
+                className="px-3 py-1.5 glass-input rounded-lg text-sm font-medium text-white focus:border-pink-500/50 focus:outline-none transition-colors disabled:opacity-50 cursor-pointer appearance-none"
               >
                 {STATUS_OPTIONS.map(s => (
                   <option key={s} value={s} className="bg-slate-900 text-white">
@@ -528,7 +528,7 @@ export default function SupportManagement() {
         )}
 
         {/* Messages */}
-        <div className="p-6 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
+        <div className="p-6 glass-card rounded-2xl">
           <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Messages</h3>
 
           <div className="space-y-4 max-h-[500px] overflow-y-auto pr-1">
@@ -570,7 +570,7 @@ export default function SupportManagement() {
         </div>
 
         {/* Reply box */}
-        <div className="p-6 rounded-2xl bg-white/[0.03] border border-white/[0.06] space-y-4">
+        <div className="p-6 glass-card rounded-2xl space-y-4">
           <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider">Reply</h3>
 
           {sendError && (
@@ -584,7 +584,7 @@ export default function SupportManagement() {
             onChange={e => setReplyText(e.target.value)}
             placeholder="Type your reply..."
             rows={4}
-            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-sm font-medium text-white placeholder:text-slate-600 focus:border-pink-500/50 focus:outline-none transition-colors resize-none"
+            className="w-full px-4 py-3 glass-input rounded-xl text-sm font-medium text-white placeholder:text-slate-600 focus:border-pink-500/50 focus:outline-none transition-colors resize-none"
           />
 
           <div className="flex justify-end">
@@ -612,7 +612,7 @@ export default function SupportManagement() {
         <span className="px-3 py-1 bg-orange-500/10 text-orange-400 rounded-full text-xs font-bold uppercase tracking-wider">
           Management
         </span>
-        <h1 className="text-3xl font-black tracking-tight mt-3">
+        <h1 className="text-3xl font-black tracking-tight font-display mt-3">
           Support <span className="gradient-text">Management</span>
         </h1>
         <p className="text-slate-500 text-sm font-medium mt-1">

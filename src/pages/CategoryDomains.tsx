@@ -169,7 +169,7 @@ export default function CategoryDomains() {
             <i className="fas fa-arrow-left text-xs"></i>
             Back to Categories
           </Link>
-          <h1 className="text-3xl font-black tracking-tighter mb-1">
+          <h1 className="text-3xl font-black font-display tracking-tighter mb-1">
             {category.icon && <span className="mr-2">{category.icon}</span>}
             {category.title}
           </h1>
@@ -204,7 +204,7 @@ export default function CategoryDomains() {
       <div className="glass-card rounded-2xl p-4 mb-6 border border-white/5">
         <div className="flex flex-col lg:flex-row gap-3">
           {/* Search */}
-          <div className="flex-1 flex items-center gap-3 bg-white/5 border border-white/10 px-4 py-2.5 rounded-xl">
+          <div className="flex-1 flex items-center gap-3 glass-input px-4 py-2.5 rounded-xl">
             <i className="fas fa-search text-slate-500 text-sm"></i>
             <input
               type="text"
@@ -244,7 +244,7 @@ export default function CategoryDomains() {
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="bg-white/5 border border-white/10 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 outline-none"
+              className="glass-input px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 outline-none"
             >
               <option value="">All Types</option>
               {domainCategories.map((cat) => (

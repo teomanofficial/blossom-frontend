@@ -315,7 +315,7 @@ export default function AIModelLab() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black tracking-tight">AI Model Lab</h1>
+          <h1 className="text-2xl font-black tracking-tight font-display">AI Model Lab</h1>
           <p className="text-sm text-slate-400 mt-1">Manage Gemini models, compare performance, and analyze costs</p>
         </div>
       </div>
@@ -376,7 +376,7 @@ export default function AIModelLab() {
 
           {/* Add model form */}
           {showAddModel && (
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-5 space-y-3">
+            <div className="glass-card rounded-2xl p-5 space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Model ID</label>
@@ -384,7 +384,7 @@ export default function AIModelLab() {
                     value={newModel.model_name}
                     onChange={e => setNewModel({ ...newModel, model_name: e.target.value })}
                     placeholder="gemini-2.5-flash-lite"
-                    className="w-full mt-1 px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-sm focus:outline-none focus:border-pink-500/40"
+                    className="w-full mt-1 px-3 py-2 glass-input rounded-xl text-sm focus:outline-none focus:border-pink-500/40"
                   />
                 </div>
                 <div>
@@ -393,7 +393,7 @@ export default function AIModelLab() {
                     value={newModel.display_name}
                     onChange={e => setNewModel({ ...newModel, display_name: e.target.value })}
                     placeholder="Gemini 2.5 Flash Lite"
-                    className="w-full mt-1 px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-sm focus:outline-none focus:border-pink-500/40"
+                    className="w-full mt-1 px-3 py-2 glass-input rounded-xl text-sm focus:outline-none focus:border-pink-500/40"
                   />
                 </div>
                 <div>
@@ -402,7 +402,7 @@ export default function AIModelLab() {
                     value={newModel.cost_per_1m_input}
                     onChange={e => setNewModel({ ...newModel, cost_per_1m_input: e.target.value })}
                     placeholder="0.15"
-                    className="w-full mt-1 px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-sm focus:outline-none focus:border-pink-500/40"
+                    className="w-full mt-1 px-3 py-2 glass-input rounded-xl text-sm focus:outline-none focus:border-pink-500/40"
                   />
                 </div>
                 <div>
@@ -411,7 +411,7 @@ export default function AIModelLab() {
                     value={newModel.cost_per_1m_output}
                     onChange={e => setNewModel({ ...newModel, cost_per_1m_output: e.target.value })}
                     placeholder="0.60"
-                    className="w-full mt-1 px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-sm focus:outline-none focus:border-pink-500/40"
+                    className="w-full mt-1 px-3 py-2 glass-input rounded-xl text-sm focus:outline-none focus:border-pink-500/40"
                   />
                 </div>
               </div>
@@ -421,7 +421,7 @@ export default function AIModelLab() {
                   value={newModel.notes}
                   onChange={e => setNewModel({ ...newModel, notes: e.target.value })}
                   placeholder="Optional notes about this model"
-                  className="w-full mt-1 px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-sm focus:outline-none focus:border-pink-500/40"
+                  className="w-full mt-1 px-3 py-2 glass-input rounded-xl text-sm focus:outline-none focus:border-pink-500/40"
                 />
               </div>
               <div className="flex gap-2 pt-1">
@@ -511,10 +511,10 @@ export default function AIModelLab() {
             ) : knownOperations.length === 0 ? (
               <div className="text-center py-8 text-slate-500 text-sm">No operations found yet. Run some analyses first.</div>
             ) : (
-              <div className="bg-white/[0.03] border border-white/10 rounded-2xl overflow-hidden">
+              <div className="glass-card rounded-2xl overflow-hidden">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-white/5">
+                    <tr className="border-b border-white/5 bg-white/[0.03]">
                       <th className="text-left px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Operation</th>
                       <th className="text-left px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Model</th>
                       <th className="text-right px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest w-20">Status</th>
@@ -729,10 +729,10 @@ export default function AIModelLab() {
               {/* Operations breakdown */}
               <div>
                 <h2 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-3">Operations by Model</h2>
-                <div className="bg-white/[0.03] border border-white/10 rounded-2xl overflow-hidden">
+                <div className="glass-card rounded-2xl overflow-hidden">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-white/5">
+                      <tr className="border-b border-white/5 bg-white/[0.03]">
                         <th className="text-left px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Model</th>
                         <th className="text-left px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Operation</th>
                         <th className="text-right px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Requests</th>

@@ -269,7 +269,7 @@ export default function Users() {
             Management
           </span>
         </div>
-        <h1 className="text-2xl md:text-4xl font-black tracking-tighter mb-2">
+        <h1 className="text-2xl md:text-4xl font-black font-display tracking-tighter mb-2">
           User <span className="gradient-text">Management</span>
         </h1>
         <p className="text-slate-500 text-xs md:text-sm font-medium">
@@ -314,7 +314,7 @@ export default function Users() {
 
       {/* Search */}
       <div className="mb-6">
-        <div className="flex items-center gap-3 bg-white/5 border border-white/10 px-4 py-2.5 md:px-5 md:py-3 rounded-2xl w-full md:max-w-md focus-within:border-white/20 transition-all">
+        <div className="flex items-center gap-3 glass-input px-4 py-2.5 md:px-5 md:py-3 rounded-2xl w-full md:max-w-md focus-within:border-white/20 transition-all">
           <i className="fas fa-search text-slate-500 text-sm" />
           <input
             type="text"
@@ -458,7 +458,7 @@ export default function Users() {
                             value={userDetail.user_type || 'user'}
                             onChange={(e) => handleUserTypeChange(userDetail.id, e.target.value)}
                             disabled={updatingUserType}
-                            className="bg-white/5 border border-white/10 rounded-lg px-2.5 py-1 text-sm font-semibold outline-none cursor-pointer hover:border-white/20 focus:border-indigo-500/50 transition-colors appearance-none disabled:opacity-50"
+                            className="glass-input rounded-lg px-2.5 py-1 text-sm font-semibold outline-none cursor-pointer hover:border-white/20 focus:border-indigo-500/50 transition-colors appearance-none disabled:opacity-50"
                             style={{ colorScheme: 'dark' }}
                           >
                             <option value="user">user</option>
@@ -599,7 +599,7 @@ export default function Users() {
                           {billingEvents.length > 0 ? (
                             <table className="w-full text-sm">
                               <thead>
-                                <tr className="text-[10px] font-black uppercase tracking-widest text-slate-600 border-b border-white/5">
+                                <tr className="text-[10px] font-black uppercase tracking-widest text-slate-600 border-b border-white/5 bg-white/[0.03]">
                                   <th className="text-left py-2 pr-4">Event Type</th>
                                   <th className="text-left py-2 pr-4">Event ID</th>
                                   <th className="text-left py-2 pr-4">Processed</th>

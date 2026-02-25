@@ -173,7 +173,7 @@ export default function ContentManagement() {
               Management
             </span>
           </div>
-          <h1 className="text-4xl font-black tracking-tighter mb-2">CONTENT DOMAINS</h1>
+          <h1 className="text-4xl font-black font-display tracking-tighter mb-2">CONTENT DOMAINS</h1>
           <p className="text-slate-500 text-sm font-medium">
             Manage content domains extracted from analyzed videos. Domains power user personalization and content discovery.
           </p>
@@ -209,7 +209,7 @@ export default function ContentManagement() {
       {/* Search & Filters */}
       <div className="flex flex-col lg:flex-row gap-4 mb-6">
         <form onSubmit={handleSearch} className="flex-1 flex gap-2">
-          <div className="flex-1 flex items-center gap-3 bg-white/5 border border-white/10 px-4 py-2.5 rounded-xl">
+          <div className="flex-1 flex items-center gap-3 glass-input px-4 py-2.5 rounded-xl">
             <i className="fas fa-search text-slate-500 text-sm"></i>
             <input
               type="text"
@@ -228,7 +228,7 @@ export default function ContentManagement() {
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            className="bg-white/5 border border-white/10 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 outline-none"
+            className="glass-input px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 outline-none"
           >
             <option value="">All Categories</option>
             {CATEGORIES.map((c) => (
@@ -239,7 +239,7 @@ export default function ContentManagement() {
           <select
             value={activeFilter}
             onChange={(e) => setActiveFilter(e.target.value as '' | 'true' | 'false')}
-            className="bg-white/5 border border-white/10 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 outline-none"
+            className="glass-input px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 outline-none"
           >
             <option value="">All Status</option>
             <option value="true">Active</option>
@@ -428,7 +428,7 @@ export default function ContentManagement() {
       {/* Create Domain Modal */}
       {showCreate && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowCreate(false)}>
-          <div className="glass-card rounded-2xl p-8 w-full max-w-lg border border-white/10" onClick={(e) => e.stopPropagation()}>
+          <div className="glass-card rounded-3xl p-6 sm:p-8 w-full max-w-lg border border-white/10" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-xl font-black tracking-tight mb-6">Create New Domain</h2>
             <form onSubmit={handleCreate} className="space-y-4">
               <div>
@@ -438,7 +438,7 @@ export default function ContentManagement() {
                   value={newDomain.name}
                   onChange={(e) => setNewDomain((prev) => ({ ...prev, name: e.target.value }))}
                   placeholder="e.g. fitness, cooking, tech reviews"
-                  className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl text-sm font-medium outline-none focus:border-white/20"
+                  className="w-full glass-input px-4 py-3 rounded-xl text-sm font-medium outline-none focus:border-white/20"
                   required
                 />
               </div>
@@ -447,7 +447,7 @@ export default function ContentManagement() {
                 <select
                   value={newDomain.category}
                   onChange={(e) => setNewDomain((prev) => ({ ...prev, category: e.target.value }))}
-                  className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl text-sm font-medium outline-none"
+                  className="w-full glass-input px-4 py-3 rounded-xl text-sm font-medium outline-none"
                 >
                   {CATEGORIES.map((c) => (
                     <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>
@@ -461,7 +461,7 @@ export default function ContentManagement() {
                   value={newDomain.icon}
                   onChange={(e) => setNewDomain((prev) => ({ ...prev, icon: e.target.value }))}
                   placeholder="e.g. a relevant emoji"
-                  className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl text-sm font-medium outline-none focus:border-white/20"
+                  className="w-full glass-input px-4 py-3 rounded-xl text-sm font-medium outline-none focus:border-white/20"
                 />
               </div>
               <div>
@@ -471,7 +471,7 @@ export default function ContentManagement() {
                   onChange={(e) => setNewDomain((prev) => ({ ...prev, description: e.target.value }))}
                   placeholder="Brief description of this domain..."
                   rows={3}
-                  className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl text-sm font-medium outline-none focus:border-white/20 resize-none"
+                  className="w-full glass-input px-4 py-3 rounded-xl text-sm font-medium outline-none focus:border-white/20 resize-none"
                 />
               </div>
               <div className="flex gap-3 pt-2">

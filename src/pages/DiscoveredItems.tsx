@@ -248,7 +248,7 @@ export default function DiscoveredItems() {
           <span className="px-2 py-0.5 bg-violet-500/10 text-violet-400 text-[10px] font-black uppercase tracking-widest rounded">
             Discovered Content
           </span>
-          <h1 className="text-4xl font-black tracking-tighter mb-2 mt-3">DISCOVERED ITEMS</h1>
+          <h1 className="text-4xl font-black tracking-tighter mb-2 mt-3 font-display">DISCOVERED ITEMS</h1>
           <p className="text-slate-500 text-sm font-medium">Browse, filter, and manage all content discovered through hashtag tracking.</p>
         </div>
         <div className="flex gap-3 text-[10px] font-black uppercase tracking-widest">
@@ -295,7 +295,7 @@ export default function DiscoveredItems() {
             <select
               value={filters.platform}
               onChange={(e) => updateFilter('platform', e.target.value)}
-              className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[10px] font-bold text-white focus:outline-none focus:border-pink-500/50 transition-colors"
+              className="glass-input rounded-lg px-3 py-2 text-[10px] font-bold text-white focus:outline-none focus:border-pink-500/50 transition-colors"
             >
               <option value="">All Platforms</option>
               <option value="tiktok">TikTok</option>
@@ -309,7 +309,7 @@ export default function DiscoveredItems() {
             <select
               value={filters.hashtag}
               onChange={(e) => updateFilter('hashtag', e.target.value)}
-              className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[10px] font-bold text-white focus:outline-none focus:border-pink-500/50 transition-colors"
+              className="glass-input rounded-lg px-3 py-2 text-[10px] font-bold text-white focus:outline-none focus:border-pink-500/50 transition-colors"
             >
               <option value="">All Hashtags</option>
               {hashtags.map(h => (
@@ -324,7 +324,7 @@ export default function DiscoveredItems() {
             <select
               value={filters.status}
               onChange={(e) => updateFilter('status', e.target.value)}
-              className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[10px] font-bold text-white focus:outline-none focus:border-pink-500/50 transition-colors"
+              className="glass-input rounded-lg px-3 py-2 text-[10px] font-bold text-white focus:outline-none focus:border-pink-500/50 transition-colors"
             >
               <option value="">All Statuses</option>
               <option value="fetched">Fetched</option>
@@ -339,7 +339,7 @@ export default function DiscoveredItems() {
             <select
               value={filters.sort_by}
               onChange={(e) => updateFilter('sort_by', e.target.value)}
-              className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[10px] font-bold text-white focus:outline-none focus:border-pink-500/50 transition-colors"
+              className="glass-input rounded-lg px-3 py-2 text-[10px] font-bold text-white focus:outline-none focus:border-pink-500/50 transition-colors"
             >
               <option value="newest">Newest</option>
               <option value="views">Most Views</option>
@@ -355,7 +355,7 @@ export default function DiscoveredItems() {
               type="date"
               value={filters.date_from}
               onChange={(e) => updateFilter('date_from', e.target.value)}
-              className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[10px] font-bold text-white focus:outline-none focus:border-pink-500/50 transition-colors"
+              className="glass-input rounded-lg px-3 py-2 text-[10px] font-bold text-white focus:outline-none focus:border-pink-500/50 transition-colors"
             />
           </div>
 
@@ -366,7 +366,7 @@ export default function DiscoveredItems() {
               type="date"
               value={filters.date_to}
               onChange={(e) => updateFilter('date_to', e.target.value)}
-              className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[10px] font-bold text-white focus:outline-none focus:border-pink-500/50 transition-colors"
+              className="glass-input rounded-lg px-3 py-2 text-[10px] font-bold text-white focus:outline-none focus:border-pink-500/50 transition-colors"
             />
           </div>
         </div>

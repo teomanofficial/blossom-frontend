@@ -707,7 +707,7 @@ export default function Discovery() {
               ) : (
                 <table className="w-full">
                   <thead>
-                    <tr className="text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-white/5">
+                    <tr className="text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-white/5 bg-white/[0.03]">
                       <td className="pb-2">Platform</td><td className="pb-2">Hashtag</td><td className="pb-2">Status</td>
                       <td className="pb-2 text-right">Fetched</td><td className="pb-2 text-right">New</td>
                       <td className="pb-2 text-right">Analyzed Duration</td><td className="pb-2">Error</td>
@@ -781,7 +781,7 @@ export default function Discovery() {
               Discovery
             </span>
           </div>
-          <h1 className="text-4xl font-black tracking-tighter mb-2">DISCOVERY</h1>
+          <h1 className="text-4xl font-black tracking-tighter mb-2 font-display">DISCOVERY</h1>
           <p className="text-slate-500 text-sm font-medium">
             Create schedulers to group hashtags, set run times, and discover trending content.
           </p>
@@ -899,7 +899,7 @@ export default function Discovery() {
                 placeholder="e.g. Morning TikTok Check"
                 value={schedulerForm.name}
                 onChange={(e) => setSchedulerForm({ ...schedulerForm, name: e.target.value })}
-                className="bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-xs font-bold text-white w-full max-w-md focus:outline-none focus:border-violet-500/50 placeholder-slate-600 transition-colors"
+                className="glass-input rounded-lg px-4 py-2.5 text-xs font-bold text-white w-full max-w-md focus:outline-none focus:border-violet-500/50 placeholder-slate-600 transition-colors"
               />
             </div>
 
@@ -910,7 +910,7 @@ export default function Discovery() {
                 <select
                   value={schedulerForm.frequency}
                   onChange={(e) => setSchedulerForm({ ...schedulerForm, frequency: e.target.value })}
-                  className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-violet-500/50 transition-colors"
+                  className="glass-input rounded-lg px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-violet-500/50 transition-colors"
                 >
                   <option value="daily">Daily</option>
                   <option value="every_6h">Every 6 hours</option>
@@ -925,7 +925,7 @@ export default function Discovery() {
                   <select
                     value={schedulerForm.run_hour}
                     onChange={(e) => setSchedulerForm({ ...schedulerForm, run_hour: parseInt(e.target.value) })}
-                    className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-violet-500/50 transition-colors"
+                    className="glass-input rounded-lg px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-violet-500/50 transition-colors"
                   >
                     {Array.from({ length: 24 }, (_, i) => (
                       <option key={i} value={i}>{String(i).padStart(2, '0')}:00</option>
@@ -1294,7 +1294,7 @@ export default function Discovery() {
       {showRunDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowRunDialog(false)} />
-          <div className="relative w-full max-w-lg glass-card rounded-[1.5rem] border border-white/10 p-6 max-h-[80vh] flex flex-col">
+          <div className="relative w-full max-w-lg glass-card rounded-3xl border border-white/10 p-6 sm:p-8 max-h-[80vh] flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between mb-5">
               <div>

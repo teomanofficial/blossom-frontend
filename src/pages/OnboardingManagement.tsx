@@ -124,10 +124,10 @@ function DetailModal({ userId, onClose }: { userId: string; onClose: () => void 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div
-        className="bg-slate-900 border border-white/10 rounded-3xl w-full max-w-2xl max-h-[85vh] overflow-y-auto dashboard-scrollbar"
+        className="glass-card rounded-3xl w-full max-w-2xl max-h-[85vh] overflow-y-auto dashboard-scrollbar"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="p-8">
+        <div className="p-6 sm:p-8">
           <div className="flex items-center justify-between mb-8">
             <h3 className="text-xl font-black">Onboarding Details</h3>
             <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors">
@@ -371,7 +371,7 @@ function OnboardingSimulation() {
                     value={simName}
                     onChange={(e) => setSimName(e.target.value)}
                     placeholder="Enter your full name"
-                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-slate-600 focus:border-pink-500/50 focus:ring-1 focus:ring-pink-500/20 focus:outline-none transition-colors"
+                    className="w-full px-4 py-3 glass-input rounded-xl text-sm text-white placeholder-slate-600 focus:border-pink-500/50 focus:ring-1 focus:ring-pink-500/20 focus:outline-none transition-colors"
                   />
                 </div>
                 <button
@@ -406,7 +406,7 @@ function OnboardingSimulation() {
                         value={simSocials[p.key]}
                         onChange={(e) => setSimSocials({ ...simSocials, [p.key]: e.target.value })}
                         placeholder={p.placeholder}
-                        className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-slate-600 focus:border-pink-500/50 focus:ring-1 focus:ring-pink-500/20 focus:outline-none transition-colors"
+                        className="flex-1 px-4 py-3 glass-input rounded-xl text-sm text-white placeholder-slate-600 focus:border-pink-500/50 focus:ring-1 focus:ring-pink-500/20 focus:outline-none transition-colors"
                       />
                     </div>
                   </div>
@@ -432,7 +432,7 @@ function OnboardingSimulation() {
                     onChange={(e) => setSimDescription(e.target.value)}
                     placeholder="I create short-form videos about cooking healthy meals, sharing recipes and kitchen tips..."
                     rows={5}
-                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-slate-600 focus:border-pink-500/50 focus:ring-1 focus:ring-pink-500/20 focus:outline-none transition-colors resize-none"
+                    className="w-full px-4 py-3 glass-input rounded-xl text-sm text-white placeholder-slate-600 focus:border-pink-500/50 focus:ring-1 focus:ring-pink-500/20 focus:outline-none transition-colors resize-none"
                   />
                   <p className="text-[10px] text-slate-600 mt-1">{simDescription.length} characters (minimum 10)</p>
                 </div>
@@ -601,7 +601,7 @@ export default function OnboardingManagement() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-black tracking-tight">Onboarding</h1>
+          <h1 className="text-3xl font-black tracking-tight font-display">Onboarding</h1>
           <p className="text-sm text-slate-500 mt-1">View user onboarding answers and preview the flow</p>
         </div>
       </div>
@@ -663,7 +663,7 @@ export default function OnboardingManagement() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search by email or name..."
-                  className="w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-slate-600 focus:border-pink-500/50 focus:outline-none transition-colors"
+                  className="w-full pl-10 pr-4 py-2.5 glass-input rounded-xl text-sm text-white placeholder-slate-600 focus:border-pink-500/50 focus:outline-none transition-colors"
                 />
               </div>
             </form>
@@ -695,10 +695,10 @@ export default function OnboardingManagement() {
               <p className="text-slate-500 text-sm font-medium">No onboarding entries found</p>
             </div>
           ) : (
-            <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
+            <div className="glass-card rounded-2xl overflow-hidden">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-white/5">
+                  <tr className="border-b border-white/5 bg-white/[0.03]">
                     <th className="text-left px-5 py-4 text-[10px] font-black text-slate-500 uppercase tracking-wider">User</th>
                     <th className="text-left px-5 py-4 text-[10px] font-black text-slate-500 uppercase tracking-wider">Progress</th>
                     <th className="text-left px-5 py-4 text-[10px] font-black text-slate-500 uppercase tracking-wider">Category</th>

@@ -225,7 +225,7 @@ export default function TrackedHashtags() {
         </div>
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
-            <h1 className="text-3xl font-black tracking-tighter mb-2">Tracked Hashtags</h1>
+            <h1 className="text-3xl font-black tracking-tighter mb-2 font-display">Tracked Hashtags</h1>
             <p className="text-slate-500 text-sm font-medium">
               {hashtags.length} hashtags tracked
               <span className="text-slate-600 mx-1.5">·</span>
@@ -265,7 +265,7 @@ export default function TrackedHashtags() {
                 placeholder="Search hashtags..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 pr-4 py-2 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-pink-500/50 w-56"
+                className="pl-9 pr-4 py-2 glass-input rounded-xl text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-pink-500/50 w-56"
               />
             </div>
             {/* Add button */}
@@ -292,7 +292,7 @@ export default function TrackedHashtags() {
               <select
                 value={newHashtag.platform}
                 onChange={(e) => setNewHashtag({ ...newHashtag, platform: e.target.value })}
-                className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm font-bold text-white focus:outline-none focus:border-pink-500/50"
+                className="glass-input rounded-xl px-3 py-2 text-sm font-bold text-white focus:outline-none focus:border-pink-500/50"
               >
                 <option value="tiktok">TikTok</option>
                 <option value="instagram">Instagram</option>
@@ -305,7 +305,7 @@ export default function TrackedHashtags() {
                 placeholder="#hashtag"
                 value={newHashtag.hashtag}
                 onChange={(e) => setNewHashtag({ ...newHashtag, hashtag: e.target.value })}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm font-bold text-white focus:outline-none focus:border-pink-500/50 placeholder-slate-600"
+                className="w-full glass-input rounded-xl px-3 py-2 text-sm font-bold text-white focus:outline-none focus:border-pink-500/50 placeholder-slate-600"
               />
             </div>
             <div>
@@ -316,7 +316,7 @@ export default function TrackedHashtags() {
                 max="100"
                 value={newHashtag.max_videos_per_run}
                 onChange={(e) => setNewHashtag({ ...newHashtag, max_videos_per_run: parseInt(e.target.value) || 30 })}
-                className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm font-bold text-white w-20 focus:outline-none focus:border-pink-500/50"
+                className="glass-input rounded-xl px-3 py-2 text-sm font-bold text-white w-20 focus:outline-none focus:border-pink-500/50"
               />
             </div>
             <button
@@ -381,7 +381,7 @@ export default function TrackedHashtags() {
         <div className="glass-card rounded-2xl overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-white/5">
+              <tr className="border-b border-white/5 bg-white/[0.03]">
                 <th className="text-left px-5 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest w-10">#</th>
                 <th className="text-left px-5 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Platform</th>
                 <th className="text-left px-5 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Hashtag</th>

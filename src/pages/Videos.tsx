@@ -538,7 +538,7 @@ export default function Videos() {
               Content Lab
             </span>
           </div>
-          <h1 className="text-4xl font-black tracking-tighter mb-2">SCAN & ANALYZE</h1>
+          <h1 className="text-4xl font-black font-display tracking-tighter mb-2">SCAN & ANALYZE</h1>
           <p className="text-slate-500 text-sm font-medium">
             Fetch videos from social media and run AI analysis to uncover viral patterns.
           </p>
@@ -621,7 +621,7 @@ export default function Videos() {
 
           {/* Query Input */}
           <div className="flex-1 flex gap-3">
-            <div className="flex-1 flex items-center gap-3 bg-white/5 border border-white/10 px-5 py-3 rounded-xl focus-within:border-white/20 transition-all">
+            <div className="flex-1 flex items-center gap-3 glass-input px-5 py-3 rounded-xl focus-within:border-white/20 transition-all">
               <i className={`fas fa-${searchType === 'username' ? 'at' : 'hashtag'} text-slate-500 text-xs`}></i>
               <input
                 type="text"
@@ -632,7 +632,7 @@ export default function Videos() {
                 className="bg-transparent border-none outline-none text-sm w-full placeholder:text-slate-600 font-medium"
               />
             </div>
-            <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-4 rounded-xl">
+            <div className="flex items-center gap-2 glass-input px-4 rounded-xl">
               <span className="text-[10px] font-black text-slate-500 uppercase">Qty</span>
               <input
                 type="number"

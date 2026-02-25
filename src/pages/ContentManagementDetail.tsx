@@ -345,7 +345,7 @@ export default function ContentManagementDetail() {
               {domain.icon || <i className="fas fa-layer-group text-slate-500"></i>}
             </div>
             <div>
-              <h1 className="text-3xl font-black tracking-tight">{domain.name}</h1>
+              <h1 className="text-3xl font-black tracking-tight font-display">{domain.name}</h1>
               <div className="flex items-center gap-2 mt-1">
                 {domain.category && (
                   <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider ${CATEGORY_COLORS[domain.category] || 'bg-white/5 text-slate-400'}`}>
@@ -429,7 +429,7 @@ export default function ContentManagementDetail() {
                 type="text"
                 value={editData.name}
                 onChange={(e) => setEditData((prev) => ({ ...prev, name: e.target.value }))}
-                className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl text-sm font-medium outline-none focus:border-white/20"
+                className="w-full glass-input px-4 py-3 rounded-xl text-sm font-medium outline-none focus:border-white/20"
               />
             </div>
             <div>
@@ -437,7 +437,7 @@ export default function ContentManagementDetail() {
               <select
                 value={editData.category}
                 onChange={(e) => setEditData((prev) => ({ ...prev, category: e.target.value }))}
-                className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl text-sm font-medium outline-none"
+                className="w-full glass-input px-4 py-3 rounded-xl text-sm font-medium outline-none"
               >
                 {CATEGORIES.map((c) => (
                   <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>
@@ -450,7 +450,7 @@ export default function ContentManagementDetail() {
                 type="text"
                 value={editData.icon}
                 onChange={(e) => setEditData((prev) => ({ ...prev, icon: e.target.value }))}
-                className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl text-sm font-medium outline-none focus:border-white/20"
+                className="w-full glass-input px-4 py-3 rounded-xl text-sm font-medium outline-none focus:border-white/20"
               />
             </div>
             <div>
@@ -459,7 +459,7 @@ export default function ContentManagementDetail() {
                 type="number"
                 value={editData.display_order}
                 onChange={(e) => setEditData((prev) => ({ ...prev, display_order: parseInt(e.target.value) || 0 }))}
-                className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl text-sm font-medium outline-none focus:border-white/20"
+                className="w-full glass-input px-4 py-3 rounded-xl text-sm font-medium outline-none focus:border-white/20"
               />
             </div>
           </div>
@@ -469,7 +469,7 @@ export default function ContentManagementDetail() {
               value={editData.description}
               onChange={(e) => setEditData((prev) => ({ ...prev, description: e.target.value }))}
               rows={3}
-              className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl text-sm font-medium outline-none focus:border-white/20 resize-none"
+              className="w-full glass-input px-4 py-3 rounded-xl text-sm font-medium outline-none focus:border-white/20 resize-none"
             />
           </div>
           <div className="flex gap-3">
@@ -519,7 +519,7 @@ export default function ContentManagementDetail() {
             onChange={(e) => setHashtagInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addHashtag() } }}
             placeholder="Add hashtag..."
-            className="flex-1 bg-white/5 border border-white/10 px-4 py-2.5 rounded-xl text-sm font-medium outline-none focus:border-white/20"
+            className="flex-1 glass-input px-4 py-2.5 rounded-xl text-sm font-medium outline-none focus:border-white/20"
           />
           <button
             onClick={addHashtag}
@@ -697,7 +697,7 @@ export default function ContentManagementDetail() {
       {/* Merge Modal */}
       {showMerge && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowMerge(false)}>
-          <div className="glass-card rounded-2xl p-8 w-full max-w-lg border border-white/10" onClick={(e) => e.stopPropagation()}>
+          <div className="glass-card rounded-3xl p-6 sm:p-8 w-full max-w-lg border border-white/10" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-xl font-black tracking-tight mb-2">Merge Domain</h2>
             <p className="text-sm text-slate-400 font-medium mb-6">
               Merge <span className="text-white font-bold">"{domain.name}"</span> into another domain. All video links and user selections will be transferred.
@@ -710,7 +710,7 @@ export default function ContentManagementDetail() {
                 onChange={(e) => setMergeSearch(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') searchMergeTargets() }}
                 placeholder="Search target domain..."
-                className="flex-1 bg-white/5 border border-white/10 px-4 py-3 rounded-xl text-sm font-medium outline-none focus:border-white/20"
+                className="flex-1 glass-input px-4 py-3 rounded-xl text-sm font-medium outline-none focus:border-white/20"
               />
               <button
                 onClick={searchMergeTargets}

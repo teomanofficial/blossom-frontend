@@ -186,7 +186,7 @@ export default function Hashtags() {
         </div>
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
-            <h1 className="text-3xl font-black tracking-tighter mb-2">Hashtags</h1>
+            <h1 className="text-3xl font-black tracking-tighter mb-2 font-display">Hashtags</h1>
             <p className="text-slate-500 text-sm font-medium">
               All discovered hashtags with platform stats. Right-click for actions.{' '}
               {total > 0 && <span className="text-slate-400">{total.toLocaleString()} hashtags</span>}
@@ -221,7 +221,7 @@ export default function Hashtags() {
                 placeholder="Search hashtags..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 pr-4 py-2 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-pink-500/50 w-56"
+                className="pl-9 pr-4 py-2 glass-input rounded-xl text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-pink-500/50 w-56"
               />
             </div>
           </div>
@@ -248,7 +248,7 @@ export default function Hashtags() {
           <div className="glass-card rounded-2xl overflow-hidden">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-white/5">
+                <tr className="border-b border-white/5 bg-white/[0.03]">
                   <th className="text-left px-5 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">#</th>
                   <th className="text-left px-5 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Hashtag</th>
                   <th className="text-left px-5 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Platform</th>
@@ -412,9 +412,9 @@ export default function Hashtags() {
       {/* Category Modal */}
       {categoryModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-white/10 rounded-2xl shadow-2xl shadow-black/50 w-full max-w-md mx-4">
+          <div className="glass-card rounded-3xl shadow-2xl shadow-black/50 w-full max-w-md mx-4 p-6 sm:p-8">
             {/* Header */}
-            <div className="px-6 py-4 border-b border-white/5">
+            <div className="pb-4 mb-4 border-b border-white/5">
               <h3 className="text-lg font-black text-white">Add to Category</h3>
               <p className="text-xs text-slate-500 mt-0.5 font-medium">
                 Select categories for <span className="text-pink-400 font-bold">#{categoryModal.name}</span>
@@ -422,7 +422,7 @@ export default function Hashtags() {
             </div>
 
             {/* Category List */}
-            <div className="px-6 py-4 max-h-80 overflow-y-auto">
+            <div className="max-h-80 overflow-y-auto">
               {loadingCategories ? (
                 <div className="flex items-center justify-center py-8">
                   <div className="w-6 h-6 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
@@ -457,7 +457,7 @@ export default function Hashtags() {
             </div>
 
             {/* Footer */}
-            <div className="px-6 py-4 border-t border-white/5 flex items-center justify-end gap-3">
+            <div className="pt-4 mt-4 border-t border-white/5 flex items-center justify-end gap-3">
               <button
                 onClick={() => setCategoryModal(null)}
                 className="px-4 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition-colors"

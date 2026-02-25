@@ -139,7 +139,7 @@ export default function SubscriptionPlans() {
             Management
           </span>
         </div>
-        <h1 className="text-4xl font-black tracking-tighter mb-2">
+        <h1 className="text-4xl font-black tracking-tighter font-display mb-2">
           Subscription <span className="gradient-text">Plans</span>
         </h1>
         <p className="text-slate-500 text-sm font-medium">
@@ -216,7 +216,7 @@ export default function SubscriptionPlans() {
                       type="text"
                       value={editingPlan.name}
                       onChange={(e) => setEditingPlan({ ...editingPlan, name: e.target.value })}
-                      className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm font-medium focus:border-pink-500/50 focus:outline-none transition-colors"
+                      className="w-full px-4 py-2.5 glass-input rounded-xl text-sm font-medium focus:border-pink-500/50 focus:outline-none transition-colors"
                     />
                   </div>
                   <div>
@@ -227,7 +227,7 @@ export default function SubscriptionPlans() {
                       type="text"
                       value={editingPlan.slug}
                       onChange={(e) => setEditingPlan({ ...editingPlan, slug: e.target.value })}
-                      className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm font-medium focus:border-pink-500/50 focus:outline-none transition-colors"
+                      className="w-full px-4 py-2.5 glass-input rounded-xl text-sm font-medium focus:border-pink-500/50 focus:outline-none transition-colors"
                     />
                   </div>
                   <div>
@@ -240,7 +240,7 @@ export default function SubscriptionPlans() {
                       onChange={(e) =>
                         setEditingPlan({ ...editingPlan, sort_order: parseInt(e.target.value) || 0 })
                       }
-                      className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm font-medium focus:border-pink-500/50 focus:outline-none transition-colors"
+                      className="w-full px-4 py-2.5 glass-input rounded-xl text-sm font-medium focus:border-pink-500/50 focus:outline-none transition-colors"
                     />
                   </div>
                 </div>
@@ -255,7 +255,7 @@ export default function SubscriptionPlans() {
                       setEditingPlan({ ...editingPlan, description: e.target.value })
                     }
                     rows={2}
-                    className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm font-medium focus:border-pink-500/50 focus:outline-none transition-colors resize-none"
+                    className="w-full px-4 py-2.5 glass-input rounded-xl text-sm font-medium focus:border-pink-500/50 focus:outline-none transition-colors resize-none"
                   />
                 </div>
 
@@ -274,7 +274,7 @@ export default function SubscriptionPlans() {
                           price_amount: parseInt(e.target.value) || 0,
                         })
                       }
-                      className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm font-medium focus:border-pink-500/50 focus:outline-none transition-colors"
+                      className="w-full px-4 py-2.5 glass-input rounded-xl text-sm font-medium focus:border-pink-500/50 focus:outline-none transition-colors"
                     />
                     <p className="text-xs text-slate-600 mt-1">
                       = {formatPrice(editingPlan.price_amount)}
@@ -290,7 +290,7 @@ export default function SubscriptionPlans() {
                       onChange={(e) =>
                         setEditingPlan({ ...editingPlan, price_currency: e.target.value })
                       }
-                      className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm font-medium focus:border-pink-500/50 focus:outline-none transition-colors"
+                      className="w-full px-4 py-2.5 glass-input rounded-xl text-sm font-medium focus:border-pink-500/50 focus:outline-none transition-colors"
                     />
                   </div>
                   <div>
@@ -302,7 +302,7 @@ export default function SubscriptionPlans() {
                       onChange={(e) =>
                         setEditingPlan({ ...editingPlan, billing_interval: e.target.value })
                       }
-                      className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm font-medium focus:border-pink-500/50 focus:outline-none transition-colors"
+                      className="w-full px-4 py-2.5 glass-input rounded-xl text-sm font-medium focus:border-pink-500/50 focus:outline-none transition-colors"
                     >
                       <option value="month">Monthly</option>
                       <option value="year">Yearly</option>
@@ -332,7 +332,7 @@ export default function SubscriptionPlans() {
                           setEditingPlan({ ...editingPlan, paddle_product_id: e.target.value })
                         }
                         placeholder="pro_..."
-                        className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm font-mono focus:border-indigo-500/50 focus:outline-none transition-colors"
+                        className="w-full px-4 py-2.5 glass-input rounded-xl text-sm font-mono focus:border-indigo-500/50 focus:outline-none transition-colors"
                       />
                     </div>
                     <div>
@@ -346,7 +346,7 @@ export default function SubscriptionPlans() {
                           setEditingPlan({ ...editingPlan, paddle_price_id: e.target.value })
                         }
                         placeholder="pri_..."
-                        className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm font-mono focus:border-indigo-500/50 focus:outline-none transition-colors"
+                        className="w-full px-4 py-2.5 glass-input rounded-xl text-sm font-mono focus:border-indigo-500/50 focus:outline-none transition-colors"
                       />
                     </div>
                   </div>
@@ -367,7 +367,7 @@ export default function SubscriptionPlans() {
                           setEditingPlan({ ...editingPlan, paddle_product_id_sandbox: e.target.value })
                         }
                         placeholder="pro_..."
-                        className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm font-mono focus:border-orange-500/50 focus:outline-none transition-colors"
+                        className="w-full px-4 py-2.5 glass-input rounded-xl text-sm font-mono focus:border-orange-500/50 focus:outline-none transition-colors"
                       />
                     </div>
                     <div>
@@ -381,7 +381,7 @@ export default function SubscriptionPlans() {
                           setEditingPlan({ ...editingPlan, paddle_price_id_sandbox: e.target.value })
                         }
                         placeholder="pri_..."
-                        className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm font-mono focus:border-orange-500/50 focus:outline-none transition-colors"
+                        className="w-full px-4 py-2.5 glass-input rounded-xl text-sm font-mono focus:border-orange-500/50 focus:outline-none transition-colors"
                       />
                     </div>
                   </div>
@@ -416,7 +416,7 @@ export default function SubscriptionPlans() {
                       onChange={(e) => setFeatureInput(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && addFeature()}
                       placeholder="Add a feature..."
-                      className="flex-1 px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm font-medium focus:border-pink-500/50 focus:outline-none transition-colors"
+                      className="flex-1 px-4 py-2.5 glass-input rounded-xl text-sm font-medium focus:border-pink-500/50 focus:outline-none transition-colors"
                     />
                     <button
                       onClick={addFeature}
