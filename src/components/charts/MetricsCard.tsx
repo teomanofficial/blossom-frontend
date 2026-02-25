@@ -22,7 +22,7 @@ export default function MetricsCard({
   const isPositive = (delta ?? 0) > 0;
 
   return (
-    <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4">
+    <div className="glass-card rounded-2xl p-5">
       <div className="flex items-start justify-between">
         <div className="flex flex-col gap-1 min-w-0">
           {/* Value */}

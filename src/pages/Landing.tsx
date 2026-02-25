@@ -138,7 +138,7 @@ export default function Landing() {
   const formatPrice = (cents: number) => `$${(cents / 100).toFixed(0)}`
 
   return (
-    <div className="min-h-screen bg-slate-950 overflow-x-hidden">
+    <div className="min-h-screen bg-[#050508] overflow-x-hidden">
       {/* Background mesh */}
       <div
         className="fixed inset-0 pointer-events-none z-0"
@@ -160,7 +160,7 @@ export default function Landing() {
             OWN THE SPOTLIGHT
           </div>
 
-          <h1 className="text-5xl sm:text-6xl md:text-8xl font-black mb-8 leading-[1.1] tracking-tight uppercase">
+          <h1 className="text-5xl sm:text-6xl md:text-8xl font-black font-display mb-8 leading-[1.1] tracking-tight uppercase">
             DO YOU WANT TO GET
             <br />
             <span className="gradient-text text-6xl sm:text-7xl md:text-9xl">
@@ -193,7 +193,7 @@ export default function Landing() {
               <div className="flex flex-col lg:flex-row gap-10 items-start text-left">
                 {/* Post Preview with Scanner */}
                 <div className="w-full lg:w-5/12 lg:sticky lg:top-8">
-                  <div className="relative bg-slate-950 rounded-[2rem] sm:rounded-[2.5rem] p-1.5 border-[4px] border-slate-800 shadow-2xl w-full">
+                  <div className="relative bg-[#050508] rounded-[2rem] sm:rounded-[2.5rem] p-1.5 border-[4px] border-slate-800 shadow-2xl w-full">
                     <div className="analysis-phone-frame rounded-[1.5rem] sm:rounded-[2rem] overflow-hidden relative" style={{ aspectRatio: '9/16' }}>
                       <img
                         src="/landing-cover.jpg"

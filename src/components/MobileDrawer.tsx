@@ -170,7 +170,7 @@ export default function MobileDrawer({ open, onClose, supportUnreadCount, hasAna
     <>
       {/* Backdrop */}
       <div
-        className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] lg:hidden ${closing ? 'animate-fade-out' : 'animate-fade-in'}`}
+        className={`fixed inset-0 bg-[#050508]/90 backdrop-blur-sm z-[60] lg:hidden ${closing ? 'animate-fade-out' : 'animate-fade-in'}`}
         style={dragY > 0 ? { opacity: backdropOpacity } : undefined}
         onClick={handleClose}
       />
@@ -184,7 +184,7 @@ export default function MobileDrawer({ open, onClose, supportUnreadCount, hasAna
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        <div className="h-full bg-[#070d1a] flex flex-col">
+        <div className="h-full bg-[#050508]/95 backdrop-blur-xl flex flex-col">
           {/* Header with drag handle + close button */}
           <div className="flex items-center justify-between px-5 pt-[max(env(safe-area-inset-top),12px)] pb-2 shrink-0">
             {/* Drag Handle centered */}

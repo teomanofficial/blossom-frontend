@@ -126,7 +126,7 @@ export default function ChoosePlan() {
 
   if (checkoutSuccess) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+      <div className="min-h-screen bg-[#050508] flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-teal-500/20 flex items-center justify-center">
             <svg className="w-8 h-8 text-teal-400" fill="currentColor" viewBox="0 0 20 20">
@@ -145,14 +145,14 @@ export default function ChoosePlan() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+      <div className="min-h-screen bg-[#050508] flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 overflow-x-hidden relative">
+    <div className="min-h-screen bg-[#050508] overflow-x-hidden relative">
       {/* Background mesh */}
       <div
         className="fixed inset-0 pointer-events-none z-0"
@@ -190,7 +190,7 @@ export default function ChoosePlan() {
             </svg>
             ALMOST THERE
           </div>
-          <h1 className="text-4xl sm:text-5xl md:text-7xl font-black tracking-tight mb-4">
+          <h1 className="text-4xl sm:text-5xl md:text-7xl font-black font-display tracking-tight mb-4">
             Choose Your <span className="gradient-text">Plan</span>
           </h1>
           <p className="text-slate-400 text-base sm:text-lg max-w-2xl mx-auto font-medium">

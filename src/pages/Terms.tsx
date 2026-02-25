@@ -3,11 +3,11 @@ import Footer from '../components/Footer'
 
 export default function Terms() {
   return (
-    <div className="min-h-screen bg-slate-950">
+    <div className="min-h-screen bg-[#050508]">
       <Navbar />
       <div className="pt-32 pb-20 px-4 sm:px-6">
         <div className="max-w-3xl mx-auto">
-          <h1 className="text-3xl sm:text-4xl font-black mb-2">Terms of Use</h1>
+          <h1 className="text-3xl sm:text-4xl font-black font-display mb-2">Terms of Use</h1>
           <p className="text-slate-500 text-sm mb-10">Last updated: February 21, 2026</p>
 
           <div className="space-y-8 text-slate-300 text-sm leading-relaxed">

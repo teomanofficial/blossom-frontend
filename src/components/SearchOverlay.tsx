@@ -218,7 +218,7 @@ export default function SearchOverlay() {
   return (
     <div ref={containerRef} className="relative w-full max-w-xl">
       {/* Search Input */}
-      <div className={`flex items-center gap-4 bg-white/5 border px-5 py-2.5 rounded-2xl transition-all ${open ? 'border-white/20 bg-white/[0.07]' : 'border-white/10'}`}>
+      <div className={`search-glass flex items-center gap-4 px-5 py-2.5 rounded-2xl transition-all ${open ? 'border-white/20 bg-white/[0.07]' : ''}`}>
         <i className={`fas fa-search text-sm ${open ? 'text-pink-400' : 'text-slate-500'} transition-colors`}></i>
         <input
           ref={inputRef}

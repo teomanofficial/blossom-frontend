@@ -833,14 +833,14 @@ export default function Onboarding() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+      <div className="min-h-screen bg-[#050508] flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 overflow-x-hidden relative">
+    <div className="min-h-screen bg-[#050508] overflow-x-hidden relative">
       {/* Background mesh */}
       <div
         className="fixed inset-0 pointer-events-none z-0"

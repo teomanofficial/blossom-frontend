@@ -36,7 +36,7 @@ export default function VerifyEmail() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 bg-slate-950 relative">
+    <div className="min-h-screen flex items-center justify-center px-4 bg-[#050508] relative">
       <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-pink-600/10 rounded-full blur-[128px] pointer-events-none" />
 
       <div className="relative w-full max-w-md text-center">
@@ -47,14 +47,14 @@ export default function VerifyEmail() {
           <span className="text-xl font-bold gradient-text">Blossom</span>
         </Link>
 
-        <div className="glass-card p-8">
+        <div className="glass-card rounded-3xl p-8">
           <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-pink-500/10 border border-pink-500/20 flex items-center justify-center">
             <svg className="w-8 h-8 text-pink-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
             </svg>
           </div>
 
-          <h1 className="text-2xl font-bold mb-2">Check your email</h1>
+          <h1 className="text-2xl font-bold font-display mb-2">Check your email</h1>
           <p className="text-gray-400 text-sm mb-2">
             We sent a verification link to
           </p>

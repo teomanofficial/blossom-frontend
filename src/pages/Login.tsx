@@ -38,7 +38,7 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 bg-slate-950 relative">
+    <div className="min-h-screen flex items-center justify-center px-4 bg-[#050508] relative">
       <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-pink-600/10 rounded-full blur-[128px] pointer-events-none" />
 
       <div className="relative w-full max-w-md">
@@ -47,11 +47,11 @@ export default function Login() {
             <img src="/logo-light.png" alt="Blossom" className="w-8 h-8" />
             <span className="text-xl font-bold gradient-text">Blossom</span>
           </Link>
-          <h1 className="text-2xl font-bold">Welcome back</h1>
+          <h1 className="text-2xl font-bold font-display">Welcome back</h1>
           <p className="mt-2 text-gray-400 text-sm">Sign in to your account</p>
         </div>
 
-        <div className="glass-card p-8">
+        <div className="glass-card rounded-3xl p-8">
           <button
             onClick={handleGoogleLogin}
             className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-sm font-medium"
@@ -70,7 +70,7 @@ export default function Login() {
               <div className="w-full border-t border-white/10" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-slate-950 text-gray-500">or</span>
+              <span className="px-4 bg-[#050508] text-gray-500">or</span>
             </div>
           </div>
 
@@ -91,7 +91,7 @@ export default function Login() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500/50 text-sm"
+                className="glass-input w-full px-4 py-3 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500/50 text-sm"
                 placeholder="you@example.com"
               />
             </div>
@@ -106,7 +106,7 @@ export default function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500/50 text-sm"
+                className="glass-input w-full px-4 py-3 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500/50 text-sm"
                 placeholder="Your password"
               />
             </div>

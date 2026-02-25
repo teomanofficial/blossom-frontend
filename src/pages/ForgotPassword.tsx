@@ -26,7 +26,7 @@ export default function ForgotPassword() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 bg-slate-950 relative">
+    <div className="min-h-screen flex items-center justify-center px-4 bg-[#050508] relative">
       <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-pink-600/10 rounded-full blur-[128px] pointer-events-none" />
 
       <div className="relative w-full max-w-md">
@@ -37,13 +37,13 @@ export default function ForgotPassword() {
             </div>
             <span className="text-xl font-bold gradient-text">Blossom</span>
           </Link>
-          <h1 className="text-2xl font-bold">Reset your password</h1>
+          <h1 className="text-2xl font-bold font-display">Reset your password</h1>
           <p className="mt-2 text-gray-400 text-sm">
             Enter your email and we'll send you a reset link
           </p>
         </div>
 
-        <div className="glass-card p-8">
+        <div className="glass-card rounded-3xl p-8">
           {success ? (
             <div className="text-center space-y-4">
               <div className="w-12 h-12 mx-auto rounded-full bg-green-500/10 border border-green-500/20 flex items-center justify-center">
@@ -80,7 +80,7 @@ export default function ForgotPassword() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500/50 text-sm"
+                    className="glass-input w-full px-4 py-3 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500/50 text-sm"
                     placeholder="you@example.com"
                   />
                 </div>

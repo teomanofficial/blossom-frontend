@@ -36,7 +36,7 @@ export default function ResetPassword() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 bg-slate-950 relative">
+    <div className="min-h-screen flex items-center justify-center px-4 bg-[#050508] relative">
       <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-pink-600/10 rounded-full blur-[128px] pointer-events-none" />
 
       <div className="relative w-full max-w-md">
@@ -47,13 +47,13 @@ export default function ResetPassword() {
             </div>
             <span className="text-xl font-bold gradient-text">Blossom</span>
           </Link>
-          <h1 className="text-2xl font-bold">Set new password</h1>
+          <h1 className="text-2xl font-bold font-display">Set new password</h1>
           <p className="mt-2 text-gray-400 text-sm">
             Choose a strong password for your account
           </p>
         </div>
 
-        <div className="glass-card p-8">
+        <div className="glass-card rounded-3xl p-8">
           {error && (
             <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
               {error}
@@ -72,7 +72,7 @@ export default function ResetPassword() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
-                className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500/50 text-sm"
+                className="glass-input w-full px-4 py-3 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500/50 text-sm"
                 placeholder="At least 6 characters"
               />
             </div>
@@ -88,7 +88,7 @@ export default function ResetPassword() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
                 minLength={6}
-                className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500/50 text-sm"
+                className="glass-input w-full px-4 py-3 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500/50 text-sm"
                 placeholder="Confirm your password"
               />
             </div>
