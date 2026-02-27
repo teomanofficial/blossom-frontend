@@ -50,6 +50,7 @@ import TrendingFormats from './pages/TrendingFormats'
 import TrendingHooks from './pages/TrendingHooks'
 import TrendingContents from './pages/TrendingContents'
 import TrendingSongs from './pages/TrendingSongs'
+import ContentAnalyticsDashboard from './pages/ContentAnalyticsDashboard'
 import Onboarding from './pages/Onboarding'
 import AuthCallback from './pages/AuthCallback'
 import Platforms from './pages/Platforms'
@@ -135,8 +136,11 @@ function App() {
         </Route>
         <Route path="subscription-plans" element={<AdminGate><SubscriptionPlans /></AdminGate>} />
         <Route path="users" element={<AdminGate><Users /></AdminGate>} />
-        <Route path="content-management" element={<AdminGate><ContentManagement /></AdminGate>} />
-        <Route path="content-management/:id" element={<AdminGate><ContentManagementDetail /></AdminGate>} />
+        <Route path="content-analytics" element={<AdminGate><ContentAnalyticsDashboard /></AdminGate>} />
+        <Route path="domain-management" element={<AdminGate><ContentManagement /></AdminGate>} />
+        <Route path="domain-management/:id" element={<AdminGate><ContentManagementDetail /></AdminGate>} />
+        <Route path="content-management" element={<Navigate to="/dashboard/domain-management" replace />} />
+        <Route path="content-management/:id" element={<Navigate to="/dashboard/domain-management" replace />} />
         <Route path="categories" element={<AdminGate><Categories /></AdminGate>} />
         <Route path="categories/:id/domains" element={<AdminGate><CategoryDomains /></AdminGate>} />
         <Route path="support" element={<Support />} />

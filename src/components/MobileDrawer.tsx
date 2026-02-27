@@ -34,7 +34,8 @@ const accountItems = [
 const managementItems = [
   { to: '/dashboard/users', icon: 'fa-users-gear', label: 'Users', color: 'text-slate-300', bg: 'bg-white/5' },
   { to: '/dashboard/subscription-plans', icon: 'fa-credit-card', label: 'Plans', color: 'text-slate-300', bg: 'bg-white/5' },
-  { to: '/dashboard/content-management', icon: 'fa-layer-group', label: 'Content', color: 'text-slate-300', bg: 'bg-white/5' },
+  { to: '/dashboard/content-analytics', icon: 'fa-chart-pie', label: 'Content', color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+  { to: '/dashboard/domain-management', icon: 'fa-layer-group', label: 'Domains', color: 'text-slate-300', bg: 'bg-white/5' },
   { to: '/dashboard/categories', icon: 'fa-folder-tree', label: 'Categories', color: 'text-slate-300', bg: 'bg-white/5' },
   { to: '/dashboard/videos', icon: 'fa-satellite-dish', label: 'Scan & Analyze', color: 'text-slate-300', bg: 'bg-white/5' },
   { to: '/dashboard/discovery', icon: 'fa-bolt', label: 'Discovery', color: 'text-slate-300', bg: 'bg-white/5' },

@@ -305,8 +305,8 @@ export default function ContentManagementDetail() {
     return (
       <div className="glass-card rounded-2xl p-12 text-center">
         <h3 className="font-black text-lg mb-2">Domain Not Found</h3>
-        <Link to="/dashboard/content-management" className="text-pink-400 text-sm font-bold hover:underline">
-          Back to Content Management
+        <Link to="/dashboard/domain-management" className="text-pink-400 text-sm font-bold hover:underline">
+          Back to Domain Management
         </Link>
       </div>
     )
@@ -320,8 +320,8 @@ export default function ContentManagementDetail() {
     <>
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm mb-8">
-        <Link to="/dashboard/content-management" className="text-slate-500 hover:text-white transition-colors font-medium">
-          Content Management
+        <Link to="/dashboard/domain-management" className="text-slate-500 hover:text-white transition-colors font-medium">
+          Domain Management
         </Link>
         <i className="fas fa-chevron-right text-slate-600 text-[10px]"></i>
         <span className="text-white font-bold">{domain.name}</span>

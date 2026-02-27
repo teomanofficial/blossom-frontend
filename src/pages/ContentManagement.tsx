@@ -291,7 +291,7 @@ export default function ContentManagement() {
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {domains.map((domain) => (
               <div key={domain.id} className="glass-card rounded-2xl overflow-hidden group hover:translate-y-[-2px] transition-all duration-300">
-                <Link to={`/dashboard/content-management/${domain.id}`} className="block p-6">
+                <Link to={`/dashboard/domain-management/${domain.id}`} className="block p-6">
                   <div className="flex justify-between items-start mb-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-lg">
@@ -390,7 +390,7 @@ export default function ContentManagement() {
                     ) : domain.is_active ? 'Deactivate' : 'Activate'}
                   </button>
                   <Link
-                    to={`/dashboard/content-management/${domain.id}`}
+                    to={`/dashboard/domain-management/${domain.id}`}
                     className="flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider bg-white/5 text-slate-300 hover:bg-white/10 transition-colors text-center"
                   >
                     Manage
