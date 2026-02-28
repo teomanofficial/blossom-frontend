@@ -166,6 +166,8 @@ export default function InfluencerDetail() {
   const [loadingSuggested, setLoadingSuggested] = useState(false)
   const [savingUsers, setSavingUsers] = useState<Set<string>>(new Set())
   const [fetchProgressVisible, setFetchProgressVisible] = useState(false)
+  const [discProfile, setDiscProfile] = useState<any>(null)
+  const [discLoading, setDiscLoading] = useState(false)
 
   const fetchInfluencer = () => {
     setLoading(true)
@@ -180,6 +182,31 @@ export default function InfluencerDetail() {
   }
 
   useEffect(() => { fetchInfluencer() }, [id])
+
+  // Fetch DISC profile
+  useEffect(() => {
+    if (!id) return
+    authFetch(`/api/analysis/influencers/${id}/disc-profile`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data && !data.error) setDiscProfile(data) })
+      .catch(() => {})
+  }, [id])
+
+  const handleComputeDisc = () => {
+    if (!id) return
+    setDiscLoading(true)
+    authFetch(`/api/analysis/influencers/${id}/disc-profile`, { method: 'POST' })
+      .then(r => r.json())
+      .then(data => {
+        if (data.error) {
+          setActionMessage(data.error)
+        } else {
+          setDiscProfile(data)
+        }
+      })
+      .catch(e => setActionMessage(e.message))
+      .finally(() => setDiscLoading(false))
+  }
 
   const handleRefresh = () => {
     setRefreshing(true)
@@ -624,6 +651,108 @@ export default function InfluencerDetail() {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* DISC Creator Voice Profile */}
+          {discProfile && (
+            <div className="glass-card rounded-3xl p-5 md:p-8 mb-8 md:mb-10 relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-4 md:p-8 opacity-10">
+                <i className="fas fa-user-circle text-5xl md:text-8xl text-violet-400"></i>
+              </div>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-sm font-black text-violet-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                  <i className="fas fa-fingerprint"></i> Creator Voice Profile
+                </h2>
+                <button
+                  onClick={handleComputeDisc}
+                  disabled={discLoading}
+                  className="text-[10px] font-bold text-slate-500 hover:text-slate-300 transition-colors disabled:opacity-50"
+                >
+                  {discLoading ? 'Computing...' : 'Refresh'}
+                </button>
+              </div>
+
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+                <div className="p-5 bg-black/20 rounded-2xl border border-white/5">
+                  <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Primary Style</div>
+                  <div className="text-sm font-black text-white">
+                    {discProfile.disc_primary?.replace('_', ' — ') || '--'}
+                  </div>
+                  {discProfile.confidence != null && (
+                    <div className="text-[10px] font-bold text-slate-600 mt-1">{discProfile.confidence}% confidence</div>
+                  )}
+                </div>
+                {discProfile.disc_secondary && (
+                  <div className="p-5 bg-black/20 rounded-2xl border border-white/5">
+                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Secondary Style</div>
+                    <div className="text-sm font-bold text-white">
+                      {discProfile.disc_secondary?.replace('_', ' — ')}
+                    </div>
+                  </div>
+                )}
+                {discProfile.audience_archetype && (
+                  <div className="p-5 bg-black/20 rounded-2xl border border-white/5">
+                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Audience Archetype</div>
+                    <div className="text-sm font-bold text-white">{discProfile.audience_archetype}</div>
+                  </div>
+                )}
+                <div className="p-5 bg-black/20 rounded-2xl border border-white/5">
+                  <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Sample Size</div>
+                  <div className="text-sm font-bold text-white">{discProfile.sample_size} videos</div>
+                </div>
+              </div>
+
+              {discProfile.voice_descriptors && (Array.isArray(discProfile.voice_descriptors) ? discProfile.voice_descriptors : []).length > 0 && (
+                <div className="mt-4 p-4 bg-black/20 rounded-2xl border border-white/5">
+                  <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Voice Descriptors</div>
+                  <div className="flex flex-wrap gap-2">
+                    {(Array.isArray(discProfile.voice_descriptors) ? discProfile.voice_descriptors : []).map((d: string, i: number) => (
+                      <span key={i} className="text-xs font-bold text-violet-400 bg-violet-400/10 px-3 py-1 rounded-lg capitalize">
+                        {d}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {discProfile.distribution && (
+                <div className="mt-4 p-4 bg-black/20 rounded-2xl border border-white/5">
+                  <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">DISC Distribution</div>
+                  <div className="space-y-2">
+                    {Object.entries(discProfile.distribution).map(([key, val]: [string, any]) => (
+                      <div key={key} className="flex items-center gap-3">
+                        <span className="text-xs font-bold text-slate-400 w-28">{key.replace('_', ' ')}</span>
+                        <div className="flex-1 h-2 bg-white/5 rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-violet-500"
+                            style={{ width: `${val}%` }}
+                          />
+                        </div>
+                        <span className="text-xs font-black text-white w-10 text-right">{val}%</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Compute DISC button when no profile exists */}
+          {!discProfile && influencer.total_videos_fetched && influencer.total_videos_fetched >= 3 && (
+            <div className="glass-card rounded-3xl p-6 mb-8 md:mb-10 text-center">
+              <div className="w-12 h-12 mx-auto mb-3 bg-violet-400/10 rounded-full flex items-center justify-center">
+                <i className="fas fa-fingerprint text-violet-400"></i>
+              </div>
+              <h3 className="font-black text-sm mb-1">Creator Voice Profile</h3>
+              <p className="text-xs text-slate-500 mb-4">Aggregate DISC personality profile from analyzed videos</p>
+              <button
+                onClick={handleComputeDisc}
+                disabled={discLoading}
+                className="bg-gradient-to-r from-violet-500 to-purple-500 text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest hover:opacity-90 transition-opacity disabled:opacity-50"
+              >
+                {discLoading ? 'Computing...' : 'Generate Profile'}
+              </button>
             </div>
           )}
 
