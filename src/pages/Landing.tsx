@@ -453,7 +453,7 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16 sm:mb-24">
             <h2 className="text-3xl sm:text-4xl md:text-6xl font-black mb-4 tracking-tight">
-              THE VIRALITY PLAYBOOK
+              THE PLAYBOOK
             </h2>
             <p className="text-slate-400 text-base sm:text-lg md:text-xl max-w-xl mx-auto font-medium">
               We don't just predict views. We guarantee success.

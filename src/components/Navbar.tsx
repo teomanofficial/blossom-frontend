@@ -13,7 +13,7 @@ export default function Navbar() {
         </Link>
 
         <div className="hidden lg:flex items-center gap-10 text-sm font-semibold text-slate-400">
-          <a href="#results" className="hover:text-white transition-colors">The Receipts</a>
+          <a href="#results" className="hover:text-white transition-colors">The Playbook</a>
           <a href="#system" className="hover:text-white transition-colors">The System</a>
           <a href="#influence" className="hover:text-white transition-colors">Influence</a>
         </div>
