@@ -85,12 +85,22 @@ export default function FetchContentProgress({ influencerId, onComplete, onDismi
     }
   }, [influencerId, onComplete])
 
-  if (!progress) return null
+  const p: FetchProgress = progress || {
+    phase: 'fetching',
+    message: 'Connecting to Instagram API...',
+    fetched: 0,
+    target: 100,
+    created: 0,
+    updated: 0,
+    skipped: 0,
+    downloaded: 0,
+    downloadTotal: 0,
+  }
 
-  const pct = getOverallPercent(progress)
-  const isActive = progress.phase !== 'done' && progress.phase !== 'error'
-  const isDone = progress.phase === 'done'
-  const isError = progress.phase === 'error'
+  const pct = getOverallPercent(p)
+  const isActive = p.phase !== 'done' && p.phase !== 'error'
+  const isDone = p.phase === 'done'
+  const isError = p.phase === 'error'
 
   return (
     <div className={`rounded-2xl border p-4 md:p-5 ${
@@ -104,10 +114,10 @@ export default function FetchContentProgress({ influencerId, onComplete, onDismi
           <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
             isDone ? 'bg-teal-500/10' : isError ? 'bg-red-500/10' : 'bg-blue-500/10'
           }`}>
-            <i className={`fas ${getPhaseIcon(progress.phase)} text-sm ${
+            <i className={`fas ${getPhaseIcon(p.phase)} text-sm ${
               isDone ? 'text-teal-400' : isError ? 'text-red-400' :
-              progress.phase === 'downloading' ? 'text-orange-400' : 'text-blue-400'
-            } ${isActive && progress.phase !== 'downloading' ? 'animate-pulse' : ''}`}></i>
+              p.phase === 'downloading' ? 'text-orange-400' : 'text-blue-400'
+            } ${isActive && p.phase !== 'downloading' ? 'animate-pulse' : ''}`}></i>
           </div>
           <div>
             <div className="text-sm font-bold text-white">
@@ -116,7 +126,7 @@ export default function FetchContentProgress({ influencerId, onComplete, onDismi
                'Fetching Videos...'}
             </div>
             <div className="text-[11px] text-slate-500">
-              {progress.message}
+              {p.message}
             </div>
           </div>
         </div>
@@ -138,8 +148,8 @@ export default function FetchContentProgress({ influencerId, onComplete, onDismi
       {/* Progress Bar */}
       <div className="h-2 bg-white/5 rounded-full overflow-hidden mb-3">
         <div
-          className={`h-full rounded-full bg-gradient-to-r ${getPhaseColor(progress.phase)} transition-all duration-500 ${isActive ? 'animate-pulse' : ''}`}
-          style={{ width: `${isDone ? 100 : pct}%` }}
+          className={`h-full rounded-full bg-gradient-to-r ${getPhaseColor(p.phase)} transition-all duration-500 ${isActive ? 'animate-pulse' : ''}`}
+          style={{ width: `${isDone ? 100 : Math.max(pct, isActive && !progress ? 2 : 0)}%` }}
         />
       </div>
 
@@ -147,38 +157,38 @@ export default function FetchContentProgress({ influencerId, onComplete, onDismi
       <div className="grid grid-cols-4 gap-2">
         <div className="bg-white/[0.03] rounded-lg px-2 py-2 text-center">
           <div className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">Fetched</div>
-          <div className="text-sm font-bold text-white">{progress.fetched}</div>
+          <div className="text-sm font-bold text-white">{p.fetched}</div>
         </div>
         <div className="bg-white/[0.03] rounded-lg px-2 py-2 text-center">
           <div className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">New</div>
-          <div className="text-sm font-bold text-green-400">{progress.created}</div>
+          <div className="text-sm font-bold text-green-400">{p.created}</div>
         </div>
         <div className="bg-white/[0.03] rounded-lg px-2 py-2 text-center">
           <div className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">Updated</div>
-          <div className="text-sm font-bold text-blue-400">{progress.updated}</div>
+          <div className="text-sm font-bold text-blue-400">{p.updated}</div>
         </div>
         <div className="bg-white/[0.03] rounded-lg px-2 py-2 text-center">
           <div className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">Downloaded</div>
           <div className="text-sm font-bold text-white">
-            {progress.downloaded}/{progress.downloadTotal || '—'}
-            {(progress.downloadFailed || 0) > 0 && (
-              <span className="text-red-400 text-[10px] ml-0.5">+{progress.downloadFailed}</span>
+            {p.downloaded}/{p.downloadTotal || '—'}
+            {(p.downloadFailed || 0) > 0 && (
+              <span className="text-red-400 text-[10px] ml-0.5">+{p.downloadFailed}</span>
             )}
           </div>
         </div>
       </div>
 
       {/* Skipped info */}
-      {progress.skipped > 0 && (
+      {p.skipped > 0 && (
         <div className="mt-2 text-[10px] text-slate-500 text-center">
-          {progress.skipped} video{progress.skipped > 1 ? 's' : ''} skipped (longer than 3 min)
+          {p.skipped} video{p.skipped > 1 ? 's' : ''} skipped (longer than 3 min)
         </div>
       )}
 
       {/* Error */}
       {isError && (
         <div className="mt-3 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20 text-xs text-red-400">
-          {progress.message}
+          {p.message}
         </div>
       )}
     </div>

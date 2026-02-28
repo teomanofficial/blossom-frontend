@@ -63,9 +63,10 @@ function getPhaseColor(phase: string): string {
 interface Props {
   onStartAnalyze?: (influencerId: number) => void
   compact?: boolean
+  pollNow?: number
 }
 
-export default function InfluencerAnalyzeProgress({ compact }: Props) {
+export default function InfluencerAnalyzeProgress({ compact, pollNow }: Props) {
   const [progress, setProgress] = useState<AnalyzeProgress | null>(null)
   const [cancelling, setCancelling] = useState(false)
 
@@ -75,6 +76,11 @@ export default function InfluencerAnalyzeProgress({ compact }: Props) {
       .then(setProgress)
       .catch(() => {})
   }, [])
+
+  // Poll immediately when parent signals (e.g. after clicking ANALYZE)
+  useEffect(() => {
+    if (pollNow) poll()
+  }, [pollNow, poll])
 
   // Poll fast (2s) when running, slow (15s) when idle, stop when terminal
   useEffect(() => {
@@ -123,14 +129,17 @@ export default function InfluencerAnalyzeProgress({ compact }: Props) {
       <div className={`rounded-xl border px-3 py-2.5 ${
         isDone ? 'bg-teal-500/5 border-teal-500/20' :
         isError ? 'bg-red-500/5 border-red-500/20' :
+        isCancelled ? 'bg-slate-500/5 border-slate-500/20' :
         'bg-white/[0.03] border-white/10'
       }`}>
         <div className="flex items-center justify-between gap-2 mb-1.5">
           <div className="flex items-center gap-2 min-w-0">
             <i className={`fas ${getPhaseIcon(progress.phase)} text-[10px] ${
-              isDone ? 'text-teal-400' : isError ? 'text-red-400' : 'text-pink-400'
+              isDone ? 'text-teal-400' : isError ? 'text-red-400' : isCancelled ? 'text-slate-400' : 'text-pink-400'
             }`}></i>
-            <span className="text-[11px] font-bold text-slate-300 truncate">
+            <span className={`text-[11px] font-bold truncate ${
+              isError ? 'text-red-400' : isCancelled ? 'text-slate-400' : 'text-slate-300'
+            }`}>
               {progress.phaseLabel || (progress.influencerUsername ? `Analyzing @${progress.influencerUsername}...` : 'Analyzing...')}
             </span>
           </div>
@@ -164,6 +173,9 @@ export default function InfluencerAnalyzeProgress({ compact }: Props) {
             style={{ width: `${isDone ? 100 : pct}%` }}
           />
         </div>
+        {isError && progress.error && (
+          <div className="mt-1.5 text-[10px] text-red-400 truncate">{progress.error}</div>
+        )}
       </div>
     )
   }

@@ -68,6 +68,7 @@ export default function Influencers() {
   const [page, setPage] = useState(0)
   const [refetching, setRefetching] = useState(false)
   const [analyzingId, setAnalyzingId] = useState<number | null>(null)
+  const [pollNow, setPollNow] = useState(0)
   const tierRef = useRef<HTMLDivElement>(null)
   const limit = 30
 
@@ -156,6 +157,7 @@ export default function Influencers() {
         toast.error(data.error || 'Failed to start analysis')
       } else {
         toast.success(`Started full analysis for @${username}`)
+        setPollNow(Date.now())
       }
     } catch {
       toast.error('Failed to start analysis')
@@ -306,7 +308,7 @@ export default function Influencers() {
       {/* Influencer Analyze Progress */}
       {userType === 'admin' && (
         <div className="mb-4">
-          <InfluencerAnalyzeProgress compact />
+          <InfluencerAnalyzeProgress compact pollNow={pollNow} />
         </div>
       )}
 
