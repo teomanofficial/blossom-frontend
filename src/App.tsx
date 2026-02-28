@@ -23,6 +23,7 @@ import InfluencerDetail from './pages/InfluencerDetail'
 import Discovery from './pages/Discovery'
 import TrackedHashtags from './pages/TrackedHashtags'
 import DiscoveredItems from './pages/DiscoveredItems'
+import DiscoverySettings from './pages/DiscoverySettings'
 import Suggestions from './pages/Suggestions'
 import SuggestionDetail from './pages/SuggestionDetail'
 import AccountLayout from './pages/Account'
@@ -117,6 +118,7 @@ function App() {
         <Route path="discovery" element={<AdminGate><Discovery /></AdminGate>} />
         <Route path="discovery/hashtags" element={<AdminGate><TrackedHashtags /></AdminGate>} />
         <Route path="discovery/items" element={<AdminGate><DiscoveredItems /></AdminGate>} />
+        <Route path="discovery/settings" element={<AdminGate><DiscoverySettings /></AdminGate>} />
         <Route path="trends" element={<Trends />} />
         <Route path="trends/posts" element={<TrendingPosts />} />
         <Route path="trends/formats" element={<TrendingFormats />} />

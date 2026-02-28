@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { authFetch } from '../lib/api'
 import { getStorageUrl } from '../lib/media'
 import { useAuth } from '../context/AuthContext'
 import VideoStoryCarousel, { type CarouselVideo } from '../components/VideoStoryCarousel'
 import InfluencerAnalyzeProgress from '../components/InfluencerAnalyzeProgress'
+import FetchContentProgress from '../components/FetchContentProgress'
 
 interface InfluencerVideo {
   id: number
@@ -164,6 +165,7 @@ export default function InfluencerDetail() {
   const [suggestedUsers, setSuggestedUsers] = useState<any[] | null>(null)
   const [loadingSuggested, setLoadingSuggested] = useState(false)
   const [savingUsers, setSavingUsers] = useState<Set<string>>(new Set())
+  const [fetchProgressVisible, setFetchProgressVisible] = useState(false)
 
   const fetchInfluencer = () => {
     setLoading(true)
@@ -199,23 +201,37 @@ export default function InfluencerDetail() {
   const handleFetchContent = () => {
     setFetching(true)
     setActionMessage(null)
+    setFetchProgressVisible(true)
     authFetch(`/api/analysis/influencers/${id}/fetch-content`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ amount: 30 }),
+      body: JSON.stringify({ amount: 100 }),
     })
       .then((r) => r.json())
       .then((data) => {
         if (data.error) {
           setActionMessage(data.error)
-        } else {
-          setActionMessage(`Fetched ${data.total_fetched} videos (${data.created} new, ${data.updated} updated)`)
-          fetchInfluencer()
+          setFetchProgressVisible(false)
+          setFetching(false)
         }
+        // Background processing started — progress comes via socket
       })
-      .catch((e) => setActionMessage(e.message))
-      .finally(() => setFetching(false))
+      .catch((e) => {
+        setActionMessage(e.message)
+        setFetchProgressVisible(false)
+        setFetching(false)
+      })
   }
+
+  const handleFetchComplete = useCallback(() => {
+    setFetching(false)
+    fetchInfluencer()
+  }, [id])
+
+  const handleFetchDismiss = useCallback(() => {
+    setFetchProgressVisible(false)
+    setFetching(false)
+  }, [])
 
   const handleDeepScan = () => {
     setScanning(true)
@@ -394,6 +410,17 @@ export default function InfluencerDetail() {
       {userType === 'admin' && (
         <div className="mb-6">
           <InfluencerAnalyzeProgress />
+        </div>
+      )}
+
+      {/* Fetch Content Progress */}
+      {fetchProgressVisible && id && (
+        <div className="mb-6">
+          <FetchContentProgress
+            influencerId={id}
+            onComplete={handleFetchComplete}
+            onDismiss={handleFetchDismiss}
+          />
         </div>
       )}
 

@@ -27,17 +27,20 @@ interface TrackedHashtag {
   created_at: string
 }
 
+interface Category {
+  id: number
+  title: string
+  is_active: boolean
+}
+
 interface Scheduler {
   id: number
   name: string
   frequency: string
   run_hour: number
   is_active: boolean
-  post_actions: {
-    auto_analyze: boolean
-    auto_download: boolean
-    auto_suggestions: boolean
-  }
+  category_id: number | null
+  category_title: string | null
   hashtag_count: number
   last_run_id: number | null
   last_run_status: string | null
@@ -330,6 +333,7 @@ export default function Discovery() {
   const [stats, setStats] = useState<TrendingStats | null>(null)
   const [hashtags, setHashtags] = useState<TrackedHashtag[]>([])
   const [schedulers, setSchedulers] = useState<Scheduler[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
   const [runGroups, setRunGroups] = useState<SchedulerRunGroup[]>([])
   const [expandedGroup, setExpandedGroup] = useState<number | null>(null)
   const [videosTotal, setVideosTotal] = useState(0)
@@ -348,7 +352,7 @@ export default function Discovery() {
     name: '',
     frequency: 'daily',
     run_hour: 9,
-    post_actions: { auto_analyze: true, auto_download: false, auto_suggestions: false },
+    category_id: null as number | null,
     hashtag_ids: [] as number[],
   })
 
@@ -453,16 +457,18 @@ export default function Discovery() {
   async function loadAll() {
     try {
       setLoading(true)
-      const [statsRes, hashtagsRes, schedulersRes, runsRes] = await Promise.all([
+      const [statsRes, hashtagsRes, schedulersRes, runsRes, categoriesRes] = await Promise.all([
         authFetch('/api/analysis/trending/stats').then(r => r.json()),
         authFetch('/api/analysis/trending/hashtags').then(r => r.json()),
         authFetch('/api/analysis/trending/schedulers').then(r => r.json()).catch(() => []),
         authFetch('/api/analysis/trending/scheduler-runs/grouped?limit=5').then(r => r.json()).catch(() => []),
+        authFetch('/api/categories').then(r => r.json()).catch(() => ({ categories: [] })),
       ])
       setStats(statsRes)
       setHashtags(Array.isArray(hashtagsRes) ? hashtagsRes : [])
       setSchedulers(Array.isArray(schedulersRes) ? schedulersRes : [])
       setRunGroups(Array.isArray(runsRes) ? runsRes : [])
+      setCategories(Array.isArray(categoriesRes.categories) ? categoriesRes.categories : Array.isArray(categoriesRes) ? categoriesRes : [])
       await loadVideosTotal()
     } catch (error) {
       console.error('Failed to load discovery data:', error)
@@ -520,7 +526,7 @@ export default function Discovery() {
         name: scheduler.name,
         frequency: scheduler.frequency,
         run_hour: scheduler.run_hour,
-        post_actions: { ...scheduler.post_actions },
+        category_id: scheduler.category_id,
         hashtag_ids: [],
       })
       // Load the scheduler's hashtags
@@ -541,7 +547,7 @@ export default function Discovery() {
         name: '',
         frequency: 'daily',
         run_hour: 9,
-        post_actions: { auto_analyze: true, auto_download: false, auto_suggestions: false },
+        category_id: null,
         hashtag_ids: [],
       })
     }
@@ -560,7 +566,7 @@ export default function Discovery() {
             name: schedulerForm.name,
             frequency: schedulerForm.frequency,
             run_hour: schedulerForm.run_hour,
-            post_actions: schedulerForm.post_actions,
+            category_id: schedulerForm.category_id,
           }),
         })
         // Sync hashtags: get current, remove missing, add new
@@ -587,7 +593,7 @@ export default function Discovery() {
             name: schedulerForm.name,
             frequency: schedulerForm.frequency,
             run_hour: schedulerForm.run_hour,
-            post_actions: schedulerForm.post_actions,
+            category_id: schedulerForm.category_id,
             hashtag_ids: schedulerForm.hashtag_ids,
           }),
         })
@@ -787,7 +793,14 @@ export default function Discovery() {
           </p>
         </div>
 
-        <div className="flex gap-4 items-end">
+        <div className="flex gap-3 items-end">
+          <button
+            onClick={() => navigate('/dashboard/discovery/settings')}
+            className="h-fit w-11 py-3 rounded-xl text-xs bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10 hover:text-white transition-colors flex items-center justify-center"
+            title="Discovery Settings"
+          >
+            <i className="fas fa-gear"></i>
+          </button>
           <button
             onClick={() => navigate('/dashboard/discovery/items')}
             className="h-fit px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-colors"
@@ -935,47 +948,19 @@ export default function Discovery() {
               )}
             </div>
 
-            {/* Post-actions */}
+            {/* Category */}
             <div className="mb-4">
-              <label className="text-[10px] font-bold text-slate-500 block mb-2">Post-run Actions</label>
-              <div className="flex flex-wrap gap-3">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={schedulerForm.post_actions.auto_analyze}
-                    onChange={(e) => setSchedulerForm({
-                      ...schedulerForm,
-                      post_actions: { ...schedulerForm.post_actions, auto_analyze: e.target.checked },
-                    })}
-                    className="w-3.5 h-3.5 rounded border-white/20 bg-white/5 text-violet-500 focus:ring-violet-500/50"
-                  />
-                  <span className="text-[10px] font-bold text-slate-400">Auto Analyze</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={schedulerForm.post_actions.auto_download}
-                    onChange={(e) => setSchedulerForm({
-                      ...schedulerForm,
-                      post_actions: { ...schedulerForm.post_actions, auto_download: e.target.checked },
-                    })}
-                    className="w-3.5 h-3.5 rounded border-white/20 bg-white/5 text-violet-500 focus:ring-violet-500/50"
-                  />
-                  <span className="text-[10px] font-bold text-slate-400">Auto Download</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={schedulerForm.post_actions.auto_suggestions}
-                    onChange={(e) => setSchedulerForm({
-                      ...schedulerForm,
-                      post_actions: { ...schedulerForm.post_actions, auto_suggestions: e.target.checked },
-                    })}
-                    className="w-3.5 h-3.5 rounded border-white/20 bg-white/5 text-violet-500 focus:ring-violet-500/50"
-                  />
-                  <span className="text-[10px] font-bold text-slate-400">Auto Suggestions</span>
-                </label>
-              </div>
+              <label className="text-[10px] font-bold text-slate-500 block mb-1.5">Category</label>
+              <select
+                value={schedulerForm.category_id ?? ''}
+                onChange={(e) => setSchedulerForm({ ...schedulerForm, category_id: e.target.value ? parseInt(e.target.value) : null })}
+                className="glass-input rounded-lg px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-violet-500/50 transition-colors"
+              >
+                <option value="">No category</option>
+                {categories.filter(c => c.is_active).map(c => (
+                  <option key={c.id} value={c.id}>{c.title}</option>
+                ))}
+              </select>
             </div>
 
             {/* Hashtag Selection */}
@@ -1059,6 +1044,11 @@ export default function Discovery() {
                 <div key={s.id} className="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.04] transition-colors">
                   <div className="flex items-center gap-3 flex-wrap">
                     <span className="text-sm font-black text-white">{s.name}</span>
+                    {s.category_title && (
+                      <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">
+                        {s.category_title}
+                      </span>
+                    )}
                     <span className="text-[10px] font-bold text-violet-400 bg-violet-500/10 px-2 py-0.5 rounded">
                       {s.hashtag_count} hashtag{s.hashtag_count !== 1 ? 's' : ''}
                     </span>

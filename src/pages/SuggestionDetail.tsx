@@ -92,6 +92,8 @@ export default function SuggestionDetail() {
   const [loading, setLoading] = useState(true)
   const [carouselData, setCarouselData] = useState<{ videos: CarouselVideo[]; initialIndex: number } | null>(null)
   const [tacticMap, setTacticMap] = useState<Record<string, number>>({})
+  const [showAllVideos, setShowAllVideos] = useState(false)
+  const INITIAL_VIDEO_COUNT = 20
 
   useEffect(() => {
     loadSuggestion()
@@ -315,51 +317,81 @@ export default function SuggestionDetail() {
           )}
 
           {/* Source Videos */}
-          {s.source_videos && s.source_videos.length > 0 && (
-            <div className="glass-card rounded-3xl p-5 md:p-8">
-              <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">
-                Source Videos ({s.source_videos.length})
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {s.source_videos.map((v, idx) => (
-                  <div
-                    key={v.id}
-                    className="flex items-start gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/5 cursor-pointer hover:border-pink-500/20 transition-colors"
-                    onClick={() => setCarouselData({
-                      videos: s.source_videos as CarouselVideo[],
-                      initialIndex: idx,
-                    })}
+          {s.source_videos && s.source_videos.length > 0 && (() => {
+            const visibleVideos = showAllVideos ? s.source_videos : s.source_videos.slice(0, INITIAL_VIDEO_COUNT)
+            const hiddenCount = s.source_videos.length - INITIAL_VIDEO_COUNT
+            return (
+              <div className="glass-card rounded-3xl p-5 md:p-8">
+                <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">
+                  Example Videos ({s.source_videos.length})
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {visibleVideos.map((v, idx) => {
+                    const score = Number(v.relevance_score || 0)
+                    const matchLabel = score >= 0.7 ? 'Strong' : score >= 0.4 ? 'Good' : score > 0 ? 'Partial' : null
+                    const matchColor = score >= 0.7 ? 'text-teal-400 bg-teal-500/10' : score >= 0.4 ? 'text-amber-400 bg-amber-500/10' : 'text-slate-500 bg-white/5'
+                    return (
+                      <div
+                        key={v.id}
+                        className="flex items-start gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/5 cursor-pointer hover:border-pink-500/20 transition-colors"
+                        onClick={() => setCarouselData({
+                          videos: s.source_videos as CarouselVideo[],
+                          initialIndex: idx,
+                        })}
+                      >
+                        <div className="w-16 h-16 rounded-lg overflow-hidden bg-white/5 flex-shrink-0">
+                          {getThumbnailSrc(v) ? (
+                            <img src={getThumbnailSrc(v)!} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-slate-600 text-[8px] font-bold">No img</div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${
+                              v.platform === 'tiktok' ? 'bg-pink-500/10 text-pink-400' : 'bg-orange-500/10 text-orange-400'
+                            }`}>
+                              {v.platform}
+                            </span>
+                            <span className="text-[10px] font-bold text-slate-400">@{v.username}</span>
+                            {matchLabel && (
+                              <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${matchColor}`}>
+                                {matchLabel} match
+                              </span>
+                            )}
+                          </div>
+                          {v.caption && (
+                            <p className="text-[10px] text-slate-500 font-medium truncate mb-1">{v.caption}</p>
+                          )}
+                          <div className="flex items-center gap-3 text-[10px] font-bold text-slate-600">
+                            <span>{formatNumber(v.views)} views</span>
+                            <span>{formatNumber(v.likes)} likes</span>
+                            <span>{Number(v.engagement_rate).toFixed(1)}% eng</span>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+                {!showAllVideos && hiddenCount > 0 && (
+                  <button
+                    onClick={() => setShowAllVideos(true)}
+                    className="w-full mt-4 py-3 rounded-xl bg-white/5 border border-white/5 text-xs font-black text-slate-400 uppercase tracking-wider hover:bg-white/10 hover:text-white transition-all"
                   >
-                    <div className="w-16 h-16 rounded-lg overflow-hidden bg-white/5 flex-shrink-0">
-                      {getThumbnailSrc(v) ? (
-                        <img src={getThumbnailSrc(v)!} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-slate-600 text-[8px] font-bold">No img</div>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${
-                          v.platform === 'tiktok' ? 'bg-pink-500/10 text-pink-400' : 'bg-orange-500/10 text-orange-400'
-                        }`}>
-                          {v.platform}
-                        </span>
-                        <span className="text-[10px] font-bold text-slate-400">@{v.username}</span>
-                      </div>
-                      {v.caption && (
-                        <p className="text-[10px] text-slate-500 font-medium truncate mb-1">{v.caption}</p>
-                      )}
-                      <div className="flex items-center gap-3 text-[10px] font-bold text-slate-600">
-                        <span>{formatNumber(v.views)} views</span>
-                        <span>{formatNumber(v.likes)} likes</span>
-                        <span>{Number(v.engagement_rate).toFixed(1)}% eng</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                    Show all {s.source_videos.length} videos ({hiddenCount} more)
+                  </button>
+                )}
+                {showAllVideos && hiddenCount > 0 && (
+                  <button
+                    onClick={() => setShowAllVideos(false)}
+                    className="w-full mt-4 py-3 rounded-xl bg-white/5 border border-white/5 text-xs font-black text-slate-400 uppercase tracking-wider hover:bg-white/10 hover:text-white transition-all"
+                  >
+                    Show less
+                  </button>
+                )}
               </div>
-            </div>
-          )}
+            )
+          })()}
         </div>
 
         {/* Sidebar - right col */}
