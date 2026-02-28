@@ -121,6 +121,15 @@ interface DiscoveryProgress {
   totalNewVideos: number
   totalVideosAnalyzed: number
   totalVideosDownloaded: number
+  influencerDiscovery?: {
+    totalInfluencers: number
+    completedInfluencers: number
+    currentUsername?: string
+    currentPlatform?: string
+    videosFetched: number
+    videosAnalyzed: number
+    totalVideos: number
+  }
   errors: Array<{ hashtag: string; error: string }>
   startedAt: string
   message?: string
@@ -294,10 +303,52 @@ function ProgressPanel({ progress, label }: { progress: DiscoveryProgress; label
           )}
 
           {/* Fetching indicator */}
-          {progress.phase === 'fetching' && progress.currentHashtagVideosFetched === 0 && (
+          {progress.phase === 'fetching' && progress.currentHashtagVideosFetched === 0 && !progress.influencerDiscovery && (
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 border border-blue-400 border-t-transparent rounded-full animate-spin"></div>
               <span className="text-[10px] font-bold text-blue-400">Fetching videos from API...</span>
+            </div>
+          )}
+
+          {/* Influencer discovery sub-progress */}
+          {progress.influencerDiscovery && progress.influencerDiscovery.totalInfluencers > 0 && (
+            <div className="mt-2 p-2.5 rounded-lg bg-purple-500/[0.04] border border-purple-500/10">
+              <div className="flex items-center gap-2 mb-1.5">
+                <i className="fas fa-user-plus text-[9px] text-purple-400"></i>
+                <span className="text-[10px] font-black text-purple-400 uppercase tracking-wider">
+                  Influencer Discovery
+                </span>
+                <span className="text-[10px] font-bold text-slate-500">
+                  {progress.influencerDiscovery.completedInfluencers}/{progress.influencerDiscovery.totalInfluencers}
+                </span>
+              </div>
+              {progress.influencerDiscovery.currentUsername && progress.influencerDiscovery.completedInfluencers < progress.influencerDiscovery.totalInfluencers && (
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 border border-purple-400 border-t-transparent rounded-full animate-spin"></div>
+                  <span className={`text-[10px] font-black uppercase px-1.5 py-0.5 rounded tracking-wider ${
+                    progress.influencerDiscovery.currentPlatform === 'tiktok' ? 'bg-pink-500/10 text-pink-400' : 'bg-orange-500/10 text-orange-400'
+                  }`}>
+                    {progress.influencerDiscovery.currentPlatform}
+                  </span>
+                  <span className="text-[10px] font-bold text-white">@{progress.influencerDiscovery.currentUsername}</span>
+                  {progress.influencerDiscovery.totalVideos > 0 && (
+                    <span className="text-[10px] font-bold text-slate-500">
+                      {progress.influencerDiscovery.videosAnalyzed > 0
+                        ? `Analyzed ${progress.influencerDiscovery.videosAnalyzed}/${progress.influencerDiscovery.totalVideos}`
+                        : `Fetched ${progress.influencerDiscovery.videosFetched} videos`
+                      }
+                    </span>
+                  )}
+                </div>
+              )}
+              {progress.influencerDiscovery.totalInfluencers > 1 && (
+                <div className="mt-1.5 h-1 bg-white/5 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-purple-500 to-pink-400 rounded-full transition-all duration-500"
+                    style={{ width: `${Math.round((progress.influencerDiscovery.completedInfluencers / progress.influencerDiscovery.totalInfluencers) * 100)}%` }}
+                  />
+                </div>
+              )}
             </div>
           )}
         </div>
