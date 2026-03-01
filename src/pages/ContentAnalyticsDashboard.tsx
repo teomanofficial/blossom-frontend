@@ -4,6 +4,8 @@ import {
   ResponsiveContainer,
   BarChart,
   Bar,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -43,11 +45,18 @@ interface HashtagStat {
   influencer_count: number
 }
 
+interface DailyStat {
+  date: string
+  count: number
+}
+
 interface ContentAnalytics {
   summary: Summary
   by_category: CategoryStat[]
   by_domain: DomainStat[]
   by_hashtag: HashtagStat[]
+  daily_videos: DailyStat[]
+  daily_influencers: DailyStat[]
 }
 
 function fmt(n: number): string {
@@ -135,6 +144,16 @@ export default function ContentAnalyticsDashboard() {
     { label: 'Total Hashtags', value: fmt(data.summary.total_hashtags), icon: 'fa-hashtag', color: '#22c55e' },
   ]
 
+  const dailyVideoData = data.daily_videos.map(d => ({
+    date: new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+    count: d.count,
+  }))
+
+  const dailyInfluencerData = data.daily_influencers.map(d => ({
+    date: new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+    count: d.count,
+  }))
+
   const categoryData = data.by_category.filter(c => c.post_count > 0 || c.influencer_count > 0)
   const domainData = data.by_domain.slice(0, 20)
   const hashtagData = data.by_hashtag.slice(0, 20).map(h => ({ ...h, name: `#${h.name}` }))
@@ -171,6 +190,73 @@ export default function ContentAnalyticsDashboard() {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Daily Scraped Videos & Discovered Influencers */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        {/* Daily Scraped Videos */}
+        <div className="glass-card rounded-2xl p-6 sm:p-8">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-xl bg-pink-500/10 flex items-center justify-center">
+              <i className="fas fa-video text-pink-400 text-sm" />
+            </div>
+            <div>
+              <h2 className="text-lg font-black tracking-tight">Daily Scraped Videos</h2>
+              <p className="text-xs text-slate-500 font-medium">Videos scraped per day (last 90 days)</p>
+            </div>
+          </div>
+          {dailyVideoData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={280}>
+              <AreaChart data={dailyVideoData} margin={{ top: 4, right: 12, bottom: 4, left: -12 }}>
+                <defs>
+                  <linearGradient id="pinkGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={PINK} stopOpacity={0.3} />
+                    <stop offset="100%" stopColor={PINK} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                <XAxis dataKey="date" tick={{ fill: '#64748b', fontSize: 10 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+                <YAxis tickFormatter={fmt} tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
+                <Tooltip content={<ChartTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.1)' }} />
+                <Area type="monotone" dataKey="count" name="Videos" stroke={PINK} fill="url(#pinkGrad)" strokeWidth={2} dot={false} />
+              </AreaChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex items-center justify-center py-12 text-slate-600 text-sm">No video scraping data available</div>
+          )}
+        </div>
+
+        {/* Daily Discovered Influencers */}
+        <div className="glass-card rounded-2xl p-6 sm:p-8">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center">
+              <i className="fas fa-users text-orange-400 text-sm" />
+            </div>
+            <div>
+              <h2 className="text-lg font-black tracking-tight">Daily Discovered Influencers</h2>
+              <p className="text-xs text-slate-500 font-medium">New influencers discovered per day (last 90 days)</p>
+            </div>
+          </div>
+          {dailyInfluencerData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={280}>
+              <AreaChart data={dailyInfluencerData} margin={{ top: 4, right: 12, bottom: 4, left: -12 }}>
+                <defs>
+                  <linearGradient id="orangeGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={ORANGE} stopOpacity={0.3} />
+                    <stop offset="100%" stopColor={ORANGE} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                <XAxis dataKey="date" tick={{ fill: '#64748b', fontSize: 10 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+                <YAxis tickFormatter={fmt} tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
+                <Tooltip content={<ChartTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.1)' }} />
+                <Area type="monotone" dataKey="count" name="Influencers" stroke={ORANGE} fill="url(#orangeGrad)" strokeWidth={2} dot={false} />
+              </AreaChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex items-center justify-center py-12 text-slate-600 text-sm">No influencer discovery data available</div>
+          )}
+        </div>
       </div>
 
       {/* By Category */}
