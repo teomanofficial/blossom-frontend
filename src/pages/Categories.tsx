@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { authFetch } from '../lib/api'
 import { getStorageUrl } from '../lib/media'
 
@@ -408,30 +408,30 @@ export default function Categories() {
               <div key={cat.id} className="glass-card rounded-2xl overflow-hidden group hover:translate-y-[-2px] transition-all duration-300">
                 {/* Thumbnail */}
                 {cat.thumbnail_url && (
-                  <div className="h-36 overflow-hidden">
+                  <Link to={`/dashboard/categories/${cat.id}`} className="block h-36 overflow-hidden">
                     <img
                       src={getStorageUrl(cat.thumbnail_url) || ''}
                       alt={cat.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
-                  </div>
+                  </Link>
                 )}
 
                 <div className="p-6">
                   <div className="flex justify-between items-start mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-lg">
+                    <Link to={`/dashboard/categories/${cat.id}`} className="flex items-center gap-3 min-w-0">
+                      <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-lg flex-shrink-0">
                         {cat.icon || <i className="fas fa-folder-tree text-slate-500"></i>}
                       </div>
-                      <div>
-                        <h3 className="text-base font-black tracking-tight group-hover:text-pink-400 transition-colors">
+                      <div className="min-w-0">
+                        <h3 className="text-base font-black tracking-tight group-hover:text-pink-400 transition-colors truncate">
                           {cat.title}
                         </h3>
                         <span className="text-[10px] font-bold text-slate-500">
                           {cat.domain_count} domain{cat.domain_count !== 1 ? 's' : ''}
                         </span>
                       </div>
-                    </div>
+                    </Link>
                     <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${cat.is_active ? 'bg-teal-500/10 text-teal-400' : 'bg-red-500/10 text-red-400'}`}>
                       {cat.is_active ? 'Active' : 'Inactive'}
                     </span>

@@ -37,7 +37,7 @@ interface CategoryVideo {
   published_at: string | null
   duration_sec: number | null
   username: string | null
-  profile_pic_url: string | null
+  local_avatar_path: string | null
   local_thumbnail_path: string | null
   content_url: string | null
   format_name: string | null
@@ -287,14 +287,14 @@ export default function CategoryDetail() {
             iconColor="bg-purple-500/10 text-purple-400"
             count={formats.length}
           >
-            <div className="grid gap-3">
+            <div className="grid gap-3 overflow-hidden">
               {formats.map((f) => (
                 <Link
                   key={f.id}
                   to={`/dashboard/formats/${f.id}`}
-                  className="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] transition-colors group"
+                  className="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] transition-colors group min-w-0"
                 >
-                  <div className="min-w-0 flex-1">
+                  <div className="min-w-0 flex-1 overflow-hidden">
                     <h4 className="text-sm font-bold text-white truncate group-hover:text-purple-300 transition-colors">
                       {f.name}
                     </h4>
@@ -333,14 +333,14 @@ export default function CategoryDetail() {
             iconColor="bg-orange-500/10 text-orange-400"
             count={hooks.length}
           >
-            <div className="grid gap-3">
+            <div className="grid gap-3 overflow-hidden">
               {hooks.map((h) => (
                 <Link
                   key={h.id}
                   to={`/dashboard/hooks/${h.id}`}
-                  className="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] transition-colors group"
+                  className="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] transition-colors group min-w-0"
                 >
-                  <div className="min-w-0 flex-1">
+                  <div className="min-w-0 flex-1 overflow-hidden">
                     <h4 className="text-sm font-bold text-white truncate group-hover:text-orange-300 transition-colors">
                       {h.name}
                     </h4>
@@ -379,14 +379,14 @@ export default function CategoryDetail() {
             iconColor="bg-indigo-500/10 text-indigo-400"
             count={tactics.length}
           >
-            <div className="grid gap-3">
+            <div className="grid gap-3 overflow-hidden">
               {tactics.map((t) => (
                 <Link
                   key={t.id}
                   to={`/dashboard/tactics/${t.id}`}
-                  className="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] transition-colors group"
+                  className="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] transition-colors group min-w-0"
                 >
-                  <div className="min-w-0 flex-1">
+                  <div className="min-w-0 flex-1 overflow-hidden">
                     <div className="flex items-center gap-2">
                       <h4 className="text-sm font-bold text-white truncate group-hover:text-indigo-300 transition-colors">
                         {t.name}
