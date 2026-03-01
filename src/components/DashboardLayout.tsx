@@ -239,6 +239,17 @@ export default function DashboardLayout() {
         <header className="hidden lg:flex h-16 items-center px-10 bg-transparent backdrop-blur-sm z-10 shrink-0">
           <SearchOverlay />
           <div className="flex-1" />
+          {userType === 'admin' && (
+            <div className="relative group flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-gradient-to-r from-pink-500/10 via-fuchsia-500/10 to-purple-500/10 border border-pink-400/20 cursor-default overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-pink-400/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
+              <div className="relative flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-pink-500 via-fuchsia-500 to-purple-500 flex items-center justify-center shadow-lg shadow-pink-500/20">
+                  <i className="fas fa-shield-halved text-[11px] text-white" />
+                </div>
+                <div className="text-[10px] font-black uppercase tracking-widest text-pink-300">Admin</div>
+              </div>
+            </div>
+          )}
           {userType === 'vip' && (
             <div className="relative group flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-gradient-to-r from-amber-500/10 via-yellow-400/10 to-amber-500/10 border border-amber-400/20 cursor-default overflow-hidden">
               {/* Shimmer effect */}
@@ -267,6 +278,12 @@ export default function DashboardLayout() {
             <span className="text-base font-bold tracking-tighter">Blossom</span>
           </div>
           <div className="flex items-center gap-2">
+            {userType === 'admin' && (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-gradient-to-r from-pink-500/10 to-purple-500/10 border border-pink-400/20">
+                <i className="fas fa-shield-halved text-[10px] text-pink-400" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-pink-300">Admin</span>
+              </div>
+            )}
             {userType === 'vip' && (
               <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-gradient-to-r from-amber-500/10 to-yellow-400/10 border border-amber-400/20">
                 <i className="fas fa-crown text-[10px] text-amber-400" />

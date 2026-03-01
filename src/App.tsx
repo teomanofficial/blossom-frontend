@@ -43,6 +43,7 @@ import BulkAnalysisManagement from './pages/BulkAnalysisManagement'
 import OnboardingManagement from './pages/OnboardingManagement'
 import AIModelLab from './pages/AIModelLab'
 import Hashtags from './pages/Hashtags'
+import CategoryDetail from './pages/CategoryDetail'
 import CategoryDomains from './pages/CategoryDomains'
 import ChoosePlan from './pages/ChoosePlan'
 import TrendingPosts from './pages/TrendingPosts'
@@ -144,6 +145,7 @@ function App() {
         <Route path="content-management" element={<Navigate to="/dashboard/domain-management" replace />} />
         <Route path="content-management/:id" element={<Navigate to="/dashboard/domain-management" replace />} />
         <Route path="categories" element={<AdminGate><Categories /></AdminGate>} />
+        <Route path="categories/:id" element={<CategoryDetail />} />
         <Route path="categories/:id/domains" element={<AdminGate><CategoryDomains /></AdminGate>} />
         <Route path="support" element={<Support />} />
         <Route path="support-management" element={<AdminGate><SupportManagement /></AdminGate>} />
