@@ -267,16 +267,38 @@ export default function SuggestionDetail() {
           )}
 
           {/* Script Outline */}
-          {s.script_outline && (
-            <div className="glass-card rounded-3xl p-5 md:p-8">
-              <div className="text-[10px] font-black text-cyan-400 uppercase tracking-widest mb-3">
-                <i className="fas fa-film mr-1"></i> Script Outline
+          {s.script_outline && (() => {
+            let steps: Array<{ seconds: string; action: string }> | null = null
+            try {
+              const parsed = typeof s.script_outline === 'string' ? JSON.parse(s.script_outline) : s.script_outline
+              if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].seconds) steps = parsed
+            } catch {}
+            return (
+              <div className="glass-card rounded-3xl p-5 md:p-8">
+                <div className="text-[10px] font-black text-cyan-400 uppercase tracking-widest mb-4">
+                  <i className="fas fa-film mr-1"></i> Script Outline
+                </div>
+                {steps ? (
+                  <div className="space-y-0 rounded-2xl overflow-hidden border border-white/5">
+                    {steps.map((step, i) => (
+                      <div key={i} className={`flex gap-4 items-start p-3 md:p-4 ${i % 2 === 0 ? 'bg-white/[0.02]' : 'bg-white/[0.05]'}`}>
+                        <div className="shrink-0 text-[11px] font-black text-cyan-400 bg-cyan-400/10 rounded-lg px-2.5 py-1 min-w-[60px] text-center tabular-nums">
+                          {step.seconds}s
+                        </div>
+                        <div className="text-sm text-slate-300 font-medium leading-relaxed">
+                          {step.action}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-slate-400 font-medium leading-relaxed whitespace-pre-line">
+                    {s.script_outline}
+                  </p>
+                )}
               </div>
-              <p className="text-sm text-slate-400 font-medium leading-relaxed whitespace-pre-line">
-                {s.script_outline}
-              </p>
-            </div>
-          )}
+            )
+          })()}
 
           {/* Tactics + Hashtags */}
           {((s.suggested_tactics && s.suggested_tactics.length > 0) || (s.suggested_hashtags && s.suggested_hashtags.length > 0)) && (

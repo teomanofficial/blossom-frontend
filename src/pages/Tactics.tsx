@@ -10,6 +10,7 @@ interface Tactic {
   description: string | null
   why_it_works: string | null
   viewer_effect: string | null
+  viewer_effect_description: string | null
   video_count: number
   avg_views_when_present: number
   avg_execution_score: number

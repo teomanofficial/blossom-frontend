@@ -9,6 +9,15 @@ interface CategoryDomainSummary {
   icon: string | null
 }
 
+interface CategoryStats {
+  video_count: number
+  format_count: number
+  tactic_count: number
+  hook_count: number
+  avg_views: number
+  avg_engagement: number
+}
+
 interface Category {
   id: number
   title: string
@@ -55,10 +64,26 @@ export default function Categories() {
   // Delete state
   const [deletingId, setDeletingId] = useState<number | null>(null)
 
+  // Stats
+  const [stats, setStats] = useState<Record<number, CategoryStats>>({})
+
   // Auto-match state
   const [autoMatching, setAutoMatching] = useState(false)
   const [orphanCount, setOrphanCount] = useState<number | null>(null)
   const [showBackfillConfirm, setShowBackfillConfirm] = useState(false)
+
+  // Fetch category stats (cached server-side)
+  const fetchStats = useCallback(async () => {
+    try {
+      const res = await authFetch('/api/management/categories/stats')
+      const data = await res.json()
+      setStats(data.stats ?? {})
+    } catch {
+      // stats are optional, fail silently
+    }
+  }, [])
+
+  useEffect(() => { fetchStats() }, [fetchStats])
 
   // Fetch orphan domain count
   const fetchOrphanCount = useCallback(async () => {
@@ -420,16 +445,41 @@ export default function Categories() {
 
 
                   {/* Stats */}
-                  <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
-                    <div>
-                      <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Domains</div>
-                      <div className="text-sm font-black text-white">{cat.domain_count}</div>
-                    </div>
-                    <div>
-                      <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Order</div>
-                      <div className="text-sm font-black text-white">{cat.display_order}</div>
-                    </div>
-                  </div>
+                  {(() => {
+                    const s = stats[cat.id]
+                    return (
+                      <div className="grid grid-cols-3 gap-3 pt-4 border-t border-white/5">
+                        <div>
+                          <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Videos</div>
+                          <div className="text-sm font-black text-white">{s?.video_count?.toLocaleString() ?? '—'}</div>
+                        </div>
+                        <div>
+                          <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Formats</div>
+                          <div className="text-sm font-black text-white">{s?.format_count ?? '—'}</div>
+                        </div>
+                        <div>
+                          <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Tactics</div>
+                          <div className="text-sm font-black text-white">{s?.tactic_count ?? '—'}</div>
+                        </div>
+                        <div>
+                          <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Hooks</div>
+                          <div className="text-sm font-black text-white">{s?.hook_count ?? '—'}</div>
+                        </div>
+                        <div>
+                          <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Avg Views</div>
+                          <div className="text-sm font-black text-white">
+                            {s?.avg_views != null ? (s.avg_views >= 1000 ? `${(s.avg_views / 1000).toFixed(1)}K` : s.avg_views) : '—'}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Avg Eng.</div>
+                          <div className="text-sm font-black text-white">
+                            {s?.avg_engagement != null ? `${s.avg_engagement}%` : '—'}
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })()}
                 </div>
 
                 {/* Actions */}

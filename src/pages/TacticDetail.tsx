@@ -42,6 +42,7 @@ interface TacticData {
   description: string | null
   why_it_works: string | null
   viewer_effect: string | null
+  viewer_effect_description: string | null
   video_count: number
   avg_views_when_present: number
   avg_execution_score: number
@@ -283,7 +284,12 @@ export default function TacticDetail() {
               <h3 className="text-purple-400 text-xs font-black uppercase tracking-widest flex items-center gap-2 mb-3 md:mb-4">
                 <i className="fas fa-brain"></i> Viewer Effect
               </h3>
-              <p className="text-xs md:text-sm text-slate-300 font-medium leading-relaxed">{tactic.viewer_effect}</p>
+              <span className="inline-block px-2 py-0.5 bg-purple-500/15 text-purple-300 text-[10px] font-black uppercase tracking-widest rounded mb-2">
+                {tactic.viewer_effect.replace(/_/g, ' ')}
+              </span>
+              {tactic.viewer_effect_description && (
+                <p className="text-xs md:text-sm text-slate-300 font-medium leading-relaxed">{tactic.viewer_effect_description}</p>
+              )}
             </div>
           )}
         </div>

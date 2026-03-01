@@ -29,6 +29,7 @@ export interface CarouselVideo {
   id: number
   platform: string
   username: string
+  content_type?: string
   content_url?: string | null
   thumbnail_url: string | null
   local_thumbnail_path: string | null
@@ -48,6 +49,7 @@ export interface CarouselVideo {
   hook_class_name?: string | null
   final_viral_probability?: number | null
   duration_sec?: number | null
+  raw_data?: any
 }
 
 interface VideoStoryCarouselProps {
@@ -64,6 +66,93 @@ function getThumbnailSrc(video: CarouselVideo): string | null {
 
 function getVideoUrl(video: CarouselVideo): string | null {
   return getStorageUrl(video.local_video_path)
+}
+
+interface CarouselMediaItem {
+  mediaType: 'image' | 'video'
+  imageUrl: string | null
+  videoUrl: string | null
+}
+
+function extractCarouselItems(rawData: any): CarouselMediaItem[] {
+  if (!rawData) return []
+  const rd = typeof rawData === 'string' ? JSON.parse(rawData) : rawData
+  const items = rd.carousel_media || []
+  if (!Array.isArray(items)) return []
+  return items.map((item: any) => ({
+    mediaType: item.media_type === 2 ? 'video' as const : 'image' as const,
+    imageUrl: item.image_versions2?.candidates?.[0]?.url || item.thumbnail_url || null,
+    videoUrl: item.media_type === 2 ? (item.video_url || item.video_versions?.[0]?.url || null) : null,
+  }))
+}
+
+function CarouselItemsViewer({ items, fallbackThumb }: { items: CarouselMediaItem[], fallbackThumb: string | null }) {
+  const [slideIndex, setSlideIndex] = useState(0)
+  const current = items[slideIndex]
+
+  if (items.length === 0) {
+    return fallbackThumb ? (
+      <img src={fallbackThumb} alt="" className="w-full h-full object-cover" />
+    ) : (
+      <div className="w-full h-full bg-slate-900 flex items-center justify-center">
+        <i className="fas fa-images text-slate-700 text-3xl"></i>
+      </div>
+    )
+  }
+
+  return (
+    <>
+      {current?.mediaType === 'video' && current.videoUrl ? (
+        <video src={current.videoUrl} className="w-full h-full object-cover" controls playsInline />
+      ) : current?.imageUrl ? (
+        <img src={current.imageUrl} alt="" className="w-full h-full object-contain bg-black" />
+      ) : fallbackThumb ? (
+        <img src={fallbackThumb} alt="" className="w-full h-full object-cover" />
+      ) : (
+        <div className="w-full h-full bg-slate-900 flex items-center justify-center">
+          <i className="fas fa-images text-slate-700 text-3xl"></i>
+        </div>
+      )}
+
+      {/* Slide counter */}
+      <div className="absolute top-3 left-3 bg-black/60 text-white text-xs px-2 py-1 rounded-full font-bold z-10">
+        {slideIndex + 1} / {items.length}
+      </div>
+
+      {/* Dot indicators */}
+      {items.length > 1 && (
+        <div className="absolute bottom-16 left-0 right-0 flex justify-center gap-1.5 z-10">
+          {items.map((_, i) => (
+            <button
+              key={i}
+              onClick={(e) => { e.stopPropagation(); setSlideIndex(i) }}
+              className={`w-1.5 h-1.5 rounded-full transition-all ${
+                i === slideIndex ? 'bg-white w-3' : 'bg-white/40 hover:bg-white/60'
+              }`}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Prev/Next slide arrows */}
+      {slideIndex > 0 && (
+        <button
+          onClick={(e) => { e.stopPropagation(); setSlideIndex(i => i - 1) }}
+          className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-7 h-7 flex items-center justify-center rounded-full bg-black/50 hover:bg-black/70 text-white transition-colors"
+        >
+          <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M12.5 15L7.5 10L12.5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </button>
+      )}
+      {slideIndex < items.length - 1 && (
+        <button
+          onClick={(e) => { e.stopPropagation(); setSlideIndex(i => i + 1) }}
+          className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-7 h-7 flex items-center justify-center rounded-full bg-black/50 hover:bg-black/70 text-white transition-colors"
+        >
+          <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M7.5 5L12.5 10L7.5 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </button>
+      )}
+    </>
+  )
 }
 
 export default function VideoStoryCarousel({ videos: initialVideos, initialIndex = 0, onClose, renderMeta, isAdmin }: VideoStoryCarouselProps) {
@@ -274,10 +363,12 @@ export default function VideoStoryCarousel({ videos: initialVideos, initialIndex
         <div className="flex-shrink-0 flex items-center justify-center lg:w-[360px] lg:h-[640px] w-full max-w-[360px] h-[50vh] lg:max-h-none">
           <div
             className="relative w-full h-full rounded-2xl overflow-hidden bg-slate-900 border border-white/10 shadow-2xl cursor-pointer"
-            onClick={handleVideoClick}
+            onClick={video.content_type !== 'carousel' ? handleVideoClick : undefined}
           >
-            {/* Video player */}
-            {videoUrl && !videoError ? (
+            {/* Carousel viewer */}
+            {video.content_type === 'carousel' ? (
+              <CarouselItemsViewer items={extractCarouselItems(video.raw_data)} fallbackThumb={thumb} />
+            ) : videoUrl && !videoError ? (
               <>
                 <video
                   ref={videoRef}

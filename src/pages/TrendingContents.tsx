@@ -31,7 +31,6 @@ export default function TrendingContents() {
   const [contents, setContents] = useState<TrendingContent[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [days, setDays] = useState(30)
   const [page, setPage] = useState(0)
 
   const fetchData = useCallback(async () => {
@@ -40,7 +39,7 @@ export default function TrendingContents() {
       const params = new URLSearchParams({
         limit: String(PAGE_SIZE),
         offset: String(page * PAGE_SIZE),
-        days: String(days),
+        days: '2',
       })
       const res = await authFetch(`/api/trends/contents?${params}`)
       if (!res.ok) throw new Error(`API returned ${res.status}`)
@@ -53,11 +52,9 @@ export default function TrendingContents() {
     } finally {
       setLoading(false)
     }
-  }, [days, page])
+  }, [page])
 
   useEffect(() => { fetchData() }, [fetchData])
-  useEffect(() => { setPage(0) }, [days])
-
   const totalPages = Math.ceil(total / PAGE_SIZE)
 
   return (
@@ -72,24 +69,11 @@ export default function TrendingContents() {
             Contents
           </span>
         </div>
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div>
-            <h1 className="text-3xl font-black font-display tracking-tighter mb-2">Trending Contents</h1>
-            <p className="text-slate-500 text-sm font-medium">
-              Content topics and trends ranked by recent usage. {total > 0 && <span className="text-slate-400">{total} topics</span>}
-            </p>
-          </div>
-          <div className="flex items-center gap-1 bg-white/5 rounded-xl p-1">
-            {[7, 14, 30].map((d) => (
-              <button
-                key={d}
-                onClick={() => setDays(d)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  days === d ? 'bg-pink-500/20 text-pink-400' : 'text-slate-500 hover:text-white hover:bg-white/5'
-                }`}
-              >{d}d</button>
-            ))}
-          </div>
+        <div>
+          <h1 className="text-3xl font-black font-display tracking-tighter mb-2">Trending Contents</h1>
+          <p className="text-slate-500 text-sm font-medium">
+            Content topics and trends discovered in the last 48 hours. {total > 0 && <span className="text-slate-400">{total} topics</span>}
+          </p>
         </div>
       </div>
 
@@ -103,7 +87,7 @@ export default function TrendingContents() {
             <i className="fas fa-hashtag text-blue-400 text-xl" />
           </div>
           <h3 className="text-lg font-black mb-2">No Trending Contents</h3>
-          <p className="text-sm text-slate-500 max-w-md mx-auto">No content topics found in the last {days} days.</p>
+          <p className="text-sm text-slate-500 max-w-md mx-auto">No content topics found in the last 48 hours.</p>
         </div>
       ) : (
         <>

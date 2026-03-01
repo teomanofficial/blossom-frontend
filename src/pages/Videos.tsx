@@ -33,6 +33,7 @@ interface Video {
   full_analysis_id: number | null
   hook_analysis_id: number | null
   created_at: string
+  raw_data?: any
 }
 
 interface VideoStatus {
@@ -1311,6 +1312,13 @@ export default function Videos() {
                             </span>
                           ) : isAnalyzed ? 'Analyzed' : isVideoFailed ? 'No Video' : isError ? 'Error' : 'Pending'}
                         </div>
+
+                        {/* Content type badge */}
+                        {video.content_type === 'carousel' && (
+                          <div className="px-1.5 py-0.5 rounded-md text-[8px] font-black bg-blue-400/20 text-blue-300">
+                            Carousel
+                          </div>
+                        )}
 
                         {/* Select checkbox */}
                         {selectMode && !isDownloading && (
