@@ -36,12 +36,23 @@ interface TacticItem {
 interface ClassAnalysis {
   class_description?: string
   what_defines_this_format?: string
-  gold_standard_tactics?: TacticItem[]
-  overrated_tactics?: TacticItem[]
-  execution_gaps?: TacticItem[]
+  gold_standard_tactics?: (TacticItem | string)[]
+  overrated_tactics?: (TacticItem | string)[]
+  execution_gaps?: (TacticItem | string)[]
   blueprint?: any
   video_list?: any[]
   tactic_frequency?: any
+}
+
+function normalizeTactic(tactic: TacticItem | string): TacticItem {
+  if (typeof tactic === 'string') {
+    const colonIdx = tactic.indexOf(':')
+    if (colonIdx > 0 && colonIdx < 60) {
+      return { name: tactic.slice(0, colonIdx).trim(), description: tactic.slice(colonIdx + 1).trim() }
+    }
+    return { name: tactic }
+  }
+  return tactic
 }
 
 interface TacticVideo {
@@ -355,19 +366,22 @@ export default function FormatDetail() {
                   <i className="fas fa-check-circle"></i> Gold Standard
                 </h3>
                 <div className="space-y-4">
-                  {analysis.gold_standard_tactics.map((tactic, i) => (
-                    <div key={i} className="p-4 md:p-5 glass-card rounded-2xl border-l-4 border-l-teal-500">
-                      {tactic.category && (
-                        <div className="text-[10px] font-black text-slate-500 uppercase mb-1">{tactic.category}</div>
-                      )}
-                      <h4 className="font-bold text-white mb-2">{tactic.name || tactic.tactic}</h4>
-                      {(tactic.description || tactic.analysis || tactic.why) && (
-                        <p className="text-[11px] text-slate-400 font-medium leading-relaxed">
-                          {tactic.description || tactic.analysis || tactic.why}
-                        </p>
-                      )}
-                    </div>
-                  ))}
+                  {analysis.gold_standard_tactics.map((raw, i) => {
+                    const tactic = normalizeTactic(raw)
+                    return (
+                      <div key={i} className="p-4 md:p-5 glass-card rounded-2xl border-l-4 border-l-teal-500">
+                        {tactic.category && (
+                          <div className="text-[10px] font-black text-slate-500 uppercase mb-1">{tactic.category}</div>
+                        )}
+                        <h4 className="font-bold text-white mb-2">{tactic.name || tactic.tactic}</h4>
+                        {(tactic.description || tactic.analysis || tactic.why) && (
+                          <p className="text-[11px] text-slate-400 font-medium leading-relaxed">
+                            {tactic.description || tactic.analysis || tactic.why}
+                          </p>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
             )}
@@ -379,19 +393,22 @@ export default function FormatDetail() {
                   <i className="fas fa-exclamation-circle"></i> Execution Gaps
                 </h3>
                 <div className="space-y-4">
-                  {analysis.execution_gaps.map((tactic, i) => (
-                    <div key={i} className="p-4 md:p-5 glass-card rounded-2xl border-l-4 border-l-orange-500">
-                      {tactic.category && (
-                        <div className="text-[10px] font-black text-slate-500 uppercase mb-1">{tactic.category}</div>
-                      )}
-                      <h4 className="font-bold text-white mb-2">{tactic.name || tactic.tactic}</h4>
-                      {(tactic.description || tactic.analysis || tactic.why) && (
-                        <p className="text-[11px] text-slate-400 font-medium leading-relaxed">
-                          {tactic.description || tactic.analysis || tactic.why}
-                        </p>
-                      )}
-                    </div>
-                  ))}
+                  {analysis.execution_gaps.map((raw, i) => {
+                    const tactic = normalizeTactic(raw)
+                    return (
+                      <div key={i} className="p-4 md:p-5 glass-card rounded-2xl border-l-4 border-l-orange-500">
+                        {tactic.category && (
+                          <div className="text-[10px] font-black text-slate-500 uppercase mb-1">{tactic.category}</div>
+                        )}
+                        <h4 className="font-bold text-white mb-2">{tactic.name || tactic.tactic}</h4>
+                        {(tactic.description || tactic.analysis || tactic.why) && (
+                          <p className="text-[11px] text-slate-400 font-medium leading-relaxed">
+                            {tactic.description || tactic.analysis || tactic.why}
+                          </p>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
             )}
@@ -403,19 +420,22 @@ export default function FormatDetail() {
                   <i className="fas fa-times-circle"></i> Overrated
                 </h3>
                 <div className="space-y-4 opacity-70 hover:opacity-100 transition-opacity">
-                  {analysis.overrated_tactics.map((tactic, i) => (
-                    <div key={i} className="p-4 md:p-5 glass-card rounded-2xl border-l-4 border-l-red-500">
-                      {tactic.category && (
-                        <div className="text-[10px] font-black text-slate-500 uppercase mb-1">{tactic.category}</div>
-                      )}
-                      <h4 className="font-bold text-white mb-2">{tactic.name || tactic.tactic}</h4>
-                      {(tactic.description || tactic.analysis || tactic.why) && (
-                        <p className="text-[11px] text-slate-400 font-medium leading-relaxed">
-                          {tactic.description || tactic.analysis || tactic.why}
-                        </p>
-                      )}
-                    </div>
-                  ))}
+                  {analysis.overrated_tactics.map((raw, i) => {
+                    const tactic = normalizeTactic(raw)
+                    return (
+                      <div key={i} className="p-4 md:p-5 glass-card rounded-2xl border-l-4 border-l-red-500">
+                        {tactic.category && (
+                          <div className="text-[10px] font-black text-slate-500 uppercase mb-1">{tactic.category}</div>
+                        )}
+                        <h4 className="font-bold text-white mb-2">{tactic.name || tactic.tactic}</h4>
+                        {(tactic.description || tactic.analysis || tactic.why) && (
+                          <p className="text-[11px] text-slate-400 font-medium leading-relaxed">
+                            {tactic.description || tactic.analysis || tactic.why}
+                          </p>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
             )}

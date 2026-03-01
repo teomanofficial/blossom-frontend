@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { authFetch, apiFetch } from '../lib/api'
+import { useAuth } from '../context/AuthContext'
 
 interface Subscription {
   id: number
@@ -120,6 +121,7 @@ function ConfirmModal({
 }
 
 export default function AccountBilling() {
+  const { userType, vipCredits } = useAuth()
   const [subscription, setSubscription] = useState<Subscription | null>(null)
   const [subStatus, setSubStatus] = useState<string>('none')
   const [loading, setLoading] = useState(true)
@@ -257,6 +259,93 @@ export default function AccountBilling() {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="w-8 h-8 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
+
+  // VIP users see a special access card instead of subscription UI
+  if (userType === 'vip') {
+    const remaining = vipCredits ? vipCredits.credits_total - vipCredits.credits_used : 0
+    const total = vipCredits?.credits_total ?? 0
+    const used = vipCredits?.credits_used ?? 0
+    const pct = total > 0 ? Math.round((used / total) * 100) : 0
+
+    return (
+      <div>
+        <div className="pb-6 mb-6 border-b border-white/[0.06]">
+          <h2 className="text-xl font-black tracking-tight">Billing & Subscription</h2>
+          <p className="text-slate-500 text-sm mt-1">
+            Manage your plan, payment method, and billing details.
+          </p>
+        </div>
+
+        <div className="relative overflow-hidden rounded-3xl border border-amber-400/20 bg-gradient-to-br from-amber-500/[0.06] via-yellow-400/[0.04] to-amber-600/[0.06]">
+          {/* Shimmer overlay */}
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-400/[0.05] to-transparent animate-pulse pointer-events-none" />
+
+          <div className="relative p-6 sm:p-8">
+            {/* Header */}
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400 via-yellow-300 to-amber-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
+                <i className="fas fa-crown text-xl text-amber-900" />
+              </div>
+              <div>
+                <div className="text-xl font-black">VIP Access</div>
+                <div className="text-sm text-amber-300/70 font-semibold">
+                  Premium features included
+                </div>
+              </div>
+              <div className="ml-auto">
+                <span className="px-3 py-1 rounded-full bg-amber-400/10 text-amber-400 text-[10px] font-black uppercase tracking-widest">
+                  Active
+                </span>
+              </div>
+            </div>
+
+            {/* Credits usage */}
+            {vipCredits && (
+              <div className="mt-2 p-5 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-black uppercase tracking-widest text-slate-500">
+                    Usage Credits
+                  </span>
+                  <span className="text-sm font-bold text-amber-300">
+                    {remaining} remaining
+                  </span>
+                </div>
+                <div className="w-full h-2 rounded-full bg-white/[0.06] overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-amber-400 to-yellow-300 transition-all duration-500"
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+                <div className="flex justify-between mt-2 text-[11px] text-slate-500 font-medium">
+                  <span>{used} used</span>
+                  <span>{total} total</span>
+                </div>
+              </div>
+            )}
+
+            {/* Info */}
+            <div className="mt-6 pt-6 border-t border-white/[0.06]">
+              <div className="text-xs font-black uppercase tracking-widest text-slate-500 mb-3">
+                Your Benefits
+              </div>
+              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {['Full analysis access', 'All content formats', 'Hook library', 'Tactics playbook', 'Creator insights', 'Trend detection'].map((f) => (
+                  <li key={f} className="flex items-start gap-2 text-sm">
+                    <i className="fas fa-check text-amber-400 text-xs mt-1" />
+                    <span className="text-slate-300 font-medium">{f}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <p className="text-[11px] text-slate-600 mt-6 font-medium">
+              Your VIP access is managed by the Blossom team. Contact support if you need more credits.
+            </p>
+          </div>
+        </div>
       </div>
     )
   }

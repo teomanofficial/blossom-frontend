@@ -10,11 +10,12 @@ export default function ProtectedRoute({ children }: { children: ReactNode }) {
   const [subLoading, setSubLoading] = useState(true)
 
   const isAdmin = userType === 'admin'
+  const isVip = userType === 'vip'
 
   useEffect(() => {
     if (!user) return
-    // Admins bypass subscription check entirely
-    if (isAdmin) {
+    // Admins and VIP users bypass subscription check entirely
+    if (isAdmin || isVip) {
       setSubStatus('active')
       setSubLoading(false)
       return
@@ -24,7 +25,7 @@ export default function ProtectedRoute({ children }: { children: ReactNode }) {
       .then((data) => setSubStatus(data.status || 'none'))
       .catch(() => setSubStatus('none'))
       .finally(() => setSubLoading(false))
-  }, [user, isAdmin])
+  }, [user, isAdmin, isVip])
 
   if (loading || subLoading) {
     return (
@@ -44,8 +45,8 @@ export default function ProtectedRoute({ children }: { children: ReactNode }) {
     return <Navigate to="/verify-email" replace />
   }
 
-  // Redirect to choose plan if no active subscription (admins bypass this)
-  if (!isAdmin && subStatus === 'none') {
+  // Redirect to choose plan if no active subscription (admins and VIP bypass this)
+  if (!isAdmin && !isVip && subStatus === 'none') {
     return <Navigate to="/choose-plan" replace />
   }
 

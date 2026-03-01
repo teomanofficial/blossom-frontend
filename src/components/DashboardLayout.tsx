@@ -114,7 +114,7 @@ function RailLink({
 }
 
 export default function DashboardLayout() {
-  const { user, signOut, userType, planSlug } = useAuth()
+  const { user, signOut, userType, planSlug, vipCredits } = useAuth()
   const location = useLocation()
   const displayName = user?.user_metadata?.full_name ?? user?.email?.split('@')[0] ?? 'Creator'
 
@@ -238,6 +238,26 @@ export default function DashboardLayout() {
         {/* Desktop Top Header (lg+) */}
         <header className="hidden lg:flex h-16 items-center px-10 bg-transparent backdrop-blur-sm z-10 shrink-0">
           <SearchOverlay />
+          <div className="flex-1" />
+          {userType === 'vip' && (
+            <div className="relative group flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-gradient-to-r from-amber-500/10 via-yellow-400/10 to-amber-500/10 border border-amber-400/20 cursor-default overflow-hidden">
+              {/* Shimmer effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-400/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
+              <div className="relative flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-amber-400 via-yellow-300 to-amber-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
+                  <i className="fas fa-crown text-[11px] text-amber-900" />
+                </div>
+                <div>
+                  <div className="text-[10px] font-black uppercase tracking-widest text-amber-300">VIP Access</div>
+                  {vipCredits && (
+                    <div className="text-[10px] font-bold text-amber-400/60">
+                      {vipCredits.credits_total - vipCredits.credits_used} credits remaining
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </header>
 
         {/* Mobile Top Header (<lg) */}
@@ -247,6 +267,12 @@ export default function DashboardLayout() {
             <span className="text-base font-bold tracking-tighter">Blossom</span>
           </div>
           <div className="flex items-center gap-2">
+            {userType === 'vip' && (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-gradient-to-r from-amber-500/10 to-yellow-400/10 border border-amber-400/20">
+                <i className="fas fa-crown text-[10px] text-amber-400" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-amber-300">VIP</span>
+              </div>
+            )}
             <button
               onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
               className="w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center"

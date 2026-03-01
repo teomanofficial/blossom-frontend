@@ -24,6 +24,8 @@ interface UserSummary {
   plan_name: string | null
   plan_slug: string | null
   price_amount: number | null
+  vip_credits_total: number | null
+  vip_credits_used: number | null
 }
 
 interface UserDetail {
@@ -79,6 +81,13 @@ interface UsageStats {
   social_accounts: number
 }
 
+interface VipConfig {
+  credits_total: number
+  credits_used: number
+  notes: string | null
+  created_at: string
+}
+
 interface Stats {
   total: number
   active: number
@@ -86,6 +95,19 @@ interface Stats {
   pastDue: number
   canceled: number
   noSubscription: number
+  vip: number
+}
+
+interface Category {
+  id: number
+  title: string
+  description: string | null
+  icon: string | null
+}
+
+interface Domain {
+  keyword_id: number
+  keyword: string
 }
 
 function timeAgo(dateStr: string | null): string {
@@ -145,6 +167,13 @@ function CopyButton({ text }: { text: string }) {
   )
 }
 
+function generatePassword(): string {
+  const chars = 'abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$%'
+  let pass = ''
+  for (let i = 0; i < 16; i++) pass += chars.charAt(Math.floor(Math.random() * chars.length))
+  return pass
+}
+
 export default function Users() {
   const [users, setUsers] = useState<UserSummary[]>([])
   const [stats, setStats] = useState<Stats | null>(null)
@@ -158,7 +187,28 @@ export default function Users() {
   const [detailLoading, setDetailLoading] = useState(false)
   const [showEvents, setShowEvents] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [successMsg, setSuccessMsg] = useState<string | null>(null)
   const [updatingUserType, setUpdatingUserType] = useState(false)
+
+  // VIP detail state
+  const [vipConfig, setVipConfig] = useState<VipConfig | null>(null)
+  const [editingCredits, setEditingCredits] = useState(false)
+  const [editCreditsValue, setEditCreditsValue] = useState(0)
+  const [savingCredits, setSavingCredits] = useState(false)
+
+  // Create VIP modal state
+  const [createVipOpen, setCreateVipOpen] = useState(false)
+  const [creatingVip, setCreatingVip] = useState(false)
+  const [categories, setCategories] = useState<Category[]>([])
+  const [domainsByCategory, setDomainsByCategory] = useState<Record<number, Domain[]>>({})
+  const [vipForm, setVipForm] = useState({
+    email: '',
+    password: generatePassword(),
+    full_name: '',
+    category_id: 0,
+    domain_ids: [] as number[],
+    credits: 100,
+  })
 
   const fetchUsers = async (searchTerm = '') => {
     try {
@@ -179,6 +229,7 @@ export default function Users() {
   const fetchUserDetail = async (userId: string) => {
     setDetailLoading(true)
     setShowEvents(false)
+    setVipConfig(null)
     try {
       const res = await authFetch(`/api/admin/users/${userId}`)
       if (!res.ok) throw new Error('Failed to fetch')
@@ -186,6 +237,7 @@ export default function Users() {
       setUserDetail(data.user)
       setBillingEvents(data.billingEvents || [])
       setUsageStats(data.usageStats || null)
+      setVipConfig(data.vipConfig || null)
     } catch (err) {
       console.error('Error fetching user detail:', err)
     } finally {
@@ -236,11 +288,81 @@ export default function Users() {
       setUsers((prev) =>
         prev.map((u) => (u.id === userId ? { ...u, user_type: newType } : u))
       )
+      // Refetch detail to get VIP config if changed to VIP
+      if (newType === 'vip') fetchUserDetail(userId)
     } catch (err) {
       console.error('Error updating user type:', err)
       setErrorMsg('Failed to update user type')
     } finally {
       setUpdatingUserType(false)
+    }
+  }
+
+  const handleSaveCredits = async (userId: string) => {
+    setSavingCredits(true)
+    try {
+      const res = await authFetch(`/api/admin/users/${userId}/vip-credits`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credits_total: editCreditsValue }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        setErrorMsg(data.error || 'Failed to update credits')
+        return
+      }
+      const data = await res.json()
+      setVipConfig(data.vipConfig)
+      setEditingCredits(false)
+    } catch (err) {
+      console.error('Error updating VIP credits:', err)
+      setErrorMsg('Failed to update credits')
+    } finally {
+      setSavingCredits(false)
+    }
+  }
+
+  const openCreateVipModal = async () => {
+    setCreateVipOpen(true)
+    setVipForm({ email: '', password: generatePassword(), full_name: '', category_id: 0, domain_ids: [], credits: 100 })
+    try {
+      const res = await authFetch('/api/onboarding/admin/simulation/data')
+      if (!res.ok) throw new Error('Failed to fetch')
+      const data = await res.json()
+      setCategories(data.categories || [])
+      setDomainsByCategory(data.domainsByCategory || {})
+    } catch (err) {
+      console.error('Error fetching simulation data:', err)
+      setErrorMsg('Failed to load categories')
+    }
+  }
+
+  const handleCreateVip = async () => {
+    if (!vipForm.email || !vipForm.password || !vipForm.full_name || !vipForm.category_id) {
+      setErrorMsg('Please fill in all required fields')
+      return
+    }
+    setCreatingVip(true)
+    try {
+      const res = await authFetch('/api/admin/users/create-vip', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(vipForm),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        setErrorMsg(data.error || 'Failed to create VIP user')
+        return
+      }
+      setCreateVipOpen(false)
+      setSuccessMsg('VIP user created successfully')
+      setTimeout(() => setSuccessMsg(null), 4000)
+      fetchUsers(search)
+    } catch (err) {
+      console.error('Error creating VIP user:', err)
+      setErrorMsg('Failed to create VIP user')
+    } finally {
+      setCreatingVip(false)
     }
   }
 
@@ -251,6 +373,8 @@ export default function Users() {
     if (meta.providers?.includes('google')) return 'Google'
     return 'Email'
   }
+
+  const currentDomains = vipForm.category_id ? (domainsByCategory[vipForm.category_id] || []) : []
 
   if (loading && users.length === 0) {
     return (
@@ -290,9 +414,22 @@ export default function Users() {
         </div>
       )}
 
+      {/* Success */}
+      {successMsg && (
+        <div className="mb-6 p-4 rounded-2xl bg-teal-500/10 border border-teal-500/20 text-teal-400 text-sm font-semibold flex items-center justify-between">
+          <span>
+            <i className="fas fa-check-circle mr-2" />
+            {successMsg}
+          </span>
+          <button onClick={() => setSuccessMsg(null)} className="text-teal-400/60 hover:text-teal-400">
+            <i className="fas fa-times" />
+          </button>
+        </div>
+      )}
+
       {/* Stats Bar */}
       {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-7 gap-3 mb-6">
           {[
             { label: 'Total Users', value: stats.total, icon: 'fa-users', color: 'text-white' },
             { label: 'Active', value: stats.active, icon: 'fa-check-circle', color: 'text-teal-400' },
@@ -300,6 +437,7 @@ export default function Users() {
             { label: 'Past Due', value: stats.pastDue, icon: 'fa-exclamation-triangle', color: 'text-red-400' },
             { label: 'Canceled', value: stats.canceled, icon: 'fa-ban', color: 'text-red-400' },
             { label: 'No Sub', value: stats.noSubscription, icon: 'fa-minus-circle', color: 'text-slate-500' },
+            { label: 'VIP', value: stats.vip, icon: 'fa-crown', color: 'text-amber-400' },
           ].map((s) => (
             <div key={s.label} className="glass-card rounded-xl p-4 text-center">
               <div className={`text-2xl font-black ${s.color}`}>{s.value}</div>
@@ -312,8 +450,8 @@ export default function Users() {
         </div>
       )}
 
-      {/* Search */}
-      <div className="mb-6">
+      {/* Search + Create VIP */}
+      <div className="flex items-center gap-3 mb-6">
         <div className="flex items-center gap-3 glass-input px-4 py-2.5 md:px-5 md:py-3 rounded-2xl w-full md:max-w-md focus-within:border-white/20 transition-all">
           <i className="fas fa-search text-slate-500 text-sm" />
           <input
@@ -332,6 +470,14 @@ export default function Users() {
             </button>
           )}
         </div>
+        <button
+          onClick={openCreateVipModal}
+          className="flex items-center gap-2 px-5 py-2.5 md:py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-bold hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-amber-500/20 whitespace-nowrap"
+        >
+          <i className="fas fa-crown text-xs" />
+          <span className="hidden md:inline">Create VIP</span>
+          <span className="md:hidden">VIP</span>
+        </button>
       </div>
 
       {/* Users List */}
@@ -344,8 +490,16 @@ export default function Users() {
               className="w-full p-4 md:p-5 flex items-center gap-3 md:gap-4 text-left hover:bg-white/[0.02] active:bg-white/[0.03] transition-colors"
             >
               {/* Avatar */}
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 to-orange-400 flex items-center justify-center text-sm font-bold flex-shrink-0">
-                {(user.full_name || user.email || '?').charAt(0).toUpperCase()}
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${
+                user.user_type === 'vip'
+                  ? 'bg-gradient-to-br from-amber-400 via-yellow-300 to-amber-500 text-amber-900'
+                  : 'bg-gradient-to-br from-pink-500 to-orange-400'
+              }`}>
+                {user.user_type === 'vip' ? (
+                  <i className="fas fa-crown text-sm" />
+                ) : (
+                  (user.full_name || user.email || '?').charAt(0).toUpperCase()
+                )}
               </div>
 
               {/* Name & Email */}
@@ -359,27 +513,48 @@ export default function Users() {
                       Admin
                     </span>
                   )}
+                  {user.user_type === 'vip' && (
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-widest bg-amber-500/10 text-amber-400">
+                      <i className="fas fa-crown mr-0.5 text-[8px]" /> VIP
+                    </span>
+                  )}
                 </div>
                 <div className="text-xs text-slate-500 font-medium truncate">{user.email}</div>
               </div>
 
               {/* Subscription Status */}
               <div className="flex items-center gap-3 flex-shrink-0">
-                <div className="text-right hidden md:block">
-                  <div className="text-xs text-slate-400 font-medium">
-                    {user.plan_name || 'No plan'}
+                {/* VIP credits indicator */}
+                {user.user_type === 'vip' && user.vip_credits_total !== null && (
+                  <div className="text-right hidden md:block">
+                    <div className="text-xs text-amber-400 font-bold">
+                      {(user.vip_credits_total ?? 0) - (user.vip_credits_used ?? 0)} credits
+                    </div>
+                    <div className="text-[10px] text-amber-400/50">
+                      of {user.vip_credits_total}
+                    </div>
                   </div>
-                  <div className="text-[10px] text-slate-600">
-                    {user.price_amount ? `${formatPrice(user.price_amount)}/mo` : ''}
+                )}
+
+                {user.user_type !== 'vip' && (
+                  <div className="text-right hidden md:block">
+                    <div className="text-xs text-slate-400 font-medium">
+                      {user.plan_name || 'No plan'}
+                    </div>
+                    <div className="text-[10px] text-slate-600">
+                      {user.price_amount ? `${formatPrice(user.price_amount)}/mo` : ''}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 <span
                   className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest flex-shrink-0 ${
-                    statusColors[user.sub_status || 'none'] || statusColors.none
+                    user.user_type === 'vip'
+                      ? 'bg-amber-400/10 text-amber-400'
+                      : statusColors[user.sub_status || 'none'] || statusColors.none
                   }`}
                 >
-                  {user.sub_status || 'None'}
+                  {user.user_type === 'vip' ? 'VIP' : (user.sub_status || 'None')}
                 </span>
 
                 {(user.payment_failure_count ?? 0) > 0 && (
@@ -463,6 +638,7 @@ export default function Users() {
                           >
                             <option value="user">user</option>
                             <option value="admin">admin</option>
+                            <option value="vip">vip</option>
                           </select>
                           {updatingUserType && (
                             <div className="w-3.5 h-3.5 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin ml-2" />
@@ -479,6 +655,73 @@ export default function Users() {
                         <Field label="Profile Updated">{formatDate(userDetail.profile_updated_at)}</Field>
                       </div>
                     </div>
+
+                    {/* VIP Credits */}
+                    {userDetail.user_type === 'vip' && vipConfig && (
+                      <div>
+                        <div className="text-[10px] font-black uppercase tracking-widest text-amber-400 mb-3">
+                          <i className="fas fa-crown mr-1" /> VIP Credits
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="glass-card rounded-xl p-4 text-center">
+                            <div className="text-xl font-black text-amber-400">
+                              {vipConfig.credits_total - vipConfig.credits_used}
+                            </div>
+                            <div className="text-[10px] font-black uppercase tracking-widest text-slate-500 mt-1">
+                              Remaining
+                            </div>
+                          </div>
+                          <div className="glass-card rounded-xl p-4 text-center">
+                            <div className="text-xl font-black text-white">{vipConfig.credits_used}</div>
+                            <div className="text-[10px] font-black uppercase tracking-widest text-slate-500 mt-1">
+                              Used
+                            </div>
+                          </div>
+                          <div className="glass-card rounded-xl p-4 text-center">
+                            {editingCredits ? (
+                              <div className="flex items-center justify-center gap-2">
+                                <input
+                                  type="number"
+                                  value={editCreditsValue}
+                                  onChange={(e) => setEditCreditsValue(parseInt(e.target.value) || 0)}
+                                  min={0}
+                                  className="w-20 px-2 py-1 rounded-lg glass-input text-center text-lg font-black outline-none"
+                                  style={{ colorScheme: 'dark' }}
+                                />
+                                <button
+                                  onClick={() => handleSaveCredits(userDetail.id)}
+                                  disabled={savingCredits}
+                                  className="px-2 py-1 rounded-lg bg-teal-500/20 text-teal-400 text-xs font-bold hover:bg-teal-500/30 disabled:opacity-50"
+                                >
+                                  {savingCredits ? <i className="fas fa-spinner fa-spin" /> : <i className="fas fa-check" />}
+                                </button>
+                                <button
+                                  onClick={() => setEditingCredits(false)}
+                                  className="px-2 py-1 rounded-lg bg-white/5 text-slate-400 text-xs font-bold hover:bg-white/10"
+                                >
+                                  <i className="fas fa-times" />
+                                </button>
+                              </div>
+                            ) : (
+                              <>
+                                <div className="text-xl font-black text-white">{vipConfig.credits_total}</div>
+                                <button
+                                  onClick={() => { setEditingCredits(true); setEditCreditsValue(vipConfig.credits_total) }}
+                                  className="text-[10px] font-black uppercase tracking-widest text-slate-500 mt-1 hover:text-amber-400 transition-colors"
+                                >
+                                  Total <i className="fas fa-pen text-[8px] ml-1" />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        {vipConfig.notes && (
+                          <div className="mt-3 text-xs text-slate-500 italic">
+                            <i className="fas fa-sticky-note mr-1" /> {vipConfig.notes}
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {/* Subscription */}
                     <div>
@@ -550,7 +793,9 @@ export default function Users() {
                           <Field label="Sub Updated">{formatDate(userDetail.sub_updated_at)}</Field>
                         </div>
                       ) : (
-                        <div className="text-sm text-slate-500 italic">No subscription record</div>
+                        <div className="text-sm text-slate-500 italic">
+                          {userDetail.user_type === 'vip' ? 'VIP user — no subscription needed' : 'No subscription record'}
+                        </div>
                       )}
                     </div>
 
@@ -701,6 +946,192 @@ export default function Users() {
           <p className="text-slate-400 font-medium">
             {search ? 'No users match your search.' : 'No users found.'}
           </p>
+        </div>
+      )}
+
+      {/* ═══════════ Create VIP User Modal ═══════════ */}
+      {createVipOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={() => !creatingVip && setCreateVipOpen(false)}
+        >
+          <div
+            className="glass-card rounded-3xl w-full max-w-xl max-h-[85vh] overflow-y-auto dashboard-scrollbar"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 pb-4 border-b border-white/5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 via-yellow-300 to-amber-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
+                  <i className="fas fa-crown text-amber-900" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-black tracking-tight">Create VIP User</h2>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-amber-400">Beta Tester Access</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setCreateVipOpen(false)}
+                disabled={creatingVip}
+                className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-50"
+              >
+                <i className="fas fa-times text-sm" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-5">
+              {/* Email + Password */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5 block">
+                    Email *
+                  </label>
+                  <input
+                    type="email"
+                    value={vipForm.email}
+                    onChange={(e) => setVipForm({ ...vipForm, email: e.target.value })}
+                    placeholder="vip@example.com"
+                    className="w-full px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm font-medium outline-none focus:border-amber-500/40 focus:ring-2 focus:ring-amber-500/10 transition-all placeholder:text-slate-600"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5 block">
+                    Password *
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={vipForm.password}
+                      onChange={(e) => setVipForm({ ...vipForm, password: e.target.value })}
+                      className="w-full px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm font-mono font-medium outline-none focus:border-amber-500/40 focus:ring-2 focus:ring-amber-500/10 transition-all"
+                    />
+                    <button
+                      onClick={() => setVipForm({ ...vipForm, password: generatePassword() })}
+                      className="shrink-0 w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+                      title="Generate password"
+                    >
+                      <i className="fas fa-rotate text-sm" />
+                    </button>
+                    <CopyButton text={vipForm.password} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Full Name */}
+              <div>
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5 block">
+                  Full Name *
+                </label>
+                <input
+                  type="text"
+                  value={vipForm.full_name}
+                  onChange={(e) => setVipForm({ ...vipForm, full_name: e.target.value })}
+                  placeholder="John Doe"
+                  className="w-full px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm font-medium outline-none focus:border-amber-500/40 focus:ring-2 focus:ring-amber-500/10 transition-all placeholder:text-slate-600"
+                />
+              </div>
+
+              {/* Category */}
+              <div>
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5 block">
+                  Content Category *
+                </label>
+                <select
+                  value={vipForm.category_id}
+                  onChange={(e) => setVipForm({ ...vipForm, category_id: parseInt(e.target.value), domain_ids: [] })}
+                  className="w-full px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm font-medium outline-none focus:border-amber-500/40 focus:ring-2 focus:ring-amber-500/10 transition-all cursor-pointer appearance-none"
+                  style={{ colorScheme: 'dark' }}
+                >
+                  <option value={0}>Select a category...</option>
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.icon} {cat.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Domains */}
+              {vipForm.category_id > 0 && currentDomains.length > 0 && (
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2 block">
+                    Domains / Topics
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {currentDomains.map((d) => {
+                      const selected = vipForm.domain_ids.includes(d.keyword_id)
+                      return (
+                        <button
+                          key={d.keyword_id}
+                          onClick={() => {
+                            setVipForm({
+                              ...vipForm,
+                              domain_ids: selected
+                                ? vipForm.domain_ids.filter((id) => id !== d.keyword_id)
+                                : [...vipForm.domain_ids, d.keyword_id],
+                            })
+                          }}
+                          className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+                            selected
+                              ? 'bg-amber-500/15 border-2 border-amber-500/40 text-amber-300'
+                              : 'bg-white/[0.04] border-2 border-transparent text-slate-400 hover:bg-white/[0.08]'
+                          }`}
+                        >
+                          {selected && <i className="fas fa-check mr-1 text-[10px]" />}
+                          {d.keyword}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Credits */}
+              <div>
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5 block">
+                  Usage Credits
+                </label>
+                <input
+                  type="number"
+                  value={vipForm.credits}
+                  onChange={(e) => setVipForm({ ...vipForm, credits: parseInt(e.target.value) || 0 })}
+                  min={0}
+                  className="w-full md:w-40 px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm font-bold outline-none focus:border-amber-500/40 focus:ring-2 focus:ring-amber-500/10 transition-all"
+                  style={{ colorScheme: 'dark' }}
+                />
+                <p className="text-[10px] text-slate-600 mt-1">General usage credits covering all operations</p>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-end gap-3 p-6 pt-4 border-t border-white/5">
+              <button
+                onClick={() => setCreateVipOpen(false)}
+                disabled={creatingVip}
+                className="px-5 py-2.5 rounded-2xl bg-white/[0.06] text-slate-400 text-sm font-bold hover:text-white hover:bg-white/10 transition-all disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateVip}
+                disabled={creatingVip || !vipForm.email || !vipForm.password || !vipForm.full_name || !vipForm.category_id}
+                className="px-6 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-bold hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-amber-500/20 disabled:opacity-40 disabled:hover:scale-100"
+              >
+                {creatingVip ? (
+                  <>
+                    <i className="fas fa-spinner fa-spin mr-2" />
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <i className="fas fa-crown mr-2" />
+                    Create VIP User
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </>
