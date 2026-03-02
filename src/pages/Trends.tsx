@@ -117,6 +117,8 @@ interface TrendingSong {
   album: string | null
   cover_url: string | null
   local_cover_path: string | null
+  play_url: string | null
+  local_audio_path: string | null
   platform: string
   is_original: boolean
   total_video_count: number
@@ -124,6 +126,97 @@ interface TrendingSong {
   avg_views: number
   recent_video_count: number
   recent_avg_views: number
+}
+
+function getAudioUrl(song: TrendingSong): string | null {
+  return song.local_audio_path || song.play_url || null
+}
+
+function useAudioPlayer() {
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const [playingId, setPlayingId] = useState<number | null>(null)
+  const [loadingId, setLoadingId] = useState<number | null>(null)
+  const [progress, setProgress] = useState(0)
+  const [duration, setDuration] = useState(0)
+  const rafRef = useRef<number>(0)
+
+  const updateProgress = useCallback(() => {
+    const a = audioRef.current
+    if (a && !a.paused) {
+      setProgress(a.currentTime)
+      setDuration(a.duration || 0)
+      rafRef.current = requestAnimationFrame(updateProgress)
+    }
+  }, [])
+
+  const stop = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause()
+      audioRef.current.src = ''
+    }
+    cancelAnimationFrame(rafRef.current)
+    setPlayingId(null)
+    setLoadingId(null)
+    setProgress(0)
+    setDuration(0)
+  }, [])
+
+  const toggle = useCallback((song: TrendingSong) => {
+    const url = getAudioUrl(song)
+    if (!url) return
+
+    if (playingId === song.id) {
+      stop()
+      return
+    }
+
+    if (!audioRef.current) {
+      audioRef.current = new Audio()
+      audioRef.current.addEventListener('ended', () => {
+        setPlayingId(null)
+        setProgress(0)
+        cancelAnimationFrame(rafRef.current)
+      })
+      audioRef.current.addEventListener('error', () => {
+        setPlayingId(null)
+        setLoadingId(null)
+        setProgress(0)
+        cancelAnimationFrame(rafRef.current)
+      })
+    }
+
+    const a = audioRef.current
+    a.pause()
+    cancelAnimationFrame(rafRef.current)
+    setLoadingId(song.id)
+    setPlayingId(null)
+    a.src = url
+    a.load()
+
+    const onCanPlay = () => {
+      setLoadingId(null)
+      a.play().then(() => {
+        setPlayingId(song.id)
+        rafRef.current = requestAnimationFrame(updateProgress)
+      }).catch(() => {
+        setLoadingId(null)
+      })
+      a.removeEventListener('canplay', onCanPlay)
+    }
+    a.addEventListener('canplay', onCanPlay)
+  }, [playingId, stop, updateProgress])
+
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause()
+        audioRef.current.src = ''
+      }
+      cancelAnimationFrame(rafRef.current)
+    }
+  }, [])
+
+  return { playingId, loadingId, progress, duration, toggle, stop }
 }
 
 interface OverviewData {
@@ -326,20 +419,65 @@ function ContentCard({ content }: { content: TrendingContent }) {
   )
 }
 
-function SongCard({ song }: { song: TrendingSong }) {
+function SongCard({
+  song,
+  isPlaying,
+  isLoading,
+  progress,
+  duration,
+  onToggle,
+}: {
+  song: TrendingSong
+  isPlaying: boolean
+  isLoading: boolean
+  progress: number
+  duration: number
+  onToggle: () => void
+}) {
   const coverSrc = getStorageUrl(song.local_cover_path)
+  const hasAudio = !!getAudioUrl(song)
+  const pct = duration > 0 ? (progress / duration) * 100 : 0
 
   return (
-    <div className="shrink-0 w-[170px] sm:w-[190px] glass-card rounded-xl overflow-hidden border border-white/5 hover:border-cyan-500/30 transition-all group cursor-pointer">
+    <div
+      className={`shrink-0 w-[170px] sm:w-[190px] glass-card rounded-xl overflow-hidden border transition-all group cursor-pointer ${
+        isPlaying ? 'border-cyan-500/50 shadow-lg shadow-cyan-500/10' : 'border-white/5 hover:border-cyan-500/30'
+      }`}
+      onClick={hasAudio ? onToggle : undefined}
+    >
       <div className="aspect-square bg-slate-900 relative overflow-hidden">
         {coverSrc ? (
-          <img src={coverSrc} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+          <img
+            src={coverSrc}
+            alt=""
+            className={`w-full h-full object-cover transition-transform duration-500 ${
+              isPlaying ? 'scale-105' : 'group-hover:scale-105'
+            }`}
+          />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-cyan-500/10 to-pink-500/10">
             <i className="fas fa-music text-cyan-400/30 text-3xl" />
           </div>
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+        <div className={`absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent transition-opacity ${
+          isPlaying ? 'opacity-100' : ''
+        }`} />
+        {/* Play/pause overlay */}
+        {hasAudio && (
+          <div className={`absolute inset-0 flex items-center justify-center transition-opacity ${
+            isPlaying || isLoading ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+          }`}>
+            <div className={`w-11 h-11 rounded-full flex items-center justify-center backdrop-blur-sm transition-all ${
+              isPlaying ? 'bg-cyan-500/30 scale-100' : 'bg-black/50 scale-90 group-hover:scale-100'
+            }`}>
+              {isLoading ? (
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <i className={`fas ${isPlaying ? 'fa-pause' : 'fa-play'} text-white text-sm ${!isPlaying ? 'ml-0.5' : ''}`} />
+              )}
+            </div>
+          </div>
+        )}
         <div className="absolute top-2 right-2">
           <i className={`${platformIcon(song.platform)} text-[10px] text-white/70`} />
         </div>
@@ -348,9 +486,17 @@ function SongCard({ song }: { song: TrendingSong }) {
             {song.recent_video_count} videos
           </span>
         </div>
+        {/* Progress bar */}
+        {isPlaying && (
+          <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black/30">
+            <div className="h-full bg-cyan-400 transition-all duration-200" style={{ width: `${pct}%` }} />
+          </div>
+        )}
       </div>
       <div className="p-3">
-        <div className="text-sm font-black text-white truncate mb-0.5 group-hover:text-cyan-300 transition-colors">
+        <div className={`text-sm font-black truncate mb-0.5 transition-colors ${
+          isPlaying ? 'text-cyan-300' : 'text-white group-hover:text-cyan-300'
+        }`}>
           {song.title}
         </div>
         {song.artist && (
@@ -387,6 +533,7 @@ export default function Trends() {
   const hooksScroll = useHorizontalScroll()
   const contentsScroll = useHorizontalScroll()
   const songsScroll = useHorizontalScroll()
+  const audio = useAudioPlayer()
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -574,7 +721,15 @@ export default function Trends() {
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {data.songs.items.map((s) => (
-              <SongCard key={s.id} song={s} />
+              <SongCard
+                key={s.id}
+                song={s}
+                isPlaying={audio.playingId === s.id}
+                isLoading={audio.loadingId === s.id}
+                progress={audio.playingId === s.id ? audio.progress : 0}
+                duration={audio.playingId === s.id ? audio.duration : 0}
+                onToggle={() => audio.toggle(s)}
+              />
             ))}
           </div>
         ) : (

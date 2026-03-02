@@ -118,14 +118,18 @@ export default function HookDetail() {
   const [loadingMore, setLoadingMore] = useState(false)
   const [analyzing, setAnalyzing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [analysisError, setAnalysisError] = useState<string | null>(null)
   const [carouselData, setCarouselData] = useState<{ videos: CarouselVideo[]; initialIndex: number } | null>(null)
   const loaderRef = useRef<HTMLDivElement>(null)
 
   const fetchHook = () => {
     setLoading(true)
     authFetch(`/api/analysis/hooks/${id}?page=1&limit=20`)
-      .then((r) => {
-        if (!r.ok) throw new Error('Hook not found')
+      .then(async (r) => {
+        if (!r.ok) {
+          const body = await r.json().catch(() => null)
+          throw new Error(body?.error || 'Hook not found')
+        }
         return r.json()
       })
       .then((data) => {
@@ -167,16 +171,19 @@ export default function HookDetail() {
 
   const triggerAnalysis = () => {
     setAnalyzing(true)
+    setAnalysisError(null)
     authFetch(`/api/analysis/hooks/${id}/analyze`, { method: 'POST' })
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.error) {
-          setError(data.error)
-        } else {
-          setHook((prev) => prev ? { ...prev, class_analysis: data.class_analysis, analysis_updated_at: data.analysis_updated_at, analysis_video_count: data.analysis_video_count } : prev)
+      .then(async (r) => {
+        const data = await r.json()
+        if (!r.ok || data.error) {
+          throw new Error(data.error || 'Analysis failed')
         }
+        return data
       })
-      .catch((e) => setError(e.message))
+      .then((data) => {
+        setHook((prev) => prev ? { ...prev, class_analysis: data.class_analysis, analysis_updated_at: data.analysis_updated_at, analysis_video_count: data.analysis_video_count } : prev)
+      })
+      .catch((e) => setAnalysisError(e.message))
       .finally(() => setAnalyzing(false))
   }
 
@@ -243,6 +250,19 @@ export default function HookDetail() {
           </button>
         )}
       </div>
+
+      {/* Analysis Error Alert */}
+      {analysisError && (
+        <div className="mb-6 p-4 glass-card rounded-2xl border border-red-500/20 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <i className="fas fa-exclamation-triangle text-red-400 shrink-0"></i>
+            <p className="text-red-400 text-xs font-bold truncate">Analysis failed: {analysisError}</p>
+          </div>
+          <button onClick={() => setAnalysisError(null)} className="text-slate-500 hover:text-white text-xs shrink-0">
+            <i className="fas fa-times"></i>
+          </button>
+        </div>
+      )}
 
       {/* Hook Hero */}
       <div className="mb-8 md:mb-12">
