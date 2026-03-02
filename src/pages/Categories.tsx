@@ -77,6 +77,11 @@ export default function Categories() {
   const [showKeywordBackfillConfirm, setShowKeywordBackfillConfirm] = useState(false)
   const [orphanVideoCount, setOrphanVideoCount] = useState<number | null>(null)
 
+  // Category backfill state
+  const [categoryBackfill, setCategoryBackfill] = useState<{ running: boolean; total: number; completed: number; failed: number } | null>(null)
+  const [showCategoryBackfillConfirm, setShowCategoryBackfillConfirm] = useState(false)
+  const [uncategorizedCount, setUncategorizedCount] = useState<number | null>(null)
+
   // Fetch category stats (cached server-side)
   const fetchStats = useCallback(async () => {
     try {
@@ -164,6 +169,62 @@ export default function Categories() {
     try {
       await authFetch('/api/analysis/videos/backfill-keywords/cancel', { method: 'POST' })
       setMessage({ type: 'success', text: 'Keyword backfill cancelling...' })
+    } catch { /* ignore */ }
+  }
+
+  // Category coverage & backfill
+  const fetchCategoryCoverage = useCallback(async () => {
+    try {
+      const res = await authFetch('/api/analysis/videos/category-coverage')
+      const data = await res.json()
+      setUncategorizedCount(data.uncategorized ?? null)
+    } catch { setUncategorizedCount(null) }
+  }, [])
+
+  useEffect(() => { fetchCategoryCoverage() }, [fetchCategoryCoverage])
+
+  const fetchCategoryBackfillStatus = useCallback(async () => {
+    try {
+      const res = await authFetch('/api/analysis/videos/backfill-categories/status')
+      const data = await res.json()
+      setCategoryBackfill(data)
+      return data.running
+    } catch { return false }
+  }, [])
+
+  useEffect(() => {
+    fetchCategoryBackfillStatus()
+    const interval = setInterval(async () => {
+      const running = await fetchCategoryBackfillStatus()
+      if (!running) {
+        clearInterval(interval)
+        fetchCategoryCoverage()
+        fetchStats()
+      }
+    }, 3000)
+    return () => clearInterval(interval)
+  }, [fetchCategoryBackfillStatus, fetchCategoryCoverage, fetchStats])
+
+  const runCategoryBackfill = async () => {
+    setShowCategoryBackfillConfirm(false)
+    try {
+      const res = await authFetch('/api/analysis/videos/backfill-categories', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })
+      const data = await res.json()
+      if (res.ok) {
+        setMessage({ type: 'success', text: data.message || 'Category backfill started' })
+        fetchCategoryBackfillStatus()
+      } else {
+        setMessage({ type: 'error', text: data.error || 'Category backfill failed' })
+      }
+    } catch {
+      setMessage({ type: 'error', text: 'Category backfill failed to start' })
+    }
+  }
+
+  const cancelCategoryBackfill = async () => {
+    try {
+      await authFetch('/api/analysis/videos/backfill-categories/cancel', { method: 'POST' })
+      setMessage({ type: 'success', text: 'Category backfill cancelling...' })
     } catch { /* ignore */ }
   }
 
@@ -418,6 +479,34 @@ export default function Categories() {
               </span>
             </div>
           </Link>
+          {uncategorizedCount !== null && uncategorizedCount > 0 && (
+            <button
+              onClick={() => categoryBackfill?.running ? null : setShowCategoryBackfillConfirm(true)}
+              className="px-6 py-4 glass-card rounded-[1.5rem] border-white/5 hover:bg-white/10 transition-colors group relative"
+            >
+              <div className="text-[10px] font-black text-purple-400/70 uppercase mb-1 tracking-widest">
+                {categoryBackfill?.running ? 'Categorizing...' : 'Backfill Categories'}
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="text-2xl font-black text-purple-400 group-hover:text-purple-300 transition-colors">
+                  {categoryBackfill?.running ? <i className="fas fa-spinner fa-spin"></i> : <i className="fas fa-tags"></i>}
+                </div>
+                <span className="text-xs font-bold text-slate-400">
+                  {categoryBackfill?.running
+                    ? `${categoryBackfill.completed}/${categoryBackfill.total}`
+                    : `${uncategorizedCount.toLocaleString()} uncategorized`}
+                </span>
+              </div>
+              {categoryBackfill?.running && (
+                <div className="absolute bottom-1 left-6 right-6 h-1 bg-white/5 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-purple-400 rounded-full transition-all duration-500"
+                    style={{ width: `${categoryBackfill.total > 0 ? (categoryBackfill.completed / categoryBackfill.total) * 100 : 0}%` }}
+                  />
+                </div>
+              )}
+            </button>
+          )}
           <Link
             to="/dashboard/categories/orphans"
             className="px-6 py-4 glass-card rounded-[1.5rem] border-white/5 hover:bg-white/10 transition-colors group"
@@ -776,6 +865,63 @@ export default function Categories() {
               {keywordBackfill.completed.toLocaleString()} / {keywordBackfill.total.toLocaleString()}
               {keywordBackfill.failed > 0 && <span className="text-red-400 ml-1">({keywordBackfill.failed} failed)</span>}
             </span>
+          </div>
+        </div>
+      )}
+
+      {/* Category Backfill Progress Banner */}
+      {categoryBackfill?.running && (
+        <div className="mb-6 p-4 rounded-xl bg-purple-500/10 border border-purple-500/20">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <i className="fas fa-spinner fa-spin text-purple-400"></i>
+              <span className="text-sm font-bold text-purple-400">Category Backfill Running</span>
+            </div>
+            <button onClick={cancelCategoryBackfill} className="text-xs font-bold text-slate-400 hover:text-white transition-colors px-3 py-1 bg-white/5 rounded-lg">
+              Cancel
+            </button>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-2 bg-white/5 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-purple-400 rounded-full transition-all duration-500"
+                style={{ width: `${categoryBackfill.total > 0 ? (categoryBackfill.completed / categoryBackfill.total) * 100 : 0}%` }}
+              />
+            </div>
+            <span className="text-xs font-bold text-slate-400 whitespace-nowrap">
+              {categoryBackfill.completed.toLocaleString()} / {categoryBackfill.total.toLocaleString()}
+              {categoryBackfill.failed > 0 && <span className="text-red-400 ml-1">({categoryBackfill.failed} failed)</span>}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Category Backfill Confirmation Modal */}
+      {showCategoryBackfillConfirm && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowCategoryBackfillConfirm(false)}>
+          <div className="glass-card rounded-3xl p-6 sm:p-8 w-full max-w-md border border-white/10" onClick={(e) => e.stopPropagation()}>
+            <div className="w-14 h-14 mx-auto mb-5 bg-purple-500/10 rounded-2xl flex items-center justify-center">
+              <i className="fas fa-tags text-purple-400 text-xl"></i>
+            </div>
+            <h2 className="text-xl font-black tracking-tight text-center mb-2">Backfill Categories</h2>
+            <p className="text-sm text-slate-400 text-center mb-6 leading-relaxed">
+              AI will categorize <span className="text-white font-bold">{uncategorizedCount?.toLocaleString()}</span> videos into content categories using existing analysis data. Processes in parallel batches of 10. No video re-download needed.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowCategoryBackfillConfirm(false)}
+                className="flex-1 py-3 rounded-xl text-sm font-bold bg-white/5 hover:bg-white/10 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={runCategoryBackfill}
+                className="flex-1 py-3 rounded-xl text-sm font-bold bg-purple-500 hover:bg-purple-400 text-white transition-colors"
+              >
+                <i className="fas fa-tags mr-2"></i>
+                Start Backfill
+              </button>
+            </div>
           </div>
         </div>
       )}
