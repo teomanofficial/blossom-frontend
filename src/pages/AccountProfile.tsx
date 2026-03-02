@@ -91,7 +91,7 @@ export default function AccountProfile() {
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               placeholder="Your name"
-              className="glass-input w-full"
+              className="glass-input w-full px-4 py-3 text-sm text-white placeholder-slate-500"
             />
           </div>
 
@@ -105,7 +105,7 @@ export default function AccountProfile() {
               onChange={(e) => setBio(e.target.value)}
               placeholder="Tell us a little about yourself"
               rows={3}
-              className="glass-input w-full resize-none"
+              className="glass-input w-full px-4 py-3 text-sm text-white placeholder-slate-500 resize-none"
             />
           </div>
 
@@ -119,7 +119,7 @@ export default function AccountProfile() {
               value={website}
               onChange={(e) => setWebsite(e.target.value)}
               placeholder="https://example.com"
-              className="glass-input w-full"
+              className="glass-input w-full px-4 py-3 text-sm text-white placeholder-slate-500"
             />
           </div>
 
@@ -133,7 +133,7 @@ export default function AccountProfile() {
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               placeholder="City, Country"
-              className="glass-input w-full"
+              className="glass-input w-full px-4 py-3 text-sm text-white placeholder-slate-500"
             />
           </div>
 
@@ -146,7 +146,7 @@ export default function AccountProfile() {
               type="email"
               value={email}
               disabled
-              className="glass-input w-full opacity-50 cursor-not-allowed"
+              className="glass-input w-full px-4 py-3 text-sm text-white placeholder-slate-500 opacity-50 cursor-not-allowed"
             />
             <p className="text-[11px] text-slate-600 mt-1.5">
               Email is managed through your authentication provider.

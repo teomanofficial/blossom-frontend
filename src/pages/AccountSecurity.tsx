@@ -122,7 +122,7 @@ export default function AccountSecurity() {
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
                 placeholder="Enter current password"
-                className="glass-input w-full"
+                className="glass-input w-full px-4 py-3 text-sm text-white placeholder-slate-500"
               />
             </div>
           )}
@@ -136,7 +136,7 @@ export default function AccountSecurity() {
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="At least 6 characters"
-              className="glass-input w-full"
+              className="glass-input w-full px-4 py-3 text-sm text-white placeholder-slate-500"
             />
           </div>
 
@@ -149,7 +149,7 @@ export default function AccountSecurity() {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Confirm new password"
-              className="glass-input w-full"
+              className="glass-input w-full px-4 py-3 text-sm text-white placeholder-slate-500"
             />
           </div>
         </div>

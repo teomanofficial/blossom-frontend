@@ -239,7 +239,7 @@ export default function AccountPreferences() {
               onChange={(e) => setEditDescription(e.target.value)}
               placeholder="Describe the type of content you create..."
               rows={3}
-              className="glass-input w-full resize-none"
+              className="glass-input w-full px-4 py-3 text-sm text-white placeholder-slate-500 resize-none"
             />
           </div>
 
