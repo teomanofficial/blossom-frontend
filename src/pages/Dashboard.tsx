@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
+import { useAuth } from '../context/AuthContext'
 import { authFetch } from '../lib/api'
 import { getStorageUrl } from '../lib/media'
 import VideoStoryCarousel, { type CarouselVideo } from '../components/VideoStoryCarousel'
@@ -206,6 +207,8 @@ function PostCard({
 
 /* ── Main Dashboard ── */
 export default function Dashboard() {
+  const { user } = useAuth()
+  const displayName = user?.user_metadata?.full_name ?? user?.email?.split('@')[0] ?? 'Creator'
   const [stats, setStats] = useState<Stats | null>(null)
   const [loading, setLoading] = useState(true)
   const [carouselData, setCarouselData] = useState<{ videos: CarouselVideo[]; initialIndex: number } | null>(null)
@@ -233,6 +236,16 @@ export default function Dashboard() {
 
   return (
     <>
+      {/* Page Header */}
+      <div className="mb-8 lg:mb-12">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight mb-2 lg:mb-3">
+          Welcome, <span className="gradient-text font-display">{displayName}</span>
+        </h1>
+        <p className="text-slate-400 text-xs sm:text-sm font-medium tracking-wide uppercase">
+          Your viral intelligence hub. Study what works, create what's next.
+        </p>
+      </div>
+
       {loading ? (
         <div className="flex items-center justify-center py-20">
           <div className="w-8 h-8 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />

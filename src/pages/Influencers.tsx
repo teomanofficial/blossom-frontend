@@ -187,12 +187,15 @@ export default function Influencers() {
     <div className="max-w-[1400px] mx-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
-        <div className="flex items-center gap-3 text-xs text-slate-400">
-          <span><span className="text-white font-semibold">{total}</span> creators</span>
-          <span className="text-slate-600 hidden sm:inline">|</span>
-          <span className="hidden sm:inline"><span className="text-white font-semibold">{fmt(totalFollowers)}</span> reach</span>
-          <span className="text-slate-600 hidden sm:inline">|</span>
-          <span className="hidden sm:inline"><span className="text-teal-400 font-semibold">{avgEngagement > 0 ? (avgEngagement * 100).toFixed(1) + '%' : '--'}</span> avg eng</span>
+        <div className="flex items-center gap-4">
+          <h1 className="text-xl font-bold font-display tracking-tight">Creators</h1>
+          <div className="flex items-center gap-3 text-xs text-slate-400">
+            <span><span className="text-white font-semibold">{total}</span> creators</span>
+            <span className="text-slate-600 hidden sm:inline">|</span>
+            <span className="hidden sm:inline"><span className="text-white font-semibold">{fmt(totalFollowers)}</span> reach</span>
+            <span className="text-slate-600 hidden sm:inline">|</span>
+            <span className="hidden sm:inline"><span className="text-teal-400 font-semibold">{avgEngagement > 0 ? (avgEngagement * 100).toFixed(1) + '%' : '--'}</span> avg eng</span>
+          </div>
         </div>
         {userType === 'admin' && (
           <button

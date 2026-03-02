@@ -79,7 +79,7 @@ export default function Suggestions() {
   const [formatFilter, setFormatFilter] = useState('')
   const [filterKeywords, setFilterKeywords] = useState<FilterOption[]>([])
   const [filterFormats, setFilterFormats] = useState<FilterOption[]>([])
-  const [, setCategoryName] = useState<string | null>(null)
+  const [categoryName, setCategoryName] = useState<string | null>(null)
 
   useEffect(() => { loadAll() }, [])
   useEffect(() => { loadSuggestions() }, [tab, sortBy, keywordFilter, formatFilter])
@@ -170,8 +170,25 @@ export default function Suggestions() {
 
   return (
     <>
-      {/* Generate Button */}
-      <div className="flex justify-end mb-6 md:mb-8">
+      {/* Page Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 md:gap-6 mb-6 md:mb-8">
+        <div>
+          <div className="flex items-center gap-2 mb-2 md:mb-3">
+            <span className="badge-glass text-pink-400 font-black">
+              AI Powered
+            </span>
+            {categoryName && (
+              <span className="badge-glass text-purple-400 font-black">
+                {categoryName}
+              </span>
+            )}
+          </div>
+          <h1 className="text-2xl md:text-4xl font-black font-display tracking-tighter mb-1 md:mb-2">CONTENT SUGGESTIONS</h1>
+          <p className="text-slate-500 text-xs md:text-sm font-medium">
+            Daily content ideas based on trending patterns{categoryName ? ` in ${categoryName}` : ''}. Film them today.
+          </p>
+        </div>
+
         <button
           onClick={handleGenerate}
           disabled={generating}

@@ -5,46 +5,6 @@ import { authFetch } from '../lib/api'
 import SearchOverlay from './SearchOverlay'
 import MobileDrawer from './MobileDrawer'
 
-/* ── Page title map for header ── */
-const pageTitles: Record<string, string> = {
-  '/dashboard': 'Dashboard',
-  '/dashboard/platforms': 'Platforms',
-  '/dashboard/trends': 'Trends',
-  '/dashboard/influencers': 'Creators',
-  '/dashboard/analyze': 'Analysis',
-  '/dashboard/suggestions': 'Suggestions',
-  '/dashboard/formats': 'Formats',
-  '/dashboard/hooks': 'Hooks',
-  '/dashboard/tactics': 'Tactics',
-  '/dashboard/support': 'Support',
-  '/dashboard/account': 'Settings',
-  '/dashboard/users': 'Users',
-  '/dashboard/subscription-plans': 'Plans',
-  '/dashboard/content-analytics': 'Content Analytics',
-  '/dashboard/domain-management': 'Domains',
-  '/dashboard/categories': 'Categories',
-  '/dashboard/videos': 'Scan & Analyze',
-  '/dashboard/discovery': 'Discovery',
-  '/dashboard/support-management': 'Support Tickets',
-  '/dashboard/bulk-management': 'Bulk Retrain',
-  '/dashboard/onboarding-management': 'Onboarding',
-  '/dashboard/category-requests': 'Category Requests',
-  '/dashboard/ai-model-lab': 'AI Model Lab',
-  '/dashboard/hashtags': 'Hashtags',
-}
-
-function getPageTitle(pathname: string): string {
-  if (pageTitles[pathname]) return pageTitles[pathname]
-  // Prefix match for nested routes (e.g. /dashboard/hooks/123)
-  const segments = pathname.split('/')
-  while (segments.length > 2) {
-    segments.pop()
-    const prefix = segments.join('/')
-    if (pageTitles[prefix]) return pageTitles[prefix]
-  }
-  return 'Dashboard'
-}
-
 /* ── Nav item groups matching the sidebar screenshots ── */
 const generalItems = [
   { to: '/dashboard', icon: 'fa-house', label: 'Dashboard', end: true },
@@ -77,7 +37,6 @@ const managementItems = [
   { to: '/dashboard/support-management', icon: 'fa-ticket', label: 'Support Tickets' },
   { to: '/dashboard/bulk-management', icon: 'fa-arrows-rotate', label: 'Bulk Retrain' },
   { to: '/dashboard/onboarding-management', icon: 'fa-clipboard-check', label: 'Onboarding' },
-  { to: '/dashboard/category-requests', icon: 'fa-inbox', label: 'Category Requests' },
   { to: '/dashboard/ai-model-lab', icon: 'fa-microchip', label: 'AI Model Lab' },
   { to: '/dashboard/hashtags', icon: 'fa-hashtag', label: 'Hashtags' },
 ]
@@ -116,7 +75,6 @@ const drawerRoutes = [
   '/dashboard/support-management',
   '/dashboard/bulk-management',
   '/dashboard/onboarding-management',
-  '/dashboard/category-requests',
   '/dashboard/ai-model-lab',
   '/dashboard/hashtags',
 ]
@@ -279,9 +237,6 @@ export default function DashboardLayout() {
       <main className="flex flex-col h-screen overflow-hidden lg:pl-[72px] relative z-10">
         {/* Desktop Top Header (lg+) */}
         <header className="hidden lg:flex h-16 items-center px-10 bg-transparent backdrop-blur-sm z-10 shrink-0">
-          <h1 className="text-lg font-black font-display tracking-tight gradient-text mr-6 shrink-0">
-            {getPageTitle(location.pathname)}
-          </h1>
           <SearchOverlay />
           <div className="flex-1" />
           {userType === 'admin' && (
@@ -320,7 +275,7 @@ export default function DashboardLayout() {
         <header className="flex lg:hidden h-14 border-b border-white/5 items-center justify-between px-4 bg-[#050508]/80 backdrop-blur-xl z-30 shrink-0">
           <div className="flex items-center gap-2.5">
             <img src="/logo-light.png" alt="Blossom" className="w-7 h-7" />
-            <span className="text-base font-black tracking-tight font-display gradient-text">{getPageTitle(location.pathname)}</span>
+            <span className="text-base font-bold tracking-tighter">Blossom</span>
           </div>
           <div className="flex items-center gap-2">
             {userType === 'admin' && (

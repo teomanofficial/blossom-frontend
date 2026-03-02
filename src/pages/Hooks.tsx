@@ -83,15 +83,29 @@ export default function Hooks() {
 
   return (
     <>
-      {/* Stats Cards */}
-      <div className="flex gap-3 md:gap-4 mb-6 md:mb-8">
-        <div className="px-4 py-3 md:px-6 md:py-4 glass-card rounded-3xl flex-1 md:flex-initial">
-          <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Total Hooks</div>
-          <div className="text-xl md:text-2xl font-black text-white">{hooks.length}</div>
+      {/* Page Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 md:gap-6 mb-6 md:mb-12">
+        <div>
+          <div className="flex items-center gap-2 mb-2 md:mb-3">
+            <span className="badge-glass text-pink-400 font-black">
+              Scroll Stoppers
+            </span>
+          </div>
+          <h1 className="text-2xl md:text-4xl font-black font-display tracking-tighter mb-1 md:mb-2">VIRAL HOOKS</h1>
+          <p className="text-slate-500 text-xs md:text-sm font-medium">
+            The opening patterns that stop the scroll and lock attention in the first 3 seconds.
+          </p>
         </div>
-        <div className="px-4 py-3 md:px-6 md:py-4 glass-card rounded-3xl flex-1 md:flex-initial">
-          <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Global Avg Views</div>
-          <div className="text-xl md:text-2xl font-black text-white">{formatNumber(globalAvgViews)}</div>
+
+        <div className="flex gap-3 md:gap-4">
+          <div className="px-4 py-3 md:px-6 md:py-4 glass-card rounded-3xl flex-1 md:flex-initial">
+            <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Total Hooks</div>
+            <div className="text-xl md:text-2xl font-black text-white">{hooks.length}</div>
+          </div>
+          <div className="px-4 py-3 md:px-6 md:py-4 glass-card rounded-3xl flex-1 md:flex-initial">
+            <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Global Avg Views</div>
+            <div className="text-xl md:text-2xl font-black text-white">{formatNumber(globalAvgViews)}</div>
+          </div>
         </div>
       </div>
 

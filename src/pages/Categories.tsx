@@ -72,6 +72,11 @@ export default function Categories() {
   const [orphanCount, setOrphanCount] = useState<number | null>(null)
   const [showBackfillConfirm, setShowBackfillConfirm] = useState(false)
 
+  // Keyword backfill state
+  const [keywordBackfill, setKeywordBackfill] = useState<{ running: boolean; total: number; completed: number; failed: number } | null>(null)
+  const [showKeywordBackfillConfirm, setShowKeywordBackfillConfirm] = useState(false)
+  const [orphanVideoCount, setOrphanVideoCount] = useState<number | null>(null)
+
   // Fetch category stats (cached server-side)
   const fetchStats = useCallback(async () => {
     try {
@@ -104,6 +109,63 @@ export default function Categories() {
   }, [])
 
   useEffect(() => { fetchOrphanCount() }, [fetchOrphanCount])
+
+  // Fetch orphan video count (videos without keywords)
+  const fetchOrphanVideoCount = useCallback(async () => {
+    try {
+      const res = await authFetch('/api/analysis/videos/orphans?limit=1&offset=0')
+      const data = await res.json()
+      setOrphanVideoCount(data.total ?? null)
+    } catch { setOrphanVideoCount(null) }
+  }, [])
+
+  useEffect(() => { fetchOrphanVideoCount() }, [fetchOrphanVideoCount])
+
+  // Keyword backfill status polling
+  const fetchKeywordBackfillStatus = useCallback(async () => {
+    try {
+      const res = await authFetch('/api/analysis/videos/backfill-keywords/status')
+      const data = await res.json()
+      setKeywordBackfill(data)
+      return data.running
+    } catch { return false }
+  }, [])
+
+  useEffect(() => {
+    fetchKeywordBackfillStatus()
+    const interval = setInterval(async () => {
+      const running = await fetchKeywordBackfillStatus()
+      if (!running) {
+        clearInterval(interval)
+        fetchOrphanVideoCount()
+        fetchStats()
+      }
+    }, 3000)
+    return () => clearInterval(interval)
+  }, [fetchKeywordBackfillStatus, fetchOrphanVideoCount, fetchStats])
+
+  const runKeywordBackfill = async () => {
+    setShowKeywordBackfillConfirm(false)
+    try {
+      const res = await authFetch('/api/analysis/videos/backfill-keywords', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })
+      const data = await res.json()
+      if (res.ok) {
+        setMessage({ type: 'success', text: data.message || 'Keyword backfill started' })
+        fetchKeywordBackfillStatus()
+      } else {
+        setMessage({ type: 'error', text: data.error || 'Keyword backfill failed' })
+      }
+    } catch {
+      setMessage({ type: 'error', text: 'Keyword backfill failed to start' })
+    }
+  }
+
+  const cancelKeywordBackfill = async () => {
+    try {
+      await authFetch('/api/analysis/videos/backfill-keywords/cancel', { method: 'POST' })
+      setMessage({ type: 'success', text: 'Keyword backfill cancelling...' })
+    } catch { /* ignore */ }
+  }
 
   const runAutoMatch = async () => {
     setShowBackfillConfirm(false)
@@ -290,7 +352,7 @@ export default function Categories() {
           </p>
         </div>
 
-        <div className="flex gap-4">
+        <div className="flex gap-4 flex-wrap">
           <div className="px-6 py-4 glass-card rounded-[1.5rem] border-white/5">
             <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Total</div>
             <div className="text-2xl font-black text-white">{total}</div>
@@ -314,6 +376,48 @@ export default function Categories() {
               </div>
             </button>
           )}
+          {orphanVideoCount !== null && orphanVideoCount > 0 && (
+            <button
+              onClick={() => keywordBackfill?.running ? null : setShowKeywordBackfillConfirm(true)}
+              className="px-6 py-4 glass-card rounded-[1.5rem] border-white/5 hover:bg-white/10 transition-colors group relative"
+            >
+              <div className="text-[10px] font-black text-red-400/70 uppercase mb-1 tracking-widest">
+                {keywordBackfill?.running ? 'Backfilling...' : 'Backfill Keywords'}
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="text-2xl font-black text-red-400 group-hover:text-red-300 transition-colors">
+                  {keywordBackfill?.running ? <i className="fas fa-spinner fa-spin"></i> : <i className="fas fa-key"></i>}
+                </div>
+                <span className="text-xs font-bold text-slate-400">
+                  {keywordBackfill?.running
+                    ? `${keywordBackfill.completed}/${keywordBackfill.total}`
+                    : `${orphanVideoCount.toLocaleString()} orphans`}
+                </span>
+              </div>
+              {keywordBackfill?.running && (
+                <div className="absolute bottom-1 left-6 right-6 h-1 bg-white/5 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-red-400 rounded-full transition-all duration-500"
+                    style={{ width: `${keywordBackfill.total > 0 ? (keywordBackfill.completed / keywordBackfill.total) * 100 : 0}%` }}
+                  />
+                </div>
+              )}
+            </button>
+          )}
+          <Link
+            to="/dashboard/categories/orphans"
+            className="px-6 py-4 glass-card rounded-[1.5rem] border-white/5 hover:bg-white/10 transition-colors group"
+          >
+            <div className="text-[10px] font-black text-yellow-400/70 uppercase mb-1 tracking-widest">Orphan Videos</div>
+            <div className="flex items-center gap-2">
+              <div className="text-2xl font-black text-yellow-400 group-hover:text-yellow-300 transition-colors">
+                <i className="fas fa-unlink"></i>
+              </div>
+              <span className="text-xs font-bold text-slate-400">
+                {orphanVideoCount !== null ? orphanVideoCount.toLocaleString() : '...'}
+              </span>
+            </div>
+          </Link>
           <button
             onClick={openCreate}
             className="px-6 py-4 glass-card rounded-[1.5rem] border-white/5 hover:bg-white/10 transition-colors group"
@@ -631,6 +735,63 @@ export default function Categories() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Keyword Backfill Progress Banner */}
+      {keywordBackfill?.running && (
+        <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <i className="fas fa-spinner fa-spin text-red-400"></i>
+              <span className="text-sm font-bold text-red-400">Keyword Backfill Running</span>
+            </div>
+            <button onClick={cancelKeywordBackfill} className="text-xs font-bold text-slate-400 hover:text-white transition-colors px-3 py-1 bg-white/5 rounded-lg">
+              Cancel
+            </button>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-2 bg-white/5 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-red-400 rounded-full transition-all duration-500"
+                style={{ width: `${keywordBackfill.total > 0 ? (keywordBackfill.completed / keywordBackfill.total) * 100 : 0}%` }}
+              />
+            </div>
+            <span className="text-xs font-bold text-slate-400 whitespace-nowrap">
+              {keywordBackfill.completed.toLocaleString()} / {keywordBackfill.total.toLocaleString()}
+              {keywordBackfill.failed > 0 && <span className="text-red-400 ml-1">({keywordBackfill.failed} failed)</span>}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Keyword Backfill Confirmation Modal */}
+      {showKeywordBackfillConfirm && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowKeywordBackfillConfirm(false)}>
+          <div className="glass-card rounded-3xl p-6 sm:p-8 w-full max-w-md border border-white/10" onClick={(e) => e.stopPropagation()}>
+            <div className="w-14 h-14 mx-auto mb-5 bg-red-500/10 rounded-2xl flex items-center justify-center">
+              <i className="fas fa-key text-red-400 text-xl"></i>
+            </div>
+            <h2 className="text-xl font-black tracking-tight text-center mb-2">Backfill Keywords</h2>
+            <p className="text-sm text-slate-400 text-center mb-6 leading-relaxed">
+              AI will extract keywords for <span className="text-white font-bold">{orphanVideoCount?.toLocaleString()}</span> videos that are missing keyword data. This uses existing analysis context (no video re-download). Takes ~1 hour for 14k videos.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowKeywordBackfillConfirm(false)}
+                className="flex-1 py-3 rounded-xl text-sm font-bold bg-white/5 hover:bg-white/10 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={runKeywordBackfill}
+                className="flex-1 py-3 rounded-xl text-sm font-bold bg-red-500 hover:bg-red-400 text-white transition-colors"
+              >
+                <i className="fas fa-key mr-2"></i>
+                Start Backfill
+              </button>
+            </div>
           </div>
         </div>
       )}
