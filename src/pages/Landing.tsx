@@ -587,6 +587,7 @@ export default function Landing() {
                 >
                   Start Free Trial
                 </Link>
+                <p className="text-white/40 text-xs mt-2 text-center">No payment due now</p>
               </div>
             ))}
           </div>

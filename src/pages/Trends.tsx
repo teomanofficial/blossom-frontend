@@ -433,18 +433,7 @@ export default function Trends() {
     <>
       {/* Header */}
       <div className="mb-8">
-        <div className="flex items-center gap-2 mb-3">
-          <span className="badge-glass text-pink-400 font-black">
-            Trends
-          </span>
-        </div>
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div>
-            <h1 className="text-3xl font-black font-display tracking-tighter mb-2">Trends</h1>
-            <p className="text-slate-500 text-sm font-medium">
-              What's trending across posts, formats, hooks, content topics, and songs.
-            </p>
-          </div>
+        <div className="flex items-center justify-end flex-wrap gap-4">
           {/* Time window selector */}
           <div className="flex items-center gap-1 bg-white/5 rounded-xl p-1">
             {[7, 14, 30].map((d) => (

@@ -136,35 +136,21 @@ export default function Tactics() {
 
   return (
     <>
-      {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 md:gap-6 mb-6 md:mb-12">
-        <div>
-          <div className="flex items-center gap-2 mb-2 md:mb-3">
-            <span className="badge-glass text-amber-400 font-black">
-              Engagement Playbook
-            </span>
-          </div>
-          <h1 className="text-2xl md:text-4xl font-black font-display tracking-tighter mb-1 md:mb-2">VIRAL TACTICS</h1>
-          <p className="text-slate-500 text-xs md:text-sm font-medium">
-            The specific techniques that drive views, shares, and engagement across top-performing content.
-          </p>
+      {/* Stats Cards */}
+      <div className="flex gap-2 md:gap-4 overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0 mb-6 md:mb-8">
+        <div className="px-4 py-3 md:px-6 md:py-4 glass-card rounded-3xl shrink-0">
+          <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Total Tactics</div>
+          <div className="text-xl md:text-2xl font-black text-white">{total}</div>
         </div>
-
-        <div className="flex gap-2 md:gap-4 overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
-          <div className="px-4 py-3 md:px-6 md:py-4 glass-card rounded-3xl shrink-0">
-            <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Total Tactics</div>
-            <div className="text-xl md:text-2xl font-black text-white">{total}</div>
+        <div className="px-4 py-3 md:px-6 md:py-4 glass-card rounded-3xl shrink-0">
+          <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Avg Exec Score</div>
+          <div className={`text-xl md:text-2xl font-black ${getScoreColor(globalAvgScore)}`}>
+            {globalAvgScore > 0 ? Math.round(globalAvgScore) : '--'}
           </div>
-          <div className="px-4 py-3 md:px-6 md:py-4 glass-card rounded-3xl shrink-0">
-            <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Avg Exec Score</div>
-            <div className={`text-xl md:text-2xl font-black ${getScoreColor(globalAvgScore)}`}>
-              {globalAvgScore > 0 ? Math.round(globalAvgScore) : '--'}
-            </div>
-          </div>
-          <div className="px-4 py-3 md:px-6 md:py-4 glass-card rounded-3xl shrink-0">
-            <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Video Uses</div>
-            <div className="text-xl md:text-2xl font-black text-white">{formatNumber(totalVideos)}</div>
-          </div>
+        </div>
+        <div className="px-4 py-3 md:px-6 md:py-4 glass-card rounded-3xl shrink-0">
+          <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Video Uses</div>
+          <div className="text-xl md:text-2xl font-black text-white">{formatNumber(totalVideos)}</div>
         </div>
       </div>
 

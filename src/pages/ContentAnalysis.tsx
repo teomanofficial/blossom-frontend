@@ -374,22 +374,9 @@ export default function ContentAnalysis() {
 
   return (
     <>
-      {/* Page Header */}
-      <div className="mb-12">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <span className="badge-glass text-pink-400 font-black">
-                Analysis
-              </span>
-            </div>
-            <h1 className="text-4xl font-black font-display tracking-tighter mb-2">
-              Analyze <span className="gradient-text">Your Content</span>
-            </h1>
-            <p className="text-slate-500 text-sm font-medium">
-              Upload a video or paste a URL to get AI-powered analysis and improvement suggestions.
-            </p>
-          </div>
+      {/* Page Header Actions */}
+      <div className="mb-8">
+        <div className="flex items-center justify-end">
           <div className="flex items-center gap-3">
             {(uploadId || analysisResult) && (
               <button

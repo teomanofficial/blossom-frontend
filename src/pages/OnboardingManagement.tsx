@@ -41,13 +41,6 @@ interface OnboardingDetail extends OnboardingEntry {
   linked_acct_platform: string | null
 }
 
-interface Category {
-  id: number
-  title: string
-  description: string
-  icon: string | null
-}
-
 interface Domain {
   id: number
   name: string
@@ -81,10 +74,9 @@ function stepLabel(step: number, completed: boolean): string {
     1: 'Name',
     2: 'Social Profiles',
     3: 'Content Description',
-    4: 'Category',
-    5: 'Domains',
-    6: 'Link Account',
-    7: 'Analysis',
+    4: 'Domains',
+    5: 'Link Account',
+    6: 'Analysis',
   }
   return labels[step] || `Step ${step}`
 }
@@ -241,7 +233,6 @@ function InfoBlock({ label, value }: { label: string; value: string }) {
 // ---------------------------------------------------------------------------
 
 function OnboardingSimulation() {
-  const [categories, setCategories] = useState<Category[]>([])
   const [domainsByCategory, setDomainsByCategory] = useState<Record<number, Domain[]>>({})
   const [loading, setLoading] = useState(true)
 
@@ -253,13 +244,12 @@ function OnboardingSimulation() {
   const [simCategory, setSimCategory] = useState<number | null>(null)
   const [simDomains, setSimDomains] = useState<number[]>([])
 
-  const TOTAL_STEPS = 6
+  const TOTAL_STEPS = 5
 
   useEffect(() => {
     authFetch('/api/onboarding/admin/simulation/data')
       .then((r) => r.json())
       .then((data) => {
-        setCategories(data.categories || [])
         setDomainsByCategory(data.domainsByCategory || {})
       })
       .catch(console.error)
@@ -443,43 +433,8 @@ function OnboardingSimulation() {
               </div>
             )}
 
-            {/* Step 4: Category */}
+            {/* Step 4: Domains */}
             {simStep === 4 && (
-              <div className="space-y-6">
-                <div className="text-center mb-6">
-                  <h2 className="text-2xl font-black tracking-tight mb-2">Your Category</h2>
-                  <p className="text-slate-400 text-sm font-medium">Select the category that best describes your content</p>
-                </div>
-                {categories.length === 0 ? (
-                  <p className="text-center text-slate-500 py-8 text-sm">No categories available.</p>
-                ) : (
-                  <div className="grid grid-cols-2 gap-3 max-h-72 overflow-y-auto pr-1 dashboard-scrollbar">
-                    {categories.map((cat) => (
-                      <button
-                        key={cat.id}
-                        onClick={() => { setSimCategory(cat.id); setSimDomains([]) }}
-                        className={`p-4 rounded-2xl border text-left transition-all hover:scale-[1.02] ${
-                          simCategory === cat.id
-                            ? 'border-pink-500/50 bg-pink-500/10 ring-1 ring-pink-500/20'
-                            : 'border-white/10 bg-white/5 hover:bg-white/10'
-                        }`}
-                      >
-                        {cat.icon && <div className="text-2xl mb-2">{cat.icon}</div>}
-                        <h3 className="text-sm font-black mb-1">{cat.title}</h3>
-                        {cat.description && <p className="text-[10px] text-slate-500 line-clamp-2">{cat.description}</p>}
-                      </button>
-                    ))}
-                  </div>
-                )}
-                <div className="flex gap-3">
-                  <button onClick={() => setSimStep(3)} className="flex-1 py-3.5 bg-white/10 border border-white/10 rounded-2xl text-sm font-black text-white hover:bg-white/15 transition-all">Back</button>
-                  <button onClick={() => simCategory && setSimStep(5)} disabled={!simCategory} className="flex-1 py-3.5 bg-gradient-to-r from-pink-500 to-orange-400 rounded-2xl text-sm font-black text-white disabled:opacity-40 transition-all hover:scale-[1.02]">Continue</button>
-                </div>
-              </div>
-            )}
-
-            {/* Step 5: Domains */}
-            {simStep === 5 && (
               <div className="space-y-6">
                 <div className="text-center mb-6">
                   <h2 className="text-2xl font-black tracking-tight mb-2">Your Domains</h2>
@@ -508,14 +463,14 @@ function OnboardingSimulation() {
                   </div>
                 )}
                 <div className="flex gap-3">
-                  <button onClick={() => setSimStep(4)} className="flex-1 py-3.5 bg-white/10 border border-white/10 rounded-2xl text-sm font-black text-white hover:bg-white/15 transition-all">Back</button>
-                  <button onClick={() => simDomains.length > 0 && setSimStep(6)} disabled={simDomains.length === 0} className="flex-1 py-3.5 bg-gradient-to-r from-pink-500 to-orange-400 rounded-2xl text-sm font-black text-white disabled:opacity-40 transition-all hover:scale-[1.02]">Continue</button>
+                  <button onClick={() => setSimStep(3)} className="flex-1 py-3.5 bg-white/10 border border-white/10 rounded-2xl text-sm font-black text-white hover:bg-white/15 transition-all">Back</button>
+                  <button onClick={() => simDomains.length > 0 && setSimStep(5)} disabled={simDomains.length === 0} className="flex-1 py-3.5 bg-gradient-to-r from-pink-500 to-orange-400 rounded-2xl text-sm font-black text-white disabled:opacity-40 transition-all hover:scale-[1.02]">Continue</button>
                 </div>
               </div>
             )}
 
-            {/* Step 6: Link Account */}
-            {simStep === 6 && (
+            {/* Step 5: Link Account */}
+            {simStep === 5 && (
               <div className="space-y-6">
                 <div className="text-center mb-6">
                   <h2 className="text-2xl font-black tracking-tight mb-2">Link Your Account</h2>
@@ -544,7 +499,7 @@ function OnboardingSimulation() {
                   </button>
                 </div>
                 <div className="flex gap-3">
-                  <button onClick={() => setSimStep(5)} className="flex-1 py-3.5 bg-white/10 border border-white/10 rounded-2xl text-sm font-black text-white hover:bg-white/15 transition-all">Back</button>
+                  <button onClick={() => setSimStep(4)} className="flex-1 py-3.5 bg-white/10 border border-white/10 rounded-2xl text-sm font-black text-white hover:bg-white/15 transition-all">Back</button>
                   <button onClick={resetSim} className="flex-1 py-3.5 bg-gradient-to-r from-pink-500 to-orange-400 rounded-2xl text-sm font-black text-white transition-all hover:scale-[1.02]">
                     Restart Simulation
                   </button>

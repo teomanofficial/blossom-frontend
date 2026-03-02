@@ -13,14 +13,6 @@ interface OnboardingData {
   linkedPlatform: string | null
 }
 
-interface Category {
-  id: number
-  title: string
-  description: string
-  icon: string | null
-  thumbnail_url: string | null
-}
-
 interface Domain {
   id: number
   name: string
@@ -28,7 +20,7 @@ interface Domain {
   video_count: number
 }
 
-const TOTAL_STEPS = 6
+const TOTAL_STEPS = 5
 
 const defaultData: OnboardingData = {
   fullName: '',
@@ -262,91 +254,7 @@ function StepContentDescription({
   )
 }
 
-// ============ STEP 4: CATEGORY SELECTION ============
-
-function StepCategory({
-  selectedId,
-  onSelect,
-  onNext,
-  onBack,
-  saving,
-}: {
-  selectedId: number | null
-  onSelect: (id: number) => void
-  onNext: () => void
-  onBack: () => void
-  saving: boolean
-}) {
-  const [categories, setCategories] = useState<Category[]>([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    authFetch('/api/onboarding/categories')
-      .then((r) => r.json())
-      .then(setCategories)
-      .catch(console.error)
-      .finally(() => setLoading(false))
-  }, [])
-
-  return (
-    <div className="w-full">
-      <div className="mb-10 md:mb-14">
-        <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight mb-3">
-          Your Category
-        </h2>
-        <p className="text-slate-400 text-base md:text-lg font-medium max-w-md">
-          Select the category that best describes your content
-        </p>
-      </div>
-      {loading ? (
-        <div className="flex justify-center py-16">
-          <div className="w-8 h-8 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
-        </div>
-      ) : categories.length === 0 ? (
-        <p className="text-slate-500 py-12 text-base">No categories available yet. Contact support.</p>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
-          {categories.map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => onSelect(cat.id)}
-              className={`group p-6 rounded-2xl border text-left transition-all hover:scale-[1.02] ${
-                selectedId === cat.id
-                  ? 'border-pink-500/50 bg-pink-500/10 ring-1 ring-pink-500/20 shadow-lg shadow-pink-500/5'
-                  : 'border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06] hover:border-white/[0.15]'
-              }`}
-            >
-              {cat.icon && <div className="text-3xl mb-3">{cat.icon}</div>}
-              <h3 className="text-base font-bold mb-1.5">{cat.title}</h3>
-              {cat.description && (
-                <p className="text-sm text-slate-500 leading-relaxed line-clamp-2">
-                  {cat.description}
-                </p>
-              )}
-            </button>
-          ))}
-        </div>
-      )}
-      <div className="flex items-center gap-3">
-        <button
-          onClick={onBack}
-          className="px-8 py-4 rounded-2xl text-sm font-bold text-slate-400 hover:text-white hover:bg-white/[0.06] transition-all"
-        >
-          Back
-        </button>
-        <button
-          onClick={onNext}
-          disabled={!selectedId || saving}
-          className="px-10 py-4 bg-gradient-to-r from-pink-500 to-orange-400 rounded-2xl text-sm font-black text-white disabled:opacity-40 transition-all hover:scale-[1.02] hover:shadow-lg hover:shadow-pink-500/20"
-        >
-          {saving ? 'Saving...' : 'Continue'}
-        </button>
-      </div>
-    </div>
-  )
-}
-
-// ============ STEP 5: DOMAIN SELECTION ============
+// ============ STEP 4: DOMAIN SELECTION ============
 
 function StepDomains({
   categoryId,
@@ -485,7 +393,7 @@ function StepDomains({
   )
 }
 
-// ============ STEP 6: LINK ACCOUNT ============
+// ============ STEP 5: LINK ACCOUNT ============
 
 function StepLinkAccount({
   userId,
@@ -907,16 +815,6 @@ export default function Onboarding() {
             )}
 
             {step === 4 && (
-              <StepCategory
-                selectedId={data.categoryId}
-                onSelect={(id) => setData((prev) => ({ ...prev, categoryId: id, selectedDomainIds: [] }))}
-                onNext={() => handleNext(4, { categoryId: data.categoryId })}
-                onBack={() => setStep(3)}
-                saving={saving}
-              />
-            )}
-
-            {step === 5 && (
               <StepDomains
                 categoryId={data.categoryId}
                 contentDescription={data.contentDescription}
@@ -932,18 +830,18 @@ export default function Onboarding() {
                 onSetSelected={(ids) =>
                   setData((prev) => ({ ...prev, selectedDomainIds: ids }))
                 }
-                onNext={() => handleNext(5, { domainIds: data.selectedDomainIds })}
-                onBack={() => setStep(4)}
+                onNext={() => handleNext(4, { domainIds: data.selectedDomainIds })}
+                onBack={() => setStep(3)}
                 saving={saving}
               />
             )}
 
-            {step >= 6 && (
+            {step >= 5 && (
               <StepLinkAccount
                 userId={user?.id || ''}
                 onLinked={handleAccountLinked}
                 onSkip={handleSkipLinking}
-                onBack={() => setStep(5)}
+                onBack={() => setStep(4)}
               />
             )}
           </>

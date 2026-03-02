@@ -281,16 +281,6 @@ export default function Platforms() {
 
   return (
     <>
-      {/* Page Header */}
-      <div className="mb-6 lg:mb-10">
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tighter mb-1 lg:mb-2 font-display">
-          Your <span className="gradient-text">Platforms</span>
-        </h1>
-        <p className="text-slate-500 text-xs sm:text-sm font-medium">
-          Track your content performance, analyze your posts, and grow your audience.
-        </p>
-      </div>
-
       {/* ── Connected Accounts Strip ── */}
       <div className="glass-card rounded-3xl p-5 sm:p-7 mb-6 lg:mb-8">
         <div className="flex items-center justify-between mb-4">

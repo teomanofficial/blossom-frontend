@@ -5,7 +5,7 @@ import { authFetch } from '../lib/api'
 import type { ReactNode } from 'react'
 
 export default function ProtectedRoute({ children }: { children: ReactNode }) {
-  const { user, loading, userType, onboardingCompleted } = useAuth()
+  const { user, loading, userType, categoryStatus, onboardingCompleted } = useAuth()
   const [subStatus, setSubStatus] = useState<string | null>(null)
   const [subLoading, setSubLoading] = useState(true)
 
@@ -43,6 +43,11 @@ export default function ProtectedRoute({ children }: { children: ReactNode }) {
   const isEmailProvider = user.app_metadata.provider === 'email'
   if (isEmailProvider && !user.email_confirmed_at) {
     return <Navigate to="/verify-email" replace />
+  }
+
+  // Redirect to choose-category if no category selected or pending (admins and VIP bypass)
+  if (!isAdmin && !isVip && (!categoryStatus || categoryStatus === 'pending')) {
+    return <Navigate to="/choose-category" replace />
   }
 
   // Redirect to choose plan if no active subscription (admins and VIP bypass this)

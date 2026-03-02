@@ -41,10 +41,12 @@ import SupportManagement from './pages/SupportManagement'
 import Categories from './pages/Categories'
 import BulkAnalysisManagement from './pages/BulkAnalysisManagement'
 import OnboardingManagement from './pages/OnboardingManagement'
+import CategoryRequestManagement from './pages/CategoryRequestManagement'
 import AIModelLab from './pages/AIModelLab'
 import Hashtags from './pages/Hashtags'
 import CategoryDetail from './pages/CategoryDetail'
 import CategoryDomains from './pages/CategoryDomains'
+import ChooseCategory from './pages/ChooseCategory'
 import ChoosePlan from './pages/ChoosePlan'
 import TrendingPosts from './pages/TrendingPosts'
 import Trends from './pages/Trends'
@@ -87,6 +89,7 @@ function App() {
       <Route path="/verify-email" element={<VerifyEmail />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/choose-category" element={<ChooseCategory />} />
       <Route path="/choose-plan" element={<ChoosePlan />} />
       <Route path="/onboarding" element={<Onboarding />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
@@ -151,6 +154,7 @@ function App() {
         <Route path="support-management" element={<AdminGate><SupportManagement /></AdminGate>} />
         <Route path="bulk-management" element={<AdminGate><BulkAnalysisManagement /></AdminGate>} />
         <Route path="onboarding-management" element={<AdminGate><OnboardingManagement /></AdminGate>} />
+        <Route path="category-requests" element={<AdminGate><CategoryRequestManagement /></AdminGate>} />
         <Route path="ai-model-lab" element={<AdminGate><AIModelLab /></AdminGate>} />
         <Route path="hashtags" element={<AdminGate><Hashtags /></AdminGate>} />
       </Route>

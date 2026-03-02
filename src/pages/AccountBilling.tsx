@@ -121,11 +121,12 @@ function ConfirmModal({
 }
 
 export default function AccountBilling() {
-  const { userType, vipCredits } = useAuth()
+  const { userType, vipCredits, signOut } = useAuth()
   const [subscription, setSubscription] = useState<Subscription | null>(null)
   const [subStatus, setSubStatus] = useState<string>('none')
   const [loading, setLoading] = useState(true)
   const [canceling, setCanceling] = useState(false)
+  const [cancelingTrial, setCancelingTrial] = useState(false)
   const [plans, setPlans] = useState<Plan[]>([])
   const [showChangePlan, setShowChangePlan] = useState(false)
   const [upgrading, setUpgrading] = useState<string | null>(null)
@@ -184,6 +185,37 @@ export default function AccountBilling() {
       confirmLabel: 'Cancel Subscription',
       confirmStyle: 'danger',
       onConfirm: executeCancelSubscription,
+    })
+  }
+
+  const executeCancelTrial = async () => {
+    setCancelingTrial(true)
+    try {
+      const res = await authFetch('/api/billing/cancel-trial', { method: 'POST' })
+      const data = await res.json()
+      if (res.ok) {
+        toast.success('Free trial canceled. You will be logged out.')
+        setTimeout(() => signOut(), 1500)
+      } else {
+        toast.error(data.error || 'Failed to cancel trial')
+      }
+    } catch (err) {
+      console.error('Cancel trial error:', err)
+      toast.error('An error occurred. Please try again.')
+    } finally {
+      setCancelingTrial(false)
+    }
+  }
+
+  const handleCancelTrial = () => {
+    setConfirmModal({
+      open: true,
+      title: 'Cancel Free Trial',
+      message:
+        "Are you sure? Your trial will be canceled immediately and you will be logged out. You'll need to purchase a plan to use Blossom again.",
+      confirmLabel: 'Cancel Trial',
+      confirmStyle: 'danger',
+      onConfirm: executeCancelTrial,
     })
   }
 
@@ -388,11 +420,13 @@ export default function AccountBilling() {
                 className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
                   subStatus === 'active'
                     ? 'bg-teal-400/10 text-teal-400'
-                    : subStatus === 'canceled'
-                      ? 'bg-red-400/10 text-red-400'
-                      : subStatus === 'past_due'
-                        ? 'bg-yellow-400/10 text-yellow-400'
-                        : 'bg-slate-400/10 text-slate-400'
+                    : subStatus === 'trialing'
+                      ? 'bg-violet-400/10 text-violet-400'
+                      : subStatus === 'canceled'
+                        ? 'bg-red-400/10 text-red-400'
+                        : subStatus === 'past_due'
+                          ? 'bg-yellow-400/10 text-yellow-400'
+                          : 'bg-slate-400/10 text-slate-400'
                 }`}
               >
                 {subStatus}
@@ -441,6 +475,15 @@ export default function AccountBilling() {
                 className="px-5 py-2.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-xl text-sm font-bold transition-colors disabled:opacity-50"
               >
                 {canceling ? 'Canceling...' : 'Cancel Subscription'}
+              </button>
+            )}
+            {subStatus === 'trialing' && !subscription.canceled_at && (
+              <button
+                onClick={handleCancelTrial}
+                disabled={cancelingTrial}
+                className="px-5 py-2.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-xl text-sm font-bold transition-colors disabled:opacity-50"
+              >
+                {cancelingTrial ? 'Canceling...' : 'Cancel Free Trial'}
               </button>
             )}
           </div>

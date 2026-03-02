@@ -19,7 +19,7 @@ interface Plan {
 }
 
 export default function ChoosePlan() {
-  const { user, signOut } = useAuth()
+  const { user, signOut, categoryStatus } = useAuth()
   const navigate = useNavigate()
   const [plans, setPlans] = useState<Plan[]>([])
   const [loading, setLoading] = useState(true)
@@ -29,6 +29,23 @@ export default function ChoosePlan() {
 
   const displayName =
     user?.user_metadata?.full_name ?? user?.email?.split('@')[0] ?? 'Creator'
+
+  // Redirect to choose-category if no category selected
+  useEffect(() => {
+    if (!user) return
+    if (!categoryStatus || categoryStatus === 'pending') {
+      navigate('/choose-category', { replace: true })
+    }
+  }, [user, categoryStatus, navigate])
+
+  // If invite token still in localStorage, claim happened — redirect to onboarding
+  useEffect(() => {
+    const inviteToken = localStorage.getItem('blossom_invite_token')
+    if (inviteToken) {
+      localStorage.removeItem('blossom_invite_token')
+      navigate('/onboarding', { replace: true })
+    }
+  }, [navigate])
 
   // Redirect to dashboard if user already has an active subscription
   useEffect(() => {
@@ -250,19 +267,22 @@ export default function ChoosePlan() {
                   Coming Soon
                 </button>
               ) : (
-                <button
-                  onClick={() => handleSubscribe(plan)}
-                  disabled={subscribing === plan.paddle_price_id}
-                  className={`w-full py-4 rounded-2xl text-sm font-black transition-all disabled:opacity-50 ${
-                    plan.slug === 'premium'
-                      ? 'bg-gradient-to-r from-pink-500 to-orange-400 text-white glow-button hover:scale-105'
-                      : 'bg-white/10 hover:bg-white/15 border border-white/10 text-white'
-                  }`}
-                >
-                  {subscribing === plan.paddle_price_id
-                    ? 'Opening checkout...'
-                    : 'Start Free Trial'}
-                </button>
+                <>
+                  <button
+                    onClick={() => handleSubscribe(plan)}
+                    disabled={subscribing === plan.paddle_price_id}
+                    className={`w-full py-4 rounded-2xl text-sm font-black transition-all disabled:opacity-50 ${
+                      plan.slug === 'premium'
+                        ? 'bg-gradient-to-r from-pink-500 to-orange-400 text-white glow-button hover:scale-105'
+                        : 'bg-white/10 hover:bg-white/15 border border-white/10 text-white'
+                    }`}
+                  >
+                    {subscribing === plan.paddle_price_id
+                      ? 'Opening checkout...'
+                      : 'Start Free Trial'}
+                  </button>
+                  <p className="text-white/40 text-xs mt-2 text-center">No payment due now</p>
+                </>
               )}
             </div>
           ))}

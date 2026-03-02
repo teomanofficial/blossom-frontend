@@ -1,14 +1,50 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { apiFetch } from '../lib/api'
 
 export default function Signup() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  // Invite state
+  const [inviteToken, setInviteToken] = useState<string | null>(null)
+  const [inviteValid, setInviteValid] = useState<boolean | null>(null)
+  const [inviteEmail, setInviteEmail] = useState<string | null>(null)
+
+  // Validate invite token on mount
+  useEffect(() => {
+    const token = searchParams.get('invite')
+    if (!token) return
+
+    setInviteToken(token)
+    apiFetch(`/api/auth/invites/${token}/validate`)
+      .then(async (res) => {
+        const data = await res.json()
+        if (data.valid) {
+          setInviteValid(true)
+          if (data.email) {
+            setInviteEmail(data.email)
+            setEmail(data.email)
+          }
+          localStorage.setItem('blossom_invite_token', token)
+        } else {
+          setInviteValid(false)
+          setError(data.reason || 'This invite link is no longer valid')
+        }
+      })
+      .catch(() => {
+        setInviteValid(false)
+        setError('Failed to validate invite link')
+      })
+  }, [searchParams])
+
+  const callbackUrl = `${window.location.origin}/auth/callback${inviteToken ? `?invite=${inviteToken}` : ''}`
 
   const handleEmailSignup = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -20,7 +56,7 @@ export default function Signup() {
       password,
       options: {
         data: { full_name: fullName },
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: callbackUrl,
       },
     })
 
@@ -36,7 +72,7 @@ export default function Signup() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: callbackUrl,
       },
     })
     if (error) setError(error.message)
@@ -55,6 +91,37 @@ export default function Signup() {
           <h1 className="text-2xl font-bold font-display">Create your account</h1>
           <p className="mt-2 text-gray-400 text-sm">Start analyzing your content today</p>
         </div>
+
+        {/* Early Access Card */}
+        {inviteValid === true && (
+          <div className="mb-6 relative overflow-hidden rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-transparent p-6">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-[60px] pointer-events-none" />
+            <div className="relative flex items-start gap-4">
+              <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
+                <i className="fas fa-crown text-white text-lg" />
+              </div>
+              <div>
+                <div className="text-[10px] font-black uppercase tracking-widest text-amber-400/70 mb-1">
+                  You're Invited
+                </div>
+                <h3 className="text-lg font-black text-white mb-1">
+                  Welcome to Early Access
+                </h3>
+                <p className="text-sm text-slate-400 font-medium leading-relaxed">
+                  You've been selected as a beta tester. Create your account to get started with full VIP access.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Invalid invite warning */}
+        {inviteValid === false && (
+          <div className="mb-6 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-medium flex items-center gap-3">
+            <i className="fas fa-exclamation-circle text-base" />
+            <span>{error || 'This invite link is no longer valid'}</span>
+          </div>
+        )}
 
         <div className="glass-card rounded-3xl p-8">
           <button
@@ -79,7 +146,7 @@ export default function Signup() {
             </div>
           </div>
 
-          {error && (
+          {error && inviteValid !== false && (
             <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
               {error}
             </div>
@@ -111,7 +178,8 @@ export default function Signup() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="glass-input w-full px-4 py-3 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500/50 text-sm"
+                readOnly={!!inviteEmail}
+                className={`glass-input w-full px-4 py-3 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500/50 text-sm ${inviteEmail ? 'opacity-60 cursor-not-allowed' : ''}`}
                 placeholder="you@example.com"
               />
             </div>

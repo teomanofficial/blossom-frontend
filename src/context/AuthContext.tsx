@@ -25,6 +25,7 @@ interface AuthContextType {
   userType: string | null
   planSlug: string | null
   categoryId: number | null
+  categoryStatus: string | null
   onboardingCompleted: boolean | null
   vipCredits: VipCredits | null
   loading: boolean
@@ -41,6 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [userType, setUserType] = useState<string | null>(null)
   const [planSlug, setPlanSlug] = useState<string | null>(null)
   const [categoryId, setCategoryId] = useState<number | null>(null)
+  const [categoryStatus, setCategoryStatus] = useState<string | null>(null)
   const [onboardingCompleted, setOnboardingCompleted] = useState<boolean | null>(null)
   const [vipCredits, setVipCredits] = useState<VipCredits | null>(null)
   const [loading, setLoading] = useState(true)
@@ -56,11 +58,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setProfile(data.profile)
       setUserType(data.profile?.user_type || 'user')
       setPlanSlug(data.planSlug || null)
+      setCategoryStatus(data.profile?.category_status || null)
       setVipCredits(data.vipCredits || null)
 
       // Fetch onboarding status (admins and VIP users skip onboarding)
       if (data.profile?.user_type === 'admin' || data.profile?.user_type === 'vip') {
         setOnboardingCompleted(true)
+        setCategoryStatus('selected')
       } else {
         try {
           const obRes = await fetch(`${API_URL}/api/onboarding/status`, {
@@ -108,6 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUserType(null)
         setPlanSlug(null)
         setCategoryId(null)
+        setCategoryStatus(null)
         setOnboardingCompleted(null)
         setVipCredits(null)
       }
@@ -128,7 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, session, profile, userType, planSlug, categoryId, onboardingCompleted, vipCredits, loading, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ user, session, profile, userType, planSlug, categoryId, categoryStatus, onboardingCompleted, vipCredits, loading, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   )

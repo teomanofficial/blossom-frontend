@@ -98,6 +98,20 @@ interface Stats {
   vip: number
 }
 
+interface InviteLink {
+  id: string
+  token: string
+  email: string | null
+  expires_at: string
+  used_at: string | null
+  used_by_email: string | null
+  created_by_email: string | null
+  credits: number
+  status: string
+  effective_status: string
+  created_at: string
+}
+
 interface Category {
   id: number
   title: string
@@ -207,6 +221,19 @@ export default function Users() {
     full_name: '',
     category_id: 0,
     domain_ids: [] as number[],
+    credits: 100,
+  })
+
+  // Invite state
+  const [invites, setInvites] = useState<InviteLink[]>([])
+  const [invitesLoading, setInvitesLoading] = useState(false)
+  const [showInvites, setShowInvites] = useState(false)
+  const [inviteModalOpen, setInviteModalOpen] = useState(false)
+  const [creatingInvite, setCreatingInvite] = useState(false)
+  const [generatedInviteUrl, setGeneratedInviteUrl] = useState<string | null>(null)
+  const [inviteForm, setInviteForm] = useState({
+    email: '',
+    expires_at: '',
     credits: 100,
   })
 
@@ -366,6 +393,86 @@ export default function Users() {
     }
   }
 
+  // ─── Invite functions ───────────────────────────────────────
+
+  const fetchInvites = async () => {
+    setInvitesLoading(true)
+    try {
+      const res = await authFetch('/api/admin/invites')
+      if (!res.ok) throw new Error('Failed to fetch')
+      const data = await res.json()
+      setInvites(data.invites || [])
+    } catch (err) {
+      console.error('Error fetching invites:', err)
+      setErrorMsg('Failed to load invites')
+    } finally {
+      setInvitesLoading(false)
+    }
+  }
+
+  const openInviteModal = () => {
+    // Default expiration: 7 days from now
+    const defaultExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    const localIso = defaultExpiry.toISOString().slice(0, 16) // yyyy-MM-ddTHH:mm
+    setInviteForm({ email: '', expires_at: localIso, credits: 100 })
+    setGeneratedInviteUrl(null)
+    setInviteModalOpen(true)
+  }
+
+  const handleCreateInvite = async () => {
+    if (!inviteForm.expires_at) {
+      setErrorMsg('Please set an expiration date')
+      return
+    }
+    setCreatingInvite(true)
+    try {
+      const res = await authFetch('/api/admin/invites', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: inviteForm.email || undefined,
+          expires_at: new Date(inviteForm.expires_at).toISOString(),
+          credits: inviteForm.credits,
+        }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        setErrorMsg(data.error || 'Failed to create invite')
+        return
+      }
+      const data = await res.json()
+      setGeneratedInviteUrl(data.inviteUrl)
+      setSuccessMsg('Invite link created')
+      setTimeout(() => setSuccessMsg(null), 4000)
+      // Refresh invites list if it's visible
+      if (showInvites) fetchInvites()
+    } catch (err) {
+      console.error('Error creating invite:', err)
+      setErrorMsg('Failed to create invite')
+    } finally {
+      setCreatingInvite(false)
+    }
+  }
+
+  const handleRevokeInvite = async (inviteId: string) => {
+    try {
+      const res = await authFetch(`/api/admin/invites/${inviteId}`, { method: 'DELETE' })
+      if (!res.ok) {
+        const data = await res.json()
+        setErrorMsg(data.error || 'Failed to revoke invite')
+        return
+      }
+      setInvites((prev) =>
+        prev.map((inv) => inv.id === inviteId ? { ...inv, status: 'revoked', effective_status: 'revoked' } : inv)
+      )
+      setSuccessMsg('Invite revoked')
+      setTimeout(() => setSuccessMsg(null), 3000)
+    } catch (err) {
+      console.error('Error revoking invite:', err)
+      setErrorMsg('Failed to revoke invite')
+    }
+  }
+
   const getAuthProvider = (meta: Record<string, any> | null): string => {
     if (!meta) return 'email'
     if (meta.iss?.includes('google')) return 'Google'
@@ -471,6 +578,14 @@ export default function Users() {
           )}
         </div>
         <button
+          onClick={openInviteModal}
+          className="flex items-center gap-2 px-5 py-2.5 md:py-3 rounded-2xl bg-gradient-to-r from-violet-500 to-pink-500 text-white text-sm font-bold hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-violet-500/20 whitespace-nowrap"
+        >
+          <i className="fas fa-paper-plane text-xs" />
+          <span className="hidden md:inline">Invite Beta Tester</span>
+          <span className="md:hidden">Invite</span>
+        </button>
+        <button
           onClick={openCreateVipModal}
           className="flex items-center gap-2 px-5 py-2.5 md:py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-bold hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-amber-500/20 whitespace-nowrap"
         >
@@ -478,6 +593,107 @@ export default function Users() {
           <span className="hidden md:inline">Create VIP</span>
           <span className="md:hidden">VIP</span>
         </button>
+      </div>
+
+      {/* ═══════════ Invite Links Section ═══════════ */}
+      <div className="mb-6">
+        <button
+          onClick={() => { setShowInvites(!showInvites); if (!showInvites && invites.length === 0) fetchInvites() }}
+          className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-violet-400 hover:text-violet-300 transition-colors mb-3"
+        >
+          <i className={`fas fa-chevron-right transition-transform ${showInvites ? 'rotate-90' : ''}`} />
+          <i className="fas fa-paper-plane mr-1" />
+          Invite Links
+        </button>
+
+        {showInvites && (
+          <div className="glass-card rounded-2xl overflow-hidden">
+            {invitesLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="w-6 h-6 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : invites.length === 0 ? (
+              <div className="text-sm text-slate-500 italic p-6 text-center">
+                No invite links created yet
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-[10px] font-black uppercase tracking-widest text-slate-600 border-b border-white/5 bg-white/[0.03]">
+                      <th className="text-left py-3 px-4">Email</th>
+                      <th className="text-left py-3 px-4">Expires</th>
+                      <th className="text-left py-3 px-4">Status</th>
+                      <th className="text-left py-3 px-4">Used By</th>
+                      <th className="text-left py-3 px-4">Credits</th>
+                      <th className="text-left py-3 px-4">Created</th>
+                      <th className="text-right py-3 px-4">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {invites.map((inv) => {
+                      const statusColor: Record<string, string> = {
+                        pending: 'bg-violet-400/10 text-violet-400',
+                        used: 'bg-teal-400/10 text-teal-400',
+                        expired: 'bg-slate-400/10 text-slate-500',
+                        revoked: 'bg-red-400/10 text-red-400',
+                      }
+                      const inviteUrl = `${window.location.origin}/signup?invite=${inv.token}`
+                      return (
+                        <tr key={inv.id} className="border-b border-white/[0.03] hover:bg-white/[0.02]">
+                          <td className="py-3 px-4">
+                            <span className="text-xs font-medium text-slate-300">
+                              {inv.email || <span className="text-slate-600 italic">Any email</span>}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className="text-xs text-slate-400">{formatDate(inv.expires_at)}</span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest ${statusColor[inv.effective_status] || statusColor.pending}`}>
+                              {inv.effective_status}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className="text-xs text-slate-400">{inv.used_by_email || '—'}</span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className="text-xs font-bold text-amber-400">{inv.credits}</span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className="text-xs text-slate-500">{timeAgo(inv.created_at)}</span>
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              {inv.effective_status === 'pending' && (
+                                <>
+                                  <button
+                                    onClick={() => { navigator.clipboard.writeText(inviteUrl); setSuccessMsg('Link copied!'); setTimeout(() => setSuccessMsg(null), 2000) }}
+                                    className="px-2.5 py-1 rounded-lg bg-violet-500/10 text-violet-400 text-[10px] font-bold hover:bg-violet-500/20 transition-colors"
+                                    title="Copy invite link"
+                                  >
+                                    <i className="fas fa-copy mr-1" /> Copy
+                                  </button>
+                                  <button
+                                    onClick={() => handleRevokeInvite(inv.id)}
+                                    className="px-2.5 py-1 rounded-lg bg-red-500/10 text-red-400 text-[10px] font-bold hover:bg-red-500/20 transition-colors"
+                                    title="Revoke invite"
+                                  >
+                                    <i className="fas fa-ban mr-1" /> Revoke
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Users List */}
@@ -1131,6 +1347,153 @@ export default function Users() {
                 )}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* ═══════════ Invite Beta Tester Modal ═══════════ */}
+      {inviteModalOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={() => !creatingInvite && setInviteModalOpen(false)}
+        >
+          <div
+            className="glass-card rounded-3xl w-full max-w-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 pb-4 border-b border-white/5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center shadow-lg shadow-violet-500/20">
+                  <i className="fas fa-paper-plane text-white" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-black tracking-tight">Invite Beta Tester</h2>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-violet-400">One-Time Invite Link</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setInviteModalOpen(false)}
+                disabled={creatingInvite}
+                className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-50"
+              >
+                <i className="fas fa-times text-sm" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            {generatedInviteUrl ? (
+              /* Success State — show generated link */
+              <div className="p-6 space-y-5">
+                <div className="text-center">
+                  <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-teal-500/20 flex items-center justify-center">
+                    <i className="fas fa-check text-teal-400 text-xl" />
+                  </div>
+                  <h3 className="text-lg font-black mb-1">Invite Link Created</h3>
+                  <p className="text-sm text-slate-400 font-medium">Share this link with the beta tester</p>
+                </div>
+
+                <div className="flex items-center gap-2 p-4 rounded-xl bg-white/[0.04] border border-white/[0.08]">
+                  <input
+                    type="text"
+                    readOnly
+                    value={generatedInviteUrl}
+                    className="flex-1 bg-transparent text-sm font-mono text-violet-300 outline-none truncate"
+                  />
+                  <button
+                    onClick={() => { navigator.clipboard.writeText(generatedInviteUrl); setSuccessMsg('Copied!'); setTimeout(() => setSuccessMsg(null), 2000) }}
+                    className="flex-shrink-0 px-4 py-2 rounded-xl bg-violet-500/20 text-violet-300 text-sm font-bold hover:bg-violet-500/30 transition-colors"
+                  >
+                    <i className="fas fa-copy mr-1.5" /> Copy
+                  </button>
+                </div>
+
+                <div className="flex justify-end pt-2">
+                  <button
+                    onClick={() => { setInviteModalOpen(false); setGeneratedInviteUrl(null) }}
+                    className="px-5 py-2.5 rounded-2xl bg-white/[0.06] text-slate-400 text-sm font-bold hover:text-white hover:bg-white/10 transition-all"
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* Form State */
+              <div className="p-6 space-y-5">
+                {/* Email (optional) */}
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5 block">
+                    Email <span className="text-slate-700">(optional — restricts invite to this email)</span>
+                  </label>
+                  <input
+                    type="email"
+                    value={inviteForm.email}
+                    onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
+                    placeholder="Leave empty for any email"
+                    className="w-full px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm font-medium outline-none focus:border-violet-500/40 focus:ring-2 focus:ring-violet-500/10 transition-all placeholder:text-slate-600"
+                  />
+                </div>
+
+                {/* Expiration */}
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5 block">
+                    Expires At *
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={inviteForm.expires_at}
+                    onChange={(e) => setInviteForm({ ...inviteForm, expires_at: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm font-medium outline-none focus:border-violet-500/40 focus:ring-2 focus:ring-violet-500/10 transition-all"
+                    style={{ colorScheme: 'dark' }}
+                  />
+                </div>
+
+                {/* Credits */}
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5 block">
+                    VIP Credits
+                  </label>
+                  <input
+                    type="number"
+                    value={inviteForm.credits}
+                    onChange={(e) => setInviteForm({ ...inviteForm, credits: parseInt(e.target.value) || 0 })}
+                    min={0}
+                    className="w-full md:w-40 px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm font-bold outline-none focus:border-violet-500/40 focus:ring-2 focus:ring-violet-500/10 transition-all"
+                    style={{ colorScheme: 'dark' }}
+                  />
+                  <p className="text-[10px] text-slate-600 mt-1">Credits granted to the user upon registration</p>
+                </div>
+              </div>
+            )}
+
+            {/* Modal Footer (only show for form state) */}
+            {!generatedInviteUrl && (
+              <div className="flex items-center justify-end gap-3 p-6 pt-4 border-t border-white/5">
+                <button
+                  onClick={() => setInviteModalOpen(false)}
+                  disabled={creatingInvite}
+                  className="px-5 py-2.5 rounded-2xl bg-white/[0.06] text-slate-400 text-sm font-bold hover:text-white hover:bg-white/10 transition-all disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCreateInvite}
+                  disabled={creatingInvite || !inviteForm.expires_at}
+                  className="px-6 py-2.5 rounded-2xl bg-gradient-to-r from-violet-500 to-pink-500 text-white text-sm font-bold hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-violet-500/20 disabled:opacity-40 disabled:hover:scale-100"
+                >
+                  {creatingInvite ? (
+                    <>
+                      <i className="fas fa-spinner fa-spin mr-2" />
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      <i className="fas fa-link mr-2" />
+                      Generate Invite Link
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

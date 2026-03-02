@@ -1,23 +1,51 @@
 import { useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { API_URL } from '../lib/api'
 
 export default function AuthCallback() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
 
   useEffect(() => {
     const handleCallback = async () => {
-      const { error } = await supabase.auth.getSession()
-      if (error) {
+      const { data, error } = await supabase.auth.getSession()
+      if (error || !data.session) {
         console.error('Auth callback error:', error)
         navigate('/login')
-      } else {
-        navigate('/choose-plan')
+        return
       }
+
+      // Check for invite token from URL params or localStorage
+      const inviteToken = searchParams.get('invite') || localStorage.getItem('blossom_invite_token')
+
+      if (inviteToken) {
+        // Always clean up localStorage
+        localStorage.removeItem('blossom_invite_token')
+
+        try {
+          const res = await fetch(`${API_URL}/api/auth/invites/${inviteToken}/claim`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${data.session.access_token}` },
+          })
+
+          if (res.ok) {
+            // Successfully claimed — skip plan selection, go to onboarding
+            navigate('/onboarding')
+            return
+          }
+          // Claim failed (expired, already used, etc.) — fall through to normal flow
+          console.warn('Invite claim failed:', await res.json())
+        } catch (err) {
+          console.warn('Invite claim error:', err)
+        }
+      }
+
+      navigate('/choose-category')
     }
 
     handleCallback()
-  }, [navigate])
+  }, [navigate, searchParams])
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#050508]">
