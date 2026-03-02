@@ -40,6 +40,7 @@ import Support from './pages/Support'
 import SupportManagement from './pages/SupportManagement'
 import Categories from './pages/Categories'
 import OrphanVideos from './pages/OrphanVideos'
+import OrphanDomains from './pages/OrphanDomains'
 import BulkAnalysisManagement from './pages/BulkAnalysisManagement'
 import OnboardingManagement from './pages/OnboardingManagement'
 import CategoryRequestManagement from './pages/CategoryRequestManagement'
@@ -150,6 +151,7 @@ function App() {
         <Route path="content-management/:id" element={<Navigate to="/dashboard/domain-management" replace />} />
         <Route path="categories" element={<AdminGate><Categories /></AdminGate>} />
         <Route path="categories/orphans" element={<AdminGate><OrphanVideos /></AdminGate>} />
+        <Route path="categories/orphan-domains" element={<AdminGate><OrphanDomains /></AdminGate>} />
         <Route path="categories/:id" element={<CategoryDetail />} />
         <Route path="categories/:id/domains" element={<AdminGate><CategoryDomains /></AdminGate>} />
         <Route path="support" element={<Support />} />

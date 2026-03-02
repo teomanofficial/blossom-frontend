@@ -405,6 +405,20 @@ export default function Categories() {
             </button>
           )}
           <Link
+            to="/dashboard/categories/orphan-domains"
+            className="px-6 py-4 glass-card rounded-[1.5rem] border-white/5 hover:bg-white/10 transition-colors group"
+          >
+            <div className="text-[10px] font-black text-orange-400/70 uppercase mb-1 tracking-widest">Orphan Domains</div>
+            <div className="flex items-center gap-2">
+              <div className="text-2xl font-black text-orange-400 group-hover:text-orange-300 transition-colors">
+                <i className="fas fa-globe"></i>
+              </div>
+              <span className="text-xs font-bold text-slate-400">
+                {orphanCount !== null ? orphanCount.toLocaleString() : '...'}
+              </span>
+            </div>
+          </Link>
+          <Link
             to="/dashboard/categories/orphans"
             className="px-6 py-4 glass-card rounded-[1.5rem] border-white/5 hover:bg-white/10 transition-colors group"
           >
