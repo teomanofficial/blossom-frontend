@@ -276,7 +276,7 @@ export default function OrphanVideos() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <span className="text-xs font-bold text-slate-400">
-                        {v.engagement_rate != null ? `${v.engagement_rate.toFixed(1)}%` : '—'}
+                        {v.engagement_rate != null ? `${Number(v.engagement_rate).toFixed(1)}%` : '—'}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-center">
