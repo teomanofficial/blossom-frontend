@@ -176,9 +176,9 @@ export default function SuggestionDetail() {
   if (!suggestion) {
     return (
       <div className="text-center py-20">
-        <h2 className="text-xl font-black text-white mb-2">Suggestion not found</h2>
+        <h2 className="text-xl font-black text-white mb-2">Script not found</h2>
         <button onClick={() => navigate('/dashboard/suggestions')} className="text-pink-400 text-sm font-bold hover:underline">
-          Back to Suggestions
+          Back to Scripts
         </button>
       </div>
     )
@@ -194,7 +194,7 @@ export default function SuggestionDetail() {
         className="flex items-center gap-2 text-slate-500 text-xs font-bold hover:text-white transition-colors mb-6"
       >
         <i className="fas fa-arrow-left"></i>
-        Back to Suggestions
+        Back to Scripts
       </button>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-5 md:gap-8">

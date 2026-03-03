@@ -380,11 +380,11 @@ export default function ContentAnalysis() {
           <div>
             <div className="flex items-center gap-2 mb-3">
               <span className="badge-glass text-pink-400 font-black">
-                Analysis
+                Virality Check
               </span>
             </div>
             <h1 className="text-4xl font-black font-display tracking-tighter mb-2">
-              Analyze <span className="gradient-text">Your Content</span>
+              Check <span className="gradient-text">Your Content</span>
             </h1>
             <p className="text-slate-500 text-sm font-medium">
               Upload a video or paste a URL to get AI-powered analysis and improvement suggestions.
@@ -397,7 +397,7 @@ export default function ContentAnalysis() {
                 className="px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-all text-sm font-bold"
               >
                 <i className="fas fa-plus mr-2"></i>
-                New Analysis
+                New Check
               </button>
             )}
             <button
@@ -2617,7 +2617,7 @@ export default function ContentAnalysis() {
                           className="px-5 py-2.5 bg-gradient-to-r from-pink-500 to-orange-400 text-white text-sm font-bold rounded-xl hover:shadow-lg hover:shadow-pink-500/25 transition-all"
                         >
                           <i className="fas fa-redo mr-2"></i>
-                          Retry Analysis
+                          Retry Check
                         </button>
                         <button
                           onClick={handleReset}

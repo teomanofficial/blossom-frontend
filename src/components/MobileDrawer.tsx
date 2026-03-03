@@ -19,8 +19,7 @@ const generalItems = [
 const creatorsItem = { to: '/dashboard/influencers', icon: 'fa-users', label: 'Creators', color: 'text-cyan-400', bg: 'bg-cyan-500/10' }
 
 const intelligenceItems = [
-  { to: '/dashboard/analyze', icon: 'fa-chart-simple', label: 'Analysis', color: 'text-orange-400', bg: 'bg-orange-500/10' },
-  { to: '/dashboard/suggestions', icon: 'fa-lightbulb', label: 'Suggestions', color: 'text-yellow-400', bg: 'bg-yellow-500/10' },
+  { to: '/dashboard/suggestions', icon: 'fa-scroll', label: 'Scripts', color: 'text-yellow-400', bg: 'bg-yellow-500/10' },
   { to: '/dashboard/formats', icon: 'fa-shapes', label: 'Formats', color: 'text-indigo-400', bg: 'bg-indigo-500/10' },
   { to: '/dashboard/hooks', icon: 'fa-magnet', label: 'Hooks', color: 'text-purple-400', bg: 'bg-purple-500/10' },
   { to: '/dashboard/tactics', icon: 'fa-chess', label: 'Tactics', color: 'text-amber-400', bg: 'bg-amber-500/10' },

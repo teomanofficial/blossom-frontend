@@ -25,7 +25,7 @@ export default function Terms() {
                 <li><strong className="text-slate-300">Viral Format Discovery:</strong> Curated library of proven viral content formats, hooks, and tactics</li>
                 <li><strong className="text-slate-300">Trending Content:</strong> Aggregated trending posts from Instagram and TikTok</li>
                 <li><strong className="text-slate-300">Influencer Insights:</strong> Discovery and analysis of influencer profiles and performance metrics</li>
-                <li><strong className="text-slate-300">Content Suggestions:</strong> AI-generated content ideas and recommendations based on analyzed patterns</li>
+                <li><strong className="text-slate-300">Scripts:</strong> AI-generated content scripts and recommendations based on analyzed patterns</li>
                 <li><strong className="text-slate-300">Social Account Integration:</strong> Ability to connect your own Instagram and TikTok accounts for personalized insights</li>
               </ul>
               <p className="mt-2">The Service uses artificial intelligence (including Google Gemini) and third-party data APIs to generate analysis and recommendations. Results are provided as guidance and should not be considered guarantees of content performance.</p>

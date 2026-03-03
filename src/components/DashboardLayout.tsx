@@ -5,17 +5,21 @@ import { authFetch } from '../lib/api'
 import SearchOverlay from './SearchOverlay'
 import MobileDrawer from './MobileDrawer'
 
+/* ── Top-level standalone nav items (outside any group) ── */
+const topItems = [
+  { to: '/dashboard', icon: 'fa-house', label: 'Dashboard', end: true },
+  { to: '/dashboard/analyze', icon: 'fa-chart-simple', label: 'Virality Check' },
+]
+
 /* ── Nav item groups matching the sidebar screenshots ── */
 const generalItems = [
-  { to: '/dashboard', icon: 'fa-house', label: 'Dashboard', end: true },
   { to: '/dashboard/platforms', icon: 'fa-tower-broadcast', label: 'Platforms' },
   { to: '/dashboard/trends', icon: 'fa-bolt', label: 'Trends' },
   { to: '/dashboard/influencers', icon: 'fa-users', label: 'Creators' },
 ]
 
 const intelligenceItems = [
-  { to: '/dashboard/analyze', icon: 'fa-chart-simple', label: 'Analysis' },
-  { to: '/dashboard/suggestions', icon: 'fa-lightbulb', label: 'Suggestions' },
+  { to: '/dashboard/suggestions', icon: 'fa-scroll', label: 'Scripts' },
   { to: '/dashboard/formats', icon: 'fa-shapes', label: 'Formats' },
   { to: '/dashboard/hooks', icon: 'fa-comment-dots', label: 'Hooks' },
   { to: '/dashboard/tactics', icon: 'fa-chess', label: 'Tactics' },
@@ -44,9 +48,9 @@ const managementItems = [
 /* Bottom tab items for mobile */
 const bottomTabs = [
   { to: '/dashboard', icon: 'fa-chart-pie', label: 'Home', end: true },
-  { to: '/dashboard/analyze', icon: 'fa-microscope', label: 'Analyze' },
+  { to: '/dashboard/analyze', icon: 'fa-microscope', label: 'Virality' },
   { to: '/dashboard/platforms', icon: 'fa-tower-broadcast', label: 'Platforms' },
-  { to: '/dashboard/suggestions', icon: 'fa-lightbulb', label: 'Ideas' },
+  { to: '/dashboard/suggestions', icon: 'fa-scroll', label: 'Scripts' },
   { to: '__more__', icon: 'fa-grid-2', label: 'More' },
 ]
 
@@ -167,8 +171,17 @@ export default function DashboardLayout() {
 
         {/* Scrollable Nav */}
         <nav className="flex-1 overflow-y-auto overflow-x-hidden py-2 dashboard-scrollbar">
+          {/* Top-level standalone items */}
+          <div className="space-y-0.5">
+            {topItems.map((item) => (
+              <RailLink key={item.to} item={item} supportUnreadCount={supportUnreadCount} />
+            ))}
+          </div>
+
+          <div className="mx-4 my-3 border-t border-white/[0.06]" />
+
           {/* General Section */}
-          <div className="px-5 py-2">
+          <div className="px-5 pb-2">
             <span className="nav-section-label text-[10px] font-black text-slate-500 uppercase tracking-widest">
               General
             </span>

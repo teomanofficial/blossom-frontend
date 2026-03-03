@@ -19,7 +19,7 @@ interface Plan {
 }
 
 export default function ChoosePlan() {
-  const { user, signOut, categoryStatus } = useAuth()
+  const { user, signOut, userType, categoryStatus } = useAuth()
   const navigate = useNavigate()
   const [plans, setPlans] = useState<Plan[]>([])
   const [loading, setLoading] = useState(true)
@@ -27,8 +27,18 @@ export default function ChoosePlan() {
   const [paddleInstance, setPaddleInstance] = useState<Paddle>()
   const [checkoutSuccess, setCheckoutSuccess] = useState(false)
 
+  const isAdmin = userType === 'admin'
+  const isVip = userType === 'vip'
+
   const displayName =
     user?.user_metadata?.full_name ?? user?.email?.split('@')[0] ?? 'Creator'
+
+  // VIP and admin users bypass plan selection entirely
+  useEffect(() => {
+    if (isAdmin || isVip) {
+      navigate('/dashboard', { replace: true })
+    }
+  }, [isAdmin, isVip, navigate])
 
   // Redirect to choose-category if no category selected
   useEffect(() => {
@@ -37,15 +47,6 @@ export default function ChoosePlan() {
       navigate('/choose-category', { replace: true })
     }
   }, [user, categoryStatus, navigate])
-
-  // If invite token still in localStorage, claim happened — redirect to onboarding
-  useEffect(() => {
-    const inviteToken = localStorage.getItem('blossom_invite_token')
-    if (inviteToken) {
-      localStorage.removeItem('blossom_invite_token')
-      navigate('/onboarding', { replace: true })
-    }
-  }, [navigate])
 
   // Redirect to dashboard if user already has an active subscription
   useEffect(() => {

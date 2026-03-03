@@ -22,7 +22,7 @@ interface CategoryRequest {
 }
 
 export default function ChooseCategory() {
-  const { user, signOut, categoryStatus, refreshProfile } = useAuth()
+  const { user, signOut, userType, categoryStatus, refreshProfile } = useAuth()
   const navigate = useNavigate()
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
@@ -33,8 +33,18 @@ export default function ChooseCategory() {
   const [requestDescription, setRequestDescription] = useState('')
   const [lastRequest, setLastRequest] = useState<CategoryRequest | null>(null)
 
+  const isAdmin = userType === 'admin'
+  const isVip = userType === 'vip'
+
   const displayName =
     user?.user_metadata?.full_name ?? user?.email?.split('@')[0] ?? 'Creator'
+
+  // VIP and admin users bypass category selection entirely
+  useEffect(() => {
+    if (isAdmin || isVip) {
+      navigate('/dashboard', { replace: true })
+    }
+  }, [isAdmin, isVip, navigate])
 
   // Redirect if already has a selected category
   useEffect(() => {

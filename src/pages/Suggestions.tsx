@@ -183,9 +183,9 @@ export default function Suggestions() {
               </span>
             )}
           </div>
-          <h1 className="text-2xl md:text-4xl font-black font-display tracking-tighter mb-1 md:mb-2">CONTENT SUGGESTIONS</h1>
+          <h1 className="text-2xl md:text-4xl font-black font-display tracking-tighter mb-1 md:mb-2">SCRIPTS</h1>
           <p className="text-slate-500 text-xs md:text-sm font-medium">
-            Daily content ideas based on trending patterns{categoryName ? ` in ${categoryName}` : ''}. Film them today.
+            Daily content scripts based on trending patterns{categoryName ? ` in ${categoryName}` : ''}. Film them today.
           </p>
         </div>
 
@@ -205,7 +205,7 @@ export default function Suggestions() {
             </span>
           ) : (
             <span className="flex items-center gap-2">
-              <i className="fas fa-lightbulb"></i> GENERATE NOW
+              <i className="fas fa-scroll"></i> GENERATE NOW
             </span>
           )}
         </button>
@@ -291,19 +291,19 @@ export default function Suggestions() {
         </div>
       </div>
 
-      {/* Suggestions List - Reddit-style compact */}
+      {/* Scripts List - Reddit-style compact */}
       {suggestions.length === 0 ? (
         <div className="glass-card rounded-3xl p-12 text-center">
           <div className="w-16 h-16 mx-auto mb-4 bg-white/5 rounded-full flex items-center justify-center">
-            <i className="fas fa-lightbulb text-slate-500 text-xl"></i>
+            <i className="fas fa-scroll text-slate-500 text-xl"></i>
           </div>
-          <h3 className="font-black text-lg mb-2">No Suggestions Yet</h3>
+          <h3 className="font-black text-lg mb-2">No Scripts Yet</h3>
           <p className="text-sm text-slate-500 mb-6">
             {tab === 'all'
-              ? 'Run a trending scan first, then click "Generate Now" to create content ideas.'
+              ? 'Run a trending scan first, then click "Generate Now" to create content scripts.'
               : tab === 'saved'
-              ? 'Save suggestions you want to revisit later.'
-              : 'Approve suggestions you plan to create.'}
+              ? 'Save scripts you want to revisit later.'
+              : 'Approve scripts you plan to create.'}
           </p>
           {tab === 'all' && (
             <button
@@ -311,7 +311,7 @@ export default function Suggestions() {
               disabled={generating}
               className="bg-gradient-to-r from-pink-500 to-orange-400 text-white px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest hover:opacity-90 transition-opacity"
             >
-              <i className="fas fa-lightbulb mr-2"></i> GENERATE NOW
+              <i className="fas fa-scroll mr-2"></i> GENERATE NOW
             </button>
           )}
         </div>
@@ -319,7 +319,7 @@ export default function Suggestions() {
         <div className="glass-card rounded-3xl overflow-hidden">
           <div className="px-6 py-3 border-b border-white/5">
             <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-              {suggestionsTotal} suggestion{suggestionsTotal !== 1 ? 's' : ''}
+              {suggestionsTotal} script{suggestionsTotal !== 1 ? 's' : ''}
             </span>
           </div>
 

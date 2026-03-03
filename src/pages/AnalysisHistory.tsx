@@ -124,10 +124,10 @@ export default function AnalysisHistory() {
               </span>
             </div>
             <h1 className="text-4xl font-black font-display tracking-tighter mb-2">
-              Analysis <span className="gradient-text">History</span>
+              Virality Check <span className="gradient-text">History</span>
             </h1>
             <p className="text-slate-500 text-sm font-medium">
-              View all your past content analyses and results.
+              View all your past virality checks and results.
             </p>
           </div>
           <button
@@ -135,7 +135,7 @@ export default function AnalysisHistory() {
             className="px-5 py-2.5 bg-gradient-to-r from-pink-500 to-orange-400 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-pink-500/25 transition-all text-sm"
           >
             <i className="fas fa-plus mr-2"></i>
-            New Analysis
+            New Check
           </button>
         </div>
       </div>
@@ -143,7 +143,7 @@ export default function AnalysisHistory() {
       {/* Stats Bar */}
       <div className="grid grid-cols-3 gap-4 mb-8">
         <div className="glass-card rounded-3xl p-5">
-          <div className="text-slate-500 text-xs font-bold uppercase tracking-widest mb-1">Total Analyses</div>
+          <div className="text-slate-500 text-xs font-bold uppercase tracking-widest mb-1">Total Checks</div>
           <div className="text-2xl font-black text-white">{total}</div>
         </div>
         <div className="glass-card rounded-3xl p-5">

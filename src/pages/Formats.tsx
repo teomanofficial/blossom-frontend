@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { authFetch } from '../lib/api'
+import { useAuth } from '../context/AuthContext'
 
 interface FormatClass {
   id: number
@@ -45,7 +46,19 @@ function getFormatEmoji(name: string): string {
   return '🎯'
 }
 
+interface ReanalyzeStatus {
+  running: boolean
+  total: number
+  completed: number
+  failed: number
+  startedAt: string | null
+  cancelled: boolean
+}
+
 export default function Formats() {
+  const { userType } = useAuth()
+  const isAdmin = userType === 'admin'
+
   const [formats, setFormats] = useState<FormatClass[]>([])
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -54,6 +67,66 @@ export default function Formats() {
   const [total, setTotal] = useState(0)
   const [hasMore, setHasMore] = useState(true)
   const sentinelRef = useRef<HTMLDivElement>(null)
+
+  const [reanalyzeStatus, setReanalyzeStatus] = useState<ReanalyzeStatus | null>(null)
+  const [reanalyzeStarting, setReanalyzeStarting] = useState(false)
+  const [videoStats, setVideoStats] = useState<{ total: number; analyzed: number } | null>(null)
+
+  // Fetch video stats for admin
+  useEffect(() => {
+    if (!isAdmin) return
+    authFetch('/api/analysis/videos/stats')
+      .then(r => r.json())
+      .then(data => setVideoStats({ total: data.total ?? 0, analyzed: data.analyzed ?? 0 }))
+      .catch(() => {})
+  }, [isAdmin])
+
+  // Poll reanalyze status when running
+  useEffect(() => {
+    if (!isAdmin) return
+    let interval: ReturnType<typeof setInterval> | null = null
+
+    const fetchStatus = () => {
+      authFetch('/api/analysis/videos/reanalyze-status')
+        .then(r => r.json())
+        .then(data => {
+          setReanalyzeStatus(data)
+          if (!data.running && interval) {
+            clearInterval(interval)
+            interval = null
+          }
+        })
+        .catch(() => {})
+    }
+
+    fetchStatus()
+    interval = setInterval(fetchStatus, 3000)
+    return () => { if (interval) clearInterval(interval) }
+  }, [isAdmin])
+
+  const startReanalyze = async () => {
+    if (reanalyzeStarting || reanalyzeStatus?.running) return
+    setReanalyzeStarting(true)
+    try {
+      const res = await authFetch('/api/analysis/videos/reanalyze-all', { method: 'POST' })
+      const data = await res.json()
+      if (data.status === 'started' || data.status === 'already_running') {
+        setReanalyzeStatus({ running: true, total: data.total ?? 0, completed: 0, failed: 0, startedAt: new Date().toISOString(), cancelled: false })
+      }
+    } catch (err) {
+      console.error('Failed to start reanalyze', err)
+    } finally {
+      setReanalyzeStarting(false)
+    }
+  }
+
+  const cancelReanalyze = async () => {
+    try {
+      await authFetch('/api/analysis/videos/reanalyze-cancel', { method: 'POST' })
+    } catch (err) {
+      console.error('Failed to cancel reanalyze', err)
+    }
+  }
 
   const fetchFormats = useCallback(async (offset: number, reset: boolean) => {
     if (reset) setLoading(true)
@@ -135,11 +208,53 @@ export default function Formats() {
           </p>
         </div>
 
-        <div className="flex gap-3 md:gap-4">
+        <div className="flex gap-3 md:gap-4 items-stretch">
           <div className="px-4 py-3 md:px-6 md:py-4 glass-card rounded-3xl flex-1 md:flex-initial">
             <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Total Formats</div>
             <div className="text-xl md:text-2xl font-black text-white">{total}</div>
           </div>
+
+          {isAdmin && (
+            <div className="flex flex-col gap-2">
+              {reanalyzeStatus?.running ? (
+                <div className="px-4 py-3 md:px-6 md:py-4 glass-card rounded-3xl flex flex-col justify-center min-w-[180px]">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-[10px] font-black text-amber-400 uppercase tracking-widest">Reanalyzing</div>
+                    <button
+                      onClick={cancelReanalyze}
+                      className="text-[10px] font-bold text-red-400 hover:text-red-300 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                  <div className="w-full bg-white/5 rounded-full h-1.5 mb-1.5">
+                    <div
+                      className="bg-gradient-to-r from-amber-500 to-pink-500 h-1.5 rounded-full transition-all duration-500"
+                      style={{ width: `${reanalyzeStatus.total > 0 ? Math.round((reanalyzeStatus.completed / reanalyzeStatus.total) * 100) : 0}%` }}
+                    />
+                  </div>
+                  <div className="text-[10px] font-bold text-slate-400">
+                    {reanalyzeStatus.completed}/{reanalyzeStatus.total} videos
+                    {reanalyzeStatus.failed > 0 && <span className="text-red-400 ml-1">({reanalyzeStatus.failed} failed)</span>}
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={startReanalyze}
+                  disabled={reanalyzeStarting}
+                  className="px-4 py-3 md:px-6 md:py-4 glass-card rounded-3xl hover:bg-white/5 active:scale-[0.97] transition-all flex flex-col justify-center items-start min-w-[180px] group"
+                >
+                  <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest group-hover:text-pink-400 transition-colors">
+                    {reanalyzeStarting ? 'Starting...' : 'Reanalyze All'}
+                  </div>
+                  <div className="text-sm font-bold text-slate-300">
+                    <i className="fas fa-rotate mr-1.5 text-pink-400"></i>
+                    {videoStats ? `${videoStats.total} videos` : '...'}
+                  </div>
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

@@ -67,7 +67,7 @@ export default function Privacy() {
               <h3 className="text-sm font-bold text-slate-200 mt-4 mb-2">2.1 Providing the Service</h3>
               <ul className="list-disc list-inside space-y-1 text-slate-400">
                 <li>Performing AI-powered content analysis (visual, audio, narrative, engagement, strategic)</li>
-                <li>Generating personalized content suggestions and recommendations</li>
+                <li>Generating personalized content scripts and recommendations</li>
                 <li>Displaying trending content, viral formats, hooks, and tactics</li>
                 <li>Providing influencer discovery and performance insights</li>
                 <li>Managing your subscription and feature access</li>

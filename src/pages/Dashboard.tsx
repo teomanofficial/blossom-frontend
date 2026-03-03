@@ -87,7 +87,7 @@ const quickActions = [
     iconBg: 'bg-purple-500/20', iconColor: 'text-purple-400',
   },
   {
-    to: '/dashboard/suggestions', icon: 'fa-lightbulb', label: 'Get Ideas', desc: 'AI-driven creative sparks',
+    to: '/dashboard/suggestions', icon: 'fa-scroll', label: 'Scripts', desc: 'AI-driven content scripts',
     glow: 'bg-pink-500/10', glowHover: 'group-hover:bg-pink-500/20',
     iconBg: 'bg-pink-500/20', iconColor: 'text-pink-400',
   },
@@ -281,7 +281,7 @@ export default function Dashboard() {
               <div className="relative z-10">
                 <div className="flex items-center gap-3 mb-4 sm:mb-6">
                   <span className="text-[10px] sm:text-xs font-bold text-pink-400 tracking-widest uppercase">
-                    Today's Top Content Idea
+                    Today's Top Script
                   </span>
                   <div className="h-px flex-1 bg-gradient-to-r from-pink-500/30 to-transparent" />
                 </div>
