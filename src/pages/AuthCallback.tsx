@@ -18,8 +18,10 @@ export default function AuthCallback() {
         return
       }
 
-      // Check for invite token from URL params or localStorage
-      const inviteToken = searchParams.get('invite') || localStorage.getItem('blossom_invite_token')
+      // Check for invite token from URL params, localStorage, or user metadata (survives email redirect)
+      const inviteToken = searchParams.get('invite')
+        || localStorage.getItem('blossom_invite_token')
+        || data.session.user?.user_metadata?.invite_token
 
       if (inviteToken) {
         try {
