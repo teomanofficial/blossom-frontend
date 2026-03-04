@@ -12,6 +12,7 @@ interface FormatClass {
   avg_engagement_rate: number
   class_analysis: any | null
   analysis_video_count: number | null
+  is_in_category: boolean
   created_at: string
 }
 
@@ -298,7 +299,7 @@ export default function Formats() {
               <Link
                 key={format.id}
                 to={`/dashboard/formats/${format.id}`}
-                className="gradient-border group cursor-pointer md:hover:translate-y-[-4px] active:scale-[0.98] transition-all duration-300"
+                className={`gradient-border group cursor-pointer md:hover:translate-y-[-4px] active:scale-[0.98] transition-all duration-300${!format.is_in_category ? ' opacity-40 hover:opacity-70' : ''}`}
               >
                 <div className="card-inner p-5 md:p-7 flex flex-col h-full">
                   <div className="flex justify-between items-start mb-4 md:mb-6">

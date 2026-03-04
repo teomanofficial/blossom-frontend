@@ -15,6 +15,7 @@ interface Tactic {
   avg_views_when_present: number
   avg_execution_score: number
   is_verified: boolean
+  is_in_category: boolean
   created_at: string
 }
 
@@ -253,7 +254,7 @@ export default function Tactics() {
               <Link
                 key={tactic.id}
                 to={`/dashboard/tactics/${tactic.id}`}
-                className="gradient-border group cursor-pointer md:hover:translate-y-[-4px] active:scale-[0.98] transition-all duration-300"
+                className={`gradient-border group cursor-pointer md:hover:translate-y-[-4px] active:scale-[0.98] transition-all duration-300${!tactic.is_in_category ? ' opacity-40 hover:opacity-70' : ''}`}
               >
                 <div className="card-inner p-5 md:p-7 flex flex-col h-full">
                   <div className="flex justify-between items-start mb-5">
