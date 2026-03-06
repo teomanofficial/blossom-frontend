@@ -32,6 +32,8 @@ import AccountBilling from './pages/AccountBilling'
 import AccountIntegrations from './pages/AccountIntegrations'
 import AccountSecurity from './pages/AccountSecurity'
 import AccountPreferences from './pages/AccountPreferences'
+import AccountOrganization from './pages/AccountOrganization'
+import InviteAccept from './pages/InviteAccept'
 import SubscriptionPlans from './pages/SubscriptionPlans'
 import Users from './pages/Users'
 import ContentManagement from './pages/ContentManagement'
@@ -95,6 +97,7 @@ function App() {
       <Route path="/choose-plan" element={<ChoosePlan />} />
       <Route path="/onboarding" element={<Onboarding />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
+      <Route path="/invite/:token" element={<InviteAccept />} />
       <Route path="/terms" element={<Terms />} />
       <Route path="/privacy" element={<Privacy />} />
       <Route
@@ -140,6 +143,7 @@ function App() {
           <Route path="preferences" element={<AccountPreferences />} />
           <Route path="security" element={<AccountSecurity />} />
           <Route path="integrations" element={<AccountIntegrations />} />
+          <Route path="organization" element={<AccountOrganization />} />
           <Route path="billing" element={<AccountBilling />} />
         </Route>
         <Route path="subscription-plans" element={<AdminGate><SubscriptionPlans /></AdminGate>} />

@@ -1,17 +1,25 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
-const accountNavItems = [
+const baseNavItems = [
   { to: '/dashboard/account', label: 'Profile', icon: 'fa-user', end: true },
   { to: '/dashboard/account/preferences', label: 'Preferences', icon: 'fa-sliders-h', end: false },
   { to: '/dashboard/account/security', label: 'Security', icon: 'fa-shield-alt', end: false },
   { to: '/dashboard/account/integrations', label: 'Integrations', icon: 'fa-plug', end: false },
-  { to: '/dashboard/account/billing', label: 'Billing & Plans', icon: 'fa-credit-card', end: false },
 ]
 
+const orgNavItem = { to: '/dashboard/account/organization', label: 'Organization', icon: 'fa-building', end: false }
+const billingNavItem = { to: '/dashboard/account/billing', label: 'Billing & Plans', icon: 'fa-credit-card', end: false }
+
 export default function AccountLayout() {
-  const { user, profile } = useAuth()
+  const { user, profile, planSlug, organization } = useAuth()
   const displayName = profile?.full_name ?? user?.user_metadata?.full_name ?? user?.email?.split('@')[0] ?? 'Creator'
+  const showOrgTab = planSlug === 'platin' || organization !== null
+  const accountNavItems = [
+    ...baseNavItems,
+    ...(showOrgTab ? [orgNavItem] : []),
+    billingNavItem,
+  ]
 
   return (
     <>

@@ -121,7 +121,7 @@ function ConfirmModal({
 }
 
 export default function AccountBilling() {
-  const { userType, vipCredits, signOut } = useAuth()
+  const { userType, vipCredits, signOut, organization, isOrgOwner } = useAuth()
   const [subscription, setSubscription] = useState<Subscription | null>(null)
   const [subStatus, setSubStatus] = useState<string>('none')
   const [loading, setLoading] = useState(true)
@@ -378,6 +378,62 @@ export default function AccountBilling() {
             </p>
           </div>
         </div>
+      </div>
+    )
+  }
+
+  // Organization members (non-owners) see simplified org access card
+  if (organization && !isOrgOwner) {
+    return (
+      <div>
+        <div className="pb-6 mb-6 border-b border-white/[0.06]">
+          <h2 className="text-xl font-black tracking-tight">Billing & Subscription</h2>
+          <p className="text-slate-500 text-sm mt-1">
+            Manage your plan, payment method, and billing details.
+          </p>
+        </div>
+
+        <div className="glass-card rounded-3xl p-6">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500/20 to-blue-500/20 flex items-center justify-center">
+              <i className="fas fa-building text-violet-400" />
+            </div>
+            <div>
+              <div className="text-lg font-black">Organization Access</div>
+              <div className="text-sm text-slate-400">
+                Your access is provided by <span className="text-white font-semibold">{organization.name}</span>
+              </div>
+            </div>
+            <span className="ml-auto px-3 py-1 rounded-full bg-violet-400/10 text-violet-400 text-[10px] font-black uppercase tracking-widest">
+              Platin
+            </span>
+          </div>
+          <p className="text-xs text-slate-500">
+            Your subscription is managed by your organization owner.
+            Contact them for billing inquiries.
+          </p>
+        </div>
+
+        {/* If they ALSO have individual subscription, show warning */}
+        {subscription && (
+          <div className="mt-4 glass-card rounded-3xl p-5 border border-yellow-500/20">
+            <div className="flex items-center gap-3 mb-2">
+              <i className="fas fa-triangle-exclamation text-yellow-400" />
+              <span className="text-sm font-bold text-yellow-300">Double Billing Notice</span>
+            </div>
+            <p className="text-xs text-slate-400">
+              You also have an active individual {subscription.plan_name} subscription
+              ({formatPrice(subscription.price_amount)}/{subscription.billing_interval}).
+              Since your organization provides Platin access, you may want to cancel
+              your individual subscription to avoid double billing.
+            </p>
+          </div>
+        )}
+
+        <ConfirmModal
+          modal={confirmModal}
+          onClose={() => setConfirmModal(emptyModal)}
+        />
       </div>
     )
   }

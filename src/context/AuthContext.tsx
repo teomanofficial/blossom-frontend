@@ -18,6 +18,14 @@ export interface VipCredits {
   credits_used: number
 }
 
+export interface Organization {
+  id: number
+  name: string
+  slug: string
+  avatar_url: string | null
+  role: string  // 'owner' | 'admin' | 'member'
+}
+
 interface AuthContextType {
   user: User | null
   session: Session | null
@@ -28,6 +36,9 @@ interface AuthContextType {
   categoryStatus: string | null
   onboardingCompleted: boolean | null
   vipCredits: VipCredits | null
+  organization: Organization | null
+  isOrgOwner: boolean
+  isOrgAdmin: boolean
   loading: boolean
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
@@ -45,6 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [categoryStatus, setCategoryStatus] = useState<string | null>(null)
   const [onboardingCompleted, setOnboardingCompleted] = useState<boolean | null>(null)
   const [vipCredits, setVipCredits] = useState<VipCredits | null>(null)
+  const [organization, setOrganization] = useState<Organization | null>(null)
   const [loading, setLoading] = useState(true)
   const initialLoadDone = useRef(false)
 
@@ -60,6 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setPlanSlug(data.planSlug || null)
       setCategoryStatus(data.profile?.category_status || null)
       setVipCredits(data.vipCredits || null)
+      setOrganization(data.organization || null)
 
       // Fetch onboarding status (admins and VIP users skip onboarding)
       if (data.profile?.user_type === 'admin' || data.profile?.user_type === 'vip') {
@@ -115,6 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setCategoryStatus(null)
         setOnboardingCompleted(null)
         setVipCredits(null)
+        setOrganization(null)
       }
     })
 
@@ -132,8 +146,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const isOrgOwner = organization?.role === 'owner'
+  const isOrgAdmin = organization?.role === 'owner' || organization?.role === 'admin'
+
   return (
-    <AuthContext.Provider value={{ user, session, profile, userType, planSlug, categoryId, categoryStatus, onboardingCompleted, vipCredits, loading, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ user, session, profile, userType, planSlug, categoryId, categoryStatus, onboardingCompleted, vipCredits, organization, isOrgOwner, isOrgAdmin, loading, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   )
