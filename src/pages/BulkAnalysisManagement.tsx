@@ -72,13 +72,14 @@ interface BulkRetrainStatus {
   total: number
   completed: number
   failed: number
+  skipped: number
   startedAt: string | null
   cancelled: boolean
   items: Record<string, {
     type: string
     id: number
     name: string
-    status: 'pending' | 'retraining' | 'done' | 'error'
+    status: 'pending' | 'retraining' | 'done' | 'error' | 'skipped'
     error?: string
   }>
 }
@@ -244,7 +245,8 @@ function RetrainProgressPanel({
 }) {
   const elapsed = status.startedAt ? Math.floor((Date.now() - new Date(status.startedAt).getTime()) / 1000) : 0
   const elapsedStr = elapsed > 0 ? `${Math.floor(elapsed / 60)}m ${elapsed % 60}s` : ''
-  const progress = status.total > 0 ? Math.round((status.completed / status.total) * 100) : 0
+  const done = status.completed + (status.skipped || 0)
+  const progress = status.total > 0 ? Math.round((done / status.total) * 100) : 0
   const inProgressItems = status.items ? Object.values(status.items).filter(i => i.status === 'retraining') : []
 
   return (
@@ -258,10 +260,15 @@ function RetrainProgressPanel({
             }
             <span className="font-bold text-sm">
               {status.running
-                ? `${label} — ${status.completed}/${status.total}`
+                ? `${label} — ${done}/${status.total}`
                 : `${label} Complete — ${status.completed}/${status.total} succeeded`
               }
             </span>
+            {(status.skipped || 0) > 0 && (
+              <span className="px-2 py-0.5 bg-amber-500/10 text-amber-400 text-[10px] font-black uppercase rounded">
+                {status.skipped} skipped
+              </span>
+            )}
             {status.failed > 0 && (
               <span className="px-2 py-0.5 bg-red-500/10 text-red-400 text-[10px] font-black uppercase rounded">
                 {status.failed} failed
@@ -293,10 +300,13 @@ function RetrainProgressPanel({
             )}
           </div>
         )}
-        {!status.running && status.completed > 0 && (
+        {!status.running && (status.completed > 0 || (status.skipped || 0) > 0) && (
           <div className="text-xs text-slate-400">
             <i className="fas fa-circle-check text-emerald-400 mr-1.5" />
             Successfully retrained {status.completed} {label.toLowerCase()}
+            {(status.skipped || 0) > 0 && (
+              <span className="text-amber-400 ml-2"><i className="fas fa-forward mr-1" />{status.skipped} skipped</span>
+            )}
             {status.failed > 0 && (
               <span className="text-red-400 ml-2"><i className="fas fa-circle-xmark mr-1" />{status.failed} failed</span>
             )}
