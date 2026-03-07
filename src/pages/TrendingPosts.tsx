@@ -122,7 +122,7 @@ export default function TrendingPosts() {
   const [loading, setLoading] = useState(true)
   const [platform, setPlatform] = useState<string>('')
   const [page, setPage] = useState(0)
-  const [days, setDays] = useState(30)
+  const [days, setDays] = useState(1)
   const [carouselData, setCarouselData] = useState<{ videos: CarouselVideo[]; initialIndex: number } | null>(null)
 
   const fetchVideos = useCallback(async () => {
@@ -132,6 +132,7 @@ export default function TrendingPosts() {
         limit: String(PAGE_SIZE),
         offset: String(page * PAGE_SIZE),
         days: String(days),
+        sort: 'views',
       })
       if (platform) params.set('platform', platform)
 
@@ -173,9 +174,9 @@ export default function TrendingPosts() {
             Trends
           </span>
         </div>
-        <h1 className="text-3xl font-black font-display tracking-tighter mb-2">All Trending Posts</h1>
+        <h1 className="text-3xl font-black font-display tracking-tighter mb-2">Top Viral Content</h1>
         <p className="text-slate-500 text-sm font-medium">
-          Recently analyzed content sorted by analysis date. {total > 0 && <span className="text-slate-400">{total} posts</span>}
+          Most viewed content sorted by views. {total > 0 && <span className="text-slate-400">{total} posts</span>}
         </p>
       </div>
 
@@ -202,22 +203,26 @@ export default function TrendingPosts() {
           ))}
         </div>
         <div className="flex items-center gap-1 bg-white/5 rounded-xl p-1">
-          {[7, 14, 30].map((d) => (
+          {([
+            { value: 1, label: 'Daily' },
+            { value: 7, label: 'Weekly' },
+            { value: 30, label: 'Monthly' },
+          ] as const).map((opt) => (
             <button
-              key={d}
-              onClick={() => setDays(d)}
+              key={opt.value}
+              onClick={() => setDays(opt.value)}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                days === d
+                days === opt.value
                   ? 'bg-pink-500/20 text-pink-400'
                   : 'text-slate-500 hover:text-white hover:bg-white/5'
               }`}
             >
-              {d}d
+              {opt.label}
             </button>
           ))}
         </div>
         <div className="ml-auto text-[10px] text-slate-600 font-bold">
-          <i className="fas fa-sort-amount-down mr-1" /> Analysis Date &rarr; Views
+          <i className="fas fa-sort-amount-down mr-1" /> Most Views
         </div>
       </div>
 

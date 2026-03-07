@@ -355,7 +355,7 @@ export default function Dashboard() {
                       <i className="fas fa-chevron-right text-[10px] text-slate-400" />
                     </button>
                   </div>
-                  <Link to="/dashboard/trends" className="text-[10px] font-black text-slate-500 uppercase tracking-widest hover:text-white transition-colors">
+                  <Link to="/dashboard/trends/posts" className="text-[10px] font-black text-slate-500 uppercase tracking-widest hover:text-white transition-colors">
                     View All
                   </Link>
                 </div>
