@@ -316,8 +316,8 @@ export default function Influencers() {
           )}
         </div>
 
-        {/* Category/Genre Filter Dropdown */}
-        {categoryOptions.length > 0 && (
+        {/* Category/Genre Filter Dropdown - admin only (non-admins are auto-filtered by their categories) */}
+        {userType === 'admin' && categoryOptions.length > 0 && (
           <div className="relative" ref={categoryRef}>
             <button
               onClick={() => setCategoryOpen(!categoryOpen)}

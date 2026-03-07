@@ -33,7 +33,7 @@ interface HookRetrainItem {
   version_count: number
 }
 
-interface TacticItem {
+interface TacticRetrainItem {
   id: number
   name: string
   name_normalized: string
@@ -44,11 +44,18 @@ interface TacticItem {
   video_count: number
   avg_views_when_present: number
   avg_execution_score: number
+  is_analyzed: boolean
+  last_analysis: string | null
+  tactic_analysis: any | null
+  analysis_video_count: number | null
+  new_videos_since_retrain: number
+  is_stale: boolean
+  version_count: number
 }
 
 interface VersionItem {
   id: number
-  class_type: 'format' | 'hook'
+  class_type: 'format' | 'hook' | 'tactic'
   class_id: number
   class_name: string | null
   version_number: number
@@ -143,6 +150,7 @@ function VersionAnalysisDisplay({ analysis }: { analysis: any }) {
   return (
     <div className="space-y-3">
       {analysis.class_description && <p className="text-sm text-slate-300">{analysis.class_description}</p>}
+      {analysis.tactic_description && <p className="text-sm text-slate-300">{analysis.tactic_description}</p>}
       {analysis.gold_standard_tactics?.length > 0 && (
         <div>
           <div className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1">Gold Standard Tactics</div>
@@ -189,6 +197,112 @@ function VersionAnalysisDisplay({ analysis }: { analysis: any }) {
           </div>
         </div>
       )}
+      {analysis.best_practices?.length > 0 && (
+        <div>
+          <div className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1">Best Practices</div>
+          <ul className="list-disc list-inside text-xs text-slate-300 space-y-0.5">
+            {analysis.best_practices.map((bp: string, i: number) => <li key={i}>{bp}</li>)}
+          </ul>
+        </div>
+      )}
+      {analysis.common_pitfalls?.length > 0 && (
+        <div>
+          <div className="text-[10px] font-black text-red-400 uppercase tracking-widest mb-1">Common Pitfalls</div>
+          <ul className="list-disc list-inside text-xs text-slate-300 space-y-0.5">
+            {analysis.common_pitfalls.map((cp: string, i: number) => <li key={i}>{cp}</li>)}
+          </ul>
+        </div>
+      )}
+      {analysis.format_synergies?.length > 0 && (
+        <div>
+          <div className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Format Synergies</div>
+          <div className="text-xs text-slate-400 space-y-1">
+            {analysis.format_synergies.map((fs: any, i: number) => (
+              <div key={i}><span className="text-white font-medium">{fs.format}:</span> {fs.synergy_analysis}</div>
+            ))}
+          </div>
+        </div>
+      )}
+      {analysis.viewer_psychology && (
+        <div>
+          <div className="text-[10px] font-black text-purple-400 uppercase tracking-widest mb-1">Viewer Psychology</div>
+          <p className="text-xs text-slate-300">{analysis.viewer_psychology}</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function RetrainProgressPanel({
+  label, status, onCancel, colorFrom, colorTo,
+}: {
+  label: string
+  status: BulkRetrainStatus
+  onCancel: () => void
+  colorFrom: string
+  colorTo: string
+}) {
+  const elapsed = status.startedAt ? Math.floor((Date.now() - new Date(status.startedAt).getTime()) / 1000) : 0
+  const elapsedStr = elapsed > 0 ? `${Math.floor(elapsed / 60)}m ${elapsed % 60}s` : ''
+  const progress = status.total > 0 ? Math.round((status.completed / status.total) * 100) : 0
+  const inProgressItems = status.items ? Object.values(status.items).filter(i => i.status === 'retraining') : []
+
+  return (
+    <div className="rounded-xl p-[1px]" style={{ background: `linear-gradient(to right, ${colorFrom}, ${colorTo})` }}>
+      <div className="bg-[#020617] rounded-xl p-5">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-3">
+            {status.running
+              ? <div className="w-4 h-4 border-2 rounded-full animate-spin" style={{ borderColor: colorFrom, borderTopColor: 'transparent' }} />
+              : <i className="fas fa-check-circle text-emerald-400" />
+            }
+            <span className="font-bold text-sm">
+              {status.running
+                ? `${label} — ${status.completed}/${status.total}`
+                : `${label} Complete — ${status.completed}/${status.total} succeeded`
+              }
+            </span>
+            {status.failed > 0 && (
+              <span className="px-2 py-0.5 bg-red-500/10 text-red-400 text-[10px] font-black uppercase rounded">
+                {status.failed} failed
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-3">
+            {elapsedStr && <span className="text-xs text-slate-500">{elapsedStr} elapsed</span>}
+            {status.running && (
+              <button onClick={onCancel}
+                className="px-3 py-1.5 bg-white/5 text-slate-300 font-semibold text-sm rounded-lg hover:bg-white/10 transition">
+                <i className="fas fa-stop mr-1.5" />Cancel
+              </button>
+            )}
+          </div>
+        </div>
+        <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden mb-2">
+          <div className="h-full rounded-full transition-all duration-500"
+            style={{ width: `${progress}%`, background: `linear-gradient(to right, ${colorFrom}, ${colorTo})` }} />
+        </div>
+        {status.running && inProgressItems.length > 0 && (
+          <div className="text-xs text-slate-400">
+            <i className="fas fa-gear fa-spin mr-1.5" />
+            {inProgressItems.length} in progress
+            {inProgressItems.length <= 3 && (
+              <span className="text-slate-600 ml-1.5">
+                ({inProgressItems.map(i => i.name).join(', ')})
+              </span>
+            )}
+          </div>
+        )}
+        {!status.running && status.completed > 0 && (
+          <div className="text-xs text-slate-400">
+            <i className="fas fa-circle-check text-emerald-400 mr-1.5" />
+            Successfully retrained {status.completed} {label.toLowerCase()}
+            {status.failed > 0 && (
+              <span className="text-red-400 ml-2"><i className="fas fa-circle-xmark mr-1" />{status.failed} failed</span>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
@@ -199,22 +313,27 @@ export default function BulkAnalysisManagement() {
   const [formatsLoading, setFormatsLoading] = useState(false)
   const [hooks, setHooks] = useState<HookRetrainItem[]>([])
   const [hooksLoading, setHooksLoading] = useState(false)
-  const [tactics, setTactics] = useState<TacticItem[]>([])
+  const [tactics, setTactics] = useState<TacticRetrainItem[]>([])
   const [tacticsLoading, setTacticsLoading] = useState(false)
   const [versions, setVersions] = useState<VersionItem[]>([])
   const [versionsLoading, setVersionsLoading] = useState(false)
   const [versionsTotal, setVersionsTotal] = useState(0)
   const [selectedFormats, setSelectedFormats] = useState<Set<number>>(new Set())
   const [selectedHooks, setSelectedHooks] = useState<Set<number>>(new Set())
-  const [retrainStatus, setRetrainStatus] = useState<BulkRetrainStatus | null>(null)
+  const [selectedTactics, setSelectedTactics] = useState<Set<number>>(new Set())
+  const [formatRetrainStatus, setFormatRetrainStatus] = useState<BulkRetrainStatus | null>(null)
+  const [hookRetrainStatus, setHookRetrainStatus] = useState<BulkRetrainStatus | null>(null)
+  const [tacticRetrainStatus, setTacticRetrainStatus] = useState<BulkRetrainStatus | null>(null)
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
   const [formatSearch, setFormatSearch] = useState('')
   const [hookSearch, setHookSearch] = useState('')
   const [tacticSearch, setTacticSearch] = useState('')
   const [tacticCategoryFilter, setTacticCategoryFilter] = useState('')
-  const [versionTypeFilter, setVersionTypeFilter] = useState<'all' | 'format' | 'hook'>('all')
+  const [versionTypeFilter, setVersionTypeFilter] = useState<'all' | 'format' | 'hook' | 'tactic'>('all')
   const [compareVersions, setCompareVersions] = useState<[VersionItem, VersionItem] | null>(null)
-  const retrainPollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const formatPollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const hookPollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const tacticPollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   // Tactics tab state
   const [editingTactic, setEditingTactic] = useState<number | null>(null)
@@ -259,7 +378,7 @@ export default function BulkAnalysisManagement() {
   const fetchTactics = useCallback(async () => {
     setTacticsLoading(true)
     try {
-      const res = await authFetch('/api/analysis/tactics?limit=500&sort_by=video_count&order=desc')
+      const res = await authFetch('/api/analysis/tactics-retrain-status')
       if (res.ok) {
         const data = await res.json()
         setTactics(Array.isArray(data) ? data : [])
@@ -283,11 +402,25 @@ export default function BulkAnalysisManagement() {
     finally { setVersionsLoading(false) }
   }, [versionTypeFilter, versionPage])
 
-  const fetchRetrainStatus = useCallback(async () => {
+  const fetchFormatRetrainStatus = useCallback(async () => {
     try {
-      const res = await authFetch('/api/analysis/bulk-retrain-status')
-      if (res.ok) setRetrainStatus(await res.json())
-    } catch (err) { console.error('Failed to fetch retrain status:', err) }
+      const res = await authFetch('/api/analysis/bulk-retrain-formats-status')
+      if (res.ok) setFormatRetrainStatus(await res.json())
+    } catch (err) { console.error('Failed to fetch format retrain status:', err) }
+  }, [])
+
+  const fetchHookRetrainStatus = useCallback(async () => {
+    try {
+      const res = await authFetch('/api/analysis/bulk-retrain-hooks-status')
+      if (res.ok) setHookRetrainStatus(await res.json())
+    } catch (err) { console.error('Failed to fetch hook retrain status:', err) }
+  }, [])
+
+  const fetchTacticRetrainStatus = useCallback(async () => {
+    try {
+      const res = await authFetch('/api/analysis/bulk-retrain-tactics-status')
+      if (res.ok) setTacticRetrainStatus(await res.json())
+    } catch (err) { console.error('Failed to fetch tactic retrain status:', err) }
   }, [])
 
   useEffect(() => {
@@ -297,32 +430,88 @@ export default function BulkAnalysisManagement() {
     else if (activeTab === 'history') fetchVersions()
   }, [activeTab, fetchFormats, fetchHooks, fetchTactics, fetchVersions])
 
+  // Format retrain polling
   useEffect(() => {
-    if (retrainStatus?.running) {
-      retrainPollingRef.current = setInterval(fetchRetrainStatus, 2000)
+    if (formatRetrainStatus?.running) {
+      formatPollingRef.current = setInterval(fetchFormatRetrainStatus, 2000)
     } else {
-      if (retrainPollingRef.current) { clearInterval(retrainPollingRef.current); retrainPollingRef.current = null }
+      if (formatPollingRef.current) { clearInterval(formatPollingRef.current); formatPollingRef.current = null }
     }
-    return () => { if (retrainPollingRef.current) { clearInterval(retrainPollingRef.current); retrainPollingRef.current = null } }
-  }, [retrainStatus?.running, fetchRetrainStatus])
+    return () => { if (formatPollingRef.current) { clearInterval(formatPollingRef.current); formatPollingRef.current = null } }
+  }, [formatRetrainStatus?.running, fetchFormatRetrainStatus])
 
+  // Hook retrain polling
   useEffect(() => {
-    if (retrainStatus && !retrainStatus.running && retrainStatus.completed > 0) {
-      if (activeTab === 'formats') fetchFormats()
-      else if (activeTab === 'hooks') fetchHooks()
+    if (hookRetrainStatus?.running) {
+      hookPollingRef.current = setInterval(fetchHookRetrainStatus, 2000)
+    } else {
+      if (hookPollingRef.current) { clearInterval(hookPollingRef.current); hookPollingRef.current = null }
     }
-  }, [retrainStatus?.running]) // eslint-disable-line react-hooks/exhaustive-deps
+    return () => { if (hookPollingRef.current) { clearInterval(hookPollingRef.current); hookPollingRef.current = null } }
+  }, [hookRetrainStatus?.running, fetchHookRetrainStatus])
 
-  useEffect(() => { fetchRetrainStatus() }, [fetchRetrainStatus])
+  // Tactic retrain polling
+  useEffect(() => {
+    if (tacticRetrainStatus?.running) {
+      tacticPollingRef.current = setInterval(fetchTacticRetrainStatus, 2000)
+    } else {
+      if (tacticPollingRef.current) { clearInterval(tacticPollingRef.current); tacticPollingRef.current = null }
+    }
+    return () => { if (tacticPollingRef.current) { clearInterval(tacticPollingRef.current); tacticPollingRef.current = null } }
+  }, [tacticRetrainStatus?.running, fetchTacticRetrainStatus])
+
+  // Refresh data when format retrain completes
+  useEffect(() => {
+    if (formatRetrainStatus && !formatRetrainStatus.running && formatRetrainStatus.completed > 0) {
+      fetchFormats()
+    }
+  }, [formatRetrainStatus?.running]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Refresh data when hook retrain completes
+  useEffect(() => {
+    if (hookRetrainStatus && !hookRetrainStatus.running && hookRetrainStatus.completed > 0) {
+      fetchHooks()
+    }
+  }, [hookRetrainStatus?.running]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Refresh data when tactic retrain completes
+  useEffect(() => {
+    if (tacticRetrainStatus && !tacticRetrainStatus.running && tacticRetrainStatus.completed > 0) {
+      fetchTactics()
+    }
+  }, [tacticRetrainStatus?.running]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // On mount: restore all three retrain statuses
+  useEffect(() => {
+    fetchFormatRetrainStatus()
+    fetchHookRetrainStatus()
+    fetchTacticRetrainStatus()
+  }, [fetchFormatRetrainStatus, fetchHookRetrainStatus, fetchTacticRetrainStatus])
 
   // === Actions ===
 
-  const handleCancelRetrain = async () => {
+  const handleCancelFormatRetrain = async () => {
     try {
-      const res = await authFetch('/api/analysis/bulk-retrain-cancel', { method: 'POST' })
-      if (res.ok) { toast.success('Retrain cancelled'); fetchRetrainStatus() }
-      else toast.error('Failed to cancel retrain')
-    } catch { toast.error('Failed to cancel retrain') }
+      const res = await authFetch('/api/analysis/bulk-retrain-formats-cancel', { method: 'POST' })
+      if (res.ok) { toast.success('Format retrain cancelled'); fetchFormatRetrainStatus() }
+      else toast.error('Failed to cancel format retrain')
+    } catch { toast.error('Failed to cancel format retrain') }
+  }
+
+  const handleCancelHookRetrain = async () => {
+    try {
+      const res = await authFetch('/api/analysis/bulk-retrain-hooks-cancel', { method: 'POST' })
+      if (res.ok) { toast.success('Hook retrain cancelled'); fetchHookRetrainStatus() }
+      else toast.error('Failed to cancel hook retrain')
+    } catch { toast.error('Failed to cancel hook retrain') }
+  }
+
+  const handleCancelTacticRetrain = async () => {
+    try {
+      const res = await authFetch('/api/analysis/bulk-retrain-tactics-cancel', { method: 'POST' })
+      if (res.ok) { toast.success('Tactic retrain cancelled'); fetchTacticRetrainStatus() }
+      else toast.error('Failed to cancel tactic retrain')
+    } catch { toast.error('Failed to cancel tactic retrain') }
   }
 
   const toggleExpanded = (key: string) => {
@@ -351,16 +540,15 @@ export default function BulkAnalysisManagement() {
   const startRetrainFormats = async (ids: number[]) => {
     if (ids.length === 0) return
     try {
-      const items = ids.map(id => ({ type: 'format' as const, id }))
-      const res = await authFetch('/api/analysis/bulk-retrain', {
+      const res = await authFetch('/api/analysis/bulk-retrain-formats', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items }),
+        body: JSON.stringify({ ids }),
       })
       if (!res.ok) { const err = await res.json(); toast.error(err.error || 'Failed'); return }
       toast.success(`Started retraining ${ids.length} format(s)`)
       setSelectedFormats(new Set())
-      fetchRetrainStatus()
-    } catch { toast.error('Failed to start retrain') }
+      fetchFormatRetrainStatus()
+    } catch { toast.error('Failed to start format retrain') }
   }
 
   // Hook actions
@@ -385,20 +573,54 @@ export default function BulkAnalysisManagement() {
   const startRetrainHooks = async (ids: number[]) => {
     if (ids.length === 0) return
     try {
-      const items = ids.map(id => ({ type: 'hook' as const, id }))
-      const res = await authFetch('/api/analysis/bulk-retrain', {
+      const res = await authFetch('/api/analysis/bulk-retrain-hooks', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items }),
+        body: JSON.stringify({ ids }),
       })
       if (!res.ok) { const err = await res.json(); toast.error(err.error || 'Failed'); return }
       toast.success(`Started retraining ${ids.length} hook(s)`)
       setSelectedHooks(new Set())
-      fetchRetrainStatus()
-    } catch { toast.error('Failed to start retrain') }
+      fetchHookRetrainStatus()
+    } catch { toast.error('Failed to start hook retrain') }
   }
 
   // Tactic actions
-  const startEditTactic = (tactic: TacticItem) => {
+  const toggleTacticSelect = (id: number) => {
+    setSelectedTactics(prev => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next })
+  }
+
+  const filteredTactics = tactics.filter(tactic => {
+    const matchesSearch = !tacticSearch ||
+      tactic.name.toLowerCase().includes(tacticSearch.toLowerCase()) ||
+      (tactic.description && tactic.description.toLowerCase().includes(tacticSearch.toLowerCase())) ||
+      tactic.name_normalized.toLowerCase().includes(tacticSearch.toLowerCase())
+    const matchesCategory = !tacticCategoryFilter || tactic.category === tacticCategoryFilter
+    return matchesSearch && matchesCategory
+  })
+
+  const staleTacticsList = filteredTactics.filter(t => t.is_stale || !t.is_analyzed)
+  const staleTacticCount = staleTacticsList.length
+  const staleTacticIds = staleTacticsList.map(t => t.id)
+
+  const selectAllStaleTactics = () => {
+    setSelectedTactics(new Set(staleTacticIds))
+  }
+
+  const startRetrainTactics = async (ids: number[]) => {
+    if (ids.length === 0) return
+    try {
+      const res = await authFetch('/api/analysis/bulk-retrain-tactics', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids }),
+      })
+      if (!res.ok) { const err = await res.json(); toast.error(err.error || 'Failed'); return }
+      toast.success(`Started retraining ${ids.length} tactic(s)`)
+      setSelectedTactics(new Set())
+      fetchTacticRetrainStatus()
+    } catch { toast.error('Failed to start tactic retrain') }
+  }
+
+  const startEditTactic = (tactic: TacticRetrainItem) => {
     setEditingTactic(tactic.id)
     setEditForm({ name: tactic.name, category: tactic.category, description: tactic.description || '' })
   }
@@ -442,15 +664,6 @@ export default function BulkAnalysisManagement() {
     finally { setRecomputingStats(false) }
   }
 
-  const filteredTactics = tactics.filter(tactic => {
-    const matchesSearch = !tacticSearch ||
-      tactic.name.toLowerCase().includes(tacticSearch.toLowerCase()) ||
-      (tactic.description && tactic.description.toLowerCase().includes(tacticSearch.toLowerCase())) ||
-      tactic.name_normalized.toLowerCase().includes(tacticSearch.toLowerCase())
-    const matchesCategory = !tacticCategoryFilter || tactic.category === tacticCategoryFilter
-    return matchesSearch && matchesCategory
-  })
-
   // Version history actions
   const toggleVersionExpanded = (id: number) => {
     setExpandedVersions(prev => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next })
@@ -478,7 +691,7 @@ export default function BulkAnalysisManagement() {
       const res = await authFetch(`/api/analysis/class-versions/${versionId}/restore`, { method: 'POST' })
       if (!res.ok) { const err = await res.json(); toast.error(err.error || 'Failed to restore'); return }
       toast.success('Version restored')
-      fetchVersions(); fetchFormats(); fetchHooks()
+      fetchVersions(); fetchFormats(); fetchHooks(); fetchTactics()
     } catch { toast.error('Failed to restore') }
     finally { setRestoringVersion(null) }
   }
@@ -487,11 +700,11 @@ export default function BulkAnalysisManagement() {
 
   const staleFormatsCount = formats.filter(f => f.is_stale).length
   const staleHooksCount = hooks.filter(h => h.is_stale).length
+  const staleTacticsCount = tactics.filter(t => t.is_stale || !t.is_analyzed).length
 
-  const retrainElapsed = retrainStatus?.startedAt ? Math.floor((Date.now() - new Date(retrainStatus.startedAt).getTime()) / 1000) : 0
-  const retrainElapsedStr = retrainElapsed > 0 ? `${Math.floor(retrainElapsed / 60)}m ${retrainElapsed % 60}s` : ''
-  const currentlyProcessing = retrainStatus?.items ? Object.values(retrainStatus.items).find(i => i.status === 'retraining') : null
-  const retrainProgress = retrainStatus && retrainStatus.total > 0 ? Math.round((retrainStatus.completed / retrainStatus.total) * 100) : 0
+  const showFormatPanel = formatRetrainStatus && (formatRetrainStatus.running || formatRetrainStatus.completed > 0)
+  const showHookPanel = hookRetrainStatus && (hookRetrainStatus.running || hookRetrainStatus.completed > 0)
+  const showTacticPanel = tacticRetrainStatus && (tacticRetrainStatus.running || tacticRetrainStatus.completed > 0)
 
   const tabs = [
     { key: 'formats' as const, label: 'Formats', count: formats.length, icon: 'fa-layer-group' },
@@ -510,7 +723,7 @@ export default function BulkAnalysisManagement() {
             <h1 className="text-2xl font-bold font-display">Bulk Analysis Management</h1>
             <span className="px-2 py-0.5 bg-pink-500/10 text-pink-400 text-[10px] font-black uppercase rounded">management</span>
           </div>
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-4">
             <div className="bg-white/5 border border-white/5 rounded-xl p-4">
               <div className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-1">Total Formats</div>
               <div className="text-2xl font-bold">{formats.length}</div>
@@ -520,6 +733,10 @@ export default function BulkAnalysisManagement() {
               <div className="text-2xl font-bold">{hooks.length}</div>
             </div>
             <div className="bg-white/5 border border-white/5 rounded-xl p-4">
+              <div className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-1">Total Tactics</div>
+              <div className="text-2xl font-bold">{tactics.length}</div>
+            </div>
+            <div className="bg-white/5 border border-white/5 rounded-xl p-4">
               <div className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-1">Stale Formats</div>
               <div className="text-2xl font-bold text-orange-400">{staleFormatsCount}</div>
             </div>
@@ -527,62 +744,28 @@ export default function BulkAnalysisManagement() {
               <div className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-1">Stale Hooks</div>
               <div className="text-2xl font-bold text-orange-400">{staleHooksCount}</div>
             </div>
+            <div className="bg-white/5 border border-white/5 rounded-xl p-4">
+              <div className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-1">Stale Tactics</div>
+              <div className="text-2xl font-bold text-orange-400">{staleTacticsCount}</div>
+            </div>
           </div>
         </div>
 
-        {/* Bulk Retrain Progress Panel */}
-        {retrainStatus && (retrainStatus.running || retrainStatus.completed > 0) && (
-          <div className="mb-8 rounded-xl p-[1px] bg-gradient-to-r from-pink-500 to-orange-400">
-            <div className="bg-[#020617] rounded-xl p-5">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  {retrainStatus.running
-                    ? <div className="w-4 h-4 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
-                    : <i className="fas fa-check-circle text-emerald-400" />
-                  }
-                  <span className="font-bold text-sm">
-                    {retrainStatus.running
-                      ? `Retraining ${retrainStatus.completed}/${retrainStatus.total}`
-                      : `Retrain Complete — ${retrainStatus.completed}/${retrainStatus.total} succeeded`
-                    }
-                  </span>
-                  {retrainStatus.failed > 0 && (
-                    <span className="px-2 py-0.5 bg-red-500/10 text-red-400 text-[10px] font-black uppercase rounded">
-                      {retrainStatus.failed} failed
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-3">
-                  {retrainElapsedStr && <span className="text-xs text-slate-500">{retrainElapsedStr} elapsed</span>}
-                  {retrainStatus.running && (
-                    <button onClick={handleCancelRetrain}
-                      className="px-3 py-1.5 bg-white/5 text-slate-300 font-semibold text-sm rounded-lg hover:bg-white/10 transition">
-                      <i className="fas fa-stop mr-1.5" />Cancel
-                    </button>
-                  )}
-                </div>
-              </div>
-              <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden mb-2">
-                <div className="h-full bg-gradient-to-r from-pink-500 to-orange-400 rounded-full transition-all duration-500"
-                  style={{ width: `${retrainProgress}%` }} />
-              </div>
-              {retrainStatus.running && currentlyProcessing && (
-                <div className="text-xs text-slate-400">
-                  <i className="fas fa-gear fa-spin mr-1.5" />
-                  Processing: <span className="text-white font-medium">{currentlyProcessing.name}</span>
-                  <span className="text-slate-600 ml-1.5">({currentlyProcessing.type})</span>
-                </div>
-              )}
-              {!retrainStatus.running && retrainStatus.completed > 0 && (
-                <div className="text-xs text-slate-400">
-                  <i className="fas fa-circle-check text-emerald-400 mr-1.5" />
-                  Successfully retrained {retrainStatus.completed} classes
-                  {retrainStatus.failed > 0 && (
-                    <span className="text-red-400 ml-2"><i className="fas fa-circle-xmark mr-1" />{retrainStatus.failed} failed</span>
-                  )}
-                </div>
-              )}
-            </div>
+        {/* Retrain Progress Panels */}
+        {(showFormatPanel || showHookPanel || showTacticPanel) && (
+          <div className="space-y-3 mb-8">
+            {showFormatPanel && (
+              <RetrainProgressPanel label="Formats" status={formatRetrainStatus!} onCancel={handleCancelFormatRetrain}
+                colorFrom="#ec4899" colorTo="#f97316" />
+            )}
+            {showHookPanel && (
+              <RetrainProgressPanel label="Hooks" status={hookRetrainStatus!} onCancel={handleCancelHookRetrain}
+                colorFrom="#8b5cf6" colorTo="#6366f1" />
+            )}
+            {showTacticPanel && (
+              <RetrainProgressPanel label="Tactics" status={tacticRetrainStatus!} onCancel={handleCancelTacticRetrain}
+                colorFrom="#06b6d4" colorTo="#22d3ee" />
+            )}
           </div>
         )}
 
@@ -612,12 +795,12 @@ export default function BulkAnalysisManagement() {
                 Select All Stale ({staleFormatCount})
               </button>
               <button onClick={() => startRetrainFormats(Array.from(selectedFormats))}
-                disabled={selectedFormats.size === 0 || !!retrainStatus?.running}
+                disabled={selectedFormats.size === 0 || !!formatRetrainStatus?.running}
                 className="px-4 py-2 bg-gradient-to-r from-pink-500 to-orange-400 text-white font-bold text-sm rounded-lg hover:opacity-90 transition disabled:opacity-50">
                 Retrain Selected ({selectedFormats.size})
               </button>
               <button onClick={() => startRetrainFormats(staleFormatIds)}
-                disabled={staleFormatCount === 0 || !!retrainStatus?.running}
+                disabled={staleFormatCount === 0 || !!formatRetrainStatus?.running}
                 className="px-3 py-1.5 bg-white/5 text-slate-300 font-semibold text-sm rounded-lg hover:bg-white/10 transition disabled:opacity-50">
                 Retrain All Stale ({staleFormatCount})
               </button>
@@ -661,7 +844,7 @@ export default function BulkAnalysisManagement() {
                         <span className="px-2 py-0.5 bg-purple-500/10 text-purple-400 text-[10px] font-black rounded">v{format.version_count}</span>
                       )}
                       <button onClick={(e) => { e.stopPropagation(); startRetrainFormats([format.id]) }}
-                        disabled={!!retrainStatus?.running} className="p-2 text-slate-500 hover:text-white transition disabled:opacity-50" title="Retrain">
+                        disabled={!!formatRetrainStatus?.running} className="p-2 text-slate-500 hover:text-white transition disabled:opacity-50" title="Retrain">
                         <i className="fas fa-arrows-rotate" />
                       </button>
                       <button onClick={(e) => { e.stopPropagation(); toggleExpanded(`format-${format.id}`) }}
@@ -738,12 +921,12 @@ export default function BulkAnalysisManagement() {
                 Select All Stale ({staleHookCount})
               </button>
               <button onClick={() => startRetrainHooks(Array.from(selectedHooks))}
-                disabled={selectedHooks.size === 0 || !!retrainStatus?.running}
+                disabled={selectedHooks.size === 0 || !!hookRetrainStatus?.running}
                 className="px-4 py-2 bg-gradient-to-r from-pink-500 to-orange-400 text-white font-bold text-sm rounded-lg hover:opacity-90 transition disabled:opacity-50">
                 Retrain Selected ({selectedHooks.size})
               </button>
               <button onClick={() => startRetrainHooks(staleHookIds)}
-                disabled={staleHookCount === 0 || !!retrainStatus?.running}
+                disabled={staleHookCount === 0 || !!hookRetrainStatus?.running}
                 className="px-3 py-1.5 bg-white/5 text-slate-300 font-semibold text-sm rounded-lg hover:bg-white/10 transition disabled:opacity-50">
                 Retrain All Stale ({staleHookCount})
               </button>
@@ -788,7 +971,7 @@ export default function BulkAnalysisManagement() {
                         <span className="px-2 py-0.5 bg-purple-500/10 text-purple-400 text-[10px] font-black rounded">v{hook.version_count}</span>
                       )}
                       <button onClick={(e) => { e.stopPropagation(); startRetrainHooks([hook.id]) }}
-                        disabled={!!retrainStatus?.running} className="p-2 text-slate-500 hover:text-white transition disabled:opacity-50" title="Retrain">
+                        disabled={!!hookRetrainStatus?.running} className="p-2 text-slate-500 hover:text-white transition disabled:opacity-50" title="Retrain">
                         <i className="fas fa-arrows-rotate" />
                       </button>
                       <button onClick={(e) => { e.stopPropagation(); toggleExpanded(`hook-${hook.id}`) }}
@@ -860,6 +1043,20 @@ export default function BulkAnalysisManagement() {
         {activeTab === 'tactics' && (
           <div>
             <div className="flex items-center gap-3 mb-4 flex-wrap">
+              <button onClick={selectAllStaleTactics}
+                className="px-3 py-1.5 bg-white/5 text-slate-300 font-semibold text-sm rounded-lg hover:bg-white/10 transition">
+                Select All Stale ({staleTacticCount})
+              </button>
+              <button onClick={() => startRetrainTactics(Array.from(selectedTactics))}
+                disabled={selectedTactics.size === 0 || !!tacticRetrainStatus?.running}
+                className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-cyan-300 text-white font-bold text-sm rounded-lg hover:opacity-90 transition disabled:opacity-50">
+                Retrain Selected ({selectedTactics.size})
+              </button>
+              <button onClick={() => startRetrainTactics(staleTacticIds)}
+                disabled={staleTacticCount === 0 || !!tacticRetrainStatus?.running}
+                className="px-3 py-1.5 bg-white/5 text-slate-300 font-semibold text-sm rounded-lg hover:bg-white/10 transition disabled:opacity-50">
+                Retrain All Stale ({staleTacticCount})
+              </button>
               <div className="relative">
                 <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-600 text-xs" />
                 <input type="text" value={tacticSearch} onChange={e => setTacticSearch(e.target.value)}
@@ -887,25 +1084,21 @@ export default function BulkAnalysisManagement() {
             )}
             {!tacticsLoading && (
               <>
-                <div className="grid grid-cols-[1fr_120px_80px_80px_80px_100px] gap-2 px-4 py-2 text-[10px] font-black text-slate-600 uppercase tracking-widest">
-                  <div>Name / Description</div><div>Category</div><div>Videos</div><div>Avg Views</div><div>Avg Score</div><div>Actions</div>
-                </div>
                 <div className="space-y-1">
                   {filteredTactics.map(tactic => (
                     editingTactic === tactic.id ? (
-                      <div key={tactic.id} className="grid grid-cols-[1fr_120px_80px_80px_80px_100px] gap-2 items-center px-4 py-2 bg-white/[0.07] border border-pink-500/30 rounded-xl">
-                        <div>
-                          <input type="text" value={editForm.name} onChange={e => setEditForm(prev => ({ ...prev, name: e.target.value }))}
-                            className="w-full glass-input rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-pink-500/50" placeholder="Tactic name" />
-                          <textarea value={editForm.description} onChange={e => setEditForm(prev => ({ ...prev, description: e.target.value }))}
-                            className="w-full glass-input rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-pink-500/50 mt-1 resize-none" rows={2} placeholder="Description..." />
-                        </div>
-                        <select value={editForm.category} onChange={e => setEditForm(prev => ({ ...prev, category: e.target.value }))}
-                          className="glass-input rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-pink-500/50">
-                          {TACTIC_CATEGORIES.map(cat => <option key={cat} value={cat}>{cat.replace(/_/g, ' ')}</option>)}
-                        </select>
-                        <div /><div /><div />
-                        <div className="flex gap-1">
+                      <div key={tactic.id} className="px-4 py-3 bg-white/[0.07] border border-pink-500/30 rounded-xl">
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1">
+                            <input type="text" value={editForm.name} onChange={e => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+                              className="w-full glass-input rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-pink-500/50" placeholder="Tactic name" />
+                            <textarea value={editForm.description} onChange={e => setEditForm(prev => ({ ...prev, description: e.target.value }))}
+                              className="w-full glass-input rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-pink-500/50 mt-1 resize-none" rows={2} placeholder="Description..." />
+                          </div>
+                          <select value={editForm.category} onChange={e => setEditForm(prev => ({ ...prev, category: e.target.value }))}
+                            className="glass-input rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-pink-500/50">
+                            {TACTIC_CATEGORIES.map(cat => <option key={cat} value={cat}>{cat.replace(/_/g, ' ')}</option>)}
+                          </select>
                           <button onClick={() => saveTactic(tactic.id)} disabled={savingTactic}
                             className="px-2.5 py-1.5 bg-pink-500/20 text-pink-400 font-semibold text-xs rounded-lg hover:bg-pink-500/30 transition disabled:opacity-40">
                             {savingTactic ? '...' : 'Save'}
@@ -929,23 +1122,113 @@ export default function BulkAnalysisManagement() {
                           className="px-3 py-1.5 bg-white/5 text-slate-400 font-semibold text-xs rounded-lg hover:bg-white/10 transition">Cancel</button>
                       </div>
                     ) : (
-                      <div key={tactic.id} className="grid grid-cols-[1fr_120px_80px_80px_80px_100px] gap-2 items-center px-4 py-2.5 bg-white/5 border border-white/5 rounded-xl hover:bg-white/[0.07] transition">
-                        <div className="min-w-0">
-                          <div className="font-semibold text-sm truncate">{tactic.name}</div>
-                          <div className="text-xs text-slate-500 truncate">{tactic.description || 'No description'}</div>
+                      <div key={tactic.id}>
+                        <div className="flex items-center gap-4 px-4 py-3 bg-white/5 border border-white/5 rounded-xl hover:bg-white/[0.07] transition cursor-pointer"
+                          onClick={() => toggleExpanded(`tactic-${tactic.id}`)}>
+                          <input type="checkbox" checked={selectedTactics.has(tactic.id)}
+                            onChange={() => toggleTacticSelect(tactic.id)} onClick={(e) => e.stopPropagation()}
+                            className="w-4 h-4 rounded bg-white/10 border-white/20 text-cyan-500 focus:ring-cyan-500/20" />
+                          <div className="flex-1 min-w-0">
+                            <div className="font-semibold text-sm truncate">{tactic.name}</div>
+                            <div className="text-xs text-slate-500 truncate">{tactic.description || 'No description'}</div>
+                          </div>
+                          <span className={`inline-block px-2 py-0.5 text-[10px] font-black rounded truncate ${TACTIC_CATEGORY_COLORS[tactic.category] || 'bg-white/10 text-slate-400'}`}>
+                            {tactic.category.replace(/_/g, ' ')}
+                          </span>
+                          <div className="text-xs text-slate-400">{tactic.video_count} videos</div>
+                          <div className="text-xs text-slate-400">{formatNumber(tactic.avg_views_when_present || 0)} avg</div>
+                          <div className="text-xs text-slate-500">{tactic.last_analysis ? timeAgo(tactic.last_analysis) : 'Never'}</div>
+                          {!tactic.is_analyzed
+                            ? <span className="px-2 py-0.5 bg-red-500/10 text-red-400 text-[10px] font-black rounded">NOT TRAINED</span>
+                            : tactic.is_stale
+                              ? <span className="px-2 py-0.5 bg-amber-500/10 text-amber-400 text-[10px] font-black rounded">+{tactic.new_videos_since_retrain} NEW</span>
+                              : <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 text-[10px] font-black rounded">UP TO DATE</span>
+                          }
+                          {tactic.version_count > 0 && (
+                            <span className="px-2 py-0.5 bg-purple-500/10 text-purple-400 text-[10px] font-black rounded">v{tactic.version_count}</span>
+                          )}
+                          <div className="flex gap-1" onClick={e => e.stopPropagation()}>
+                            <button onClick={() => startRetrainTactics([tactic.id])}
+                              disabled={!!tacticRetrainStatus?.running} className="p-2 text-slate-500 hover:text-white transition disabled:opacity-50" title="Retrain">
+                              <i className="fas fa-arrows-rotate text-xs" />
+                            </button>
+                            <button onClick={() => startEditTactic(tactic)} title="Edit"
+                              className="p-2 text-slate-500 hover:text-white transition rounded-lg hover:bg-white/10"><i className="fas fa-pen text-xs" /></button>
+                            <button onClick={() => { setMergingTactic(tactic.id); setMergeTarget(null) }} title="Merge"
+                              className="p-2 text-slate-500 hover:text-white transition rounded-lg hover:bg-white/10"><i className="fas fa-code-merge text-xs" /></button>
+                          </div>
+                          <button onClick={(e) => { e.stopPropagation(); toggleExpanded(`tactic-${tactic.id}`) }}
+                            className="p-2 text-slate-500 hover:text-white transition" title="View Analysis">
+                            <i className={`fas fa-chevron-${expandedIds.has(`tactic-${tactic.id}`) ? 'up' : 'down'} text-xs`} />
+                          </button>
                         </div>
-                        <span className={`inline-block px-2 py-0.5 text-[10px] font-black rounded truncate ${TACTIC_CATEGORY_COLORS[tactic.category] || 'bg-white/10 text-slate-400'}`}>
-                          {tactic.category.replace(/_/g, ' ')}
-                        </span>
-                        <div className="text-xs text-slate-400">{tactic.video_count}</div>
-                        <div className="text-xs text-slate-400">{formatNumber(tactic.avg_views_when_present || 0)}</div>
-                        <div className="text-xs text-slate-400">{Math.round(tactic.avg_execution_score || 0)}</div>
-                        <div className="flex gap-1">
-                          <button onClick={() => startEditTactic(tactic)} title="Edit"
-                            className="p-2 text-slate-500 hover:text-white transition rounded-lg hover:bg-white/10"><i className="fas fa-pen text-xs" /></button>
-                          <button onClick={() => { setMergingTactic(tactic.id); setMergeTarget(null) }} title="Merge"
-                            className="p-2 text-slate-500 hover:text-white transition rounded-lg hover:bg-white/10"><i className="fas fa-code-merge text-xs" /></button>
-                        </div>
+                        {expandedIds.has(`tactic-${tactic.id}`) && tactic.tactic_analysis && (
+                          <div className="ml-8 mt-1 mb-2 p-4 bg-white/[0.03] border border-white/5 rounded-xl">
+                            {tactic.tactic_analysis.tactic_description && (
+                              <p className="text-sm text-slate-300 mb-3">{tactic.tactic_analysis.tactic_description}</p>
+                            )}
+                            {tactic.tactic_analysis.why_it_works && (
+                              <div className="mb-3">
+                                <div className="text-[10px] font-black text-purple-400 uppercase tracking-widest mb-1">Why It Works</div>
+                                <p className="text-xs text-slate-300">{tactic.tactic_analysis.why_it_works}</p>
+                              </div>
+                            )}
+                            {tactic.tactic_analysis.best_practices?.length > 0 && (
+                              <div className="mb-3">
+                                <div className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1">Best Practices</div>
+                                <ul className="list-disc list-inside text-xs text-slate-300 space-y-0.5">
+                                  {tactic.tactic_analysis.best_practices.map((bp: string, i: number) => <li key={i}>{bp}</li>)}
+                                </ul>
+                              </div>
+                            )}
+                            {tactic.tactic_analysis.common_pitfalls?.length > 0 && (
+                              <div className="mb-3">
+                                <div className="text-[10px] font-black text-red-400 uppercase tracking-widest mb-1">Common Pitfalls</div>
+                                <ul className="list-disc list-inside text-xs text-slate-300 space-y-0.5">
+                                  {tactic.tactic_analysis.common_pitfalls.map((cp: string, i: number) => <li key={i}>{cp}</li>)}
+                                </ul>
+                              </div>
+                            )}
+                            {tactic.tactic_analysis.format_synergies?.length > 0 && (
+                              <div className="mb-3">
+                                <div className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Format Synergies</div>
+                                <div className="text-xs text-slate-400 space-y-1">
+                                  {tactic.tactic_analysis.format_synergies.map((fs: any, i: number) => (
+                                    <div key={i}><span className="text-white font-medium">{fs.format}:</span> {fs.synergy_analysis}</div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            {tactic.tactic_analysis.execution_quality_factors?.length > 0 && (
+                              <div className="mb-3">
+                                <div className="text-[10px] font-black text-amber-400 uppercase tracking-widest mb-1">Execution Quality Factors</div>
+                                <ul className="list-disc list-inside text-xs text-slate-300 space-y-0.5">
+                                  {tactic.tactic_analysis.execution_quality_factors.map((f: string, i: number) => <li key={i}>{f}</li>)}
+                                </ul>
+                              </div>
+                            )}
+                            {tactic.tactic_analysis.viewer_psychology && (
+                              <div className="mb-3">
+                                <div className="text-[10px] font-black text-purple-400 uppercase tracking-widest mb-1">Viewer Psychology</div>
+                                <p className="text-xs text-slate-300">{tactic.tactic_analysis.viewer_psychology}</p>
+                              </div>
+                            )}
+                            {tactic.tactic_analysis.performance_ceiling && (
+                              <div className="mb-3">
+                                <div className="text-[10px] font-black text-cyan-400 uppercase tracking-widest mb-1">Performance Ceiling</div>
+                                <p className="text-xs text-slate-300">{tactic.tactic_analysis.performance_ceiling}</p>
+                              </div>
+                            )}
+                            <div className="mt-3 pt-2 border-t border-white/5 text-[10px] text-slate-600">
+                              Trained with {tactic.analysis_video_count || '?'} videos{tactic.last_analysis && ` · ${timeAgo(tactic.last_analysis)}`}
+                            </div>
+                          </div>
+                        )}
+                        {expandedIds.has(`tactic-${tactic.id}`) && !tactic.tactic_analysis && (
+                          <div className="ml-8 mt-1 mb-2 p-4 bg-white/[0.03] border border-white/5 rounded-xl">
+                            <p className="text-sm text-slate-500 italic">No analysis data yet. Click retrain to generate.</p>
+                          </div>
+                        )}
                       </div>
                     )
                   ))}
@@ -966,10 +1249,10 @@ export default function BulkAnalysisManagement() {
           <div>
             <div className="flex items-center gap-3 mb-4 flex-wrap">
               <div className="flex bg-white/5 rounded-lg p-0.5">
-                {(['all', 'format', 'hook'] as const).map(type => (
+                {(['all', 'format', 'hook', 'tactic'] as const).map(type => (
                   <button key={type} onClick={() => { setVersionTypeFilter(type); setVersionPage(0) }}
                     className={`px-3 py-1.5 text-sm font-semibold rounded-md transition ${versionTypeFilter === type ? 'bg-white/10 text-white' : 'text-slate-500 hover:text-slate-300'}`}>
-                    {type === 'all' ? 'All' : type === 'format' ? 'Formats' : 'Hooks'}
+                    {type === 'all' ? 'All' : type === 'format' ? 'Formats' : type === 'hook' ? 'Hooks' : 'Tactics'}
                   </button>
                 ))}
               </div>
@@ -1000,9 +1283,13 @@ export default function BulkAnalysisManagement() {
                       <input type="checkbox" checked={selectedForCompare.includes(version.id)}
                         onChange={() => toggleSelectForCompare(version.id)}
                         className="w-4 h-4 rounded bg-white/10 border-white/20 text-pink-500 focus:ring-pink-500/20" />
-                      <span className={version.class_type === 'format'
-                        ? 'px-2 py-0.5 bg-blue-500/10 text-blue-400 text-[10px] font-black rounded uppercase'
-                        : 'px-2 py-0.5 bg-purple-500/10 text-purple-400 text-[10px] font-black rounded uppercase'}>
+                      <span className={
+                        version.class_type === 'format'
+                          ? 'px-2 py-0.5 bg-blue-500/10 text-blue-400 text-[10px] font-black rounded uppercase'
+                          : version.class_type === 'hook'
+                            ? 'px-2 py-0.5 bg-purple-500/10 text-purple-400 text-[10px] font-black rounded uppercase'
+                            : 'px-2 py-0.5 bg-cyan-500/10 text-cyan-400 text-[10px] font-black rounded uppercase'
+                      }>
                         {version.class_type}
                       </span>
                       <div className="font-semibold text-sm min-w-[180px] truncate">{version.class_name || `ID: ${version.class_id}`}</div>
@@ -1062,7 +1349,7 @@ export default function BulkAnalysisManagement() {
               <div className="text-center py-20 text-slate-600">
                 <i className="fas fa-clock-rotate-left text-3xl mb-3 block opacity-30" />
                 <p>No version history yet.</p>
-                <p className="text-sm mt-1">Retrain a format or hook to create the first version snapshot.</p>
+                <p className="text-sm mt-1">Retrain a format, hook, or tactic to create the first version snapshot.</p>
               </div>
             )}
           </div>
@@ -1085,7 +1372,7 @@ export default function BulkAnalysisManagement() {
                 {compareVersions.map((v, idx) => (
                   <div key={idx}>
                     <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">
-                      <span className={v.class_type === 'format' ? 'text-blue-400' : 'text-purple-400'}>{v.class_type}</span>
+                      <span className={v.class_type === 'format' ? 'text-blue-400' : v.class_type === 'hook' ? 'text-purple-400' : 'text-cyan-400'}>{v.class_type}</span>
                       {' · '}<span className="text-white">{v.class_name || `ID: ${v.class_id}`}</span>
                       {' · '}v{v.version_number}{' · '}{timeAgo(v.created_at)}{' · '}{v.video_count_at_time} videos
                     </div>
