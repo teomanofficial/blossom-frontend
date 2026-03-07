@@ -58,8 +58,9 @@ export default function Influencers() {
   const [influencers, setInfluencers] = useState<Influencer[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [sortBy, setSortBy] = useState<SortField>('follower_count')
-  const [order, setOrder] = useState<'desc' | 'asc'>('desc')
+  const [sorts, setSorts] = useState<{ field: SortField; order: 'desc' | 'asc' }[]>([
+    { field: 'follower_count', order: 'desc' },
+  ])
   const [search, setSearch] = useState('')
   const [searchInput, setSearchInput] = useState('')
   const [platformFilter, setPlatformFilter] = useState<string>('')
@@ -106,8 +107,8 @@ export default function Influencers() {
   useEffect(() => {
     setLoading(true)
     const params = new URLSearchParams({
-      sort_by: sortBy,
-      order,
+      sort_by: sorts.map((s) => s.field).join(','),
+      order: sorts.map((s) => s.order).join(','),
       limit: String(limit),
       offset: String(page * limit),
     })
@@ -124,15 +125,34 @@ export default function Influencers() {
       })
       .catch(() => toast.error('Failed to load influencers'))
       .finally(() => setLoading(false))
-  }, [sortBy, order, search, platformFilter, tierFilter, categoryFilter, page])
+  }, [sorts, search, platformFilter, tierFilter, categoryFilter, page])
 
-  const toggleSort = (field: SortField) => {
-    if (sortBy === field) {
-      setOrder((prev) => (prev === 'desc' ? 'asc' : 'desc'))
-    } else {
-      setSortBy(field)
-      setOrder('desc')
-    }
+  const toggleSort = (field: SortField, e: React.MouseEvent) => {
+    setSorts((prev) => {
+      const idx = prev.findIndex((s) => s.field === field)
+      if (e.shiftKey) {
+        // Shift+click: add/toggle secondary sort
+        if (idx >= 0) {
+          const existing = prev[idx]!
+          if (prev.length === 1) {
+            // Only sort — toggle direction
+            return [{ field, order: existing.order === 'desc' ? 'asc' as const : 'desc' as const }]
+          }
+          // Toggle direction of existing secondary
+          return prev.map((s, i) =>
+            i === idx ? { ...s, order: s.order === 'desc' ? 'asc' as const : 'desc' as const } : s
+          )
+        }
+        // Add as new secondary sort
+        return [...prev, { field, order: 'desc' as const }]
+      }
+      // Normal click: single sort toggle
+      if (idx === 0 && prev.length === 1) {
+        const current = prev[0]!
+        return [{ field, order: current.order === 'desc' ? 'asc' as const : 'desc' as const }]
+      }
+      return [{ field, order: 'desc' as const }]
+    })
     setPage(0)
   }
 
@@ -406,18 +426,29 @@ export default function Influencers() {
               style={{ gridTemplateColumns: '2.5fr repeat(6, 1fr)' }}
             >
               <div>Creator</div>
-              {columns.map((col) => (
-                <button
-                  key={col.field}
-                  onClick={() => toggleSort(col.field)}
-                  className={`text-right flex items-center justify-end gap-1 transition-colors hover:text-slate-300 ${sortBy === col.field ? 'text-white' : ''}`}
-                >
-                  {col.label}
-                  {sortBy === col.field && (
-                    <i className={`fas fa-caret-${order === 'desc' ? 'down' : 'up'} text-[9px]`}></i>
-                  )}
-                </button>
-              ))}
+              {columns.map((col) => {
+                const sortIdx = sorts.findIndex((s) => s.field === col.field)
+                const isActive = sortIdx >= 0
+                const sortEntry = isActive ? sorts[sortIdx] : null
+                return (
+                  <button
+                    key={col.field}
+                    onClick={(e) => toggleSort(col.field, e)}
+                    className={`text-right flex items-center justify-end gap-1 transition-colors hover:text-slate-300 ${isActive ? 'text-white' : ''}`}
+                    title={sorts.length > 1 ? 'Click to sort, Shift+click to add/remove' : 'Click to sort, Shift+click for multi-sort'}
+                  >
+                    {col.label}
+                    {isActive && (
+                      <span className="inline-flex items-center gap-px">
+                        {sorts.length > 1 && (
+                          <span className="text-[8px] text-teal-400 font-bold min-w-[10px]">{sortIdx + 1}</span>
+                        )}
+                        <i className={`fas fa-caret-${sortEntry!.order === 'desc' ? 'down' : 'up'} text-[9px]`}></i>
+                      </span>
+                    )}
+                  </button>
+                )
+              })}
             </div>
 
             {/* Rows */}
