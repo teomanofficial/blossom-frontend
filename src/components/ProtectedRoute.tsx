@@ -45,8 +45,8 @@ export default function ProtectedRoute({ children }: { children: ReactNode }) {
     return <Navigate to="/verify-email" replace />
   }
 
-  // Redirect to choose-category if no category selected or pending (admins and VIP bypass)
-  if (!isAdmin && !isVip && (!categoryStatus || categoryStatus === 'pending')) {
+  // Redirect to choose-category if no category selected or pending (only admins bypass)
+  if (!isAdmin && (!categoryStatus || categoryStatus === 'pending')) {
     return <Navigate to="/choose-category" replace />
   }
 

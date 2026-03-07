@@ -35,8 +35,8 @@ export default function AuthCallback() {
             localStorage.removeItem('blossom_invite_token')
             // Refresh profile so AuthContext knows user is now VIP
             await refreshProfile()
-            // VIP users skip plan selection — go straight to dashboard
-            navigate('/dashboard')
+            // VIP users skip plan selection — go to category selection then onboarding
+            navigate('/choose-category')
             return
           }
           // Claim failed (expired, already used, etc.) — fall through to normal flow

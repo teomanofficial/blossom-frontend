@@ -32,7 +32,7 @@ interface AuthContextType {
   profile: Profile | null
   userType: string | null
   planSlug: string | null
-  categoryId: number | null
+  categoryIds: number[]
   categoryStatus: string | null
   onboardingCompleted: boolean | null
   vipCredits: VipCredits | null
@@ -52,7 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [userType, setUserType] = useState<string | null>(null)
   const [planSlug, setPlanSlug] = useState<string | null>(null)
-  const [categoryId, setCategoryId] = useState<number | null>(null)
+  const [categoryIds, setCategoryIds] = useState<number[]>([])
   const [categoryStatus, setCategoryStatus] = useState<string | null>(null)
   const [onboardingCompleted, setOnboardingCompleted] = useState<boolean | null>(null)
   const [vipCredits, setVipCredits] = useState<VipCredits | null>(null)
@@ -74,8 +74,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setVipCredits(data.vipCredits || null)
       setOrganization(data.organization || null)
 
-      // Fetch onboarding status (admins and VIP users skip onboarding)
-      if (data.profile?.user_type === 'admin' || data.profile?.user_type === 'vip') {
+      // Fetch onboarding status (only admins skip onboarding; VIP users go through it)
+      if (data.profile?.user_type === 'admin') {
         setOnboardingCompleted(true)
         setCategoryStatus('selected')
       } else {
@@ -86,7 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (obRes.ok) {
             const obData = await obRes.json()
             setOnboardingCompleted(obData.isCompleted)
-            setCategoryId(obData.data?.categoryId || null)
+            setCategoryIds(obData.data?.categoryIds || [])
           } else {
             setOnboardingCompleted(true) // fail open
           }
@@ -124,7 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setProfile(null)
         setUserType(null)
         setPlanSlug(null)
-        setCategoryId(null)
+        setCategoryIds([])
         setCategoryStatus(null)
         setOnboardingCompleted(null)
         setVipCredits(null)
@@ -150,7 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isOrgAdmin = organization?.role === 'owner' || organization?.role === 'admin'
 
   return (
-    <AuthContext.Provider value={{ user, session, profile, userType, planSlug, categoryId, categoryStatus, onboardingCompleted, vipCredits, organization, isOrgOwner, isOrgAdmin, loading, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ user, session, profile, userType, planSlug, categoryIds, categoryStatus, onboardingCompleted, vipCredits, organization, isOrgOwner, isOrgAdmin, loading, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   )

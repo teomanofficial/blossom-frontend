@@ -22,11 +22,11 @@ interface CategoryRequest {
 }
 
 export default function ChooseCategory() {
-  const { user, signOut, userType, categoryStatus, refreshProfile } = useAuth()
+  const { user, signOut, userType, planSlug, categoryStatus, refreshProfile } = useAuth()
   const navigate = useNavigate()
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
-  const [selectedId, setSelectedId] = useState<number | null>(null)
+  const [selectedIds, setSelectedIds] = useState<number[]>([])
   const [submitting, setSubmitting] = useState(false)
   const [showRequestForm, setShowRequestForm] = useState(false)
   const [requestName, setRequestName] = useState('')
@@ -36,22 +36,33 @@ export default function ChooseCategory() {
   const isAdmin = userType === 'admin'
   const isVip = userType === 'vip'
 
+  // Plan-based category limits
+  const maxCategories = isVip ? 5 : planSlug === 'platin' ? 5 : planSlug === 'premium' ? 3 : 1
+
+  const toggleCategory = (id: number) => {
+    setSelectedIds((prev) => {
+      if (prev.includes(id)) return prev.filter((x) => x !== id)
+      if (prev.length >= maxCategories) return prev // at limit
+      return [...prev, id]
+    })
+  }
+
   const displayName =
     user?.user_metadata?.full_name ?? user?.email?.split('@')[0] ?? 'Creator'
 
-  // VIP and admin users bypass category selection entirely
+  // Admin users bypass category selection entirely (VIP users go through it)
   useEffect(() => {
-    if (isAdmin || isVip) {
+    if (isAdmin) {
       navigate('/dashboard', { replace: true })
     }
-  }, [isAdmin, isVip, navigate])
+  }, [isAdmin, navigate])
 
   // Redirect if already has a selected category
   useEffect(() => {
     if (categoryStatus === 'selected') {
-      navigate('/choose-plan', { replace: true })
+      navigate(isVip ? '/onboarding' : '/choose-plan', { replace: true })
     }
-  }, [categoryStatus, navigate])
+  }, [categoryStatus, isVip, navigate])
 
   // Fetch categories and last request status
   useEffect(() => {
@@ -69,13 +80,13 @@ export default function ChooseCategory() {
   }, [user])
 
   const handleSelectCategory = async () => {
-    if (!selectedId) return
+    if (selectedIds.length === 0) return
     setSubmitting(true)
     try {
       const res = await authFetch('/api/onboarding/select-category', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ categoryId: selectedId }),
+        body: JSON.stringify({ categoryIds: selectedIds }),
       })
       if (!res.ok) {
         const data = await res.json()
@@ -83,7 +94,7 @@ export default function ChooseCategory() {
         return
       }
       await refreshProfile()
-      navigate('/choose-plan')
+      navigate(isVip ? '/onboarding' : '/choose-plan')
     } catch {
       toast.error('Something went wrong')
     } finally {
@@ -231,11 +242,18 @@ export default function ChooseCategory() {
             FIRST STEP
           </div>
           <h1 className="text-4xl sm:text-5xl md:text-7xl font-black font-display tracking-tight mb-4">
-            Choose Your <span className="gradient-text">Category</span>
+            Choose Your <span className="gradient-text">{maxCategories === 1 ? 'Category' : 'Categories'}</span>
           </h1>
           <p className="text-slate-400 text-base sm:text-lg max-w-2xl mx-auto font-medium">
-            Select the category that best describes the content you create
+            {maxCategories === 1
+              ? 'Select the category that best describes the content you create'
+              : `Select up to ${maxCategories} categories that describe the content you create`}
           </p>
+          {maxCategories > 1 && (
+            <p className="text-xs text-slate-600 mt-2 font-medium">
+              {selectedIds.length} / {maxCategories} selected
+            </p>
+          )}
         </div>
 
         {showRequestForm ? (
@@ -297,25 +315,39 @@ export default function ChooseCategory() {
           /* Category grid */
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl w-full mb-10">
-              {categories.map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => setSelectedId(cat.id)}
-                  className={`group p-6 rounded-2xl border text-left transition-all hover:scale-[1.02] ${
-                    selectedId === cat.id
-                      ? 'border-pink-500/50 bg-pink-500/10 ring-1 ring-pink-500/20 shadow-lg shadow-pink-500/5'
-                      : 'border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06] hover:border-white/[0.15]'
-                  }`}
-                >
-                  {cat.icon && <div className="text-3xl mb-3">{cat.icon}</div>}
-                  <h3 className="text-base font-bold mb-1.5">{cat.title}</h3>
-                  {cat.description && (
-                    <p className="text-sm text-slate-500 leading-relaxed line-clamp-2">
-                      {cat.description}
-                    </p>
-                  )}
-                </button>
-              ))}
+              {categories.map((cat) => {
+                const isSelected = selectedIds.includes(cat.id)
+                const atLimit = selectedIds.length >= maxCategories && !isSelected
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => toggleCategory(cat.id)}
+                    disabled={atLimit}
+                    className={`group p-6 rounded-2xl border text-left transition-all ${atLimit ? 'opacity-40 cursor-not-allowed' : 'hover:scale-[1.02]'} ${
+                      isSelected
+                        ? 'border-pink-500/50 bg-pink-500/10 ring-1 ring-pink-500/20 shadow-lg shadow-pink-500/5'
+                        : 'border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06] hover:border-white/[0.15]'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between">
+                      {cat.icon && <div className="text-3xl mb-3">{cat.icon}</div>}
+                      {isSelected && (
+                        <div className="w-5 h-5 rounded-full bg-pink-500 flex items-center justify-center flex-shrink-0 ml-2">
+                          <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                    <h3 className="text-base font-bold mb-1.5">{cat.title}</h3>
+                    {cat.description && (
+                      <p className="text-sm text-slate-500 leading-relaxed line-clamp-2">
+                        {cat.description}
+                      </p>
+                    )}
+                  </button>
+                )
+              })}
 
               {/* "Not listed" card */}
               <button
@@ -334,7 +366,7 @@ export default function ChooseCategory() {
 
             <button
               onClick={handleSelectCategory}
-              disabled={!selectedId || submitting}
+              disabled={selectedIds.length === 0 || submitting}
               className="px-14 py-4 bg-gradient-to-r from-pink-500 to-orange-400 rounded-2xl text-sm font-black text-white disabled:opacity-40 transition-all hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-pink-500/20"
             >
               {submitting ? 'Saving...' : 'Continue'}
