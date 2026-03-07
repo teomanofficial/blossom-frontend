@@ -65,11 +65,15 @@ export default function Influencers() {
   const [platformFilter, setPlatformFilter] = useState<string>('')
   const [tierFilter, setTierFilter] = useState<string>('')
   const [tierOpen, setTierOpen] = useState(false)
+  const [categoryFilter, setCategoryFilter] = useState<string>('')
+  const [categoryOpen, setCategoryOpen] = useState(false)
+  const [categoryOptions, setCategoryOptions] = useState<{ name: string; influencer_count: number }[]>([])
   const [page, setPage] = useState(0)
   const [refetching, setRefetching] = useState(false)
   const [analyzingId, setAnalyzingId] = useState<number | null>(null)
   const [pollNow, setPollNow] = useState(0)
   const tierRef = useRef<HTMLDivElement>(null)
+  const categoryRef = useRef<HTMLDivElement>(null)
   const limit = 30
 
   const tierOptions = [
@@ -81,13 +85,22 @@ export default function Influencers() {
     { value: 'nano', label: 'Nano', color: 'text-blue-400' },
   ]
 
-  // Close tier dropdown on outside click
+  // Close dropdowns on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (tierRef.current && !tierRef.current.contains(e.target as Node)) setTierOpen(false)
+      if (categoryRef.current && !categoryRef.current.contains(e.target as Node)) setCategoryOpen(false)
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  // Fetch available categories for filter dropdown
+  useEffect(() => {
+    authFetch('/api/analysis/influencers/categories')
+      .then((r) => r.json())
+      .then((data) => { if (Array.isArray(data)) setCategoryOptions(data) })
+      .catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -101,6 +114,7 @@ export default function Influencers() {
     if (search) params.set('search', search)
     if (platformFilter) params.set('platform', platformFilter)
     if (tierFilter) params.set('tier', tierFilter)
+    if (categoryFilter) params.set('category', categoryFilter)
 
     authFetch(`/api/analysis/influencers?${params}`)
       .then((r) => r.json())
@@ -110,7 +124,7 @@ export default function Influencers() {
       })
       .catch(() => toast.error('Failed to load influencers'))
       .finally(() => setLoading(false))
-  }, [sortBy, order, search, platformFilter, tierFilter, page])
+  }, [sortBy, order, search, platformFilter, tierFilter, categoryFilter, page])
 
   const toggleSort = (field: SortField) => {
     if (sortBy === field) {
@@ -281,6 +295,65 @@ export default function Influencers() {
             </div>
           )}
         </div>
+
+        {/* Category/Genre Filter Dropdown */}
+        {categoryOptions.length > 0 && (
+          <div className="relative" ref={categoryRef}>
+            <button
+              onClick={() => setCategoryOpen(!categoryOpen)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium rounded-lg border transition-colors ${
+                categoryFilter
+                  ? 'bg-purple-500/10 border-purple-500/20 text-purple-400'
+                  : 'bg-white/5 border-white/10 text-slate-500 hover:text-slate-300'
+              }`}
+            >
+              <i className="fas fa-tag text-[9px]"></i>
+              {categoryFilter
+                ? categoryFilter.split(',').length > 1
+                  ? `${categoryFilter.split(',').length} genres`
+                  : categoryFilter.split(',')[0]
+                : 'Genre'}
+              <i className={`fas fa-chevron-down text-[8px] ml-0.5 transition-transform ${categoryOpen ? 'rotate-180' : ''}`}></i>
+            </button>
+            {categoryOpen && (
+              <div className="absolute top-full left-0 mt-1 z-50 bg-slate-900 border border-white/10 rounded-lg shadow-xl shadow-black/40 py-1 min-w-[180px] max-h-[320px] overflow-y-auto">
+                <button
+                  onClick={() => { setCategoryFilter(''); setCategoryOpen(false); setPage(0) }}
+                  className={`w-full text-left px-3 py-1.5 text-[11px] font-medium flex items-center gap-2 transition-colors ${
+                    !categoryFilter ? 'bg-white/10 text-white' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
+                  }`}
+                >
+                  All Genres
+                  {!categoryFilter && <i className="fas fa-check text-[9px] ml-auto"></i>}
+                </button>
+                {categoryOptions.map((opt) => {
+                  const isActive = categoryFilter.split(',').includes(opt.name)
+                  return (
+                    <button
+                      key={opt.name}
+                      onClick={() => {
+                        const current = categoryFilter ? categoryFilter.split(',') : []
+                        const next = isActive
+                          ? current.filter((c) => c !== opt.name)
+                          : [...current, opt.name]
+                        setCategoryFilter(next.join(','))
+                        setPage(0)
+                        if (next.length === 0) setCategoryOpen(false)
+                      }}
+                      className={`w-full text-left px-3 py-1.5 text-[11px] font-medium flex items-center gap-2 transition-colors ${
+                        isActive ? 'bg-purple-500/10 text-purple-300' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
+                      }`}
+                    >
+                      <span className="capitalize">{opt.name}</span>
+                      <span className="text-[10px] text-slate-600 ml-auto mr-1">{opt.influencer_count}</span>
+                      {isActive && <i className="fas fa-check text-[9px] text-purple-400"></i>}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="flex-1" />
 
