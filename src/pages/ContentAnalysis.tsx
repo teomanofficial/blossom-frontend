@@ -573,7 +573,7 @@ export default function ContentAnalysis() {
     };
 
     const ExampleVideoRow = ({ videos, label }: { videos: any[] | undefined; label?: string }) => {
-      if (!videos || videos.length === 0) return null;
+      if (!videos || !Array.isArray(videos) || videos.length === 0) return null;
       // Flatten if nested arrays
       const flat = Array.isArray(videos[0]) ? videos.flat() : videos;
       if (flat.length === 0) return null;
@@ -803,7 +803,7 @@ export default function ContentAnalysis() {
                         </div>
                       ))}
                     </div>
-                    <ExampleVideoRow videos={exampleVideos?.priority_actions} label="Top videos using these strategies" />
+                    <ExampleVideoRow videos={exampleVideos?.priority_actions?.flatMap((p: any) => p.examples)} label="Top videos using these strategies" />
                   </div>
                 )}
 
@@ -854,7 +854,7 @@ export default function ContentAnalysis() {
                         </div>
                       ))}
                     </div>
-                    <ExampleVideoRow videos={exampleVideos?.alternative_hooks} label="Videos with scroll-stopping hooks" />
+                    <ExampleVideoRow videos={exampleVideos?.alternative_hooks?.flatMap((p: any) => p.examples)} label="Videos with scroll-stopping hooks" />
                   </div>
                 )}
 
@@ -896,7 +896,7 @@ export default function ContentAnalysis() {
                               <i className="fas fa-chart-line mr-1 text-[9px]"></i>{ret.expected_impact}
                             </div>
                           )}
-                          <ExampleVideoRow videos={exampleVideos?.retention_improvements?.[idx]} label="See this tactic in action" />
+                          <ExampleVideoRow videos={exampleVideos?.retention_improvements?.[idx]?.examples} label="See this tactic in action" />
                         </div>
                       ))}
                     </div>
@@ -938,7 +938,7 @@ export default function ContentAnalysis() {
                               <span className="text-xs text-slate-400">{tactic.why_high_impact}</span>
                             </div>
                           )}
-                          <ExampleVideoRow videos={exampleVideos?.missing_tactics?.[idx]} label="This video nails it" />
+                          <ExampleVideoRow videos={exampleVideos?.missing_tactics?.[idx]?.examples} label="This video nails it" />
                         </div>
                       ))}
                     </div>
@@ -981,7 +981,7 @@ export default function ContentAnalysis() {
                               <span className="text-xs text-slate-400">{rw.improvement_rationale}</span>
                             </div>
                           )}
-                          <ExampleVideoRow videos={exampleVideos?.before_after?.[idx]} label="Example of the improved version" />
+                          <ExampleVideoRow videos={exampleVideos?.before_after?.[idx]?.examples} label="Example of the improved version" />
                         </div>
                       ))}
                     </div>
