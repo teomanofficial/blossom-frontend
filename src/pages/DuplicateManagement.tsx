@@ -45,6 +45,7 @@ export default function DuplicateManagement() {
   // Bulk merge
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [bulkMerging, setBulkMerging] = useState(false)
+  const [bulkProgress, setBulkProgress] = useState({ done: 0, total: 0, succeeded: 0, failed: 0 })
 
   // Merge history
   const [logs, setLogs] = useState<MergeLogEntry[]>([])
@@ -120,7 +121,7 @@ export default function DuplicateManagement() {
   const handleBulkMerge = async () => {
     if (selected.size === 0) return
     setBulkMerging(true)
-    const merges = pairs
+    const allMerges = pairs
       .filter(p => selected.has(pairKey(p)))
       .map(p => ({
         type: activeTab,
@@ -129,28 +130,48 @@ export default function DuplicateManagement() {
         similarity_score: p.similarity,
       }))
 
-    try {
-      const res = await authFetch('/api/analysis/duplicates/bulk-merge', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ merges }),
-      })
-      if (!res.ok) throw new Error((await res.json()).error || 'Bulk merge failed')
-      const data = await res.json()
-      toast.success(`Bulk merge: ${data.succeeded} succeeded, ${data.failed} failed`)
+    const BATCH_SIZE = 50
+    const totalMerges = allMerges.length
+    let totalSucceeded = 0
+    let totalFailed = 0
+    const allSucceededKeys = new Set<string>()
 
-      // Remove successfully merged pairs
-      const succeededKeys = new Set(
-        data.results
-          .filter((r: any) => r.success)
-          .map((r: any) => `${r.primary_id}-${r.duplicate_id}`)
-      )
-      setPairs(prev => prev.filter(p => !succeededKeys.has(pairKey(p))))
+    setBulkProgress({ done: 0, total: totalMerges, succeeded: 0, failed: 0 })
+
+    try {
+      for (let i = 0; i < totalMerges; i += BATCH_SIZE) {
+        const batch = allMerges.slice(i, i + BATCH_SIZE)
+        try {
+          const res = await authFetch('/api/analysis/duplicates/bulk-merge', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ merges: batch }),
+          })
+          if (!res.ok) throw new Error((await res.json()).error || 'Bulk merge failed')
+          const data = await res.json()
+          totalSucceeded += data.succeeded
+          totalFailed += data.failed
+          data.results
+            .filter((r: any) => r.success)
+            .forEach((r: any) => allSucceededKeys.add(`${r.primary_id}-${r.duplicate_id}`))
+        } catch {
+          totalFailed += batch.length
+        }
+
+        const done = Math.min(i + BATCH_SIZE, totalMerges)
+        setBulkProgress({ done, total: totalMerges, succeeded: totalSucceeded, failed: totalFailed })
+
+        // Remove succeeded pairs progressively
+        setPairs(prev => prev.filter(p => !allSucceededKeys.has(pairKey(p))))
+      }
+
+      toast.success(`Merged ${totalSucceeded} pairs${totalFailed > 0 ? `, ${totalFailed} failed` : ''}`)
       setSelected(new Set())
     } catch (err: any) {
       toast.error(err.message || 'Bulk merge failed')
     } finally {
       setBulkMerging(false)
+      setBulkProgress({ done: 0, total: 0, succeeded: 0, failed: 0 })
     }
   }
 
@@ -258,7 +279,7 @@ export default function DuplicateManagement() {
                     className="px-4 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-sm font-medium border border-emerald-500/30 transition-all disabled:opacity-50 flex items-center gap-2"
                   >
                     {bulkMerging ? (
-                      <><i className="fa-solid fa-spinner fa-spin" /> Merging {selected.size}...</>
+                      <><i className="fa-solid fa-spinner fa-spin" /> Merging...</>
                     ) : (
                       <><i className="fa-solid fa-code-merge" /> Merge selected ({selected.size})</>
                     )}
@@ -267,6 +288,27 @@ export default function DuplicateManagement() {
               </>
             )}
           </div>
+
+          {/* Bulk merge progress */}
+          {bulkMerging && bulkProgress.total > 0 && (
+            <div className="bg-white/5 rounded-2xl border border-white/10 p-4 space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-slate-300">
+                  Merging {bulkProgress.done} / {bulkProgress.total} pairs...
+                </span>
+                <span className="text-slate-400 text-xs">
+                  {bulkProgress.succeeded > 0 && <span className="text-emerald-400">{bulkProgress.succeeded} merged</span>}
+                  {bulkProgress.failed > 0 && <span className="text-red-400 ml-2">{bulkProgress.failed} failed</span>}
+                </span>
+              </div>
+              <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-emerald-500 rounded-full transition-all duration-300"
+                  style={{ width: `${(bulkProgress.done / bulkProgress.total) * 100}%` }}
+                />
+              </div>
+            </div>
+          )}
 
           {/* Results */}
           {visiblePairs.length > 0 && (
@@ -358,11 +400,7 @@ function DuplicatePairCard({
             Dismiss
           </button>
           <button
-            onClick={() => {
-              if (confirm(`Merge "${pair.duplicate.name}" into "${pair.primary.name}"? This will transfer ${pair.duplicate.video_count} videos and delete the duplicate.`)) {
-                onMerge()
-              }
-            }}
+            onClick={onMerge}
             disabled={isMerging}
             className="px-4 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-xs font-medium border border-emerald-500/30 transition-all disabled:opacity-50 flex items-center gap-1.5"
           >
