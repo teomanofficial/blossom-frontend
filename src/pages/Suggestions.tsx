@@ -102,7 +102,7 @@ export default function Suggestions() {
   const { userType } = useAuth()
   const isAdmin = userType === 'admin'
 
-  const [stats, setStats] = useState<SuggestionStats | null>(null)
+  const [_stats, setStats] = useState<SuggestionStats | null>(null)
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [suggestionsTotal, setSuggestionsTotal] = useState(0)
   const [loading, setLoading] = useState(true)
