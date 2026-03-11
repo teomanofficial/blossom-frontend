@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useImpersonation } from '../context/ImpersonationContext'
 import { useRef, useState, useCallback, useEffect } from 'react'
 
 interface MobileDrawerProps {
@@ -100,6 +101,7 @@ const CLOSE_THRESHOLD = 120
 
 export default function MobileDrawer({ open, onClose, supportUnreadCount, hasAnalysis, showManagement }: MobileDrawerProps) {
   const { user, signOut } = useAuth()
+  const { impersonating, stopImpersonation, isImpersonating } = useImpersonation()
   const displayName = user?.user_metadata?.full_name ?? user?.email?.split('@')[0] ?? 'Creator'
   const email = user?.email ?? ''
 
@@ -219,6 +221,28 @@ export default function MobileDrawer({ open, onClose, supportUnreadCount, hasAna
               </NavLink>
             </div>
           </div>
+
+          {/* Impersonation Indicator */}
+          {isImpersonating && impersonating && (
+            <div className="px-5 pb-2 shrink-0">
+              <div className="flex items-center justify-between p-3 rounded-2xl bg-orange-500/10 border border-orange-500/20">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <i className="fas fa-user-secret text-orange-400" />
+                  <div className="min-w-0">
+                    <div className="text-[10px] font-black uppercase tracking-widest text-orange-400">Viewing as</div>
+                    <div className="text-xs font-bold text-white truncate">{impersonating.displayName}</div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => { handleClose(); stopImpersonation() }}
+                  aria-label="Return to Admin"
+                  className="shrink-0 px-3 py-1.5 rounded-lg bg-orange-500/20 text-orange-300 text-[10px] font-bold hover:bg-orange-500/30 transition-colors"
+                >
+                  Return
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Scrollable Nav Items */}
           <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 pb-[max(env(safe-area-inset-bottom),24px)] drawer-scrollbar">

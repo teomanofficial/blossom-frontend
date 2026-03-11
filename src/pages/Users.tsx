@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { authFetch } from '../lib/api'
+import { useImpersonation } from '../context/ImpersonationContext'
 
 interface UserSummary {
   id: string
@@ -189,6 +191,8 @@ function generatePassword(): string {
 }
 
 export default function Users() {
+  const navigate = useNavigate()
+  const { startImpersonation } = useImpersonation()
   const [users, setUsers] = useState<UserSummary[]>([])
   const [stats, setStats] = useState<Stats | null>(null)
   const [loading, setLoading] = useState(true)
@@ -203,6 +207,7 @@ export default function Users() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
   const [updatingUserType, setUpdatingUserType] = useState(false)
+  const [impersonatingUserId, setImpersonatingUserId] = useState<string | null>(null)
 
   // VIP detail state
   const [vipConfig, setVipConfig] = useState<VipConfig | null>(null)
@@ -294,6 +299,17 @@ export default function Users() {
     } else {
       setExpandedUserId(userId)
       fetchUserDetail(userId)
+    }
+  }
+
+  const handleImpersonate = async (userId: string) => {
+    setImpersonatingUserId(userId)
+    try {
+      await startImpersonation(userId)
+      navigate('/dashboard')
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Failed to impersonate user')
+      setImpersonatingUserId(null)
     }
   }
 
@@ -869,6 +885,19 @@ export default function Users() {
                         </Field>
                         <Field label="Profile Created">{formatDate(userDetail.profile_created_at)}</Field>
                         <Field label="Profile Updated">{formatDate(userDetail.profile_updated_at)}</Field>
+                        {userDetail.user_type !== 'admin' && (
+                          <Field label="Impersonate">
+                            <button
+                              onClick={() => handleImpersonate(userDetail.id)}
+                              disabled={impersonatingUserId === userDetail.id}
+                              className="px-3 py-1.5 rounded-lg bg-orange-500/20 text-orange-400 text-xs font-bold
+                                         hover:bg-orange-500/30 transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                            >
+                              <i className={`fas ${impersonatingUserId === userDetail.id ? 'fa-spinner fa-spin' : 'fa-user-secret'} text-[11px]`} />
+                              {impersonatingUserId === userDetail.id ? 'Switching...' : 'View as User'}
+                            </button>
+                          </Field>
+                        )}
                       </div>
                     </div>
 

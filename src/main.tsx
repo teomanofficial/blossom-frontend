@@ -4,12 +4,14 @@ import { BrowserRouter } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import App from './App'
 import { AuthProvider } from './context/AuthContext'
+import { ImpersonationProvider } from './context/ImpersonationContext'
 import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <BrowserRouter>
       <AuthProvider>
+        <ImpersonationProvider>
         <App />
         <Toaster
           position="top-right"
@@ -31,6 +33,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
             },
           }}
         />
+        </ImpersonationProvider>
       </AuthProvider>
     </BrowserRouter>
   </React.StrictMode>,

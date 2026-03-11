@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { authFetch } from '../lib/api'
 import { getStorageUrl } from '../lib/media'
 import VideoStoryCarousel, { type CarouselVideo } from '../components/VideoStoryCarousel'
+import FineTunePanel from '../components/FineTunePanel'
 
 interface HookVideo {
   id: number
@@ -305,6 +306,9 @@ export default function HookDetail() {
           </div>
         </div>
       </div>
+
+      {/* Fine-Tune Panel */}
+      <FineTunePanel itemType="hook" itemId={Number(id)} itemName={hook.name} />
 
       {/* AI Analysis Section */}
       {analysis && (

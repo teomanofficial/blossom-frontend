@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { authFetch } from '../lib/api'
 import { getStorageUrl } from '../lib/media'
 import VideoStoryCarousel, { type CarouselVideo } from '../components/VideoStoryCarousel'
+import FineTunePanel from '../components/FineTunePanel'
 
 interface TacticVideo {
   video_id: number
@@ -267,6 +268,9 @@ export default function TacticDetail() {
           <div className="text-[9px] text-slate-600 mt-1">high / mid / low</div>
         </div>
       </div>
+
+      {/* Fine-Tune Panel */}
+      <FineTunePanel itemType="tactic" itemId={Number(id)} itemName={tactic.name} />
 
       {/* Why It Works + Viewer Effect */}
       {(tactic.why_it_works || tactic.viewer_effect) && (

@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { authFetch } from '../lib/api'
+import { useAuth } from '../context/AuthContext'
+import FineTunedList from '../components/FineTunedList'
 
 interface Tactic {
   id: number
@@ -75,6 +77,9 @@ function getScoreColor(score: number): string {
 }
 
 export default function Tactics() {
+  const { userType, planSlug } = useAuth()
+  const canFineTune = userType === 'admin' || planSlug === 'premium' || planSlug === 'platin'
+  const [activeTab, setActiveTab] = useState<'all' | 'fine-tuned'>('all')
   const [tactics, setTactics] = useState<Tactic[]>([])
   const [loading, setLoading] = useState(true)
   const [total, setTotal] = useState(0)
@@ -169,6 +174,33 @@ export default function Tactics() {
         </div>
       </div>
 
+      {/* Fine-Tune Tabs */}
+      {canFineTune && (
+        <div className="flex gap-2 mb-6">
+          <button
+            onClick={() => setActiveTab('all')}
+            className={`px-4 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest transition-colors ${
+              activeTab === 'all' ? 'bg-white/10 text-white' : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
+            }`}
+          >
+            All Tactics
+          </button>
+          <button
+            onClick={() => setActiveTab('fine-tuned')}
+            className={`px-4 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest transition-colors ${
+              activeTab === 'fine-tuned' ? 'bg-amber-500/20 text-amber-400' : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
+            }`}
+          >
+            <i className="fas fa-sliders mr-1.5 text-[10px]"></i>
+            Fine-tuned
+          </button>
+        </div>
+      )}
+
+      {activeTab === 'fine-tuned' && canFineTune ? (
+        <FineTunedList itemType="tactic" detailBasePath="/dashboard/tactics" />
+      ) : (
+      <>
       {/* Search + Filters */}
       <div className="flex flex-col md:flex-row items-start md:items-center gap-3 md:gap-4 mb-6 md:mb-8">
         {/* Search */}
@@ -333,6 +365,8 @@ export default function Tactics() {
             </p>
           </div>
         </div>
+      )}
+      </>
       )}
     </>
   )

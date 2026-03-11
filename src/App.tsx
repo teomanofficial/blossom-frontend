@@ -85,11 +85,18 @@ function AdminGate({ children }: { children: ReactNode }) {
   return <>{children}</>
 }
 
+function RedirectIfAuth({ children }: { children: ReactNode }) {
+  const { user, loading } = useAuth()
+  if (loading) return null
+  if (user) return <Navigate to="/dashboard" replace />
+  return <>{children}</>
+}
+
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<Landing />} />
-      <Route path="/login" element={<Login />} />
+      <Route path="/" element={<RedirectIfAuth><Landing /></RedirectIfAuth>} />
+      <Route path="/login" element={<RedirectIfAuth><Login /></RedirectIfAuth>} />
       <Route path="/signup" element={<Signup />} />
       <Route path="/verify-email" element={<VerifyEmail />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />

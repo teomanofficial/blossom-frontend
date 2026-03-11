@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { authFetch } from '../lib/api'
+import { useAuth } from '../context/AuthContext'
+import FineTunedList from '../components/FineTunedList'
 
 interface HookClass {
   id: number
@@ -47,6 +49,9 @@ function getHookEmoji(name: string): string {
 }
 
 export default function Hooks() {
+  const { userType, planSlug } = useAuth()
+  const canFineTune = userType === 'admin' || planSlug === 'premium' || planSlug === 'platin'
+  const [activeTab, setActiveTab] = useState<'all' | 'fine-tuned'>('all')
   const [hooks, setHooks] = useState<HookClass[]>([])
   const [loading, setLoading] = useState(true)
   const [sortBy, setSortBy] = useState<SortField>('video_count')
@@ -110,6 +115,33 @@ export default function Hooks() {
         </div>
       </div>
 
+      {/* Fine-Tune Tabs */}
+      {canFineTune && (
+        <div className="flex gap-2 mb-6">
+          <button
+            onClick={() => setActiveTab('all')}
+            className={`px-4 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest transition-colors ${
+              activeTab === 'all' ? 'bg-white/10 text-white' : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
+            }`}
+          >
+            All Hooks
+          </button>
+          <button
+            onClick={() => setActiveTab('fine-tuned')}
+            className={`px-4 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest transition-colors ${
+              activeTab === 'fine-tuned' ? 'bg-pink-500/20 text-pink-400' : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
+            }`}
+          >
+            <i className="fas fa-sliders mr-1.5 text-[10px]"></i>
+            Fine-tuned
+          </button>
+        </div>
+      )}
+
+      {activeTab === 'fine-tuned' && canFineTune ? (
+        <FineTunedList itemType="hook" detailBasePath="/dashboard/hooks" />
+      ) : (
+      <>
       {/* Sort Controls */}
       <div className="flex items-center gap-2 mb-6 md:mb-8 overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
         <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest mr-2 shrink-0">Sort by</span>
@@ -217,6 +249,8 @@ export default function Hooks() {
             </p>
           </div>
         </div>
+      )}
+      </>
       )}
     </>
   )

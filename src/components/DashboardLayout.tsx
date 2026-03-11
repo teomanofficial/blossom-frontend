@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { useImpersonation } from '../context/ImpersonationContext'
 import { authFetch } from '../lib/api'
 import SearchOverlay from './SearchOverlay'
 import MobileDrawer from './MobileDrawer'
@@ -118,7 +119,8 @@ function RailLink({
 }
 
 export default function DashboardLayout() {
-  const { user, signOut, userType, planSlug, vipCredits } = useAuth()
+  const { user, signOut, userType, planSlug, vipCredits, proCredits } = useAuth()
+  const { impersonating, stopImpersonation, isImpersonating } = useImpersonation()
   const location = useLocation()
   const displayName = user?.user_metadata?.full_name ?? user?.email?.split('@')[0] ?? 'Creator'
 
@@ -147,7 +149,7 @@ export default function DashboardLayout() {
   }, [location.pathname])
 
   const hasAnalysis = userType === 'admin' || planSlug === 'premium' || planSlug === 'platin'
-  const showManagement = userType === 'admin'
+  const showManagement = userType === 'admin' && !isImpersonating
 
   const visibleGeneralItems = generalItems.filter((item) => {
     if (item.to === '/dashboard/influencers') return hasAnalysis
@@ -222,28 +224,57 @@ export default function DashboardLayout() {
         </nav>
 
         {/* Bottom Section */}
-        <div className="shrink-0 border-t border-white/[0.06] py-3">
-          <div className="space-y-0.5">
-            {bottomItems.map((item) => (
-              <RailLink key={item.to} item={item} supportUnreadCount={supportUnreadCount} />
-            ))}
-          </div>
-          {/* User Profile */}
-          <div className="mx-2 mt-2 flex items-center gap-3 px-3 py-2.5 rounded-2xl cursor-pointer hover:bg-white/[0.06] transition-colors overflow-hidden whitespace-nowrap group/profile">
-            <div className="w-8 h-8 shrink-0 rounded-full bg-gradient-to-br from-pink-500 to-orange-400 flex items-center justify-center text-xs font-bold">
-              {displayName.charAt(0).toUpperCase()}
-            </div>
-            <div className="nav-label min-w-0">
-              <div className="text-xs font-bold text-white truncate">{displayName}</div>
+        {isImpersonating && impersonating ? (
+          <div className="shrink-0 border-t border-orange-500/30 bg-gradient-to-t from-orange-500/5 to-transparent py-3">
+            <div className="mx-2 px-3 py-2">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-6 h-6 rounded-full bg-orange-500/20 flex items-center justify-center">
+                  <i className="fas fa-user-secret text-orange-400 text-[10px]" />
+                </div>
+                <span className="nav-label text-[10px] font-black uppercase tracking-widest text-orange-400">
+                  Viewing as
+                </span>
+              </div>
+              <div className="nav-label text-xs font-bold text-white truncate mb-0.5">
+                {impersonating.displayName}
+              </div>
+              <div className="nav-label text-[10px] text-slate-400 truncate mb-3">
+                {impersonating.email}
+              </div>
               <button
-                onClick={signOut}
-                className="text-[9px] font-black text-slate-500 uppercase tracking-tighter hover:text-pink-400 transition-colors"
+                onClick={stopImpersonation}
+                className="nav-label w-full px-3 py-2 rounded-xl bg-orange-500/20 text-orange-300 text-[10px] font-black uppercase tracking-widest
+                           hover:bg-orange-500/30 transition-colors text-center"
               >
-                Sign Out
+                <i className="fas fa-arrow-right-from-bracket mr-1.5" />
+                Return to Admin
               </button>
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="shrink-0 border-t border-white/[0.06] py-3">
+            <div className="space-y-0.5">
+              {bottomItems.map((item) => (
+                <RailLink key={item.to} item={item} supportUnreadCount={supportUnreadCount} />
+              ))}
+            </div>
+            {/* User Profile */}
+            <div className="mx-2 mt-2 flex items-center gap-3 px-3 py-2.5 rounded-2xl cursor-pointer hover:bg-white/[0.06] transition-colors overflow-hidden whitespace-nowrap group/profile">
+              <div className="w-8 h-8 shrink-0 rounded-full bg-gradient-to-br from-pink-500 to-orange-400 flex items-center justify-center text-xs font-bold">
+                {displayName.charAt(0).toUpperCase()}
+              </div>
+              <div className="nav-label min-w-0">
+                <div className="text-xs font-bold text-white truncate">{displayName}</div>
+                <button
+                  onClick={signOut}
+                  className="text-[9px] font-black text-slate-500 uppercase tracking-tighter hover:text-pink-400 transition-colors"
+                >
+                  Sign Out
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </aside>
 
       {/* ═══════════ Main Content ═══════════ */}
@@ -252,35 +283,53 @@ export default function DashboardLayout() {
         <header className="hidden lg:flex h-16 items-center px-10 bg-transparent backdrop-blur-sm z-10 shrink-0">
           <SearchOverlay />
           <div className="flex-1" />
-          {userType === 'admin' && (
-            <div className="relative group flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-gradient-to-r from-pink-500/10 via-fuchsia-500/10 to-purple-500/10 border border-pink-400/20 cursor-default overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-pink-400/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
-              <div className="relative flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-pink-500 via-fuchsia-500 to-purple-500 flex items-center justify-center shadow-lg shadow-pink-500/20">
-                  <i className="fas fa-shield-halved text-[11px] text-white" />
-                </div>
-                <div className="text-[10px] font-black uppercase tracking-widest text-pink-300">Admin</div>
+          {isImpersonating && impersonating ? (
+            <div className="flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-gradient-to-r from-orange-500/10 to-amber-500/10 border border-orange-400/20">
+              <i className="fas fa-user-secret text-orange-400 text-sm" />
+              <div className="text-[10px] font-black uppercase tracking-widest text-orange-300">
+                Viewing as {impersonating.displayName}
               </div>
             </div>
-          )}
-          {userType === 'vip' && (
-            <div className="relative group flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-gradient-to-r from-amber-500/10 via-yellow-400/10 to-amber-500/10 border border-amber-400/20 cursor-default overflow-hidden">
-              {/* Shimmer effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-400/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
-              <div className="relative flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-amber-400 via-yellow-300 to-amber-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
-                  <i className="fas fa-crown text-[11px] text-amber-900" />
-                </div>
-                <div>
-                  <div className="text-[10px] font-black uppercase tracking-widest text-amber-300">VIP Access</div>
-                  {vipCredits && (
-                    <div className="text-[10px] font-bold text-amber-400/60">
-                      {vipCredits.credits_total - vipCredits.credits_used} credits remaining
+          ) : (
+            <>
+              {userType === 'admin' && (
+                <div className="relative group flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-gradient-to-r from-pink-500/10 via-fuchsia-500/10 to-purple-500/10 border border-pink-400/20 cursor-default overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-pink-400/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
+                  <div className="relative flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-pink-500 via-fuchsia-500 to-purple-500 flex items-center justify-center shadow-lg shadow-pink-500/20">
+                      <i className="fas fa-shield-halved text-[11px] text-white" />
                     </div>
-                  )}
+                    <div className="text-[10px] font-black uppercase tracking-widest text-pink-300">Admin</div>
+                  </div>
                 </div>
-              </div>
-            </div>
+              )}
+              {userType === 'vip' && (
+                <div className="relative group flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-gradient-to-r from-amber-500/10 via-yellow-400/10 to-amber-500/10 border border-amber-400/20 cursor-default overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-400/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
+                  <div className="relative flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-amber-400 via-yellow-300 to-amber-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
+                      <i className="fas fa-crown text-[11px] text-amber-900" />
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-black uppercase tracking-widest text-amber-300">VIP Access</div>
+                      {vipCredits && (
+                        <div className="text-[10px] font-bold text-amber-400/60">
+                          {vipCredits.credits_total - vipCredits.credits_used} credits remaining
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+              {planSlug === 'pro' && proCredits && (
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-blue-500/10 border border-blue-400/20">
+                  <i className="fas fa-bolt text-[10px] text-blue-400" />
+                  <div className="text-[10px] font-bold text-blue-300">
+                    {proCredits.limit - proCredits.used}/{proCredits.limit} analyses left
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </header>
 
@@ -291,17 +340,26 @@ export default function DashboardLayout() {
             <span className="text-base font-bold tracking-tighter">Blossom</span>
           </div>
           <div className="flex items-center gap-2">
-            {userType === 'admin' && (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-gradient-to-r from-pink-500/10 to-purple-500/10 border border-pink-400/20">
-                <i className="fas fa-shield-halved text-[10px] text-pink-400" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-pink-300">Admin</span>
+            {isImpersonating ? (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-gradient-to-r from-orange-500/10 to-amber-500/10 border border-orange-400/20">
+                <i className="fas fa-user-secret text-[10px] text-orange-400" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-orange-300">Viewing</span>
               </div>
-            )}
-            {userType === 'vip' && (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-gradient-to-r from-amber-500/10 to-yellow-400/10 border border-amber-400/20">
-                <i className="fas fa-crown text-[10px] text-amber-400" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-amber-300">VIP</span>
-              </div>
+            ) : (
+              <>
+                {userType === 'admin' && (
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-gradient-to-r from-pink-500/10 to-purple-500/10 border border-pink-400/20">
+                    <i className="fas fa-shield-halved text-[10px] text-pink-400" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-pink-300">Admin</span>
+                  </div>
+                )}
+                {userType === 'vip' && (
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-gradient-to-r from-amber-500/10 to-yellow-400/10 border border-amber-400/20">
+                    <i className="fas fa-crown text-[10px] text-amber-400" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-amber-300">VIP</span>
+                  </div>
+                )}
+              </>
             )}
             <button
               onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
@@ -326,12 +384,36 @@ export default function DashboardLayout() {
         )}
 
         {/* Page Content */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-10 pb-24 lg:pb-10 dashboard-scrollbar">
+        <div className={`flex-1 overflow-y-auto p-4 sm:p-6 lg:p-10 ${isImpersonating ? 'pb-36' : 'pb-24'} lg:pb-10 dashboard-scrollbar`}>
           <div className="max-w-7xl mx-auto">
             <Outlet />
           </div>
         </div>
       </main>
+
+      {/* ═══════════ Mobile Impersonation Banner (<lg) ═══════════ */}
+      {isImpersonating && impersonating && (
+        <div className="fixed bottom-16 left-0 right-0 lg:hidden z-[45] bg-[#050508]/95 backdrop-blur-xl border-t border-orange-500/20">
+          <div className="flex items-center justify-between px-4 py-2.5">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-7 h-7 shrink-0 rounded-full bg-orange-500/20 flex items-center justify-center">
+                <i className="fas fa-user-secret text-orange-400 text-[11px]" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-[10px] font-black uppercase tracking-widest text-orange-400">Viewing as</div>
+                <div className="text-[11px] font-bold text-white truncate">{impersonating.displayName}</div>
+              </div>
+            </div>
+            <button
+              onClick={stopImpersonation}
+              aria-label="Return to Admin"
+              className="shrink-0 px-3 py-1.5 rounded-xl bg-orange-500/20 text-orange-300 text-[10px] font-black uppercase tracking-widest hover:bg-orange-500/30"
+            >
+              Return
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ═══════════ Mobile Bottom Tab Bar (<lg) ═══════════ */}
       <nav className="fixed bottom-0 left-0 right-0 lg:hidden z-40 bg-[#050508]/95 backdrop-blur-xl border-t border-white/10 safe-bottom">

@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { authFetch } from '../lib/api'
 import { getStorageUrl } from '../lib/media'
 import VideoStoryCarousel, { type CarouselVideo } from '../components/VideoStoryCarousel'
+import FineTunePanel from '../components/FineTunePanel'
 
 interface FormatVideo {
   id: number
@@ -315,6 +316,9 @@ export default function FormatDetail() {
           </div>
         </div>
       </div>
+
+      {/* Fine-Tune Panel */}
+      <FineTunePanel itemType="format" itemId={Number(id)} itemName={format.name} />
 
       {/* AI Analysis Section */}
       {analysis && (

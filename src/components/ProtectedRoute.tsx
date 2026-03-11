@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useImpersonation } from '../context/ImpersonationContext'
 import { authFetch } from '../lib/api'
 import type { ReactNode } from 'react'
 
 export default function ProtectedRoute({ children }: { children: ReactNode }) {
   const { user, loading, userType, categoryStatus, onboardingCompleted } = useAuth()
+  const { isImpersonating } = useImpersonation()
   const [subStatus, setSubStatus] = useState<string | null>(null)
   const [subLoading, setSubLoading] = useState(true)
 
@@ -45,18 +47,18 @@ export default function ProtectedRoute({ children }: { children: ReactNode }) {
     return <Navigate to="/verify-email" replace />
   }
 
-  // Redirect to choose-category if no category selected or pending (only admins bypass)
-  if (!isAdmin && (!categoryStatus || categoryStatus === 'pending')) {
+  // Redirect to choose-category if no category selected or pending (admins and impersonating bypass)
+  if (!isAdmin && !isImpersonating && (!categoryStatus || categoryStatus === 'pending')) {
     return <Navigate to="/choose-category" replace />
   }
 
-  // Redirect to choose plan if no active subscription (admins and VIP bypass this)
-  if (!isAdmin && !isVip && subStatus === 'none') {
+  // Redirect to choose plan if no active subscription (admins, VIP, and impersonating bypass)
+  if (!isAdmin && !isVip && !isImpersonating && subStatus === 'none') {
     return <Navigate to="/choose-plan" replace />
   }
 
-  // Redirect to onboarding if not completed
-  if (onboardingCompleted === false) {
+  // Redirect to onboarding if not completed (impersonating bypasses)
+  if (!isImpersonating && onboardingCompleted === false) {
     return <Navigate to="/onboarding" replace />
   }
 

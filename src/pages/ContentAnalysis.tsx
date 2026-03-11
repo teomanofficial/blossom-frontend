@@ -26,12 +26,14 @@ const ANALYSIS_STEPS = [
   { key: 'upload', label: 'Upload Complete', doneDesc: 'Source verified', runningDesc: 'Uploading content...', pendingDesc: 'Waiting...' },
   { key: 'full_analysis', label: 'Full Video Analysis', doneDesc: 'Frame sampling successful', runningDesc: 'Analyzing frames...', pendingDesc: 'Waiting for data...' },
   { key: 'hook_analysis', label: 'Hook Analysis', doneDesc: 'Hook patterns identified', runningDesc: 'Scanning first 3.0s...', pendingDesc: 'Waiting for data...' },
+  { key: 'classification', label: 'Format & Hook Match', doneDesc: 'Matched to database', runningDesc: 'Classifying content...', pendingDesc: 'Waiting for data...' },
+  { key: 'benchmarks', label: 'Loading Benchmarks', doneDesc: 'Benchmark data ready', runningDesc: 'Assembling comparisons...', pendingDesc: 'Waiting for data...' },
   { key: 'virality_scores', label: 'Virality Scoring', doneDesc: 'Scores calculated', runningDesc: 'Computing virality metrics...', pendingDesc: 'Waiting for data...' },
   { key: 'improvement', label: 'Generating Improvements', doneDesc: 'Blueprint ready', runningDesc: 'Synthesizing blueprint...', pendingDesc: 'Synthesizing blueprint' },
 ]
 
 export default function ContentAnalysis() {
-  const { session } = useAuth()
+  const { session, planSlug, proCredits } = useAuth()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
 
@@ -389,6 +391,12 @@ export default function ContentAnalysis() {
             <p className="text-slate-500 text-sm font-medium">
               Upload a video or paste a URL to get AI-powered analysis and improvement suggestions.
             </p>
+            {planSlug === 'pro' && proCredits && (
+              <div className={`mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold ${proCredits.used >= proCredits.limit ? 'bg-red-500/10 border border-red-400/20 text-red-400' : 'bg-blue-500/10 border border-blue-400/20 text-blue-300'}`}>
+                <i className="fas fa-bolt text-[10px]" />
+                {proCredits.limit - proCredits.used}/{proCredits.limit} monthly analyses remaining
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-3">
             {(uploadId || analysisResult) && (
@@ -439,6 +447,7 @@ export default function ContentAnalysis() {
     const virality = analysisResult?.viralityAnalysis?.analysis_json;
     const improv = analysisResult?.improvement?.improvement_json;
     const upload = analysisResult?.upload;
+    const benchmarks = analysisResult?.benchmarks;
     const scoreBreakdown = improv?.score_breakdown;
 
     const tabs = [
@@ -760,7 +769,14 @@ export default function ContentAnalysis() {
                   </div>
                   <div>
                     <h2 className="text-lg font-black text-white tracking-tight">How to Improve This Content</h2>
-                    <p className="text-xs text-slate-500">Actionable suggestions to boost performance</p>
+                    <p className="text-xs text-slate-500">
+                      Actionable suggestions to boost performance
+                      {improv?.fine_tune_enhanced && (
+                        <span className="ml-2 px-2 py-0.5 bg-pink-500/15 text-pink-400 text-[9px] font-black rounded-md uppercase tracking-widest">
+                          <i className="fas fa-sliders mr-1"></i>Fine-tuned
+                        </span>
+                      )}
+                    </p>
                   </div>
                 </div>
                 {improv?.optimization_score != null && (
@@ -1146,6 +1162,55 @@ export default function ContentAnalysis() {
                               </li>
                             ))}
                           </ul>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Data-Grounded Actions (from benchmarks) ── */}
+                {improv?.benchmark_grounded_actions && improv.benchmark_grounded_actions.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-black text-white mb-1 flex items-center gap-2">
+                      <i className="fas fa-database text-cyan-400 text-xs"></i>Data-Grounded Actions
+                    </h3>
+                    <p className="text-[10px] text-slate-500 mb-4">Based on analysis of 34,000+ videos in our database</p>
+                    <div className="space-y-3">
+                      {improv.benchmark_grounded_actions.map((bga: any, idx: number) => (
+                        <div key={idx} className="bg-white/[0.03] rounded-xl p-5 border border-white/5 border-l-4 border-l-cyan-400/50">
+                          <p className="text-sm font-bold text-white mb-3">{bga.action}</p>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                            {bga.current_state && (
+                              <div>
+                                <div className="flex items-center gap-1.5 mb-1">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-red-400"></div>
+                                  <span className="text-[9px] font-black text-red-400 uppercase tracking-widest">Current</span>
+                                </div>
+                                <p className="text-xs text-red-300/70">{bga.current_state}</p>
+                              </div>
+                            )}
+                            {bga.benchmark_target && (
+                              <div>
+                                <div className="flex items-center gap-1.5 mb-1">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-teal-400"></div>
+                                  <span className="text-[9px] font-black text-teal-400 uppercase tracking-widest">Target</span>
+                                </div>
+                                <p className="text-xs text-teal-300/70">{bga.benchmark_target}</p>
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-3 flex-wrap">
+                            {bga.data_source && (
+                              <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black bg-cyan-500/10 text-cyan-400">
+                                <i className="fas fa-database mr-1 text-[7px]"></i>{bga.data_source}
+                              </span>
+                            )}
+                            {bga.expected_lift && (
+                              <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black bg-lime-500/10 text-lime-400">
+                                <i className="fas fa-arrow-up mr-1 text-[7px]"></i>{bga.expected_lift}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -1769,6 +1834,212 @@ export default function ContentAnalysis() {
                 </div>
               ))}
             </div>
+
+            {/* ── Benchmark Comparison ── */}
+            {(virality.benchmark_comparison || virality.format_momentum || benchmarks) && (
+              <div className="space-y-4">
+                {/* Format & Hook Benchmark Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {benchmarks?.format_name && (
+                    <div className="glass-card rounded-3xl p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-sm font-black text-white flex items-center gap-2">
+                          <i className="fas fa-tags text-pink-400 text-xs"></i>Format Class
+                        </h3>
+                        {benchmarks.format_lifecycle && (
+                          <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${
+                            benchmarks.format_lifecycle === 'emerging' ? 'bg-teal-500/15 text-teal-400' :
+                            benchmarks.format_lifecycle === 'rising' ? 'bg-lime-500/15 text-lime-400' :
+                            benchmarks.format_lifecycle === 'peaking' ? 'bg-orange-500/15 text-orange-400' :
+                            benchmarks.format_lifecycle === 'stable' ? 'bg-blue-500/15 text-blue-400' :
+                            'bg-red-500/15 text-red-400'
+                          }`}>{benchmarks.format_lifecycle}</span>
+                        )}
+                      </div>
+                      <p className="text-lg font-black text-white mb-3 capitalize">{benchmarks.format_name}</p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-white/[0.03] rounded-xl p-3 border border-white/5">
+                          <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Videos</div>
+                          <div className="text-lg font-black text-white">{formatNumber(benchmarks.format_video_count || 0)}</div>
+                        </div>
+                        <div className="bg-white/[0.03] rounded-xl p-3 border border-white/5">
+                          <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Avg Views</div>
+                          <div className="text-lg font-black text-white">{formatNumber(benchmarks.format_avg_views || 0)}</div>
+                        </div>
+                      </div>
+                      {benchmarks.format_avg_engagement != null && (
+                        <div className="mt-3 bg-white/[0.03] rounded-xl p-3 border border-white/5">
+                          <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Avg Engagement</div>
+                          <div className="text-lg font-black text-white">{Number(benchmarks.format_avg_engagement).toFixed(1)}%</div>
+                        </div>
+                      )}
+                      {virality.benchmark_comparison?.views_vs_format_avg && (
+                        <div className="mt-3 text-xs font-bold text-slate-400">
+                          <i className="fas fa-chart-line mr-1 text-[9px]"></i>
+                          {virality.benchmark_comparison.views_vs_format_avg}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {benchmarks?.hook_name && (
+                    <div className="glass-card rounded-3xl p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-sm font-black text-white flex items-center gap-2">
+                          <i className="fas fa-magnet text-purple-400 text-xs"></i>Hook Class
+                        </h3>
+                        {benchmarks.hook_lifecycle && (
+                          <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${
+                            benchmarks.hook_lifecycle === 'emerging' ? 'bg-teal-500/15 text-teal-400' :
+                            benchmarks.hook_lifecycle === 'rising' ? 'bg-lime-500/15 text-lime-400' :
+                            benchmarks.hook_lifecycle === 'peaking' ? 'bg-orange-500/15 text-orange-400' :
+                            benchmarks.hook_lifecycle === 'stable' ? 'bg-blue-500/15 text-blue-400' :
+                            'bg-red-500/15 text-red-400'
+                          }`}>{benchmarks.hook_lifecycle}</span>
+                        )}
+                      </div>
+                      <p className="text-lg font-black text-white mb-3 capitalize">{benchmarks.hook_name}</p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-white/[0.03] rounded-xl p-3 border border-white/5">
+                          <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Videos</div>
+                          <div className="text-lg font-black text-white">{formatNumber(benchmarks.hook_video_count || 0)}</div>
+                        </div>
+                        <div className="bg-white/[0.03] rounded-xl p-3 border border-white/5">
+                          <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Avg Views</div>
+                          <div className="text-lg font-black text-white">{formatNumber(benchmarks.hook_avg_views || 0)}</div>
+                        </div>
+                      </div>
+                      {benchmarks.hook_avg_engagement != null && (
+                        <div className="mt-3 bg-white/[0.03] rounded-xl p-3 border border-white/5">
+                          <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Avg Engagement</div>
+                          <div className="text-lg font-black text-white">{Number(benchmarks.hook_avg_engagement).toFixed(1)}%</div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Niche Percentile */}
+                {virality.benchmark_comparison?.niche_rank && (
+                  <div className="glass-card rounded-3xl p-6">
+                    <h3 className="text-sm font-black text-white mb-4 flex items-center gap-2">
+                      <i className="fas fa-chart-bar text-cyan-400 text-xs"></i>Niche Ranking
+                    </h3>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5 text-center">
+                        <div className={`text-2xl font-black mb-1 ${
+                          virality.benchmark_comparison.niche_rank.includes('top_1') ? 'text-teal-400' :
+                          virality.benchmark_comparison.niche_rank.includes('top_5') ? 'text-lime-400' :
+                          virality.benchmark_comparison.niche_rank.includes('top_10') ? 'text-yellow-400' :
+                          virality.benchmark_comparison.niche_rank.includes('top_25') ? 'text-orange-400' :
+                          'text-slate-400'
+                        }`}>{virality.benchmark_comparison.niche_rank.replace(/_/g, ' ').replace('pct', '%')}</div>
+                        <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Niche Rank</div>
+                      </div>
+                      {virality.benchmark_comparison.format_percentile != null && (
+                        <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5 text-center">
+                          <div className={`text-2xl font-black mb-1 ${scoreColor(virality.benchmark_comparison.format_percentile)}`}>
+                            {virality.benchmark_comparison.format_percentile}%
+                          </div>
+                          <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Format %ile</div>
+                        </div>
+                      )}
+                      {virality.benchmark_comparison.hook_percentile != null && (
+                        <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5 text-center">
+                          <div className={`text-2xl font-black mb-1 ${scoreColor(virality.benchmark_comparison.hook_percentile)}`}>
+                            {virality.benchmark_comparison.hook_percentile}%
+                          </div>
+                          <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Hook %ile</div>
+                        </div>
+                      )}
+                      {virality.benchmark_comparison.engagement_vs_niche_avg && (
+                        <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5 text-center">
+                          <div className="text-sm font-black text-white mb-1">{virality.benchmark_comparison.engagement_vs_niche_avg}</div>
+                          <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest">vs Niche Avg</div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Tactic Gap Analysis */}
+                {virality.benchmark_comparison && (
+                  <div className="glass-card rounded-3xl p-6">
+                    <h3 className="text-sm font-black text-white mb-4 flex items-center gap-2">
+                      <i className="fas fa-chess text-amber-400 text-xs"></i>Tactic Gap Analysis
+                    </h3>
+
+                    {/* Missing gold standard tactics */}
+                    {virality.benchmark_comparison.missing_gold_standard_tactics?.length > 0 && (
+                      <div className="mb-4">
+                        <div className="text-[10px] font-black text-amber-400 uppercase tracking-widest mb-3">
+                          <i className="fas fa-trophy mr-1"></i>Missing Gold-Standard Tactics
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {virality.benchmark_comparison.missing_gold_standard_tactics.map((t: string, i: number) => (
+                            <span key={i} className="px-3 py-1.5 rounded-full text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                              <i className="fas fa-plus mr-1 text-[8px]"></i>{t}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Overrated tactics present */}
+                    {virality.benchmark_comparison.overrated_tactics_present?.length > 0 && (
+                      <div className="mb-4">
+                        <div className="text-[10px] font-black text-red-400 uppercase tracking-widest mb-3">
+                          <i className="fas fa-exclamation-triangle mr-1"></i>Overrated Tactics Used
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {virality.benchmark_comparison.overrated_tactics_present.map((t: string, i: number) => (
+                            <span key={i} className="px-3 py-1.5 rounded-full text-xs font-bold bg-red-500/10 text-red-400 border border-red-500/20">
+                              <i className="fas fa-minus mr-1 text-[8px]"></i>{t}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Gap analysis summary */}
+                    {virality.benchmark_comparison.tactic_gap_analysis && (
+                      <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5">
+                        <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Analysis</div>
+                        <p className="text-sm text-slate-300 leading-relaxed">{virality.benchmark_comparison.tactic_gap_analysis}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Format Momentum */}
+                {virality.format_momentum && (
+                  <div className="glass-card rounded-3xl p-6">
+                    <h3 className="text-sm font-black text-white mb-4 flex items-center gap-2">
+                      <i className="fas fa-bolt text-lime-400 text-xs"></i>Format Momentum
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {virality.format_momentum.lifecycle_stage && (
+                        <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5">
+                          <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Lifecycle Stage</div>
+                          <span className={`text-sm font-black capitalize ${
+                            virality.format_momentum.lifecycle_stage === 'emerging' ? 'text-teal-400' :
+                            virality.format_momentum.lifecycle_stage === 'rising' ? 'text-lime-400' :
+                            virality.format_momentum.lifecycle_stage === 'peaking' ? 'text-orange-400' :
+                            virality.format_momentum.lifecycle_stage === 'stable' ? 'text-blue-400' :
+                            'text-red-400'
+                          }`}>{virality.format_momentum.lifecycle_stage}</span>
+                        </div>
+                      )}
+                      {virality.format_momentum.timing_assessment && (
+                        <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5">
+                          <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Timing Assessment</div>
+                          <p className="text-sm text-slate-300">{virality.format_momentum.timing_assessment}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Shareability Details */}
             {virality.shareability && (

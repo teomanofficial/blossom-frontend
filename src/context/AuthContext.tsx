@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { User, Session } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
-import { API_URL } from '../lib/api'
+import { authFetch } from '../lib/api'
 
 interface Profile {
   id: string
@@ -16,6 +16,11 @@ interface Profile {
 export interface VipCredits {
   credits_total: number
   credits_used: number
+}
+
+export interface ProCredits {
+  used: number
+  limit: number
 }
 
 export interface Organization {
@@ -36,6 +41,7 @@ interface AuthContextType {
   categoryStatus: string | null
   onboardingCompleted: boolean | null
   vipCredits: VipCredits | null
+  proCredits: ProCredits | null
   organization: Organization | null
   isOrgOwner: boolean
   isOrgAdmin: boolean
@@ -56,15 +62,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [categoryStatus, setCategoryStatus] = useState<string | null>(null)
   const [onboardingCompleted, setOnboardingCompleted] = useState<boolean | null>(null)
   const [vipCredits, setVipCredits] = useState<VipCredits | null>(null)
+  const [proCredits, setProCredits] = useState<ProCredits | null>(null)
   const [organization, setOrganization] = useState<Organization | null>(null)
   const [loading, setLoading] = useState(true)
   const initialLoadDone = useRef(false)
 
-  const fetchProfile = async (accessToken: string) => {
+  const fetchProfile = async (_accessToken?: string) => {
     try {
-      const res = await fetch(`${API_URL}/api/auth/me`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      })
+      const res = await authFetch('/api/auth/me')
       if (!res.ok) return
       const data = await res.json()
       setProfile(data.profile)
@@ -72,6 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setPlanSlug(data.planSlug || null)
       setCategoryStatus(data.profile?.category_status || null)
       setVipCredits(data.vipCredits || null)
+      setProCredits(data.proCredits || null)
       setOrganization(data.organization || null)
 
       // Fetch onboarding status (only admins skip onboarding; VIP users go through it)
@@ -80,9 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setCategoryStatus('selected')
       } else {
         try {
-          const obRes = await fetch(`${API_URL}/api/onboarding/status`, {
-            headers: { Authorization: `Bearer ${accessToken}` },
-          })
+          const obRes = await authFetch('/api/onboarding/status')
           if (obRes.ok) {
             const obData = await obRes.json()
             setOnboardingCompleted(obData.isCompleted)
@@ -128,6 +132,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setCategoryStatus(null)
         setOnboardingCompleted(null)
         setVipCredits(null)
+        setProCredits(null)
         setOrganization(null)
       }
     })
@@ -150,7 +155,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isOrgAdmin = organization?.role === 'owner' || organization?.role === 'admin'
 
   return (
-    <AuthContext.Provider value={{ user, session, profile, userType, planSlug, categoryIds, categoryStatus, onboardingCompleted, vipCredits, organization, isOrgOwner, isOrgAdmin, loading, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ user, session, profile, userType, planSlug, categoryIds, categoryStatus, onboardingCompleted, vipCredits, proCredits, organization, isOrgOwner, isOrgAdmin, loading, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   )

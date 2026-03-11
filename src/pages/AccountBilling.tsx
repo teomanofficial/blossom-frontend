@@ -121,7 +121,7 @@ function ConfirmModal({
 }
 
 export default function AccountBilling() {
-  const { userType, vipCredits, signOut, organization, isOrgOwner } = useAuth()
+  const { userType, planSlug, vipCredits, proCredits, signOut, organization, isOrgOwner } = useAuth()
   const [subscription, setSubscription] = useState<Subscription | null>(null)
   const [subStatus, setSubStatus] = useState<string>('none')
   const [loading, setLoading] = useState(true)
@@ -504,6 +504,30 @@ export default function AccountBilling() {
                   </li>
                 ))}
               </ul>
+            </div>
+          )}
+
+          {/* Pro monthly analysis credits */}
+          {planSlug === 'pro' && proCredits && (
+            <div className="mt-6 pt-6 border-t border-white/[0.06]">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-black uppercase tracking-widest text-slate-500">
+                  Monthly Analysis Credits
+                </span>
+                <span className={`text-sm font-bold ${proCredits.used >= proCredits.limit ? 'text-red-400' : 'text-blue-300'}`}>
+                  {proCredits.limit - proCredits.used} remaining
+                </span>
+              </div>
+              <div className="w-full h-2 rounded-full bg-white/[0.06] overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all duration-500 ${proCredits.used >= proCredits.limit ? 'bg-gradient-to-r from-red-500 to-red-400' : 'bg-gradient-to-r from-blue-400 to-cyan-300'}`}
+                  style={{ width: `${Math.round((proCredits.used / proCredits.limit) * 100)}%` }}
+                />
+              </div>
+              <div className="flex justify-between mt-2 text-[11px] text-slate-500 font-medium">
+                <span>{proCredits.used} used</span>
+                <span>{proCredits.limit} total</span>
+              </div>
             </div>
           )}
 
