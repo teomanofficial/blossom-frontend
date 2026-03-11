@@ -402,44 +402,6 @@ export default function Suggestions() {
         )}
       </div>
 
-      {/* Stats Row */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 mb-6 md:mb-8">
-        <div className="px-4 py-3 md:px-6 md:py-4 glass-card rounded-3xl">
-          <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Today's Ideas</div>
-          <div className="text-xl md:text-2xl font-black text-pink-400">{stats?.today_count ?? 0}</div>
-          <div className="text-[10px] font-bold text-slate-600 mt-1 hidden md:block">{stats?.total_active ?? 0} active total</div>
-        </div>
-        <div className="px-4 py-3 md:px-6 md:py-4 glass-card rounded-3xl">
-          <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Active Topics</div>
-          <div className="text-xl md:text-2xl font-black text-purple-400">{stats?.active_topics ?? 0}</div>
-          <div className="text-[10px] font-bold text-slate-600 mt-1 hidden md:block">keyword clusters</div>
-        </div>
-        <div className="px-4 py-3 md:px-6 md:py-4 glass-card rounded-3xl">
-          <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Total Upvotes</div>
-          <div className="text-xl md:text-2xl font-black text-cyan-400">{formatNumber(stats?.total_upvotes ?? 0)}</div>
-          <div className="text-[10px] font-bold text-slate-600 mt-1 hidden md:block">across all ideas</div>
-        </div>
-        <div className="px-4 py-3 md:px-6 md:py-4 glass-card rounded-3xl">
-          <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Videos Analyzed</div>
-          <div className="text-xl md:text-2xl font-black text-teal-400">{formatNumber(stats?.videos_analyzed ?? 0)}</div>
-          <div className="text-[10px] font-bold text-slate-600 mt-1 hidden md:block">source videos</div>
-        </div>
-        <div className="col-span-2 md:col-span-1 px-4 py-3 md:px-6 md:py-4 glass-card rounded-3xl">
-          {!isAdmin && memoryInfo?.has_memory ? (
-            <>
-              <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Profile Signals</div>
-              <div className="text-lg font-black text-teal-400 mt-1">{memoryInfo.profile?.total_signal_count ?? 0}</div>
-              <div className="text-[10px] font-bold text-slate-600 mt-1 hidden md:block">preferences tracked</div>
-            </>
-          ) : (
-            <>
-              <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Last Generated</div>
-              <div className="text-lg font-black text-white mt-1">{timeAgo(stats?.last_generated_at ?? null)}</div>
-            </>
-          )}
-        </div>
-      </div>
-
       {/* Tabs + Filters */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
         <div className="flex gap-1 bg-white/[0.03] rounded-xl p-1">

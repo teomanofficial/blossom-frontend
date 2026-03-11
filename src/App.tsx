@@ -45,6 +45,7 @@ import Categories from './pages/Categories'
 import OrphanVideos from './pages/OrphanVideos'
 import OrphanDomains from './pages/OrphanDomains'
 import BulkAnalysisManagement from './pages/BulkAnalysisManagement'
+import DuplicateManagement from './pages/DuplicateManagement'
 import OnboardingManagement from './pages/OnboardingManagement'
 import CategoryRequestManagement from './pages/CategoryRequestManagement'
 import AIModelLab from './pages/AIModelLab'
@@ -170,6 +171,7 @@ function App() {
         <Route path="support" element={<Support />} />
         <Route path="support-management" element={<AdminGate><SupportManagement /></AdminGate>} />
         <Route path="bulk-management" element={<AdminGate><BulkAnalysisManagement /></AdminGate>} />
+        <Route path="duplicate-management" element={<AdminGate><DuplicateManagement /></AdminGate>} />
         <Route path="onboarding-management" element={<AdminGate><OnboardingManagement /></AdminGate>} />
         <Route path="category-requests" element={<AdminGate><CategoryRequestManagement /></AdminGate>} />
         <Route path="ai-model-lab" element={<AdminGate><AIModelLab /></AdminGate>} />
