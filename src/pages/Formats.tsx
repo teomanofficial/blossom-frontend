@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { authFetch } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import FineTunedList from '../components/FineTunedList'
+import { SkeletonGrid } from '../components/CardSkeleton'
 
 interface FormatClass {
   id: number
@@ -311,8 +312,8 @@ export default function Formats() {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <div className="w-8 h-8 border-2 border-pink-500 border-t-transparent rounded-full animate-spin"></div>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
+          <SkeletonGrid count={6} type="format-hook" />
         </div>
       ) : formats.length === 0 ? (
         <div className="glass-card rounded-3xl p-12 text-center">
@@ -384,6 +385,9 @@ export default function Formats() {
               </Link>
             ))}
 
+            {/* Loading more skeletons */}
+            {loadingMore && <SkeletonGrid count={3} type="format-hook" />}
+
             {/* Discover More Card - only show when all loaded */}
             {!hasMore && (
               <div className="border-2 border-dashed border-white/10 rounded-[1.5rem] p-8 flex flex-col items-center justify-center text-center opacity-50 hover:opacity-100 transition-opacity">
@@ -400,12 +404,8 @@ export default function Formats() {
             )}
           </div>
 
-          {/* Scroll sentinel + loading indicator */}
-          <div ref={sentinelRef} className="py-8 flex justify-center">
-            {loadingMore && (
-              <div className="w-6 h-6 border-2 border-pink-500 border-t-transparent rounded-full animate-spin"></div>
-            )}
-          </div>
+          {/* Scroll sentinel */}
+          <div ref={sentinelRef} className="py-8" />
         </>
       )}
       </>

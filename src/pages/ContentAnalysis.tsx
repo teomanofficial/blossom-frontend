@@ -23,13 +23,11 @@ function formatFileSize(bytes: number): string {
 // === Analysis Steps for Progress Stepper ===
 
 const ANALYSIS_STEPS = [
-  { key: 'upload', label: 'Upload Complete', doneDesc: 'Source verified', runningDesc: 'Uploading content...', pendingDesc: 'Waiting...' },
-  { key: 'full_analysis', label: 'Full Video Analysis', doneDesc: 'Frame sampling successful', runningDesc: 'Analyzing frames...', pendingDesc: 'Waiting for data...' },
-  { key: 'hook_analysis', label: 'Hook Analysis', doneDesc: 'Hook patterns identified', runningDesc: 'Scanning first 3.0s...', pendingDesc: 'Waiting for data...' },
-  { key: 'classification', label: 'Format & Hook Match', doneDesc: 'Matched to database', runningDesc: 'Classifying content...', pendingDesc: 'Waiting for data...' },
-  { key: 'benchmarks', label: 'Loading Benchmarks', doneDesc: 'Benchmark data ready', runningDesc: 'Assembling comparisons...', pendingDesc: 'Waiting for data...' },
-  { key: 'virality_scores', label: 'Virality Scoring', doneDesc: 'Scores calculated', runningDesc: 'Computing virality metrics...', pendingDesc: 'Waiting for data...' },
-  { key: 'improvement', label: 'Generating Improvements', doneDesc: 'Blueprint ready', runningDesc: 'Synthesizing blueprint...', pendingDesc: 'Synthesizing blueprint' },
+  { key: 'upload', label: 'Upload Complete' },
+  { key: 'full_analysis', label: 'Full Video Analysis' },
+  { key: 'hook_analysis', label: 'Hook Analysis' },
+  { key: 'virality_scores', label: 'Virality Scoring' },
+  { key: 'improvement', label: 'Generating Improvements' },
 ]
 
 export default function ContentAnalysis() {
@@ -448,6 +446,8 @@ export default function ContentAnalysis() {
     const improv = analysisResult?.improvement?.improvement_json;
     const upload = analysisResult?.upload;
     const benchmarks = analysisResult?.benchmarks;
+    const topFormatVideos = analysisResult?.topFormatVideos;
+    const topHookVideos = analysisResult?.topHookVideos;
     const scoreBreakdown = improv?.score_breakdown;
 
     const tabs = [
@@ -729,6 +729,112 @@ export default function ContentAnalysis() {
             </div>
           )}
         </div>
+
+        {/* ── Format & Hook Class Benchmarks ── */}
+        {(benchmarks?.format_name || benchmarks?.hook_name) && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {benchmarks?.format_name && (
+              <div className="glass-card rounded-3xl p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-black text-white flex items-center gap-2">
+                    <i className="fas fa-tags text-pink-400 text-xs"></i>Format Class
+                  </h3>
+                  {benchmarks.format_lifecycle && (
+                    <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${
+                      benchmarks.format_lifecycle === 'emerging' ? 'bg-teal-500/15 text-teal-400' :
+                      benchmarks.format_lifecycle === 'rising' ? 'bg-lime-500/15 text-lime-400' :
+                      benchmarks.format_lifecycle === 'peaking' ? 'bg-orange-500/15 text-orange-400' :
+                      benchmarks.format_lifecycle === 'stable' ? 'bg-blue-500/15 text-blue-400' :
+                      'bg-red-500/15 text-red-400'
+                    }`}>{benchmarks.format_lifecycle}</span>
+                  )}
+                </div>
+                <p className="text-lg font-black text-white mb-3 capitalize">{benchmarks.format_name}</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-white/[0.03] rounded-xl p-3 border border-white/5">
+                    <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Videos</div>
+                    <div className="text-lg font-black text-white">{formatNumber(benchmarks.format_video_count || 0)}</div>
+                  </div>
+                  <div className="bg-white/[0.03] rounded-xl p-3 border border-white/5">
+                    <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Avg Views</div>
+                    <div className="text-lg font-black text-white">{formatNumber(benchmarks.format_avg_views || 0)}</div>
+                  </div>
+                </div>
+                {benchmarks.format_avg_engagement != null && (
+                  <div className="mt-3 bg-white/[0.03] rounded-xl p-3 border border-white/5">
+                    <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Avg Engagement</div>
+                    <div className="text-lg font-black text-white">{Number(benchmarks.format_avg_engagement).toFixed(1)}%</div>
+                  </div>
+                )}
+                {virality?.benchmark_comparison?.views_vs_format_avg && (
+                  <div className="mt-3 text-xs font-bold text-slate-400">
+                    <i className="fas fa-chart-line mr-1 text-[9px]"></i>
+                    {virality.benchmark_comparison.views_vs_format_avg}
+                  </div>
+                )}
+                {topFormatVideos && topFormatVideos.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-white/5">
+                    <div className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-3">
+                      <i className="fas fa-crown mr-1.5 text-pink-400/50"></i>Top by views
+                    </div>
+                    <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none' }}>
+                      {topFormatVideos.map((v: any, i: number) => (
+                        <ExampleVideoCard key={v.video_id} video={v} videos={topFormatVideos} index={i} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            {benchmarks?.hook_name && (
+              <div className="glass-card rounded-3xl p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-black text-white flex items-center gap-2">
+                    <i className="fas fa-magnet text-purple-400 text-xs"></i>Hook Class
+                  </h3>
+                  {benchmarks.hook_lifecycle && (
+                    <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${
+                      benchmarks.hook_lifecycle === 'emerging' ? 'bg-teal-500/15 text-teal-400' :
+                      benchmarks.hook_lifecycle === 'rising' ? 'bg-lime-500/15 text-lime-400' :
+                      benchmarks.hook_lifecycle === 'peaking' ? 'bg-orange-500/15 text-orange-400' :
+                      benchmarks.hook_lifecycle === 'stable' ? 'bg-blue-500/15 text-blue-400' :
+                      'bg-red-500/15 text-red-400'
+                    }`}>{benchmarks.hook_lifecycle}</span>
+                  )}
+                </div>
+                <p className="text-lg font-black text-white mb-3 capitalize">{benchmarks.hook_name}</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-white/[0.03] rounded-xl p-3 border border-white/5">
+                    <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Videos</div>
+                    <div className="text-lg font-black text-white">{formatNumber(benchmarks.hook_video_count || 0)}</div>
+                  </div>
+                  <div className="bg-white/[0.03] rounded-xl p-3 border border-white/5">
+                    <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Avg Views</div>
+                    <div className="text-lg font-black text-white">{formatNumber(benchmarks.hook_avg_views || 0)}</div>
+                  </div>
+                </div>
+                {benchmarks.hook_avg_engagement != null && (
+                  <div className="mt-3 bg-white/[0.03] rounded-xl p-3 border border-white/5">
+                    <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Avg Engagement</div>
+                    <div className="text-lg font-black text-white">{Number(benchmarks.hook_avg_engagement).toFixed(1)}%</div>
+                  </div>
+                )}
+                {topHookVideos && topHookVideos.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-white/5">
+                    <div className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-3">
+                      <i className="fas fa-crown mr-1.5 text-purple-400/50"></i>Top by views
+                    </div>
+                    <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none' }}>
+                      {topHookVideos.map((v: any, i: number) => (
+                        <ExampleVideoCard key={v.video_id} video={v} videos={topHookVideos} index={i} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ── Divider between Overview header and Analysis tabs ── */}
         <div className="flex items-center gap-4 pt-2">
@@ -1731,7 +1837,7 @@ export default function ContentAnalysis() {
             {full?.emotional_architecture?.primary_emotion && (
               <div className="glass-card rounded-3xl p-8 text-center">
                 <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">Primary Emotion</div>
-                <div className="text-4xl font-black gradient-text capitalize">{full.emotional_architecture.primary_emotion}</div>
+                <div className="text-4xl font-black gradient-text capitalize">{full.emotional_architecture.primary_emotion.replace(/[_-]/g, ' ')}</div>
               </div>
             )}
 
@@ -1745,7 +1851,7 @@ export default function ContentAnalysis() {
                   {full.emotional_architecture.emotion_shifts.map((shift: string, idx: number) => (
                     <div key={idx} className="flex items-center gap-2">
                       <span className="px-3 py-1.5 rounded-full text-xs font-black bg-rose-500/10 text-rose-400 capitalize">
-                        {shift}
+                        {shift.replace(/[_-]/g, ' ')}
                       </span>
                       {idx < full.emotional_architecture.emotion_shifts.length - 1 && (
                         <i className="fas fa-arrow-right text-slate-600 text-[10px]"></i>
@@ -1763,7 +1869,7 @@ export default function ContentAnalysis() {
                   <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">
                     <i className="fas fa-chart-line mr-1"></i>Arousal Curve
                   </div>
-                  <p className="text-sm font-bold text-white capitalize">{full.emotional_architecture.arousal_curve}</p>
+                  <p className="text-sm font-bold text-white capitalize">{full.emotional_architecture.arousal_curve.replace(/[_-]/g, ' ')}</p>
                 </div>
               )}
               {full?.emotional_architecture?.specificity_level && (
@@ -1771,7 +1877,7 @@ export default function ContentAnalysis() {
                   <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">
                     <i className="fas fa-microscope mr-1"></i>Specificity Level
                   </div>
-                  <p className="text-sm font-bold text-white capitalize">{full.emotional_architecture.specificity_level}</p>
+                  <p className="text-sm font-bold text-white capitalize">{full.emotional_architecture.specificity_level.replace(/[_-]/g, ' ')}</p>
                 </div>
               )}
               {full?.emotional_architecture?.opinion_strength && (
@@ -1779,7 +1885,7 @@ export default function ContentAnalysis() {
                   <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">
                     <i className="fas fa-fist-raised mr-1"></i>Opinion Strength
                   </div>
-                  <p className="text-sm font-bold text-white capitalize">{full.emotional_architecture.opinion_strength}</p>
+                  <p className="text-sm font-bold text-white capitalize">{full.emotional_architecture.opinion_strength.replace(/[_-]/g, ' ')}</p>
                 </div>
               )}
               {full?.emotional_architecture?.relatability_moment && (
@@ -1836,95 +1942,15 @@ export default function ContentAnalysis() {
             </div>
 
             {/* ── Benchmark Comparison ── */}
-            {(virality.benchmark_comparison || virality.format_momentum || benchmarks) && (
+            {(virality.benchmark_comparison || virality.format_momentum) && (
               <div className="space-y-4">
-                {/* Format & Hook Benchmark Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {benchmarks?.format_name && (
-                    <div className="glass-card rounded-3xl p-6">
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-sm font-black text-white flex items-center gap-2">
-                          <i className="fas fa-tags text-pink-400 text-xs"></i>Format Class
-                        </h3>
-                        {benchmarks.format_lifecycle && (
-                          <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${
-                            benchmarks.format_lifecycle === 'emerging' ? 'bg-teal-500/15 text-teal-400' :
-                            benchmarks.format_lifecycle === 'rising' ? 'bg-lime-500/15 text-lime-400' :
-                            benchmarks.format_lifecycle === 'peaking' ? 'bg-orange-500/15 text-orange-400' :
-                            benchmarks.format_lifecycle === 'stable' ? 'bg-blue-500/15 text-blue-400' :
-                            'bg-red-500/15 text-red-400'
-                          }`}>{benchmarks.format_lifecycle}</span>
-                        )}
-                      </div>
-                      <p className="text-lg font-black text-white mb-3 capitalize">{benchmarks.format_name}</p>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="bg-white/[0.03] rounded-xl p-3 border border-white/5">
-                          <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Videos</div>
-                          <div className="text-lg font-black text-white">{formatNumber(benchmarks.format_video_count || 0)}</div>
-                        </div>
-                        <div className="bg-white/[0.03] rounded-xl p-3 border border-white/5">
-                          <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Avg Views</div>
-                          <div className="text-lg font-black text-white">{formatNumber(benchmarks.format_avg_views || 0)}</div>
-                        </div>
-                      </div>
-                      {benchmarks.format_avg_engagement != null && (
-                        <div className="mt-3 bg-white/[0.03] rounded-xl p-3 border border-white/5">
-                          <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Avg Engagement</div>
-                          <div className="text-lg font-black text-white">{Number(benchmarks.format_avg_engagement).toFixed(1)}%</div>
-                        </div>
-                      )}
-                      {virality.benchmark_comparison?.views_vs_format_avg && (
-                        <div className="mt-3 text-xs font-bold text-slate-400">
-                          <i className="fas fa-chart-line mr-1 text-[9px]"></i>
-                          {virality.benchmark_comparison.views_vs_format_avg}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  {benchmarks?.hook_name && (
-                    <div className="glass-card rounded-3xl p-6">
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-sm font-black text-white flex items-center gap-2">
-                          <i className="fas fa-magnet text-purple-400 text-xs"></i>Hook Class
-                        </h3>
-                        {benchmarks.hook_lifecycle && (
-                          <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${
-                            benchmarks.hook_lifecycle === 'emerging' ? 'bg-teal-500/15 text-teal-400' :
-                            benchmarks.hook_lifecycle === 'rising' ? 'bg-lime-500/15 text-lime-400' :
-                            benchmarks.hook_lifecycle === 'peaking' ? 'bg-orange-500/15 text-orange-400' :
-                            benchmarks.hook_lifecycle === 'stable' ? 'bg-blue-500/15 text-blue-400' :
-                            'bg-red-500/15 text-red-400'
-                          }`}>{benchmarks.hook_lifecycle}</span>
-                        )}
-                      </div>
-                      <p className="text-lg font-black text-white mb-3 capitalize">{benchmarks.hook_name}</p>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="bg-white/[0.03] rounded-xl p-3 border border-white/5">
-                          <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Videos</div>
-                          <div className="text-lg font-black text-white">{formatNumber(benchmarks.hook_video_count || 0)}</div>
-                        </div>
-                        <div className="bg-white/[0.03] rounded-xl p-3 border border-white/5">
-                          <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Avg Views</div>
-                          <div className="text-lg font-black text-white">{formatNumber(benchmarks.hook_avg_views || 0)}</div>
-                        </div>
-                      </div>
-                      {benchmarks.hook_avg_engagement != null && (
-                        <div className="mt-3 bg-white/[0.03] rounded-xl p-3 border border-white/5">
-                          <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Avg Engagement</div>
-                          <div className="text-lg font-black text-white">{Number(benchmarks.hook_avg_engagement).toFixed(1)}%</div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
                 {/* Niche Percentile */}
                 {virality.benchmark_comparison?.niche_rank && (
                   <div className="glass-card rounded-3xl p-6">
                     <h3 className="text-sm font-black text-white mb-4 flex items-center gap-2">
                       <i className="fas fa-chart-bar text-cyan-400 text-xs"></i>Niche Ranking
                     </h3>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-3 gap-4">
                       <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5 text-center">
                         <div className={`text-2xl font-black mb-1 ${
                           virality.benchmark_comparison.niche_rank.includes('top_1') ? 'text-teal-400' :
@@ -1951,13 +1977,13 @@ export default function ContentAnalysis() {
                           <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Hook %ile</div>
                         </div>
                       )}
-                      {virality.benchmark_comparison.engagement_vs_niche_avg && (
-                        <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5 text-center">
-                          <div className="text-sm font-black text-white mb-1">{virality.benchmark_comparison.engagement_vs_niche_avg}</div>
-                          <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest">vs Niche Avg</div>
-                        </div>
-                      )}
                     </div>
+                    {virality.benchmark_comparison.engagement_vs_niche_avg && (
+                      <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5 mt-4">
+                        <div className="text-sm font-black text-white mb-1">{virality.benchmark_comparison.engagement_vs_niche_avg}</div>
+                        <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest">vs Niche Avg</div>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -2842,22 +2868,6 @@ export default function ContentAnalysis() {
                             >
                               {step.label}
                             </h4>
-                            <p
-                              className={`text-[9px] font-mono uppercase tracking-widest mt-0.5 transition-all ${
-                                status === 'done'
-                                  ? 'text-emerald-500/50'
-                                  : status === 'running'
-                                  ? 'text-pink-500 animate-pulse'
-                                  : status === 'error'
-                                  ? 'text-red-400/60'
-                                  : 'text-slate-600'
-                              }`}
-                            >
-                              {status === 'done' ? step.doneDesc
-                                : status === 'running' ? step.runningDesc
-                                : status === 'error' ? (analysisStatus?.error || 'Error occurred')
-                                : step.pendingDesc}
-                            </p>
                           </div>
                         </div>
                       )
@@ -2902,14 +2912,6 @@ export default function ContentAnalysis() {
                 </div>
               </div>
 
-              {/* Bottom branding */}
-              <div className="flex justify-center mt-6 opacity-20">
-                <div className="flex items-center gap-3">
-                  <div className="h-[1px] w-6 bg-white/50" />
-                  <span className="text-[8px] font-mono uppercase tracking-[0.4em]">Blossom &bull; 2026 Build</span>
-                  <div className="h-[1px] w-6 bg-white/50" />
-                </div>
-              </div>
             </div>
 
           ) : (

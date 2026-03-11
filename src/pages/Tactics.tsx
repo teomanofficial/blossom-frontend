@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { authFetch } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import FineTunedList from '../components/FineTunedList'
+import { SkeletonGrid } from '../components/CardSkeleton'
 
 interface Tactic {
   id: number
@@ -22,6 +23,8 @@ interface Tactic {
 }
 
 type SortField = 'video_count' | 'avg_views_when_present' | 'avg_execution_score' | 'name' | 'created_at'
+
+const PAGE_SIZE = 24
 
 function formatNumber(n: number): string {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M'
@@ -82,42 +85,82 @@ export default function Tactics() {
   const [activeTab, setActiveTab] = useState<'all' | 'fine-tuned'>('all')
   const [tactics, setTactics] = useState<Tactic[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [total, setTotal] = useState(0)
+  const [hasMore, setHasMore] = useState(true)
   const [sortBy, setSortBy] = useState<SortField>('video_count')
   const [order, setOrder] = useState<'desc' | 'asc'>('desc')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [search, setSearch] = useState('')
   const [searchInput, setSearchInput] = useState('')
+  const [categories, setCategories] = useState<string[]>([])
+  const sentinelRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    setLoading(true)
-    const params = new URLSearchParams({
-      sort_by: sortBy,
-      order,
-      limit: '100',
-      offset: '0',
-    })
-    if (categoryFilter !== 'all') params.set('category', categoryFilter)
-    if (search) params.set('search', search)
+  const fetchTactics = useCallback(async (offset: number, reset: boolean) => {
+    if (reset) setLoading(true)
+    else setLoadingMore(true)
 
-    authFetch(`/api/analysis/tactics?${params}`)
-      .then((r) => r.json())
-      .then((data) => {
-        setTactics(data.tactics || [])
-        setTotal(data.total || 0)
+    try {
+      const params = new URLSearchParams({
+        sort_by: sortBy,
+        order,
+        limit: String(PAGE_SIZE),
+        offset: String(offset),
       })
-      .catch(() => toast.error('Failed to load tactics'))
-      .finally(() => setLoading(false))
+      if (categoryFilter !== 'all') params.set('category', categoryFilter)
+      if (search) params.set('search', search)
+
+      const res = await authFetch(`/api/analysis/tactics?${params}`)
+      const data = await res.json()
+      const newTactics: Tactic[] = data.tactics ?? []
+      const serverTotal: number = data.total ?? 0
+
+      setTotal(serverTotal)
+      setTactics((prev) => {
+        const updated = reset ? newTactics : [...prev, ...newTactics]
+        // Build category list from all loaded tactics
+        const cats = Array.from(new Set(updated.map((t) => t.category))).sort()
+        setCategories((prev) => {
+          // Merge with existing categories to not lose options on paginated loads
+          const merged = Array.from(new Set([...prev, ...cats])).sort()
+          return merged
+        })
+        return updated
+      })
+      setHasMore(offset + newTactics.length < serverTotal)
+    } catch (err) {
+      console.error(err)
+      toast.error('Failed to load tactics')
+    } finally {
+      setLoading(false)
+      setLoadingMore(false)
+    }
   }, [sortBy, order, categoryFilter, search])
 
-  const categories = Array.from(new Set(tactics.map((t) => t.category))).sort()
+  // Reset when sort/filter/search changes
+  useEffect(() => {
+    setTactics([])
+    setHasMore(true)
+    fetchTactics(0, true)
+  }, [fetchTactics])
 
-  const globalAvgScore =
-    tactics.length > 0
-      ? tactics.reduce((sum, t) => sum + (Number(t.avg_execution_score) || 0), 0) / tactics.length
-      : 0
+  // Infinite scroll via IntersectionObserver
+  useEffect(() => {
+    const sentinel = sentinelRef.current
+    if (!sentinel) return
 
-  const totalVideos = tactics.reduce((sum, t) => sum + (t.video_count || 0), 0)
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && hasMore && !loading && !loadingMore) {
+          fetchTactics(tactics.length, false)
+        }
+      },
+      { rootMargin: '400px' }
+    )
+
+    observer.observe(sentinel)
+    return () => observer.disconnect()
+  }, [hasMore, loading, loadingMore, tactics.length, fetchTactics])
 
   const toggleSort = (field: SortField) => {
     if (sortBy === field) {
@@ -163,13 +206,21 @@ export default function Tactics() {
           </div>
           <div className="px-4 py-3 md:px-6 md:py-4 glass-card rounded-3xl shrink-0">
             <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Avg Exec Score</div>
-            <div className={`text-xl md:text-2xl font-black ${getScoreColor(globalAvgScore)}`}>
-              {globalAvgScore > 0 ? Math.round(globalAvgScore) : '--'}
+            <div className={`text-xl md:text-2xl font-black ${getScoreColor(
+              tactics.length > 0
+                ? tactics.reduce((sum, t) => sum + (Number(t.avg_execution_score) || 0), 0) / tactics.length
+                : 0
+            )}`}>
+              {tactics.length > 0
+                ? Math.round(tactics.reduce((sum, t) => sum + (Number(t.avg_execution_score) || 0), 0) / tactics.length)
+                : '--'}
             </div>
           </div>
           <div className="px-4 py-3 md:px-6 md:py-4 glass-card rounded-3xl shrink-0">
             <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Video Uses</div>
-            <div className="text-xl md:text-2xl font-black text-white">{formatNumber(totalVideos)}</div>
+            <div className="text-xl md:text-2xl font-black text-white">
+              {formatNumber(tactics.reduce((sum, t) => sum + (t.video_count || 0), 0))}
+            </div>
           </div>
         </div>
       </div>
@@ -265,8 +316,8 @@ export default function Tactics() {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
+          <SkeletonGrid count={6} type="tactic" />
         </div>
       ) : tactics.length === 0 ? (
         <div className="glass-card rounded-3xl p-12 text-center">
@@ -279,92 +330,102 @@ export default function Tactics() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
-          {tactics.map((tactic, index) => {
-            const score = Number(tactic.avg_execution_score) || 0
-            return (
-              <Link
-                key={tactic.id}
-                to={`/dashboard/tactics/${tactic.id}`}
-                className={`gradient-border group cursor-pointer md:hover:translate-y-[-4px] active:scale-[0.98] transition-all duration-300${!tactic.is_in_category ? ' opacity-40 hover:opacity-70' : ''}`}
-              >
-                <div className="card-inner p-5 md:p-7 flex flex-col h-full">
-                  <div className="flex justify-between items-start mb-5">
-                    <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center">
-                      <i className={`fas ${getTacticIcon(tactic.category)} text-lg text-slate-400`}></i>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${getCategoryColor(tactic.category)}`}>
-                        {getCategoryLabel(tactic.category)}
-                      </span>
-                      {tactic.is_verified && (
-                        <span className="text-teal-400 text-xs" title="Verified">
-                          <i className="fas fa-check-circle"></i>
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
+            {tactics.map((tactic, index) => {
+              const score = Number(tactic.avg_execution_score) || 0
+              return (
+                <Link
+                  key={tactic.id}
+                  to={`/dashboard/tactics/${tactic.id}`}
+                  className={`gradient-border group cursor-pointer md:hover:translate-y-[-4px] active:scale-[0.98] transition-all duration-300${!tactic.is_in_category ? ' opacity-40 hover:opacity-70' : ''}`}
+                >
+                  <div className="card-inner p-5 md:p-7 flex flex-col h-full">
+                    <div className="flex justify-between items-start mb-5">
+                      <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center">
+                        <i className={`fas ${getTacticIcon(tactic.category)} text-lg text-slate-400`}></i>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${getCategoryColor(tactic.category)}`}>
+                          {getCategoryLabel(tactic.category)}
                         </span>
-                      )}
-                    </div>
-                  </div>
-
-                  <h3 className="text-lg font-black mb-2 tracking-tight group-hover:text-amber-400 transition-colors uppercase leading-tight">
-                    {tactic.name}
-                  </h3>
-                  {tactic.description && (
-                    <p className="text-xs text-slate-400 font-semibold mb-4 leading-relaxed line-clamp-2">
-                      {tactic.description}
-                    </p>
-                  )}
-
-                  {/* Execution Score Bar */}
-                  {score > 0 && (
-                    <div className="mb-6">
-                      <div className="flex justify-between items-center mb-1.5">
-                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Execution Score</span>
-                        <span className={`text-sm font-black ${getScoreColor(score)}`}>{Math.round(score)}</span>
-                      </div>
-                      <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full rounded-full transition-all ${
-                            score >= 70 ? 'bg-teal-400' : score >= 40 ? 'bg-yellow-400' : 'bg-slate-500'
-                          }`}
-                          style={{ width: `${Math.min(score, 100)}%` }}
-                        />
+                        {tactic.is_verified && (
+                          <span className="text-teal-400 text-xs" title="Verified">
+                            <i className="fas fa-check-circle"></i>
+                          </span>
+                        )}
                       </div>
                     </div>
-                  )}
 
-                  {/* Metrics Grid */}
-                  <div className="mt-auto grid grid-cols-3 gap-4 pt-5 border-t border-white/5">
-                    <div>
-                      <div className="metric-label">Videos</div>
-                      <div className="metric-value">{tactic.video_count}</div>
-                    </div>
-                    <div>
-                      <div className="metric-label">Avg Views</div>
-                      <div className="metric-value">{formatNumber(Math.round(Number(tactic.avg_views_when_present) || 0))}</div>
-                    </div>
-                    <div>
-                      <div className="metric-label">Rank</div>
-                      <div className="metric-value text-amber-400">#{index + 1}</div>
+                    <h3 className="text-lg font-black mb-2 tracking-tight group-hover:text-amber-400 transition-colors uppercase leading-tight">
+                      {tactic.name}
+                    </h3>
+                    {tactic.description && (
+                      <p className="text-xs text-slate-400 font-semibold mb-4 leading-relaxed line-clamp-2">
+                        {tactic.description}
+                      </p>
+                    )}
+
+                    {/* Execution Score Bar */}
+                    {score > 0 && (
+                      <div className="mb-6">
+                        <div className="flex justify-between items-center mb-1.5">
+                          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Execution Score</span>
+                          <span className={`text-sm font-black ${getScoreColor(score)}`}>{Math.round(score)}</span>
+                        </div>
+                        <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all ${
+                              score >= 70 ? 'bg-teal-400' : score >= 40 ? 'bg-yellow-400' : 'bg-slate-500'
+                            }`}
+                            style={{ width: `${Math.min(score, 100)}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Metrics Grid */}
+                    <div className="mt-auto grid grid-cols-3 gap-4 pt-5 border-t border-white/5">
+                      <div>
+                        <div className="metric-label">Videos</div>
+                        <div className="metric-value">{tactic.video_count}</div>
+                      </div>
+                      <div>
+                        <div className="metric-label">Avg Views</div>
+                        <div className="metric-value">{formatNumber(Math.round(Number(tactic.avg_views_when_present) || 0))}</div>
+                      </div>
+                      <div>
+                        <div className="metric-label">Rank</div>
+                        <div className="metric-value text-amber-400">#{index + 1}</div>
+                      </div>
                     </div>
                   </div>
+                </Link>
+              )
+            })}
+
+            {/* Loading more skeletons */}
+            {loadingMore && <SkeletonGrid count={3} type="tactic" />}
+
+            {/* Discover More Card - only show when all loaded */}
+            {!hasMore && (
+              <div className="border-2 border-dashed border-white/10 rounded-[1.5rem] p-8 flex flex-col items-center justify-center text-center opacity-50 hover:opacity-100 transition-opacity">
+                <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mb-4">
+                  <i className="fas fa-plus text-slate-500"></i>
                 </div>
-              </Link>
-            )
-          })}
-
-          {/* Discover More Card */}
-          <div className="border-2 border-dashed border-white/10 rounded-[1.5rem] p-8 flex flex-col items-center justify-center text-center opacity-50 hover:opacity-100 transition-opacity">
-            <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mb-4">
-              <i className="fas fa-plus text-slate-500"></i>
-            </div>
-            <h3 className="font-black text-sm uppercase tracking-widest text-slate-400">
-              {total} Tactics Indexed
-            </h3>
-            <p className="text-[10px] text-slate-500 font-bold mt-2">
-              Analyze more videos to discover new engagement techniques.
-            </p>
+                <h3 className="font-black text-sm uppercase tracking-widest text-slate-400">
+                  {total} Tactics Indexed
+                </h3>
+                <p className="text-[10px] text-slate-500 font-bold mt-2">
+                  Analyze more videos to discover new engagement techniques.
+                </p>
+              </div>
+            )}
           </div>
-        </div>
+
+          {/* Scroll sentinel */}
+          <div ref={sentinelRef} className="py-8" />
+        </>
       )}
       </>
       )}
