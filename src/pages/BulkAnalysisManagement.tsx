@@ -353,6 +353,14 @@ export default function BulkAnalysisManagement() {
   const [recomputingStats, setRecomputingStats] = useState(false)
   const [savingTactic, setSavingTactic] = useState(false)
 
+  // Prefetched counts (loaded on mount, independent of tab data)
+  const [counts, setCounts] = useState<{
+    formats: { total: number; stale: number }
+    hooks: { total: number; stale: number }
+    tactics: { total: number; stale: number }
+    versions: { total: number }
+  } | null>(null)
+
   // Version history tab state
   const [versionPage, setVersionPage] = useState(0)
   const [expandedVersions, setExpandedVersions] = useState<Set<number>>(new Set())
@@ -360,6 +368,13 @@ export default function BulkAnalysisManagement() {
   const [restoringVersion, setRestoringVersion] = useState<number | null>(null)
 
   // === Data Fetching ===
+
+  const fetchCounts = useCallback(async () => {
+    try {
+      const res = await authFetch('/api/analysis/retrain-counts')
+      if (res.ok) setCounts(await res.json())
+    } catch (err) { console.error('Failed to fetch counts:', err) }
+  }, [])
 
   const fetchFormats = useCallback(async () => {
     setFormatsLoading(true)
@@ -470,33 +485,34 @@ export default function BulkAnalysisManagement() {
     return () => { if (tacticPollingRef.current) { clearInterval(tacticPollingRef.current); tacticPollingRef.current = null } }
   }, [tacticRetrainStatus?.running, fetchTacticRetrainStatus])
 
-  // Refresh data when format retrain completes
+  // Refresh data + counts when format retrain completes
   useEffect(() => {
     if (formatRetrainStatus && !formatRetrainStatus.running && formatRetrainStatus.completed > 0) {
-      fetchFormats()
+      fetchFormats(); fetchCounts()
     }
   }, [formatRetrainStatus?.running]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Refresh data when hook retrain completes
+  // Refresh data + counts when hook retrain completes
   useEffect(() => {
     if (hookRetrainStatus && !hookRetrainStatus.running && hookRetrainStatus.completed > 0) {
-      fetchHooks()
+      fetchHooks(); fetchCounts()
     }
   }, [hookRetrainStatus?.running]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Refresh data when tactic retrain completes
+  // Refresh data + counts when tactic retrain completes
   useEffect(() => {
     if (tacticRetrainStatus && !tacticRetrainStatus.running && tacticRetrainStatus.completed > 0) {
-      fetchTactics()
+      fetchTactics(); fetchCounts()
     }
   }, [tacticRetrainStatus?.running]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // On mount: restore all three retrain statuses
+  // On mount: prefetch counts + restore all three retrain statuses
   useEffect(() => {
+    fetchCounts()
     fetchFormatRetrainStatus()
     fetchHookRetrainStatus()
     fetchTacticRetrainStatus()
-  }, [fetchFormatRetrainStatus, fetchHookRetrainStatus, fetchTacticRetrainStatus])
+  }, [fetchCounts, fetchFormatRetrainStatus, fetchHookRetrainStatus, fetchTacticRetrainStatus])
 
   // === Actions ===
 
@@ -708,19 +724,24 @@ export default function BulkAnalysisManagement() {
 
   // === Computed Values ===
 
-  const staleFormatsCount = formats.filter(f => f.is_stale).length
-  const staleHooksCount = hooks.filter(h => h.is_stale).length
-  const staleTacticsCount = tactics.filter(t => t.is_stale || !t.is_analyzed).length
+  // Use list-derived counts when available, otherwise prefetched counts
+  const totalFormatsCount = formats.length || counts?.formats.total || 0
+  const totalHooksCount = hooks.length || counts?.hooks.total || 0
+  const totalTacticsCount = tactics.length || counts?.tactics.total || 0
+  const staleFormatsCount = formats.length ? formats.filter(f => f.is_stale).length : (counts?.formats.stale ?? 0)
+  const staleHooksCount = hooks.length ? hooks.filter(h => h.is_stale).length : (counts?.hooks.stale ?? 0)
+  const staleTacticsCount = tactics.length ? tactics.filter(t => t.is_stale || !t.is_analyzed).length : (counts?.tactics.stale ?? 0)
+  const totalVersionsCount = versionsTotal || counts?.versions.total || 0
 
   const showFormatPanel = formatRetrainStatus && (formatRetrainStatus.running || formatRetrainStatus.completed > 0)
   const showHookPanel = hookRetrainStatus && (hookRetrainStatus.running || hookRetrainStatus.completed > 0)
   const showTacticPanel = tacticRetrainStatus && (tacticRetrainStatus.running || tacticRetrainStatus.completed > 0)
 
   const tabs = [
-    { key: 'formats' as const, label: 'Formats', count: formats.length, icon: 'fa-layer-group' },
-    { key: 'hooks' as const, label: 'Hooks', count: hooks.length, icon: 'fa-bolt' },
-    { key: 'tactics' as const, label: 'Tactics', count: tactics.length, icon: 'fa-chess' },
-    { key: 'history' as const, label: 'Version History', count: versionsTotal, icon: 'fa-clock-rotate-left' },
+    { key: 'formats' as const, label: 'Formats', count: totalFormatsCount, icon: 'fa-layer-group' },
+    { key: 'hooks' as const, label: 'Hooks', count: totalHooksCount, icon: 'fa-bolt' },
+    { key: 'tactics' as const, label: 'Tactics', count: totalTacticsCount, icon: 'fa-chess' },
+    { key: 'history' as const, label: 'Version History', count: totalVersionsCount, icon: 'fa-clock-rotate-left' },
   ]
 
   return (
@@ -730,21 +751,21 @@ export default function BulkAnalysisManagement() {
         {/* Page Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-6">
-            <h1 className="text-2xl font-bold font-display">Bulk Analysis Management</h1>
+            <h1 className="text-2xl font-bold font-display">Training</h1>
             <span className="px-2 py-0.5 bg-pink-500/10 text-pink-400 text-[10px] font-black uppercase rounded">management</span>
           </div>
           <div className="grid grid-cols-3 sm:grid-cols-6 gap-4">
             <div className="bg-white/5 border border-white/5 rounded-xl p-4">
               <div className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-1">Total Formats</div>
-              <div className="text-2xl font-bold">{formats.length}</div>
+              <div className="text-2xl font-bold">{totalFormatsCount}</div>
             </div>
             <div className="bg-white/5 border border-white/5 rounded-xl p-4">
               <div className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-1">Total Hooks</div>
-              <div className="text-2xl font-bold">{hooks.length}</div>
+              <div className="text-2xl font-bold">{totalHooksCount}</div>
             </div>
             <div className="bg-white/5 border border-white/5 rounded-xl p-4">
               <div className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-1">Total Tactics</div>
-              <div className="text-2xl font-bold">{tactics.length}</div>
+              <div className="text-2xl font-bold">{totalTacticsCount}</div>
             </div>
             <div className="bg-white/5 border border-white/5 rounded-xl p-4">
               <div className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-1">Stale Formats</div>

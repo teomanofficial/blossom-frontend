@@ -5,6 +5,30 @@ import { getStorageUrl } from '../lib/media'
 import VideoStoryCarousel, { type CarouselVideo } from '../components/VideoStoryCarousel'
 import FineTunePanel from '../components/FineTunePanel'
 
+interface FormatSong {
+  id: number
+  title: string
+  artist: string | null
+  album: string | null
+  cover_url: string | null
+  local_cover_path: string | null
+  play_url: string | null
+  local_audio_path: string | null
+  platform: string
+  is_original: boolean
+  duration_sec: number | null
+  total_video_count: number
+  total_views: number
+  avg_views: number
+  recent_video_count: number
+  recent_avg_views: number
+  trending_score: number
+  count_3h: number
+  count_24h: number
+  count_7d: number
+  velocity: number
+}
+
 interface FormatVideo {
   id: number
   username: string
@@ -141,6 +165,8 @@ export default function FormatDetail() {
   const [formatTactics, setFormatTactics] = useState<FormatTactic[]>([])
   const [tacticsLoading, setTacticsLoading] = useState(false)
   const [expandedTactic, setExpandedTactic] = useState<number | null>(null)
+  const [formatSongs, setFormatSongs] = useState<FormatSong[]>([])
+  const [songsLoading, setSongsLoading] = useState(false)
   const loaderRef = useRef<HTMLDivElement>(null)
 
   const fetchFormat = useCallback(() => {
@@ -193,7 +219,17 @@ export default function FormatDetail() {
       .finally(() => setTacticsLoading(false))
   }, [id])
 
-  useEffect(() => { fetchFormat(); fetchTactics() }, [fetchFormat, fetchTactics])
+  const fetchSongs = useCallback(() => {
+    setSongsLoading(true)
+    setFormatSongs([])
+    authFetch(`/api/analysis/formats/${id}/songs?limit=10&days=30`)
+      .then((r) => r.json())
+      .then((data) => setFormatSongs(data.songs || []))
+      .catch(() => {})
+      .finally(() => setSongsLoading(false))
+  }, [id])
+
+  useEffect(() => { fetchFormat(); fetchTactics(); fetchSongs() }, [fetchFormat, fetchTactics, fetchSongs])
 
   const triggerAnalysis = () => {
     setAnalyzing(true)
@@ -599,6 +635,77 @@ export default function FormatDetail() {
         <div className="flex items-center justify-center py-8 mb-12">
           <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
           <span className="text-slate-500 text-xs font-bold ml-3">Loading tactics...</span>
+        </div>
+      )}
+
+      {/* Trending Songs for this Format */}
+      {formatSongs.length > 0 && (
+        <div className="mb-12 md:mb-20">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-2 mb-6 md:mb-8">
+            <div>
+              <h2 className="text-2xl md:text-3xl font-black font-display tracking-tight uppercase">Trending Songs</h2>
+              <p className="text-slate-500 text-xs md:text-sm font-medium">Songs most used in this format, ranked by trending score.</p>
+            </div>
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+              {formatSongs.length} song{formatSongs.length === 1 ? '' : 's'}
+            </span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
+            {formatSongs.map((song) => {
+              const coverSrc = getStorageUrl(song.local_cover_path)
+              const vel = song.velocity >= 3
+                ? { icon: 'fa-fire', color: 'text-orange-400', bg: 'bg-orange-500/20' }
+                : song.velocity >= 1.5
+                ? { icon: 'fa-arrow-trend-up', color: 'text-green-400', bg: 'bg-green-500/20' }
+                : null
+              return (
+                <div key={song.id} className="glass-card rounded-xl overflow-hidden border border-white/5 hover:border-cyan-500/30 transition-all group">
+                  <div className="aspect-square bg-slate-900 relative overflow-hidden">
+                    {coverSrc ? (
+                      <img src={coverSrc} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-cyan-500/10 to-pink-500/10">
+                        <i className="fas fa-music text-cyan-400/30 text-3xl" />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                    <div className="absolute top-2 right-2 flex items-center gap-1">
+                      {vel && (
+                        <span className={`text-[9px] font-black px-1.5 py-0.5 rounded ${vel.bg} ${vel.color} backdrop-blur-sm`}>
+                          <i className={`fas ${vel.icon} text-[7px]`} />
+                        </span>
+                      )}
+                      <i className={`fab fa-${song.platform === 'tiktok' ? 'tiktok' : 'instagram'} text-[10px] text-white/70`} />
+                    </div>
+                    <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
+                      <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 backdrop-blur-sm">
+                        {song.recent_video_count} videos
+                      </span>
+                      {song.count_3h > 0 && (
+                        <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-cyan-500/30 text-cyan-200 backdrop-blur-sm">
+                          <i className="fas fa-bolt text-[7px] mr-0.5" />{song.count_3h} · 3h
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="p-3">
+                    <div className="text-sm font-black text-white truncate mb-0.5 group-hover:text-cyan-300 transition-colors">{song.title}</div>
+                    {song.artist && <div className="text-[10px] text-slate-500 font-bold truncate mb-1">{song.artist}</div>}
+                    <div className="flex items-center gap-2 text-[10px] text-slate-600 font-bold">
+                      <span><i className="fas fa-eye mr-0.5 text-[8px]" />{formatNumber(song.recent_avg_views)}</span>
+                      {song.count_24h > 0 && <span><i className="fas fa-clock mr-0.5 text-[8px]" />{song.count_24h} · 24h</span>}
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+      {songsLoading && (
+        <div className="flex items-center justify-center py-8 mb-12">
+          <div className="w-6 h-6 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
+          <span className="text-slate-500 text-xs font-bold ml-3">Loading trending songs...</span>
         </div>
       )}
 

@@ -117,13 +117,21 @@ interface TrendingSong {
   album: string | null
   cover_url: string | null
   local_cover_path: string | null
+  play_url: string | null
+  local_audio_path: string | null
   platform: string
   is_original: boolean
+  duration_sec: number | null
   total_video_count: number
   total_views: number
   avg_views: number
   recent_video_count: number
   recent_avg_views: number
+  trending_score: number
+  count_3h: number
+  count_24h: number
+  count_7d: number
+  velocity: number
 }
 
 interface OverviewData {
@@ -328,6 +336,11 @@ function ContentCard({ content }: { content: TrendingContent }) {
 
 function SongCard({ song }: { song: TrendingSong }) {
   const coverSrc = getStorageUrl(song.local_cover_path)
+  const vel = song.velocity >= 3
+    ? { icon: 'fa-fire', color: 'text-orange-400', bg: 'bg-orange-500/20' }
+    : song.velocity >= 1.5
+    ? { icon: 'fa-arrow-trend-up', color: 'text-green-400', bg: 'bg-green-500/20' }
+    : null
 
   return (
     <div className="shrink-0 w-[170px] sm:w-[190px] glass-card rounded-xl overflow-hidden border border-white/5 hover:border-cyan-500/30 transition-all group cursor-pointer">
@@ -340,13 +353,23 @@ function SongCard({ song }: { song: TrendingSong }) {
           </div>
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-        <div className="absolute top-2 right-2">
+        <div className="absolute top-2 right-2 flex items-center gap-1">
+          {vel && (
+            <span className={`text-[9px] font-black px-1.5 py-0.5 rounded ${vel.bg} ${vel.color} backdrop-blur-sm`}>
+              <i className={`fas ${vel.icon} text-[7px]`} />
+            </span>
+          )}
           <i className={`${platformIcon(song.platform)} text-[10px] text-white/70`} />
         </div>
-        <div className="absolute bottom-2 left-2">
+        <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
           <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 backdrop-blur-sm">
             {song.recent_video_count} videos
           </span>
+          {song.count_3h > 0 && (
+            <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-cyan-500/30 text-cyan-200 backdrop-blur-sm">
+              <i className="fas fa-bolt text-[7px] mr-0.5" />{song.count_3h} · 3h
+            </span>
+          )}
         </div>
       </div>
       <div className="p-3">

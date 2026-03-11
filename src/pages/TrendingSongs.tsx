@@ -32,6 +32,17 @@ interface TrendingSong {
   avg_views: number
   recent_video_count: number
   recent_avg_views: number
+  trending_score: number
+  count_3h: number
+  count_24h: number
+  count_7d: number
+  velocity: number
+}
+
+function velocityLabel(v: number): { icon: string; color: string; label: string } | null {
+  if (v >= 3) return { icon: 'fa-fire', color: 'text-orange-400', label: 'Exploding' }
+  if (v >= 1.5) return { icon: 'fa-arrow-trend-up', color: 'text-green-400', label: 'Rising' }
+  return null
 }
 
 function getAudioUrl(song: TrendingSong): string | null {
@@ -262,11 +273,19 @@ export default function TrendingSongs() {
                       <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 backdrop-blur-sm">
                         {s.recent_video_count} videos
                       </span>
-                      {s.is_original && (
-                        <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-yellow-500/20 text-yellow-300 backdrop-blur-sm">
-                          Original
-                        </span>
-                      )}
+                      <div className="flex items-center gap-1">
+                        {(() => { const vel = velocityLabel(s.velocity); return vel ? (
+                          <span className={`text-[9px] font-black px-1.5 py-0.5 rounded bg-black/40 backdrop-blur-sm ${vel.color}`}>
+                            <i className={`fas ${vel.icon} mr-0.5 text-[7px]`} />
+                            {vel.label}
+                          </span>
+                        ) : null })()}
+                        {s.is_original && (
+                          <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-yellow-500/20 text-yellow-300 backdrop-blur-sm">
+                            Original
+                          </span>
+                        )}
+                      </div>
                     </div>
                     {/* Progress bar */}
                     {isPlaying && (
@@ -286,9 +305,14 @@ export default function TrendingSongs() {
                         {s.artist}
                       </div>
                     )}
-                    <div className="flex items-center gap-3 text-[10px] text-slate-600 font-bold">
+                    <div className="flex items-center gap-2 text-[10px] text-slate-600 font-bold flex-wrap">
+                      {s.count_3h > 0 && (
+                        <span className="text-cyan-400"><i className="fas fa-bolt mr-0.5 text-[8px]" />{s.count_3h} · 3h</span>
+                      )}
+                      {s.count_24h > 0 && (
+                        <span><i className="fas fa-clock mr-0.5 text-[8px]" />{s.count_24h} · 24h</span>
+                      )}
                       <span><i className="fas fa-eye mr-0.5 text-[8px]" />{fmt(s.recent_avg_views)}</span>
-                      <span><i className="fas fa-film mr-0.5 text-[8px]" />{s.total_video_count} total</span>
                     </div>
                   </div>
                 </div>

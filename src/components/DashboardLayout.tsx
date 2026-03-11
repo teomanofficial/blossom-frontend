@@ -40,7 +40,7 @@ const managementItems = [
   { to: '/dashboard/videos', icon: 'fa-satellite-dish', label: 'Scan & Analyze' },
   { to: '/dashboard/discovery', icon: 'fa-bolt', label: 'Discovery' },
   { to: '/dashboard/support-management', icon: 'fa-ticket', label: 'Support Tickets' },
-  { to: '/dashboard/bulk-management', icon: 'fa-arrows-rotate', label: 'Bulk Retrain' },
+  { to: '/dashboard/bulk-management', icon: 'fa-arrows-rotate', label: 'Training' },
   { to: '/dashboard/onboarding-management', icon: 'fa-clipboard-check', label: 'Onboarding' },
   { to: '/dashboard/ai-model-lab', icon: 'fa-microchip', label: 'AI Model Lab' },
   { to: '/dashboard/hashtags', icon: 'fa-hashtag', label: 'Hashtags' },
