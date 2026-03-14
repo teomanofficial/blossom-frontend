@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { authFetch } from '../lib/api'
 import { getStorageUrl } from '../lib/media'
+import { useAuth } from '../context/AuthContext'
+import { useImpersonation } from '../context/ImpersonationContext'
 import CreatorScoreGauge from '../components/charts/CreatorScoreGauge'
 import FollowerGrowthChart from '../components/charts/FollowerGrowthChart'
 import EngagementChart from '../components/charts/EngagementChart'
@@ -127,8 +129,20 @@ function platformGradient(p: string) {
   return p === 'tiktok' ? 'from-cyan-400 to-pink-500' : 'from-purple-500 via-pink-500 to-orange-400'
 }
 
+/* ── Admin user type ── */
+interface AdminUser {
+  id: string
+  email: string
+  full_name: string | null
+  user_type: string
+}
+
 /* ── Main Page ── */
 export default function Platforms() {
+  const { userType } = useAuth()
+  const { impersonating, startImpersonation, stopImpersonation, isImpersonating } = useImpersonation()
+  const isAdmin = userType === 'admin'
+
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [creatorScore, setCreatorScore] = useState<CreatorScore | null>(null)
   const [bestTimes, setBestTimes] = useState<BestTime[]>([])
@@ -137,6 +151,71 @@ export default function Platforms() {
   const [syncing, setSyncing] = useState<number | null>(null)
   const [connecting, setConnecting] = useState<string | null>(null)
   const [analyzingAll, setAnalyzingAll] = useState(false)
+  const [recalculating, setRecalculating] = useState(false)
+
+  // Admin user navigation
+  const [adminUsers, setAdminUsers] = useState<AdminUser[]>([])
+  const [adminUserSearch, setAdminUserSearch] = useState('')
+  const [showUserDropdown, setShowUserDropdown] = useState(false)
+
+  // Fetch admin user list
+  useEffect(() => {
+    if (!isAdmin) return
+    authFetch('/api/admin/users').then(async (res) => {
+      if (res.ok) {
+        const data = await res.json()
+        setAdminUsers(data.users || [])
+      }
+    }).catch(() => {})
+  }, [isAdmin])
+
+  const handleAdminNavigate = async (userId: string) => {
+    setShowUserDropdown(false)
+    setAdminUserSearch('')
+    setLoading(true)
+    try {
+      await startImpersonation(userId)
+    } catch {
+      toast.error('Failed to switch user')
+      setLoading(false)
+    }
+  }
+
+  const handleStopImpersonation = async () => {
+    setLoading(true)
+    await stopImpersonation()
+  }
+
+  const currentUserIndex = impersonating
+    ? adminUsers.findIndex(u => u.id === impersonating.userId)
+    : -1
+
+  const handlePrevUser = () => {
+    const prev = adminUsers[currentUserIndex - 1]
+    if (currentUserIndex > 0 && prev) handleAdminNavigate(prev.id)
+  }
+
+  const handleNextUser = () => {
+    const next = adminUsers[currentUserIndex + 1]
+    if (currentUserIndex < adminUsers.length - 1 && next) handleAdminNavigate(next.id)
+  }
+
+  const handleRecalculate = async () => {
+    setRecalculating(true)
+    try {
+      const res = await authFetch('/api/social/creator-score')
+      if (res.ok) {
+        setCreatorScore(await res.json())
+        toast.success('Creator score recalculated')
+      } else {
+        toast.error('Failed to recalculate')
+      }
+    } catch {
+      toast.error('Failed to recalculate')
+    } finally {
+      setRecalculating(false)
+    }
+  }
 
   const fetchData = useCallback(async () => {
     try {
@@ -158,7 +237,11 @@ export default function Platforms() {
     }
   }, [])
 
-  useEffect(() => { fetchData() }, [fetchData])
+  // Re-fetch when impersonation changes
+  useEffect(() => {
+    setLoading(true)
+    fetchData()
+  }, [fetchData, impersonating?.userId])
 
   const isMobile = () => /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
 
@@ -281,10 +364,108 @@ export default function Platforms() {
 
   return (
     <>
+      {/* Admin User Navigation Bar */}
+      {isAdmin && (
+        <div className="mb-4 glass-card rounded-2xl p-3 sm:p-4 border border-amber-500/20 bg-amber-500/[0.03]">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-2">
+              <i className="fas fa-shield-halved text-amber-400 text-xs" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-amber-400">Admin View</span>
+            </div>
+
+            <div className="flex items-center gap-2 flex-1 min-w-0 justify-center">
+              {isImpersonating && (
+                <button
+                  onClick={handlePrevUser}
+                  disabled={currentUserIndex <= 0}
+                  className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  <i className="fas fa-chevron-left text-[10px]" />
+                </button>
+              )}
+
+              <div className="relative">
+                <button
+                  onClick={() => setShowUserDropdown(!showUserDropdown)}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-lg transition-all min-w-[180px] justify-between"
+                >
+                  <span className="text-xs font-bold truncate">
+                    {isImpersonating ? impersonating!.displayName : 'Select a user...'}
+                  </span>
+                  <i className={`fas fa-chevron-down text-[8px] text-slate-500 transition-transform ${showUserDropdown ? 'rotate-180' : ''}`} />
+                </button>
+
+                {showUserDropdown && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-slate-900 border border-white/10 rounded-xl shadow-2xl z-50 max-h-64 overflow-hidden flex flex-col min-w-[260px]">
+                    <div className="p-2 border-b border-white/5">
+                      <input
+                        type="text"
+                        value={adminUserSearch}
+                        onChange={(e) => setAdminUserSearch(e.target.value)}
+                        placeholder="Search users..."
+                        className="w-full px-2.5 py-1.5 bg-white/5 rounded-lg text-xs text-white placeholder-slate-500 outline-none focus:ring-1 focus:ring-amber-500/30"
+                        autoFocus
+                      />
+                    </div>
+                    <div className="overflow-y-auto max-h-48">
+                      {adminUsers
+                        .filter(u => {
+                          if (!adminUserSearch) return true
+                          const q = adminUserSearch.toLowerCase()
+                          return (u.email?.toLowerCase().includes(q)) || (u.full_name?.toLowerCase().includes(q))
+                        })
+                        .map(u => (
+                          <button
+                            key={u.id}
+                            onClick={() => handleAdminNavigate(u.id)}
+                            className={`w-full text-left px-3 py-2 hover:bg-white/5 transition-colors flex items-center justify-between ${impersonating?.userId === u.id ? 'bg-amber-500/10' : ''}`}
+                          >
+                            <div className="min-w-0">
+                              <div className="text-xs font-bold truncate">{u.full_name || u.email}</div>
+                              <div className="text-[10px] text-slate-500 truncate">{u.email}</div>
+                            </div>
+                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ml-2 ${u.user_type === 'admin' ? 'bg-amber-500/20 text-amber-400' : u.user_type === 'vip' ? 'bg-purple-500/20 text-purple-400' : 'bg-slate-500/20 text-slate-400'}`}>
+                              {u.user_type}
+                            </span>
+                          </button>
+                        ))
+                      }
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {isImpersonating && (
+                <button
+                  onClick={handleNextUser}
+                  disabled={currentUserIndex >= adminUsers.length - 1}
+                  className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  <i className="fas fa-chevron-right text-[10px]" />
+                </button>
+              )}
+            </div>
+
+            {isImpersonating && (
+              <button
+                onClick={handleStopImpersonation}
+                className="text-[10px] font-bold text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 rounded-lg px-3 py-1.5 transition-all"
+              >
+                <i className="fas fa-arrow-right-from-bracket mr-1" />Back to Admin
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Page Header */}
       <div className="mb-6 lg:mb-10">
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tighter mb-1 lg:mb-2 font-display">
-          Your <span className="gradient-text">Platforms</span>
+          {isImpersonating ? (
+            <>{impersonating!.displayName}'s <span className="gradient-text">Platforms</span></>
+          ) : (
+            <>Your <span className="gradient-text">Platforms</span></>
+          )}
         </h1>
         <p className="text-slate-500 text-xs sm:text-sm font-medium">
           Track your content performance, analyze your posts, and grow your audience.
@@ -376,9 +557,24 @@ export default function Platforms() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 lg:mb-8">
             {/* Creator Score */}
             <div className="glass-card rounded-3xl p-5 sm:p-7 flex flex-col items-center justify-center">
-              <div className="flex items-center gap-2 mb-4 self-start">
-                <i className="fas fa-trophy text-yellow-400 text-xs" />
-                <h2 className="text-xs font-black uppercase tracking-widest text-slate-500 font-display">Creator Score</h2>
+              <div className="flex items-center justify-between mb-4 w-full">
+                <div className="flex items-center gap-2">
+                  <i className="fas fa-trophy text-yellow-400 text-xs" />
+                  <h2 className="text-xs font-black uppercase tracking-widest text-slate-500 font-display">Creator Score</h2>
+                </div>
+                {isAdmin && (
+                  <button
+                    onClick={handleRecalculate}
+                    disabled={recalculating}
+                    className="text-[10px] font-bold text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 rounded-lg px-2.5 py-1 transition-all disabled:opacity-50"
+                  >
+                    {recalculating ? (
+                      <><i className="fas fa-spinner fa-spin mr-1" />Recalculating...</>
+                    ) : (
+                      <><i className="fas fa-calculator mr-1" />Recalculate</>
+                    )}
+                  </button>
+                )}
               </div>
               <CreatorScoreGauge score={creatorScore?.score ?? null} />
               {creatorScore?.components && (

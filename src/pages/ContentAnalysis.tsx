@@ -1,4 +1,5 @@
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
+import useEmblaCarousel from 'embla-carousel-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { API_URL } from '../lib/api'
@@ -448,6 +449,8 @@ export default function ContentAnalysis() {
     const benchmarks = analysisResult?.benchmarks;
     const topFormatVideos = analysisResult?.topFormatVideos;
     const topHookVideos = analysisResult?.topHookVideos;
+    const hookClassAnalysis = benchmarks?.hook_class_analysis;
+    const hookTacticFrequency = analysisResult?.hookTacticFrequency;
     const scoreBreakdown = improv?.score_breakdown;
 
     const tabs = [
@@ -581,6 +584,61 @@ export default function ContentAnalysis() {
       );
     };
 
+    const VideoCarousel = ({ videos }: { videos: any[] }) => {
+      const [emblaRef, emblaApi] = useEmblaCarousel({ align: 'start', containScroll: 'trimSnaps', dragFree: true });
+      const [canScrollPrev, setCanScrollPrev] = useState(false);
+      const [canScrollNext, setCanScrollNext] = useState(false);
+
+      const onSelect = useCallback(() => {
+        if (!emblaApi) return;
+        setCanScrollPrev(emblaApi.canScrollPrev());
+        setCanScrollNext(emblaApi.canScrollNext());
+      }, [emblaApi]);
+
+      useEffect(() => {
+        if (!emblaApi) return;
+        onSelect();
+        emblaApi.on('select', onSelect);
+        emblaApi.on('reInit', onSelect);
+        return () => { emblaApi.off('select', onSelect); emblaApi.off('reInit', onSelect); };
+      }, [emblaApi, onSelect]);
+
+      return (
+        <div className="relative group/carousel">
+          {canScrollPrev && (
+            <button
+              onClick={() => emblaApi?.scrollPrev()}
+              className="absolute left-0 top-0 bottom-8 z-10 w-8 flex items-center justify-start bg-gradient-to-r from-black/60 to-transparent rounded-l-xl opacity-0 group-hover/carousel:opacity-100 transition-opacity"
+            >
+              <i className="fas fa-chevron-left text-xs text-white/80 ml-1.5"></i>
+            </button>
+          )}
+          <div ref={emblaRef} className="overflow-hidden">
+            <div className="flex gap-3">
+              {videos.map((v: any, i: number) => (
+                <div key={v.video_id} className="flex-[0_0_120px] min-w-0">
+                  <ExampleVideoCard video={v} videos={videos} index={i} />
+                </div>
+              ))}
+            </div>
+          </div>
+          {canScrollNext && (
+            <button
+              onClick={() => emblaApi?.scrollNext()}
+              className="absolute right-0 top-0 bottom-8 z-10 w-8 flex items-center justify-end bg-gradient-to-l from-black/60 to-transparent rounded-r-xl opacity-0 group-hover/carousel:opacity-100 transition-opacity"
+            >
+              <i className="fas fa-chevron-right text-xs text-white/80 mr-1.5"></i>
+            </button>
+          )}
+          {videos.length > 4 && (
+            <div className="flex items-center justify-center mt-2">
+              <span className="text-[9px] text-slate-600">{videos.length} videos — scroll to see more</span>
+            </div>
+          )}
+        </div>
+      );
+    };
+
     const ExampleVideoRow = ({ videos, label }: { videos: any[] | undefined; label?: string }) => {
       if (!videos || !Array.isArray(videos) || videos.length === 0) return null;
       // Flatten if nested arrays
@@ -591,9 +649,7 @@ export default function ContentAnalysis() {
           <div className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-3">
             <i className="fas fa-play-circle mr-1.5 text-pink-400/50"></i>{label || 'See it done right'}
           </div>
-          <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none' }}>
-            {flat.map((v: any, i: number) => <ExampleVideoCard key={v.video_id} video={v} videos={flat} index={i} />)}
-          </div>
+          <VideoCarousel videos={flat} />
         </div>
       );
     };
@@ -666,75 +722,75 @@ export default function ContentAnalysis() {
                     </span>
                   )}
                 </div>
+
+                {/* Scores inline */}
+                {(improv?.optimization_score != null || virality?.overall_virality_score != null) && (
+                  <div className="flex gap-3 pt-2">
+                    {improv?.optimization_score != null && (
+                      <div className="bg-white/[0.03] rounded-xl px-4 py-3 border border-white/5 flex items-center gap-3">
+                        <div className={`text-3xl font-black ${scoreColor(improv.optimization_score)}`}>
+                          {improv.optimization_score}
+                        </div>
+                        <div>
+                          <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Optimization</div>
+                          <div className="text-[9px] text-slate-600">out of 100</div>
+                        </div>
+                      </div>
+                    )}
+                    {virality?.overall_virality_score != null && (
+                      <div className="bg-white/[0.03] rounded-xl px-4 py-3 border border-white/5 flex items-center gap-3">
+                        <div className={`text-3xl font-black ${scoreColor(virality.overall_virality_score)}`}>
+                          {virality.overall_virality_score}
+                        </div>
+                        <div>
+                          <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
+                            <i className="fas fa-fire mr-1 text-orange-400"></i>Virality
+                          </div>
+                          <div className="text-[9px] text-slate-600">out of 100</div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {/* Score Breakdown */}
+                {scoreBreakdown && (
+                  <div className="flex flex-wrap gap-3 pt-2">
+                    {[
+                      { label: 'Hook Power', value: scoreBreakdown.hook_power, icon: 'fa-bolt' },
+                      { label: 'Retention', value: scoreBreakdown.retention_strength, icon: 'fa-magnet' },
+                      { label: 'Emotional Impact', value: scoreBreakdown.emotional_impact, icon: 'fa-heart' },
+                      { label: 'Shareability', value: scoreBreakdown.shareability, icon: 'fa-share-alt' },
+                      { label: 'Tactic Execution', value: scoreBreakdown.tactic_execution, icon: 'fa-crosshairs' },
+                    ].map((card) => (
+                      <div key={card.label} className="bg-white/[0.03] rounded-xl px-3 py-2 border border-white/5 flex items-center gap-2">
+                        <div className={`w-9 h-9 rounded-full border-2 flex items-center justify-center ${
+                          (card.value || 0) >= 70
+                            ? 'border-teal-400/50'
+                            : (card.value || 0) >= 40
+                            ? 'border-yellow-400/50'
+                            : 'border-red-400/50'
+                        }`}>
+                          <span className={`text-sm font-black ${scoreColor(card.value || 0)}`}>
+                            {card.value ?? '--'}
+                          </span>
+                        </div>
+                        <div className="text-[9px] font-black text-slate-500 uppercase tracking-wider">
+                          {card.label}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
-
-          {/* Overall Scores */}
-          {(improv?.optimization_score != null || virality?.overall_virality_score != null) && (
-            <div className={`grid ${improv?.optimization_score != null && virality?.overall_virality_score != null ? 'grid-cols-2' : 'grid-cols-1'} gap-4`}>
-              {improv?.optimization_score != null && (
-                <div className="glass-card rounded-3xl p-8 text-center">
-                  <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">
-                    Optimization Score
-                  </div>
-                  <div className={`text-6xl font-black ${scoreColor(improv.optimization_score)}`}>
-                    {improv.optimization_score}
-                  </div>
-                  <div className="text-xs text-slate-500 mt-2">out of 100</div>
-                </div>
-              )}
-              {virality?.overall_virality_score != null && (
-                <div className="glass-card rounded-3xl p-8 text-center">
-                  <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">
-                    <i className="fas fa-fire mr-1 text-orange-400"></i>Virality Score
-                  </div>
-                  <div className={`text-6xl font-black ${scoreColor(virality.overall_virality_score)}`}>
-                    {virality.overall_virality_score}
-                  </div>
-                  <div className="text-xs text-slate-500 mt-2">out of 100</div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Score Breakdown Cards */}
-          {scoreBreakdown && (
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              {[
-                { label: 'Hook Power', value: scoreBreakdown.hook_power, icon: 'fa-bolt' },
-                { label: 'Retention', value: scoreBreakdown.retention_strength, icon: 'fa-magnet' },
-                { label: 'Emotional Impact', value: scoreBreakdown.emotional_impact, icon: 'fa-heart' },
-                { label: 'Shareability', value: scoreBreakdown.shareability, icon: 'fa-share-alt' },
-                { label: 'Tactic Execution', value: scoreBreakdown.tactic_execution, icon: 'fa-crosshairs' },
-              ].map((card) => (
-                <div key={card.label} className="glass-card rounded-3xl p-5 text-center">
-                  <div className={`w-16 h-16 mx-auto rounded-full border-2 flex items-center justify-center mb-3 ${
-                    (card.value || 0) >= 70
-                      ? 'border-teal-400/50'
-                      : (card.value || 0) >= 40
-                      ? 'border-yellow-400/50'
-                      : 'border-red-400/50'
-                  }`}>
-                    <span className={`text-2xl font-black ${scoreColor(card.value || 0)}`}>
-                      {card.value ?? '--'}
-                    </span>
-                  </div>
-                  <div className="text-[10px] font-black text-slate-500 uppercase tracking-wider">
-                    <i className={`fas ${card.icon} mr-1 text-[8px]`}></i>
-                    {card.label}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
 
         {/* ── Format & Hook Class Benchmarks ── */}
         {(benchmarks?.format_name || benchmarks?.hook_name) && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {benchmarks?.format_name && (
-              <div className="glass-card rounded-3xl p-6">
+              <div className="glass-card rounded-3xl p-6 flex flex-col">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-black text-white flex items-center gap-2">
                     <i className="fas fa-tags text-pink-400 text-xs"></i>Format Class
@@ -767,27 +823,23 @@ export default function ContentAnalysis() {
                   </div>
                 )}
                 {virality?.benchmark_comparison?.views_vs_format_avg && (
-                  <div className="mt-3 text-xs font-bold text-slate-400">
+                  <div className="mt-4 mb-2 text-xs font-bold text-slate-400">
                     <i className="fas fa-chart-line mr-1 text-[9px]"></i>
                     {virality.benchmark_comparison.views_vs_format_avg}
                   </div>
                 )}
                 {topFormatVideos && topFormatVideos.length > 0 && (
-                  <div className="mt-4 pt-4 border-t border-white/5">
+                  <div className="mt-auto pt-5 border-t border-white/5" style={{ marginTop: 'auto' }}>
                     <div className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-3">
                       <i className="fas fa-crown mr-1.5 text-pink-400/50"></i>Top by views
                     </div>
-                    <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none' }}>
-                      {topFormatVideos.map((v: any, i: number) => (
-                        <ExampleVideoCard key={v.video_id} video={v} videos={topFormatVideos} index={i} />
-                      ))}
-                    </div>
+                    <VideoCarousel videos={topFormatVideos} />
                   </div>
                 )}
               </div>
             )}
             {benchmarks?.hook_name && (
-              <div className="glass-card rounded-3xl p-6">
+              <div className="glass-card rounded-3xl p-6 flex flex-col">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-black text-white flex items-center gap-2">
                     <i className="fas fa-magnet text-purple-400 text-xs"></i>Hook Class
@@ -820,15 +872,11 @@ export default function ContentAnalysis() {
                   </div>
                 )}
                 {topHookVideos && topHookVideos.length > 0 && (
-                  <div className="mt-4 pt-4 border-t border-white/5">
+                  <div className="mt-auto pt-5 border-t border-white/5" style={{ marginTop: 'auto' }}>
                     <div className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-3">
                       <i className="fas fa-crown mr-1.5 text-purple-400/50"></i>Top by views
                     </div>
-                    <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none' }}>
-                      {topHookVideos.map((v: any, i: number) => (
-                        <ExampleVideoCard key={v.video_id} video={v} videos={topHookVideos} index={i} />
-                      ))}
-                    </div>
+                    <VideoCarousel videos={topHookVideos} />
                   </div>
                 )}
               </div>
@@ -1385,14 +1433,45 @@ export default function ContentAnalysis() {
                   <i className="fas fa-chess mr-2 text-indigo-400 text-sm"></i>Hook Tactics
                 </h3>
                 <div className="space-y-4">
-                  {hook.tactics.map((tactic: any, idx: number) => (
+                  {hook.tactics.map((tactic: any, idx: number) => {
+                    const tacticNameLower = (tactic.name || '').toLowerCase().trim();
+                    const isGoldStandard = hookTacticFrequency?.gold_standard?.some(
+                      (gs: any) => (gs.name || '').toLowerCase().trim() === tacticNameLower
+                    );
+                    const isOverrated = hookTacticFrequency?.overrated?.some(
+                      (ov: any) => (ov.name || '').toLowerCase().trim() === tacticNameLower
+                    );
+                    const execGap = hookTacticFrequency?.execution_gaps?.find(
+                      (eg: any) => (eg.name || '').toLowerCase().trim() === tacticNameLower
+                    );
+                    return (
                     <div key={idx} className="bg-white/[0.03] rounded-xl p-4 border border-white/5">
                       <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-sm font-black text-white">{tactic.name}</span>
                           <span className={`px-2 py-0.5 rounded-full text-[9px] font-black ${getCategoryColor(tactic.category)}`}>
                             {tactic.category}
                           </span>
+                          {isGoldStandard && (
+                            <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-teal-500/15 text-teal-400 border border-teal-500/20">
+                              <i className="fas fa-check mr-0.5 text-[7px]"></i>Gold Standard
+                            </span>
+                          )}
+                          {isOverrated && (
+                            <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-red-500/15 text-red-400 border border-red-500/20">
+                              <i className="fas fa-exclamation mr-0.5 text-[7px]"></i>Overrated
+                            </span>
+                          )}
+                          {execGap && (
+                            <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-orange-500/15 text-orange-400 border border-orange-500/20">
+                              <i className="fas fa-arrows-alt-v mr-0.5 text-[7px]"></i>Exec Gap
+                              {execGap.avg_score_top != null && execGap.avg_score_bottom != null && (
+                                <span className="ml-1 text-[8px] opacity-75">
+                                  (top: {Math.round(execGap.avg_score_top)} / bottom: {Math.round(execGap.avg_score_bottom)})
+                                </span>
+                              )}
+                            </span>
+                          )}
                         </div>
                         <span className={`text-sm font-black ${scoreColor(tactic.execution_score || 0)}`}>
                           {tactic.execution_score}
@@ -1420,7 +1499,8 @@ export default function ContentAnalysis() {
                         <p className="text-xs text-slate-500 mt-1 italic">{tactic.execution_note}</p>
                       )}
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -1513,6 +1593,221 @@ export default function ContentAnalysis() {
                     </span>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* ── HOOK CLASS COMPARISON ── */}
+
+            {/* Section A: Your Hook vs Hook Class Benchmark */}
+            {benchmarks?.hook_name && (
+              <div className="glass-card rounded-3xl p-6">
+                <h3 className="text-lg font-bold text-white mb-4">
+                  <i className="fas fa-chart-bar mr-2 text-purple-400 text-sm"></i>Your Hook vs "{benchmarks.hook_name}"
+                </h3>
+                {(benchmarks.hook_video_count || 0) <= 1 ? (
+                  <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5">
+                    <p className="text-sm text-slate-400 italic">
+                      <i className="fas fa-info-circle mr-1.5 text-slate-500"></i>
+                      This hook class was just identified. More data will accumulate as similar videos are analyzed.
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      {virality?.benchmark_comparison?.hook_percentile != null && (
+                        <div className="bg-white/[0.03] rounded-xl p-3 border border-white/5">
+                          <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Hook Percentile</div>
+                          <div className={`text-xl font-black ${scoreColor(virality.benchmark_comparison.hook_percentile)}`}>
+                            {virality.benchmark_comparison.hook_percentile}<span className="text-xs text-slate-500">%ile</span>
+                          </div>
+                        </div>
+                      )}
+                      <div className="bg-white/[0.03] rounded-xl p-3 border border-white/5">
+                        <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Videos in Class</div>
+                        <div className="text-xl font-black text-white">{formatNumber(benchmarks.hook_video_count || 0)}</div>
+                      </div>
+                      <div className="bg-white/[0.03] rounded-xl p-3 border border-white/5">
+                        <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Class Avg Views</div>
+                        <div className="text-xl font-black text-white">{formatNumber(benchmarks.hook_avg_views || 0)}</div>
+                      </div>
+                      {benchmarks.hook_avg_engagement != null && (
+                        <div className="bg-white/[0.03] rounded-xl p-3 border border-white/5">
+                          <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Class Avg Engagement</div>
+                          <div className="text-xl font-black text-white">{Number(benchmarks.hook_avg_engagement).toFixed(1)}%</div>
+                        </div>
+                      )}
+                    </div>
+                    {benchmarks.hook_lifecycle && (
+                      <div className="mt-3 flex items-center gap-2">
+                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Stage:</span>
+                        <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${
+                          benchmarks.hook_lifecycle === 'emerging' ? 'bg-teal-500/15 text-teal-400' :
+                          benchmarks.hook_lifecycle === 'rising' ? 'bg-lime-500/15 text-lime-400' :
+                          benchmarks.hook_lifecycle === 'peaking' ? 'bg-orange-500/15 text-orange-400' :
+                          benchmarks.hook_lifecycle === 'stable' ? 'bg-blue-500/15 text-blue-400' :
+                          'bg-red-500/15 text-red-400'
+                        }`}>{benchmarks.hook_lifecycle}</span>
+                      </div>
+                    )}
+                    {(benchmarks.hook_video_count || 0) < 3 && (benchmarks.hook_video_count || 0) > 1 && (
+                      <div className="mt-3 text-xs text-slate-500 italic">
+                        <i className="fas fa-info-circle mr-1"></i>
+                        Limited data ({benchmarks.hook_video_count} videos). Comparison may not be statistically meaningful.
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Section B: Gold Standard / Execution Gaps / Overrated from class_analysis */}
+            {hookClassAnalysis &&
+              (hookClassAnalysis.gold_standard_tactics?.length > 0 ||
+               hookClassAnalysis.execution_gaps?.length > 0 ||
+               hookClassAnalysis.overrated_tactics?.length > 0) && (
+                <div className="glass-card rounded-3xl p-6">
+                  <h3 className="text-lg font-bold text-white mb-6">
+                    <i className="fas fa-microscope mr-2 text-purple-400 text-sm"></i>Hook Class Best & Worst Practices
+                  </h3>
+                  <div className="grid lg:grid-cols-3 gap-6">
+                    {/* Gold Standard */}
+                    {hookClassAnalysis.gold_standard_tactics?.length > 0 && (
+                      <div className="space-y-4">
+                        <h4 className="text-teal-400 text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                          <i className="fas fa-check-circle"></i> Gold Standard
+                        </h4>
+                        <div className="space-y-3">
+                          {hookClassAnalysis.gold_standard_tactics.map((tactic: any, i: number) => (
+                            <div key={i} className="p-4 bg-white/[0.03] rounded-xl border border-white/5 border-l-4 border-l-teal-500">
+                              {tactic.category && (
+                                <div className={`text-[10px] font-black uppercase mb-1 inline-block px-1.5 py-0.5 rounded ${getCategoryColor(tactic.category)}`}>
+                                  {tactic.category}
+                                </div>
+                              )}
+                              <h5 className="font-bold text-white text-sm mb-1">{tactic.tactic || tactic.name}</h5>
+                              {(tactic.analysis || tactic.description || tactic.why) && (
+                                <p className="text-[11px] text-slate-400 leading-relaxed">
+                                  {tactic.analysis || tactic.description || tactic.why}
+                                </p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Execution Gaps */}
+                    {hookClassAnalysis.execution_gaps?.length > 0 && (
+                      <div className="space-y-4">
+                        <h4 className="text-orange-400 text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                          <i className="fas fa-exclamation-circle"></i> Execution Gaps
+                        </h4>
+                        <div className="space-y-3">
+                          {hookClassAnalysis.execution_gaps.map((tactic: any, i: number) => (
+                            <div key={i} className="p-4 bg-white/[0.03] rounded-xl border border-white/5 border-l-4 border-l-orange-500">
+                              {tactic.category && (
+                                <div className={`text-[10px] font-black uppercase mb-1 inline-block px-1.5 py-0.5 rounded ${getCategoryColor(tactic.category)}`}>
+                                  {tactic.category}
+                                </div>
+                              )}
+                              <h5 className="font-bold text-white text-sm mb-1">{tactic.tactic || tactic.name}</h5>
+                              {(tactic.analysis || tactic.description || tactic.why) && (
+                                <p className="text-[11px] text-slate-400 leading-relaxed">
+                                  {tactic.analysis || tactic.description || tactic.why}
+                                </p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Overrated */}
+                    {hookClassAnalysis.overrated_tactics?.length > 0 && (
+                      <div className="space-y-4">
+                        <h4 className="text-red-400 text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                          <i className="fas fa-times-circle"></i> Overrated
+                        </h4>
+                        <div className="space-y-3">
+                          {hookClassAnalysis.overrated_tactics.map((tactic: any, i: number) => (
+                            <div key={i} className="p-4 bg-white/[0.03] rounded-xl border border-white/5 border-l-4 border-l-red-500 opacity-80 hover:opacity-100 transition-opacity">
+                              {tactic.category && (
+                                <div className={`text-[10px] font-black uppercase mb-1 inline-block px-1.5 py-0.5 rounded ${getCategoryColor(tactic.category)}`}>
+                                  {tactic.category}
+                                </div>
+                              )}
+                              <h5 className="font-bold text-white text-sm mb-1">{tactic.tactic || tactic.name}</h5>
+                              {(tactic.analysis || tactic.description || tactic.why) && (
+                                <p className="text-[11px] text-slate-400 leading-relaxed">
+                                  {tactic.analysis || tactic.description || tactic.why}
+                                </p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+            )}
+
+            {/* Section D: Missing Gold Standard Hook Tactics */}
+            {(() => {
+              if (!hookTacticFrequency?.gold_standard?.length || !hook?.tactics) return null;
+              const userTacticNames = new Set(
+                (hook.tactics as any[]).map((t: any) => (t.name || '').toLowerCase().trim())
+              );
+              const missing = hookTacticFrequency.gold_standard.filter(
+                (gs: any) => !userTacticNames.has((gs.name || '').toLowerCase().trim())
+              );
+              if (missing.length === 0) return null;
+              return (
+                <div className="glass-card rounded-3xl p-6">
+                  <h3 className="text-lg font-bold text-white mb-4">
+                    <i className="fas fa-trophy mr-2 text-amber-400 text-sm"></i>Missing Gold-Standard Hook Tactics
+                  </h3>
+                  <p className="text-xs text-slate-400 mb-4">
+                    Top performers in this hook class use these tactics significantly more often.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {missing.map((t: any, i: number) => (
+                      <div key={i} className="px-3 py-2 rounded-xl text-xs bg-amber-500/10 border border-amber-500/20">
+                        <span className="font-black text-amber-400">
+                          <i className="fas fa-plus mr-1 text-[8px]"></i>{t.name}
+                        </span>
+                        {t.top_freq != null && t.bottom_freq != null && (
+                          <span className="text-amber-400/60 ml-2 text-[10px]">
+                            {t.top_freq}% top vs {t.bottom_freq}% bottom
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Section E: Top Performers in Hook Class */}
+            {topHookVideos && topHookVideos.length > 0 && benchmarks?.hook_name && (
+              <div className="glass-card rounded-3xl p-6">
+                <h3 className="text-lg font-bold text-white mb-4">
+                  <i className="fas fa-crown mr-2 text-purple-400 text-sm"></i>Top Performers — "{benchmarks.hook_name}"
+                </h3>
+                <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none' }}>
+                  {topHookVideos.map((v: any, i: number) => (
+                    <ExampleVideoCard key={v.video_id} video={v} videos={topHookVideos} index={i} />
+                  ))}
+                </div>
+                {topHookVideos.length > 4 && (
+                  <div className="flex items-center justify-center gap-1 mt-2">
+                    <i className="fas fa-chevron-left text-[7px] text-slate-600"></i>
+                    {Array.from({ length: Math.min(topHookVideos.length, 8) }).map((_, i) => (
+                      <div key={i} className={`w-1.5 h-1.5 rounded-full ${i < 4 ? 'bg-purple-400/60' : 'bg-slate-700'}`} />
+                    ))}
+                    <i className="fas fa-chevron-right text-[7px] text-slate-600"></i>
+                    <span className="text-[9px] text-slate-600 ml-1">{topHookVideos.length} videos</span>
+                  </div>
+                )}
               </div>
             )}
           </div>

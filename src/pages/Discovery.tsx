@@ -513,7 +513,7 @@ export default function Discovery() {
         authFetch('/api/analysis/trending/hashtags').then(r => r.json()),
         authFetch('/api/analysis/trending/schedulers').then(r => r.json()).catch(() => []),
         authFetch('/api/analysis/trending/scheduler-runs/grouped?limit=5').then(r => r.json()).catch(() => []),
-        authFetch('/api/categories').then(r => r.json()).catch(() => ({ categories: [] })),
+        authFetch('/api/management/categories').then(r => r.json()).catch(() => ({ categories: [] })),
       ])
       setStats(statsRes)
       setHashtags(Array.isArray(hashtagsRes) ? hashtagsRes : [])
