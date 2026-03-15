@@ -10,6 +10,7 @@ import FollowerGrowthChart from '../components/charts/FollowerGrowthChart'
 import EngagementChart from '../components/charts/EngagementChart'
 import BestTimesHeatmap from '../components/charts/BestTimesHeatmap'
 import MetricsCard from '../components/charts/MetricsCard'
+import ViewsOverTimeChart from '../components/charts/ViewsOverTimeChart'
 
 /* ── Types ── */
 interface Account {
@@ -152,6 +153,18 @@ export default function Platforms() {
   const [connecting, setConnecting] = useState<string | null>(null)
   const [analyzingAll, setAnalyzingAll] = useState(false)
   const [recalculating, setRecalculating] = useState(false)
+
+  // Admin vanity metric overrides (frontend-only, for marketing screenshots)
+  const [vanityOverrides, setVanityOverrides] = useState<Record<string, string>>({})
+  const [editingMetric, setEditingMetric] = useState<string | null>(null)
+
+  const setVanity = (key: string, value: string) => {
+    setVanityOverrides(prev => ({ ...prev, [key]: value }))
+  }
+
+  const getVanityOrReal = (key: string, realValue: string): string => {
+    return vanityOverrides[key] !== undefined ? vanityOverrides[key] : realValue
+  }
 
   // Admin user navigation
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([])
@@ -611,31 +624,178 @@ export default function Platforms() {
             <div className="lg:col-span-2 grid grid-cols-2 gap-3 sm:gap-4">
               <MetricsCard
                 label="Total Followers"
-                value={fmt(creatorScore?.stats?.total_followers || stats?.followers.total || 0)}
+                value={getVanityOrReal('followers', fmt(creatorScore?.stats?.total_followers || stats?.followers.total || 0))}
                 delta={stats?.followers.growth_30d ? Math.round((stats.followers.growth_30d / Math.max(1, (stats.followers.total - stats.followers.growth_30d))) * 100) : undefined}
                 icon="fa-users"
                 iconColor="#60a5fa"
+                editable={isAdmin}
+                onEdit={(v) => setVanity('followers', v)}
               />
               <MetricsCard
                 label="Total Views"
-                value={fmt(creatorScore?.stats?.total_views || stats?.engagement.total_views || 0)}
+                value={getVanityOrReal('views', fmt(creatorScore?.stats?.total_views || stats?.engagement.total_views || 0))}
                 icon="fa-eye"
                 iconColor="#c084fc"
+                editable={isAdmin}
+                onEdit={(v) => setVanity('views', v)}
               />
               <MetricsCard
                 label="Avg Engagement"
-                value={`${(creatorScore?.stats?.avg_engagement_rate || 0).toFixed(1)}%`}
+                value={getVanityOrReal('engagement', `${(creatorScore?.stats?.avg_engagement_rate || 0).toFixed(1)}%`)}
                 icon="fa-heart"
                 iconColor="#f472b6"
+                editable={isAdmin}
+                onEdit={(v) => setVanity('engagement', v)}
               />
               <MetricsCard
                 label="Posts This Week"
-                value={creatorScore?.stats?.posts_last_week?.toString() || stats?.posts.last_7d?.toString() || '0'}
+                value={getVanityOrReal('postsWeek', creatorScore?.stats?.posts_last_week?.toString() || stats?.posts.last_7d?.toString() || '0')}
                 icon="fa-paper-plane"
                 iconColor="#34d399"
+                editable={isAdmin}
+                onEdit={(v) => setVanity('postsWeek', v)}
               />
             </div>
           </div>
+
+          {/* ── Total Views Row (full-width: 4col card + 8col chart) ── */}
+          {(() => {
+            const viewsTrend = stats?.engagementTrend || []
+            const totalViews = creatorScore?.stats?.total_views || stats?.engagement.total_views || 0
+
+            // Calculate views growth %: compare last 7 entries vs previous 7
+            let viewsGrowthPct = 0
+            if (viewsTrend.length >= 2) {
+              const mid = Math.floor(viewsTrend.length / 2)
+              const recentViews = viewsTrend.slice(mid).reduce((s, d) => s + (d.views || 0), 0)
+              const olderViews = viewsTrend.slice(0, mid).reduce((s, d) => s + (d.views || 0), 0)
+              if (olderViews > 0) viewsGrowthPct = Math.round(((recentViews - olderViews) / olderViews) * 100)
+            }
+
+            // Find peak views day
+            const peakDay = viewsTrend.reduce((best, d) => (d.views || 0) > (best?.views || 0) ? d : best, viewsTrend[0])
+            const avgViews = viewsTrend.length > 0 ? Math.round(viewsTrend.reduce((s, d) => s + (d.views || 0), 0) / viewsTrend.length) : 0
+
+            return (
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 mb-6 lg:mb-8">
+                {/* Left: Views Stats Card (4 col) */}
+                <div className="lg:col-span-4 glass-card rounded-3xl p-5 sm:p-7 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 mb-4">
+                      <i className="fas fa-eye text-violet-400 text-xs" />
+                      <h2 className="text-xs font-black uppercase tracking-widest text-slate-500 font-display">Total Views</h2>
+                    </div>
+
+                    {/* Main number */}
+                    <div className="mb-4">
+                      {isAdmin && editingMetric === 'totalViews' ? (
+                        <input
+                          type="text"
+                          autoFocus
+                          defaultValue={getVanityOrReal('totalViews', fmt(totalViews))}
+                          onBlur={(e) => { setVanity('totalViews', e.target.value); setEditingMetric(null) }}
+                          onKeyDown={(e) => { if (e.key === 'Enter') { setVanity('totalViews', (e.target as HTMLInputElement).value); setEditingMetric(null) } }}
+                          className="text-4xl sm:text-5xl font-black text-white bg-transparent border-b border-amber-500/40 outline-none w-full"
+                        />
+                      ) : (
+                        <div
+                          className={`text-4xl sm:text-5xl font-black text-white ${isAdmin ? 'cursor-pointer hover:text-amber-300 transition-colors' : ''}`}
+                          onClick={() => isAdmin && setEditingMetric('totalViews')}
+                          title={isAdmin ? 'Click to edit (vanity)' : undefined}
+                        >
+                          {getVanityOrReal('totalViews', fmt(totalViews))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Growth badge */}
+                    <div className="flex items-center gap-3 mb-5">
+                      {isAdmin && editingMetric === 'viewsGrowth' ? (
+                        <input
+                          type="text"
+                          autoFocus
+                          defaultValue={getVanityOrReal('viewsGrowth', String(viewsGrowthPct))}
+                          onBlur={(e) => { setVanity('viewsGrowth', e.target.value); setEditingMetric(null) }}
+                          onKeyDown={(e) => { if (e.key === 'Enter') { setVanity('viewsGrowth', (e.target as HTMLInputElement).value); setEditingMetric(null) } }}
+                          className="text-sm font-bold bg-transparent border-b border-amber-500/40 outline-none w-16 text-emerald-400"
+                        />
+                      ) : (
+                        <span
+                          className={`inline-flex items-center gap-1 text-sm font-bold px-2.5 py-1 rounded-lg ${
+                            Number(getVanityOrReal('viewsGrowth', String(viewsGrowthPct))) >= 0
+                              ? 'text-emerald-400 bg-emerald-400/10'
+                              : 'text-red-400 bg-red-400/10'
+                          } ${isAdmin ? 'cursor-pointer hover:ring-1 hover:ring-amber-500/40' : ''}`}
+                          onClick={() => isAdmin && setEditingMetric('viewsGrowth')}
+                          title={isAdmin ? 'Click to edit (vanity)' : undefined}
+                        >
+                          <svg width="12" height="12" viewBox="0 0 10 10" fill="none"
+                            className={Number(getVanityOrReal('viewsGrowth', String(viewsGrowthPct))) >= 0 ? '' : 'rotate-180'}>
+                            <path d="M5 2L8.5 6.5H1.5L5 2Z" fill="currentColor" />
+                          </svg>
+                          {Number(getVanityOrReal('viewsGrowth', String(viewsGrowthPct))) >= 0 ? '+' : ''}{getVanityOrReal('viewsGrowth', String(viewsGrowthPct))}%
+                        </span>
+                      )}
+                      <span className="text-xs text-slate-500 font-medium">vs previous period</span>
+                    </div>
+                  </div>
+
+                  {/* Sub-stats */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-slate-500 font-medium">Avg. Daily Views</span>
+                      {isAdmin && editingMetric === 'avgViews' ? (
+                        <input
+                          type="text"
+                          autoFocus
+                          defaultValue={getVanityOrReal('avgViews', fmt(avgViews))}
+                          onBlur={(e) => { setVanity('avgViews', e.target.value); setEditingMetric(null) }}
+                          onKeyDown={(e) => { if (e.key === 'Enter') { setVanity('avgViews', (e.target as HTMLInputElement).value); setEditingMetric(null) } }}
+                          className="text-sm font-bold bg-transparent border-b border-amber-500/40 outline-none w-20 text-right text-white"
+                        />
+                      ) : (
+                        <span
+                          className={`text-sm font-bold ${isAdmin ? 'cursor-pointer hover:text-amber-300 transition-colors' : ''}`}
+                          onClick={() => isAdmin && setEditingMetric('avgViews')}
+                        >
+                          {getVanityOrReal('avgViews', fmt(avgViews))}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-slate-500 font-medium">Peak Day</span>
+                      <span className="text-sm font-bold">
+                        {peakDay ? `${fmt(peakDay.views)} views` : '—'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {isAdmin && Object.keys(vanityOverrides).length > 0 && (
+                    <button
+                      onClick={() => setVanityOverrides({})}
+                      className="mt-4 text-[10px] font-bold text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 rounded-lg px-2.5 py-1 transition-all"
+                    >
+                      <i className="fas fa-rotate-left mr-1" />Reset vanity overrides
+                    </button>
+                  )}
+                </div>
+
+                {/* Right: Views Line Chart (8 col) */}
+                <div className="lg:col-span-8 glass-card rounded-3xl p-5 sm:p-7">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <i className="fas fa-chart-area text-violet-400 text-xs" />
+                      <h2 className="text-xs font-black uppercase tracking-widest text-slate-500 font-display">Views Over Time</h2>
+                    </div>
+                    <span className="text-[10px] text-slate-600 font-medium">
+                      {viewsTrend.length > 0 ? `${viewsTrend.length} data points` : ''}
+                    </span>
+                  </div>
+                  <ViewsOverTimeChart data={viewsTrend} height={240} />
+                </div>
+              </div>
+            )
+          })()}
 
           {/* ── Charts Row ── */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 lg:mb-8">

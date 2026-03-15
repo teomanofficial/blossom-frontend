@@ -1,9 +1,13 @@
+import { useState } from 'react';
+
 interface MetricsCardProps {
   label: string;
   value: string | number;
   delta?: number;
   icon?: string;
   iconColor?: string;
+  editable?: boolean;
+  onEdit?: (value: string) => void;
 }
 
 function formatDelta(delta: number): string {
@@ -17,7 +21,10 @@ export default function MetricsCard({
   delta,
   icon,
   iconColor = '#ec4899',
+  editable,
+  onEdit,
 }: MetricsCardProps) {
+  const [editing, setEditing] = useState(false);
   const showDelta = delta !== undefined && delta !== 0;
   const isPositive = (delta ?? 0) > 0;
 
@@ -26,9 +33,24 @@ export default function MetricsCard({
       <div className="flex items-start justify-between">
         <div className="flex flex-col gap-1 min-w-0">
           {/* Value */}
-          <span className="text-2xl font-bold text-white truncate">
-            {value}
-          </span>
+          {editing ? (
+            <input
+              type="text"
+              autoFocus
+              defaultValue={String(value)}
+              onBlur={(e) => { onEdit?.(e.target.value); setEditing(false) }}
+              onKeyDown={(e) => { if (e.key === 'Enter') { onEdit?.((e.target as HTMLInputElement).value); setEditing(false) } }}
+              className="text-2xl font-bold text-white bg-transparent border-b border-amber-500/40 outline-none w-full"
+            />
+          ) : (
+            <span
+              className={`text-2xl font-bold text-white truncate ${editable ? 'cursor-pointer hover:text-amber-300 transition-colors' : ''}`}
+              onClick={() => editable && setEditing(true)}
+              title={editable ? 'Click to edit (vanity)' : undefined}
+            >
+              {value}
+            </span>
+          )}
 
           {/* Label */}
           <span className="text-sm text-slate-500">{label}</span>
