@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef, type ReactNode } from 'react'
 import { authFetch } from '../lib/api'
 import { getStorageUrl } from '../lib/media'
+import { useAuth } from '../context/AuthContext'
 
 function formatCount(n: number | null | undefined): string {
   if (n == null) return '0'
@@ -155,13 +156,16 @@ function CarouselItemsViewer({ items, fallbackThumb }: { items: CarouselMediaIte
   )
 }
 
-export default function VideoStoryCarousel({ videos: initialVideos, initialIndex = 0, onClose, renderMeta, isAdmin }: VideoStoryCarouselProps) {
+export default function VideoStoryCarousel({ videos: initialVideos, initialIndex = 0, onClose, renderMeta, isAdmin: isAdminProp }: VideoStoryCarouselProps) {
+  const { userType } = useAuth()
+  const isAdmin = isAdminProp || userType === 'admin'
   const [videos, setVideos] = useState(initialVideos)
   const [currentIndex, setCurrentIndex] = useState(initialIndex)
   const [isPlaying, setIsPlaying] = useState(false)
   const [videoError, setVideoError] = useState(false)
   const [downloading, setDownloading] = useState(false)
   const [isMuted, setIsMuted] = useState(true)
+  const [jsonCopied, setJsonCopied] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
 
   const video = videos[currentIndex]
@@ -207,6 +211,7 @@ export default function VideoStoryCarousel({ videos: initialVideos, initialIndex
     setIsPlaying(false)
     setVideoError(false)
     setDownloading(false)
+    setJsonCopied(false)
     if (videoRef.current) {
       videoRef.current.pause()
       videoRef.current.currentTime = 0
@@ -661,6 +666,23 @@ export default function VideoStoryCarousel({ videos: initialVideos, initialIndex
                     <line x1="12" y1="15" x2="12" y2="3"/>
                   </svg>
                   Save Video
+                </button>
+              )}
+              {isAdmin && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    navigator.clipboard.writeText(JSON.stringify(video, null, 2))
+                    setJsonCopied(true)
+                    setTimeout(() => setJsonCopied(false), 2000)
+                  }}
+                  className="inline-flex items-center gap-1.5 text-sm text-amber-400 hover:text-amber-300 transition-colors font-bold"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                  </svg>
+                  {jsonCopied ? 'Copied!' : 'Copy JSON'}
                 </button>
               )}
               {video.content_url && (

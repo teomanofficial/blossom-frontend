@@ -129,6 +129,8 @@ Progress components that use sockets:
 | `SearchOverlay.tsx` | Cmd+K global search |
 | `VideoStoryCarousel.tsx` | Swipeable video card grid |
 | `FineTunePanel.tsx` | UI for AI model fine-tuning |
+| `VersionTimeline.tsx` | Timeline view of analysis version history |
+| `VersionComparison.tsx` | Side-by-side comparison of two analysis versions |
 | `CardSkeleton.tsx` | Loading placeholder |
 
 ### Chart Components (`components/charts/`)

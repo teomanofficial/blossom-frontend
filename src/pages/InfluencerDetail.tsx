@@ -118,7 +118,7 @@ function getThumbnailSrc(video: InfluencerVideo): string | null {
 }
 
 function getAvatarSrc(influencer: InfluencerData): string | null {
-  return getStorageUrl(influencer.local_avatar_path)
+  return getStorageUrl(influencer.local_avatar_path) || getStorageUrl(influencer.avatar_url) || null
 }
 
 function getTierColor(tier: string | null): string {

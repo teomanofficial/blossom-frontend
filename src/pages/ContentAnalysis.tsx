@@ -1,9 +1,11 @@
-import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import useEmblaCarousel from 'embla-carousel-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { API_URL } from '../lib/api'
 import VideoStoryCarousel, { type CarouselVideo } from '../components/VideoStoryCarousel'
+import VersionTimeline from '../components/VersionTimeline'
+import VersionComparison from '../components/VersionComparison'
 import { getStorageUrl } from '../lib/media'
 
 // === Helper Functions ===
@@ -66,6 +68,15 @@ export default function ContentAnalysis() {
   const [commentAnalysis, setCommentAnalysis] = useState<any>(null)
   const [commentLoading, setCommentLoading] = useState(false)
   const [commentError, setCommentError] = useState<string | null>(null)
+
+  // Version re-check state
+  const [showRecheck, setShowRecheck] = useState(false)
+  const [recheckMode, setRecheckMode] = useState<'url' | 'upload'>('url')
+  const [recheckUrl, setRecheckUrl] = useState('')
+  const [recheckFile, setRecheckFile] = useState<File | null>(null)
+  const [recheckUploading, setRecheckUploading] = useState(false)
+  const [recheckError, setRecheckError] = useState<string | null>(null)
+  const recheckFileInputRef = useRef<HTMLInputElement>(null)
 
   // Video thumbnail for loading screen
   const [videoThumbnail, setVideoThumbnail] = useState<string | null>(null)
@@ -287,6 +298,78 @@ export default function ContentAnalysis() {
     setActiveTab('improvements')
   }
 
+  // === Handle Improve & Re-check ===
+
+  const handleRecheck = async () => {
+    if (!uploadId || !session?.access_token) return
+    if (!recheckUrl && !recheckFile) {
+      setRecheckError('Please provide a video URL or file')
+      return
+    }
+
+    setRecheckUploading(true)
+    setRecheckError(null)
+
+    try {
+      let response: any
+      if (recheckFile) {
+        const formData = new FormData()
+        formData.append('video', recheckFile)
+        response = await fetch(`${API_URL}/api/content-analysis/${uploadId}/new-version`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${session.access_token}` },
+          body: formData,
+        }).then(r => r.json())
+      } else {
+        response = await fetch(`${API_URL}/api/content-analysis/${uploadId}/new-version`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ url: recheckUrl }),
+        }).then(r => r.json())
+      }
+
+      if (response.error) {
+        setRecheckError(response.error)
+        return
+      }
+
+      // Reset re-check form and navigate to new version
+      setShowRecheck(false)
+      setRecheckUrl('')
+      setRecheckFile(null)
+      setAnalysisResult(null)
+      setUploadId(response.id)
+      setAnalysisStatus({ status: 'pending', steps: { upload: 'done', full_analysis: 'pending', hook_analysis: 'pending', classification: 'pending', benchmarks: 'pending', virality_scores: 'pending', improvement: 'pending' } })
+      fetchHistory()
+    } catch (err: any) {
+      setRecheckError(err.message || 'Failed to create new version')
+    } finally {
+      setRecheckUploading(false)
+    }
+  }
+
+  const handleVersionSelect = async (newUploadId: number) => {
+    if (newUploadId === uploadId) return
+    setUploadId(newUploadId)
+    setAnalysisResult(null)
+    setActiveTab('improvements')
+
+    try {
+      const res = await fetch(`${API_URL}/api/content-analysis/${newUploadId}`, {
+        headers: { 'Authorization': `Bearer ${session?.access_token}` },
+      })
+      const data = await res.json()
+      if (data.upload) {
+        setAnalysisResult(data)
+      }
+    } catch (err) {
+      console.error('Failed to load version:', err)
+    }
+  }
+
   // === Extract first frame from video file ===
 
   const extractVideoThumbnail = useCallback((videoFile: File) => {
@@ -398,6 +481,15 @@ export default function ContentAnalysis() {
             )}
           </div>
           <div className="flex items-center gap-3">
+            {analysisResult && (
+              <button
+                onClick={() => setShowRecheck(!showRecheck)}
+                className="px-4 py-2 bg-gradient-to-r from-purple-500/20 to-teal-500/20 border border-purple-500/30 rounded-xl text-purple-300 hover:text-white hover:from-purple-500/30 hover:to-teal-500/30 transition-all text-sm font-bold"
+              >
+                <i className="fas fa-redo mr-2"></i>
+                Improve & Re-check
+              </button>
+            )}
             {(uploadId || analysisResult) && (
               <button
                 onClick={handleReset}
@@ -438,6 +530,99 @@ export default function ContentAnalysis() {
                 <i className="fas fa-arrow-left mr-2"></i>
                 Back to upload
               </button>
+
+              {/* Re-check form (shown when "Improve & Re-check" is clicked) */}
+              {showRecheck && (
+                <div className="mb-6 rounded-2xl border border-purple-500/20 bg-gradient-to-r from-purple-500/5 to-teal-500/5 p-5">
+                  <div className="flex items-center gap-2 mb-4">
+                    <i className="fas fa-redo text-purple-400"></i>
+                    <h3 className="font-bold text-white">Improve & Re-check</h3>
+                    <button onClick={() => setShowRecheck(false)} className="ml-auto text-slate-500 hover:text-white">
+                      <i className="fas fa-times"></i>
+                    </button>
+                  </div>
+
+                  {/* Mode toggle */}
+                  <div className="flex gap-2 mb-4">
+                    <button
+                      onClick={() => setRecheckMode('url')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${recheckMode === 'url' ? 'bg-purple-500/20 text-purple-300' : 'text-slate-500 hover:text-slate-300'}`}
+                    >
+                      <i className="fas fa-link mr-1"></i> URL
+                    </button>
+                    <button
+                      onClick={() => setRecheckMode('upload')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${recheckMode === 'upload' ? 'bg-purple-500/20 text-purple-300' : 'text-slate-500 hover:text-slate-300'}`}
+                    >
+                      <i className="fas fa-upload mr-1"></i> Upload
+                    </button>
+                  </div>
+
+                  {/* URL or file input */}
+                  {recheckMode === 'url' ? (
+                    <input
+                      type="text"
+                      value={recheckUrl}
+                      onChange={e => setRecheckUrl(e.target.value)}
+                      placeholder="Paste TikTok or Instagram URL..."
+                      className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm placeholder-slate-600 focus:outline-none focus:border-purple-500/50 mb-4"
+                    />
+                  ) : (
+                    <div className="mb-4">
+                      <input
+                        ref={recheckFileInputRef}
+                        type="file"
+                        accept="video/mp4,video/quicktime,video/webm"
+                        onChange={e => setRecheckFile(e.target.files?.[0] || null)}
+                        className="hidden"
+                      />
+                      <button
+                        onClick={() => recheckFileInputRef.current?.click()}
+                        className="w-full px-4 py-3 rounded-xl bg-white/5 border border-dashed border-white/10 text-slate-400 text-sm hover:bg-white/10 hover:border-purple-500/30 transition-all"
+                      >
+                        {recheckFile ? (
+                          <span className="text-white"><i className="fas fa-check-circle text-teal-400 mr-2"></i>{recheckFile.name}</span>
+                        ) : (
+                          <span><i className="fas fa-cloud-upload-alt mr-2"></i>Click to select improved video</span>
+                        )}
+                      </button>
+                    </div>
+                  )}
+
+                  {recheckError && (
+                    <p className="text-xs text-red-400 mb-3"><i className="fas fa-exclamation-circle mr-1"></i>{recheckError}</p>
+                  )}
+
+                  <button
+                    onClick={handleRecheck}
+                    disabled={recheckUploading || (!recheckUrl && !recheckFile)}
+                    className="w-full px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-500 to-teal-500 text-white text-sm font-bold disabled:opacity-40 hover:from-purple-600 hover:to-teal-600 transition-all"
+                  >
+                    {recheckUploading ? (
+                      <><i className="fas fa-spinner fa-spin mr-2"></i>Analyzing new version...</>
+                    ) : (
+                      <><i className="fas fa-play mr-2"></i>Analyze Improved Version</>
+                    )}
+                  </button>
+                </div>
+              )}
+
+              {/* Version Timeline */}
+              {analysisResult?.versionInfo && uploadId && (
+                <VersionTimeline
+                  uploadId={uploadId}
+                  versionInfo={analysisResult.versionInfo}
+                  onVersionSelect={handleVersionSelect}
+                />
+              )}
+
+              {/* Version Comparison */}
+              {analysisResult?.versionInfo && uploadId && (
+                <VersionComparison
+                  uploadId={uploadId}
+                  versionInfo={analysisResult.versionInfo}
+                />
+              )}
 
 <>
   {(() => {
@@ -943,6 +1128,30 @@ export default function ContentAnalysis() {
 
               {/* Improvements content */}
               <div className="p-6 space-y-8">
+
+                {/* ── Version Progress Summary (if versioned) ── */}
+                {improv?.version_progress && (
+                  <div className="rounded-xl bg-gradient-to-r from-purple-500/5 to-teal-500/5 border border-purple-500/15 p-4">
+                    <div className="flex items-center gap-3 mb-2">
+                      <i className="fas fa-chart-line text-purple-400 text-xs"></i>
+                      <span className="text-xs font-black text-purple-300 uppercase tracking-widest">Version Progress</span>
+                      {improv.version_progress.fixed_weaknesses?.length > 0 && (
+                        <span className="px-2 py-0.5 text-[9px] font-bold rounded-full bg-teal-500/15 text-teal-300">
+                          {improv.version_progress.fixed_weaknesses.length} weaknesses fixed
+                        </span>
+                      )}
+                      {improv.version_progress.implemented_items?.length > 0 && (
+                        <span className="px-2 py-0.5 text-[9px] font-bold rounded-full bg-teal-500/15 text-teal-300">
+                          {improv.version_progress.implemented_items.length} suggestions implemented
+                        </span>
+                      )}
+                    </div>
+                    {improv.version_progress.overall_progress_summary && (
+                      <p className="text-sm text-slate-300 leading-relaxed">{improv.version_progress.overall_progress_summary}</p>
+                    )}
+                  </div>
+                )}
+
                 {/* ── Priority Actions ── */}
                 {improv?.priority_actions && improv.priority_actions.length > 0 && (
                   <div>
@@ -2695,6 +2904,24 @@ export default function ContentAnalysis() {
         {/* ════════════════════════════════════════════════════════ */}
         {activeTab === 'weaknesses' && (
           <div className="space-y-4">
+            {/* Resolved weaknesses from previous version */}
+            {improv?.version_progress?.fixed_weaknesses?.length > 0 && (
+              <div className="glass-card rounded-3xl p-6 border border-teal-500/10 bg-teal-500/[0.02]">
+                <h3 className="text-sm font-black text-teal-400 mb-3 flex items-center gap-2">
+                  <i className="fas fa-check-circle text-xs"></i>
+                  Resolved from Previous Version ({improv.version_progress.fixed_weaknesses.length})
+                </h3>
+                <div className="space-y-2">
+                  {improv.version_progress.fixed_weaknesses.map((fw: any, i: number) => (
+                    <div key={i} className="flex items-start gap-2 text-sm">
+                      <i className="fas fa-check text-teal-400 mt-0.5 text-xs"></i>
+                      <span className="text-slate-400 line-through opacity-70">{fw.assessment || fw.ref}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {full?.weaknesses && full.weaknesses.length > 0 ? (
               full.weaknesses.map((w: any, idx: number) => (
                 <div key={idx} className="glass-card rounded-3xl p-6">

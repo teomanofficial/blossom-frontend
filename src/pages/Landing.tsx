@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from 'react'
 import { apiFetch } from '../lib/api'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
+import HowItWorksCarousel from '../components/HowItWorksCarousel'
 
 interface Plan {
   id: number
@@ -481,45 +482,7 @@ export default function Landing() {
       </section>
 
       {/* How It Works Section */}
-      <section id="system" className="py-24 sm:py-32 px-4 sm:px-6 bg-white/[0.02] relative z-10">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-16 sm:mb-20">
-            <h2 className="text-3xl sm:text-4xl md:text-6xl font-black mb-4 tracking-tight">
-              THE SYSTEM
-            </h2>
-            <p className="text-slate-400 text-base sm:text-lg md:text-xl max-w-xl mx-auto font-medium">
-              Three steps. Zero guesswork. Maximum influence.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-12">
-            <div className="relative">
-              <div className="text-6xl sm:text-7xl font-black text-pink-500/10 mb-4">01</div>
-              <h3 className="text-xl sm:text-2xl font-black mb-3">Upload Your Content</h3>
-              <p className="text-slate-400 font-medium leading-relaxed">
-                Drop your Instagram Reel or TikTok video. We accept all common
-                formats.
-              </p>
-            </div>
-            <div className="relative">
-              <div className="text-6xl sm:text-7xl font-black text-orange-500/10 mb-4">02</div>
-              <h3 className="text-xl sm:text-2xl font-black mb-3">AI Scans Everything</h3>
-              <p className="text-slate-400 font-medium leading-relaxed">
-                Our AI examines hooks, pacing, visuals, audio, and compares
-                against millions of viral posts.
-              </p>
-            </div>
-            <div className="relative">
-              <div className="text-6xl sm:text-7xl font-black text-yellow-500/10 mb-4">03</div>
-              <h3 className="text-xl sm:text-2xl font-black mb-3">Get Your Playbook</h3>
-              <p className="text-slate-400 font-medium leading-relaxed">
-                Receive a detailed scorecard with fixes, viral score, and
-                personalized growth recommendations.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
+      <HowItWorksCarousel />
 
       {/* Pricing Section */}
       <section id="pricing" className="py-24 sm:py-32 px-4 sm:px-6 relative z-10">

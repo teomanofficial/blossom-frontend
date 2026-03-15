@@ -373,7 +373,18 @@ export default function Platforms() {
               <span className="text-[10px] font-black uppercase tracking-widest text-amber-400">Admin View</span>
             </div>
 
-            <div className="flex items-center gap-2 flex-1 min-w-0 justify-center">
+            {isImpersonating && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleStopImpersonation}
+                  className="text-[10px] font-bold text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 rounded-lg px-3 py-1.5 transition-all"
+                >
+                  <i className="fas fa-arrow-right-from-bracket mr-1" />Back to Admin
+                </button>
+              </div>
+            )}
+
+            <div className="flex items-center gap-2">
               {isImpersonating && (
                 <button
                   onClick={handlePrevUser}
@@ -390,24 +401,24 @@ export default function Platforms() {
                   className="flex items-center gap-2 px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-lg transition-all min-w-[180px] justify-between"
                 >
                   <span className="text-xs font-bold truncate">
-                    {isImpersonating ? impersonating!.displayName : 'Select a user...'}
+                    {isImpersonating ? impersonating!.displayName : 'Select a user\u2026'}
                   </span>
                   <i className={`fas fa-chevron-down text-[8px] text-slate-500 transition-transform ${showUserDropdown ? 'rotate-180' : ''}`} />
                 </button>
 
                 {showUserDropdown && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-slate-900 border border-white/10 rounded-xl shadow-2xl z-50 max-h-64 overflow-hidden flex flex-col min-w-[260px]">
-                    <div className="p-2 border-b border-white/5">
+                  <div className="absolute top-full right-0 mt-1 bg-slate-800 border border-white/15 rounded-xl shadow-2xl z-50 max-h-72 overflow-hidden flex flex-col min-w-[280px]">
+                    <div className="p-2 border-b border-white/10">
                       <input
                         type="text"
                         value={adminUserSearch}
                         onChange={(e) => setAdminUserSearch(e.target.value)}
                         placeholder="Search users..."
-                        className="w-full px-2.5 py-1.5 bg-white/5 rounded-lg text-xs text-white placeholder-slate-500 outline-none focus:ring-1 focus:ring-amber-500/30"
+                        className="w-full px-2.5 py-1.5 bg-white/10 rounded-lg text-xs text-white placeholder-slate-400 outline-none focus:ring-1 focus:ring-amber-500/40"
                         autoFocus
                       />
                     </div>
-                    <div className="overflow-y-auto max-h-48">
+                    <div className="overflow-y-auto max-h-56">
                       {adminUsers
                         .filter(u => {
                           if (!adminUserSearch) return true
@@ -418,11 +429,11 @@ export default function Platforms() {
                           <button
                             key={u.id}
                             onClick={() => handleAdminNavigate(u.id)}
-                            className={`w-full text-left px-3 py-2 hover:bg-white/5 transition-colors flex items-center justify-between ${impersonating?.userId === u.id ? 'bg-amber-500/10' : ''}`}
+                            className={`w-full text-left px-3 py-2.5 hover:bg-white/10 transition-colors flex items-center justify-between ${impersonating?.userId === u.id ? 'bg-amber-500/15' : ''}`}
                           >
                             <div className="min-w-0">
                               <div className="text-xs font-bold truncate">{u.full_name || u.email}</div>
-                              <div className="text-[10px] text-slate-500 truncate">{u.email}</div>
+                              <div className="text-[10px] text-slate-400 truncate">{u.email}</div>
                             </div>
                             <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ml-2 ${u.user_type === 'admin' ? 'bg-amber-500/20 text-amber-400' : u.user_type === 'vip' ? 'bg-purple-500/20 text-purple-400' : 'bg-slate-500/20 text-slate-400'}`}>
                               {u.user_type}
@@ -445,15 +456,6 @@ export default function Platforms() {
                 </button>
               )}
             </div>
-
-            {isImpersonating && (
-              <button
-                onClick={handleStopImpersonation}
-                className="text-[10px] font-bold text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 rounded-lg px-3 py-1.5 transition-all"
-              >
-                <i className="fas fa-arrow-right-from-bracket mr-1" />Back to Admin
-              </button>
-            )}
           </div>
         </div>
       )}

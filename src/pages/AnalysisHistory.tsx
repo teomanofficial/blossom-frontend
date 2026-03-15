@@ -21,6 +21,8 @@ interface HistoryItem {
   error_message: string | null
   optimization_score: number | null
   created_at: string
+  version_group_id: string | null
+  version_number: number | null
 }
 
 function formatNumber(n: number): string {
@@ -189,10 +191,13 @@ export default function AnalysisHistory() {
       ) : (
         <div className="space-y-3">
           {history.map((item) => (
-            <button
+            <div
               key={item.id}
               onClick={() => handleViewResult(item)}
-              className="w-full text-left glass-card rounded-3xl p-5 hover:bg-white/[0.06] transition-all group border border-transparent hover:border-white/10"
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleViewResult(item); } }}
+              className="w-full text-left glass-card rounded-3xl p-5 hover:bg-white/[0.06] transition-all group border border-transparent hover:border-white/10 cursor-pointer"
             >
               <div className="flex items-center gap-5">
                 {/* Thumbnail */}
@@ -224,6 +229,11 @@ export default function AnalysisHistory() {
                     </span>
                     {item.username && (
                       <span className="text-xs text-slate-500">@{item.username}</span>
+                    )}
+                    {item.version_number != null && item.version_number > 1 && (
+                      <span className="px-1.5 py-0.5 text-[9px] font-black rounded-md bg-purple-500/15 text-purple-400 border border-purple-500/20">
+                        v{item.version_number}
+                      </span>
                     )}
                     <span className="text-[10px] text-slate-600 ml-auto">{formatDate(item.created_at)}</span>
                   </div>
@@ -302,7 +312,7 @@ export default function AnalysisHistory() {
                   <i className="fas fa-chevron-right text-slate-700 group-hover:text-slate-400 transition-colors"></i>
                 </div>
               </div>
-            </button>
+            </div>
           ))}
         </div>
       )}

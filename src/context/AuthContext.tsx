@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { User, Session } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
-import { authFetch } from '../lib/api'
+import { authFetch, setAccessToken } from '../lib/api'
 
 interface Profile {
   id: string
@@ -108,6 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session)
       setUser(session?.user ?? null)
+      setAccessToken(session?.access_token ?? null)
       if (session?.access_token) {
         await fetchProfile(session.access_token)
       }
@@ -117,6 +118,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Listen for subsequent auth changes (sign-in, sign-out, token refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      // Always keep the cached token in sync (even during initial load)
+      setAccessToken(session?.access_token ?? null)
+
       // Skip the INITIAL_SESSION event — already handled by getSession() above
       if (!initialLoadDone.current) return
 
@@ -137,7 +141,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     })
 
-    return () => subscription.unsubscribe()
+    // Proactively refresh the session when the tab regains focus.
+    // This prevents stale tokens after the browser throttles background tabs
+    // and avoids the gotrue-js lock deadlock on visibility change.
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          if (session?.access_token) {
+            setAccessToken(session.access_token)
+          }
+        })
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    return () => {
+      subscription.unsubscribe()
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
   }, [])
 
   const signOut = async () => {

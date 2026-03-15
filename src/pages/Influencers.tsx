@@ -5,6 +5,7 @@ import { authFetch } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import { getStorageUrl } from '../lib/media'
 import InfluencerAnalyzeProgress from '../components/InfluencerAnalyzeProgress'
+import MediaBackfillProgress from '../components/MediaBackfillProgress'
 
 interface Influencer {
   id: number
@@ -39,7 +40,8 @@ function fmt(n: number): string {
 }
 
 function getAvatarSrc(inf: Influencer): string | null {
-  return getStorageUrl(inf.local_avatar_path)
+  // Use local storage path first, then avatar_url only if it's not an expired CDN URL
+  return getStorageUrl(inf.local_avatar_path) || getStorageUrl(inf.avatar_url) || null
 }
 
 function getTierColor(tier: string | null): string {
@@ -400,8 +402,9 @@ export default function Influencers() {
 
       {/* Influencer Analyze Progress */}
       {userType === 'admin' && (
-        <div className="mb-4">
+        <div className="mb-4 flex flex-col gap-2">
           <InfluencerAnalyzeProgress compact pollNow={pollNow} />
+          <MediaBackfillProgress />
         </div>
       )}
 
