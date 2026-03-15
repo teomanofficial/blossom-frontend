@@ -11,6 +11,13 @@ import EngagementChart from '../components/charts/EngagementChart'
 import BestTimesHeatmap from '../components/charts/BestTimesHeatmap'
 import MetricsCard from '../components/charts/MetricsCard'
 import ViewsOverTimeChart from '../components/charts/ViewsOverTimeChart'
+import VanityChartControls from '../components/charts/VanityChartControls'
+import {
+  generateVanityViews,
+  generateVanityFollowers,
+  generateVanityEngagement,
+  type GrowthPattern,
+} from '../lib/vanity-charts'
 
 /* ── Types ── */
 interface Account {
@@ -155,6 +162,8 @@ export default function Platforms() {
   const [recalculating, setRecalculating] = useState(false)
 
   // Admin vanity metric overrides (frontend-only, for marketing screenshots)
+  const [vanityMode, setVanityMode] = useState(false)
+  const [hideVanityControls, setHideVanityControls] = useState(false)
   const [vanityOverrides, setVanityOverrides] = useState<Record<string, string>>({})
   const [editingMetric, setEditingMetric] = useState<string | null>(null)
 
@@ -165,6 +174,14 @@ export default function Platforms() {
   const getVanityOrReal = (key: string, realValue: string): string => {
     return vanityOverrides[key] !== undefined ? vanityOverrides[key] : realValue
   }
+
+  const canEdit = isAdmin && vanityMode
+  const showEditUI = canEdit && !hideVanityControls
+
+  // Vanity chart configs (per-chart: multiplier, pattern, baseValue)
+  const [vanityViewsConfig, setVanityViewsConfig] = useState({ multiplier: 10, pattern: 'exponential' as GrowthPattern, baseValue: 500 })
+  const [vanityFollowersConfig, setVanityFollowersConfig] = useState({ multiplier: 10, pattern: 'hockey-stick' as GrowthPattern, baseValue: 500 })
+  const [vanityEngagementConfig, setVanityEngagementConfig] = useState({ multiplier: 10, pattern: 'exponential' as GrowthPattern, baseValue: 200 })
 
   // Admin user navigation
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([])
@@ -378,12 +395,55 @@ export default function Platforms() {
   return (
     <>
       {/* Admin User Navigation Bar */}
-      {isAdmin && (
+      {isAdmin && hideVanityControls && vanityMode && (
+        <button
+          onClick={() => setHideVanityControls(false)}
+          className="fixed top-3 right-3 z-50 w-8 h-8 rounded-full bg-violet-500/20 border border-violet-500/30 flex items-center justify-center text-violet-400 hover:bg-violet-500/30 transition-all shadow-lg backdrop-blur-sm"
+          title="Show vanity controls"
+        >
+          <i className="fas fa-wand-magic-sparkles text-[10px]" />
+        </button>
+      )}
+      {isAdmin && !(hideVanityControls && vanityMode) && (
         <div className="mb-4 glass-card rounded-2xl p-3 sm:p-4 border border-amber-500/20 bg-amber-500/[0.03]">
           <div className="flex items-center justify-between gap-3 flex-wrap">
-            <div className="flex items-center gap-2">
-              <i className="fas fa-shield-halved text-amber-400 text-xs" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-amber-400">Admin View</span>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <i className="fas fa-shield-halved text-amber-400 text-xs" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-amber-400">Admin View</span>
+              </div>
+              <button
+                onClick={() => setVanityMode(!vanityMode)}
+                className={`flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1.5 rounded-lg transition-all ${
+                  vanityMode
+                    ? 'bg-violet-500/20 text-violet-300 ring-1 ring-violet-500/40'
+                    : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-slate-300'
+                }`}
+              >
+                <i className={`fas fa-wand-magic-sparkles text-[9px] ${vanityMode ? 'text-violet-400' : ''}`} />
+                Vanity Mode {vanityMode ? 'ON' : 'OFF'}
+              </button>
+              {vanityMode && (
+                <button
+                  onClick={() => setHideVanityControls(!hideVanityControls)}
+                  className={`flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1.5 rounded-lg transition-all ${
+                    hideVanityControls
+                      ? 'bg-emerald-500/20 text-emerald-300 ring-1 ring-emerald-500/40'
+                      : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-slate-300'
+                  }`}
+                >
+                  <i className={`fas ${hideVanityControls ? 'fa-eye-slash' : 'fa-eye'} text-[9px]`} />
+                  {hideVanityControls ? 'Controls Hidden' : 'Hide Controls'}
+                </button>
+              )}
+              {vanityMode && Object.keys(vanityOverrides).length > 0 && (
+                <button
+                  onClick={() => setVanityOverrides({})}
+                  className="text-[10px] font-bold text-red-400 bg-red-500/10 hover:bg-red-500/20 rounded-lg px-2 py-1.5 transition-all"
+                >
+                  <i className="fas fa-rotate-left mr-1" />Reset All
+                </button>
+              )}
             </div>
 
             {isImpersonating && (
@@ -591,17 +651,85 @@ export default function Platforms() {
                   </button>
                 )}
               </div>
-              <CreatorScoreGauge score={creatorScore?.score ?? null} />
-              {creatorScore?.components && (
+              {/* Creator Score Gauge — vanity override */}
+              {showEditUI && editingMetric === 'creatorScore' ? (
+                <div className="flex flex-col items-center gap-2">
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    autoFocus
+                    defaultValue={vanityOverrides['creatorScore'] ?? String(creatorScore?.score ?? 0)}
+                    onBlur={(e) => { setVanity('creatorScore', e.target.value); setEditingMetric(null) }}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { setVanity('creatorScore', (e.target as HTMLInputElement).value); setEditingMetric(null) } }}
+                    className="w-20 text-center text-4xl font-black text-white bg-transparent border-b border-violet-500/40 outline-none"
+                  />
+                  <span className="text-[10px] text-violet-400/60">0–100</span>
+                </div>
+              ) : (
+                <div
+                  className={`${showEditUI ? 'cursor-pointer group/score' : ''}`}
+                  onClick={() => showEditUI && setEditingMetric('creatorScore')}
+                >
+                  <CreatorScoreGauge
+                    score={vanityOverrides['creatorScore'] !== undefined
+                      ? Number(vanityOverrides['creatorScore'])
+                      : (creatorScore?.score ?? null)
+                    }
+                  />
+                  {showEditUI && (
+                    <div className="text-center mt-1">
+                      <i className="fas fa-pen text-[9px] text-violet-400/0 group-hover/score:text-violet-400 transition-colors" />
+                    </div>
+                  )}
+                </div>
+              )}
+              {(creatorScore?.components || showEditUI) && (
                 <div className="w-full mt-4 space-y-2">
                   <div className="flex items-center justify-between text-[11px]">
                     <span className="text-slate-400 font-medium">Engagement</span>
-                    <span className="font-bold">{creatorScore.components.engagement.score}<span className="text-slate-500 font-normal">/100</span></span>
+                    {showEditUI && editingMetric === 'engScore' ? (
+                      <input
+                        type="number"
+                        min={0}
+                        max={100}
+                        autoFocus
+                        defaultValue={vanityOverrides['engScore'] ?? String(creatorScore?.components?.engagement.score ?? 0)}
+                        onBlur={(e) => { setVanity('engScore', e.target.value); setEditingMetric(null) }}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { setVanity('engScore', (e.target as HTMLInputElement).value); setEditingMetric(null) } }}
+                        className="w-12 text-right font-bold bg-transparent border-b border-violet-500/40 outline-none text-white text-[11px]"
+                      />
+                    ) : (
+                      <span
+                        className={`font-bold ${showEditUI ? 'cursor-pointer hover:text-violet-300 transition-colors' : ''}`}
+                        onClick={() => showEditUI && setEditingMetric('engScore')}
+                      >
+                        {vanityOverrides['engScore'] ?? creatorScore?.components?.engagement.score ?? 0}<span className="text-slate-500 font-normal">/100</span>
+                      </span>
+                    )}
                   </div>
-                  {creatorScore.components.ai ? (
+                  {(creatorScore?.components?.ai || showEditUI) ? (
                     <div className="flex items-center justify-between text-[11px]">
                       <span className="text-slate-400 font-medium">AI Viral Score</span>
-                      <span className="font-bold">{creatorScore.components.ai.score}<span className="text-slate-500 font-normal">/100</span></span>
+                      {showEditUI && editingMetric === 'aiScore' ? (
+                        <input
+                          type="number"
+                          min={0}
+                          max={100}
+                          autoFocus
+                          defaultValue={vanityOverrides['aiScore'] ?? String(creatorScore?.components?.ai?.score ?? 0)}
+                          onBlur={(e) => { setVanity('aiScore', e.target.value); setEditingMetric(null) }}
+                          onKeyDown={(e) => { if (e.key === 'Enter') { setVanity('aiScore', (e.target as HTMLInputElement).value); setEditingMetric(null) } }}
+                          className="w-12 text-right font-bold bg-transparent border-b border-violet-500/40 outline-none text-white text-[11px]"
+                        />
+                      ) : (
+                        <span
+                          className={`font-bold ${showEditUI ? 'cursor-pointer hover:text-violet-300 transition-colors' : ''}`}
+                          onClick={() => showEditUI && setEditingMetric('aiScore')}
+                        >
+                          {vanityOverrides['aiScore'] ?? creatorScore?.components?.ai?.score ?? 0}<span className="text-slate-500 font-normal">/100</span>
+                        </span>
+                      )}
                     </div>
                   ) : (
                     <button
@@ -628,7 +756,7 @@ export default function Platforms() {
                 delta={stats?.followers.growth_30d ? Math.round((stats.followers.growth_30d / Math.max(1, (stats.followers.total - stats.followers.growth_30d))) * 100) : undefined}
                 icon="fa-users"
                 iconColor="#60a5fa"
-                editable={isAdmin}
+                editable={showEditUI}
                 onEdit={(v) => setVanity('followers', v)}
               />
               <MetricsCard
@@ -636,7 +764,7 @@ export default function Platforms() {
                 value={getVanityOrReal('views', fmt(creatorScore?.stats?.total_views || stats?.engagement.total_views || 0))}
                 icon="fa-eye"
                 iconColor="#c084fc"
-                editable={isAdmin}
+                editable={showEditUI}
                 onEdit={(v) => setVanity('views', v)}
               />
               <MetricsCard
@@ -644,7 +772,7 @@ export default function Platforms() {
                 value={getVanityOrReal('engagement', `${(creatorScore?.stats?.avg_engagement_rate || 0).toFixed(1)}%`)}
                 icon="fa-heart"
                 iconColor="#f472b6"
-                editable={isAdmin}
+                editable={showEditUI}
                 onEdit={(v) => setVanity('engagement', v)}
               />
               <MetricsCard
@@ -652,7 +780,7 @@ export default function Platforms() {
                 value={getVanityOrReal('postsWeek', creatorScore?.stats?.posts_last_week?.toString() || stats?.posts.last_7d?.toString() || '0')}
                 icon="fa-paper-plane"
                 iconColor="#34d399"
-                editable={isAdmin}
+                editable={showEditUI}
                 onEdit={(v) => setVanity('postsWeek', v)}
               />
             </div>
@@ -660,7 +788,10 @@ export default function Platforms() {
 
           {/* ── Total Views Row (full-width: 4col card + 8col chart) ── */}
           {(() => {
-            const viewsTrend = stats?.engagementTrend || []
+            const rawViewsTrend = stats?.engagementTrend || []
+            const viewsTrend = canEdit
+              ? generateVanityViews(rawViewsTrend, vanityViewsConfig)
+              : rawViewsTrend
             const totalViews = creatorScore?.stats?.total_views || stats?.engagement.total_views || 0
 
             // Calculate views growth %: compare last 7 entries vs previous 7
@@ -688,36 +819,36 @@ export default function Platforms() {
 
                     {/* Main number */}
                     <div className="mb-4">
-                      {isAdmin && editingMetric === 'totalViews' ? (
+                      {showEditUI && editingMetric === 'totalViews' ? (
                         <input
                           type="text"
                           autoFocus
                           defaultValue={getVanityOrReal('totalViews', fmt(totalViews))}
                           onBlur={(e) => { setVanity('totalViews', e.target.value); setEditingMetric(null) }}
                           onKeyDown={(e) => { if (e.key === 'Enter') { setVanity('totalViews', (e.target as HTMLInputElement).value); setEditingMetric(null) } }}
-                          className="text-4xl sm:text-5xl font-black text-white bg-transparent border-b border-amber-500/40 outline-none w-full"
+                          className="text-4xl sm:text-5xl font-black text-white bg-transparent border-b border-violet-500/40 outline-none w-full"
                         />
                       ) : (
                         <div
-                          className={`text-4xl sm:text-5xl font-black text-white ${isAdmin ? 'cursor-pointer hover:text-amber-300 transition-colors' : ''}`}
-                          onClick={() => isAdmin && setEditingMetric('totalViews')}
-                          title={isAdmin ? 'Click to edit (vanity)' : undefined}
+                          className={`text-4xl sm:text-5xl font-black text-white inline-flex items-center gap-2 ${showEditUI ? 'cursor-pointer group/vanity' : ''}`}
+                          onClick={() => showEditUI && setEditingMetric('totalViews')}
                         >
                           {getVanityOrReal('totalViews', fmt(totalViews))}
+                          {showEditUI && <i className="fas fa-pen text-xs text-violet-400/0 group-hover/vanity:text-violet-400 transition-colors" />}
                         </div>
                       )}
                     </div>
 
                     {/* Growth badge */}
                     <div className="flex items-center gap-3 mb-5">
-                      {isAdmin && editingMetric === 'viewsGrowth' ? (
+                      {showEditUI && editingMetric === 'viewsGrowth' ? (
                         <input
                           type="text"
                           autoFocus
                           defaultValue={getVanityOrReal('viewsGrowth', String(viewsGrowthPct))}
                           onBlur={(e) => { setVanity('viewsGrowth', e.target.value); setEditingMetric(null) }}
                           onKeyDown={(e) => { if (e.key === 'Enter') { setVanity('viewsGrowth', (e.target as HTMLInputElement).value); setEditingMetric(null) } }}
-                          className="text-sm font-bold bg-transparent border-b border-amber-500/40 outline-none w-16 text-emerald-400"
+                          className="text-sm font-bold bg-transparent border-b border-violet-500/40 outline-none w-16 text-emerald-400"
                         />
                       ) : (
                         <span
@@ -725,9 +856,8 @@ export default function Platforms() {
                             Number(getVanityOrReal('viewsGrowth', String(viewsGrowthPct))) >= 0
                               ? 'text-emerald-400 bg-emerald-400/10'
                               : 'text-red-400 bg-red-400/10'
-                          } ${isAdmin ? 'cursor-pointer hover:ring-1 hover:ring-amber-500/40' : ''}`}
-                          onClick={() => isAdmin && setEditingMetric('viewsGrowth')}
-                          title={isAdmin ? 'Click to edit (vanity)' : undefined}
+                          } ${showEditUI ? 'cursor-pointer hover:ring-1 hover:ring-violet-500/40' : ''}`}
+                          onClick={() => showEditUI && setEditingMetric('viewsGrowth')}
                         >
                           <svg width="12" height="12" viewBox="0 0 10 10" fill="none"
                             className={Number(getVanityOrReal('viewsGrowth', String(viewsGrowthPct))) >= 0 ? '' : 'rotate-180'}>
@@ -744,19 +874,19 @@ export default function Platforms() {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-slate-500 font-medium">Avg. Daily Views</span>
-                      {isAdmin && editingMetric === 'avgViews' ? (
+                      {showEditUI && editingMetric === 'avgViews' ? (
                         <input
                           type="text"
                           autoFocus
                           defaultValue={getVanityOrReal('avgViews', fmt(avgViews))}
                           onBlur={(e) => { setVanity('avgViews', e.target.value); setEditingMetric(null) }}
                           onKeyDown={(e) => { if (e.key === 'Enter') { setVanity('avgViews', (e.target as HTMLInputElement).value); setEditingMetric(null) } }}
-                          className="text-sm font-bold bg-transparent border-b border-amber-500/40 outline-none w-20 text-right text-white"
+                          className="text-sm font-bold bg-transparent border-b border-violet-500/40 outline-none w-20 text-right text-white"
                         />
                       ) : (
                         <span
-                          className={`text-sm font-bold ${isAdmin ? 'cursor-pointer hover:text-amber-300 transition-colors' : ''}`}
-                          onClick={() => isAdmin && setEditingMetric('avgViews')}
+                          className={`text-sm font-bold ${showEditUI ? 'cursor-pointer hover:text-violet-300 transition-colors' : ''}`}
+                          onClick={() => showEditUI && setEditingMetric('avgViews')}
                         >
                           {getVanityOrReal('avgViews', fmt(avgViews))}
                         </span>
@@ -770,13 +900,12 @@ export default function Platforms() {
                     </div>
                   </div>
 
-                  {isAdmin && Object.keys(vanityOverrides).length > 0 && (
-                    <button
-                      onClick={() => setVanityOverrides({})}
-                      className="mt-4 text-[10px] font-bold text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 rounded-lg px-2.5 py-1 transition-all"
-                    >
-                      <i className="fas fa-rotate-left mr-1" />Reset vanity overrides
-                    </button>
+                  {canEdit && !hideVanityControls && (
+                    <div className="mt-4 pt-3 border-t border-white/5">
+                      <p className="text-[10px] text-violet-400/60 font-medium">
+                        <i className="fas fa-wand-magic-sparkles mr-1" />Vanity Mode — click any number to edit
+                      </p>
+                    </div>
                   )}
                 </div>
 
@@ -791,7 +920,18 @@ export default function Platforms() {
                       {viewsTrend.length > 0 ? `${viewsTrend.length} data points` : ''}
                     </span>
                   </div>
-                  <ViewsOverTimeChart data={viewsTrend} height={240} />
+                  {canEdit && !hideVanityControls && (
+                    <VanityChartControls
+                      multiplier={vanityViewsConfig.multiplier}
+                      pattern={vanityViewsConfig.pattern}
+                      baseValue={vanityViewsConfig.baseValue}
+                      onMultiplierChange={(v) => setVanityViewsConfig(p => ({ ...p, multiplier: v }))}
+                      onPatternChange={(v) => setVanityViewsConfig(p => ({ ...p, pattern: v }))}
+                      onBaseValueChange={(v) => setVanityViewsConfig(p => ({ ...p, baseValue: v }))}
+                      showBaseValue={rawViewsTrend.length === 0}
+                    />
+                  )}
+                  <ViewsOverTimeChart data={viewsTrend} height={canEdit && !hideVanityControls ? 200 : 240} />
                 </div>
               </div>
             )
@@ -805,7 +945,24 @@ export default function Platforms() {
                 <i className="fas fa-chart-line text-emerald-400 text-xs" />
                 <h2 className="text-xs font-black uppercase tracking-widest text-slate-500 font-display">Follower Growth</h2>
               </div>
-              <FollowerGrowthChart data={stats?.followerTrend || []} />
+              {canEdit && !hideVanityControls && (
+                <VanityChartControls
+                  multiplier={vanityFollowersConfig.multiplier}
+                  pattern={vanityFollowersConfig.pattern}
+                  baseValue={vanityFollowersConfig.baseValue}
+                  onMultiplierChange={(v) => setVanityFollowersConfig(p => ({ ...p, multiplier: v }))}
+                  onPatternChange={(v) => setVanityFollowersConfig(p => ({ ...p, pattern: v }))}
+                  onBaseValueChange={(v) => setVanityFollowersConfig(p => ({ ...p, baseValue: v }))}
+                  showBaseValue={(stats?.followerTrend || []).length === 0}
+                />
+              )}
+              <FollowerGrowthChart
+                data={canEdit
+                  ? generateVanityFollowers(stats?.followerTrend || [], vanityFollowersConfig)
+                  : stats?.followerTrend || []
+                }
+                height={canEdit && !hideVanityControls ? 240 : 280}
+              />
             </div>
 
             {/* Engagement Over Time */}
@@ -814,7 +971,24 @@ export default function Platforms() {
                 <i className="fas fa-chart-area text-pink-400 text-xs" />
                 <h2 className="text-xs font-black uppercase tracking-widest text-slate-500 font-display">Engagement</h2>
               </div>
-              <EngagementChart data={stats?.engagementTrend || []} />
+              {canEdit && !hideVanityControls && (
+                <VanityChartControls
+                  multiplier={vanityEngagementConfig.multiplier}
+                  pattern={vanityEngagementConfig.pattern}
+                  baseValue={vanityEngagementConfig.baseValue}
+                  onMultiplierChange={(v) => setVanityEngagementConfig(p => ({ ...p, multiplier: v }))}
+                  onPatternChange={(v) => setVanityEngagementConfig(p => ({ ...p, pattern: v }))}
+                  onBaseValueChange={(v) => setVanityEngagementConfig(p => ({ ...p, baseValue: v }))}
+                  showBaseValue={(stats?.engagementTrend || []).length === 0}
+                />
+              )}
+              <EngagementChart
+                data={canEdit
+                  ? generateVanityEngagement(stats?.engagementTrend || [], vanityEngagementConfig)
+                  : stats?.engagementTrend || []
+                }
+                height={canEdit && !hideVanityControls ? 240 : 280}
+              />
             </div>
           </div>
 

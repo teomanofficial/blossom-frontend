@@ -29,7 +29,7 @@ export default function MetricsCard({
   const isPositive = (delta ?? 0) > 0;
 
   return (
-    <div className="glass-card rounded-2xl p-5">
+    <div className={`glass-card rounded-2xl p-5 ${editable ? 'group/card ring-1 ring-transparent hover:ring-violet-500/20 transition-all' : ''}`}>
       <div className="flex items-start justify-between">
         <div className="flex flex-col gap-1 min-w-0">
           {/* Value */}
@@ -40,15 +40,15 @@ export default function MetricsCard({
               defaultValue={String(value)}
               onBlur={(e) => { onEdit?.(e.target.value); setEditing(false) }}
               onKeyDown={(e) => { if (e.key === 'Enter') { onEdit?.((e.target as HTMLInputElement).value); setEditing(false) } }}
-              className="text-2xl font-bold text-white bg-transparent border-b border-amber-500/40 outline-none w-full"
+              className="text-2xl font-bold text-white bg-transparent border-b border-violet-500/40 outline-none w-full"
             />
           ) : (
             <span
-              className={`text-2xl font-bold text-white truncate ${editable ? 'cursor-pointer hover:text-amber-300 transition-colors' : ''}`}
+              className={`text-2xl font-bold text-white truncate inline-flex items-center gap-1.5 ${editable ? 'cursor-pointer hover:text-violet-300 transition-colors' : ''}`}
               onClick={() => editable && setEditing(true)}
-              title={editable ? 'Click to edit (vanity)' : undefined}
             >
               {value}
+              {editable && <i className="fas fa-pen text-[9px] text-violet-400/0 group-hover/card:text-violet-400 transition-colors" />}
             </span>
           )}
 

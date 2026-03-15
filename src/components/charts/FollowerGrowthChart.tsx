@@ -88,12 +88,13 @@ export default function FollowerGrowthChart({
     if (!data.length)
       return { chartData: [], seriesKeys: [] as string[], colorMap: {} as Record<string, string> };
 
-    // Group by unique platform/username combos
+    // Group by platform (capitalize for display)
     const seriesSet = new Set<string>();
-    data.forEach((d) => {
-      const key = [d.platform, d.username].filter(Boolean).join(' / ') || 'Followers';
-      seriesSet.add(key);
-    });
+    const platformForKey = (d: FollowerDataPoint) => {
+      const p = d.platform?.toLowerCase() || '';
+      return p ? p.charAt(0).toUpperCase() + p.slice(1) : 'Followers';
+    };
+    data.forEach((d) => seriesSet.add(platformForKey(d)));
 
     const keys = Array.from(seriesSet);
 
@@ -101,7 +102,7 @@ export default function FollowerGrowthChart({
     const colors: Record<string, string> = {};
     let fallbackIdx = 0;
     keys.forEach((key) => {
-      const platform = key.split(' / ')[0]?.toLowerCase();
+      const platform = key.toLowerCase();
       if (platform && PLATFORM_COLORS[platform]) {
         colors[key] = PLATFORM_COLORS[platform];
       } else {
@@ -113,12 +114,13 @@ export default function FollowerGrowthChart({
     // Pivot data: each row is a date with series values
     const dateMap = new Map<string, Record<string, number>>();
     data.forEach((d) => {
-      const key = [d.platform, d.username].filter(Boolean).join(' / ') || 'Followers';
+      const key = platformForKey(d);
       if (!dateMap.has(d.date)) {
         dateMap.set(d.date, { date: 0 } as unknown as Record<string, number>);
       }
       const row = dateMap.get(d.date)!;
-      row[key] = d.follower_count;
+      // If multiple accounts on same platform, sum them
+      row[key] = (row[key] || 0) + d.follower_count;
     });
 
     const pivoted = Array.from(dateMap.entries())
