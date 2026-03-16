@@ -19,9 +19,9 @@ interface TopicKeyword {
   description: string | null
   icon: string | null
   total_video_count: number
-  recent_video_count: number
-  recent_avg_views: number
-  recent_avg_engagement: number
+  video_count: number
+  avg_views: number
+  avg_engagement: number
   trend_velocity: number | null
   lifecycle_stage: string | null
   sample_thumbnails: string[] | null
@@ -40,22 +40,14 @@ const CATEGORY_META: Record<string, { label: string; icon: string; color: string
 
 const CATEGORY_ORDER = ['topic', 'style', 'audience', 'niche', 'format', 'trend', 'emotion']
 
-const DAY_OPTIONS = [
-  { value: 2, label: '48h' },
-  { value: 7, label: '7d' },
-  { value: 14, label: '14d' },
-  { value: 30, label: '30d' },
-]
-
 export default function TrendingTopicDetail() {
   const [categories, setCategories] = useState<Record<string, TopicKeyword[]>>({})
   const [loading, setLoading] = useState(true)
-  const [days, setDays] = useState(7)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await authFetch(`/api/trends/topics-detail?days=${days}`)
+      const res = await authFetch(`/api/trends/topics-detail`)
       if (!res.ok) throw new Error(`API returned ${res.status}`)
       const data = await res.json()
       if (data.error) throw new Error(data.error)
@@ -65,7 +57,7 @@ export default function TrendingTopicDetail() {
     } finally {
       setLoading(false)
     }
-  }, [days])
+  }, [])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -87,34 +79,16 @@ export default function TrendingTopicDetail() {
             Topics
           </span>
         </div>
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-black font-display tracking-tighter mb-2">Trending Topics</h1>
-            <p className="text-slate-500 text-sm font-medium">
-              Top 10 keywords per category ranked by usage.
-              {totalKeywords > 0 && (
-                <span className="text-slate-400 ml-1">
-                  {totalKeywords} keywords across {activeCategoryCount} categories
-                </span>
-              )}
-            </p>
-          </div>
-          {/* Time Window Selector */}
-          <div className="flex items-center gap-1 bg-white/[0.04] rounded-xl p-1">
-            {DAY_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => setDays(opt.value)}
-                className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${
-                  days === opt.value
-                    ? 'bg-pink-500/20 text-pink-400'
-                    : 'text-slate-500 hover:text-white hover:bg-white/5'
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
+        <div>
+          <h1 className="text-3xl font-black font-display tracking-tighter mb-2">Trending Topics</h1>
+          <p className="text-slate-500 text-sm font-medium">
+            Top 10 keywords per category ranked by usage.
+            {totalKeywords > 0 && (
+              <span className="text-slate-400 ml-1">
+                {totalKeywords} keywords across {activeCategoryCount} categories
+              </span>
+            )}
+          </p>
         </div>
       </div>
 
@@ -129,7 +103,7 @@ export default function TrendingTopicDetail() {
           </div>
           <h3 className="text-lg font-black mb-2">No Trending Topics</h3>
           <p className="text-sm text-slate-500 max-w-md mx-auto">
-            No keyword data found for the selected time period. Try expanding the time window.
+            No keyword data found. Analyze videos to generate trending topic data.
           </p>
         </div>
       ) : (
@@ -198,25 +172,24 @@ export default function TrendingTopicDetail() {
 
                         {/* Video Count */}
                         <div className="col-span-3 sm:col-span-2 text-right">
-                          <span className="text-xs font-bold text-slate-300">{kw.recent_video_count}</span>
-                          <span className="text-[9px] text-slate-600 ml-1">/ {kw.total_video_count}</span>
+                          <span className="text-xs font-bold text-slate-300">{fmt(kw.video_count)}</span>
                         </div>
 
                         {/* Avg Views */}
                         <div className="col-span-4 sm:col-span-3 text-right">
                           <span className={`text-xs font-black ${
-                            kw.recent_avg_views >= 1_000_000 ? 'text-emerald-400' :
-                            kw.recent_avg_views >= 100_000 ? 'text-blue-400' :
+                            kw.avg_views >= 1_000_000 ? 'text-emerald-400' :
+                            kw.avg_views >= 100_000 ? 'text-blue-400' :
                             'text-slate-300'
                           }`}>
-                            {fmt(kw.recent_avg_views)}
+                            {fmt(kw.avg_views)}
                           </span>
                         </div>
 
                         {/* Engagement */}
                         <div className="hidden sm:block col-span-2 text-right">
                           <span className="text-xs font-bold text-slate-400">
-                            {Number(kw.recent_avg_engagement).toFixed(1)}%
+                            {Number(kw.avg_engagement).toFixed(1)}%
                           </span>
                         </div>
 

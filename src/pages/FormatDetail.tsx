@@ -26,7 +26,9 @@ interface FormatSong {
   trending_score: number
   count_3h: number
   count_24h: number
+  count_72h: number
   count_7d: number
+  views_72h: number
   velocity: number
 }
 
@@ -103,8 +105,16 @@ interface FormatTactic {
   description: string | null
   why_it_works: string | null
   video_count: number
+  total_video_count: number
   avg_execution_score: number | null
   videos: TacticVideo[]
+}
+
+interface FormatHook {
+  id: number
+  name: string
+  description: string | null
+  video_count: number
 }
 
 interface Pagination {
@@ -126,6 +136,7 @@ interface FormatDetail {
   analysis_updated_at: string | null
   analysis_video_count: number | null
   videos: FormatVideo[]
+  top_hooks?: FormatHook[]
   pagination?: Pagination
 }
 
@@ -358,6 +369,27 @@ export default function FormatDetail() {
       {/* Fine-Tune Panel */}
       <FineTunePanel itemType="format" itemId={Number(id)} itemName={format.name} />
 
+      {/* Top Hooks in this Format */}
+      {format.top_hooks && format.top_hooks.length > 0 && (
+        <div className="mb-8 md:mb-12">
+          <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+            <i className="fas fa-fishing text-pink-400 text-[10px]"></i> Most Used Hooks
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            {format.top_hooks.map((hook) => (
+              <Link
+                key={hook.id}
+                to={`/dashboard/hooks/${hook.id}`}
+                className="glass-card rounded-xl px-3 py-2 flex items-center gap-2 hover:border-pink-500/30 transition-all group"
+              >
+                <span className="text-xs font-black text-white group-hover:text-pink-300 transition-colors">{hook.name}</span>
+                <span className="text-[9px] font-bold text-slate-500 bg-white/5 px-1.5 py-0.5 rounded">{hook.video_count}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* AI Analysis Section */}
       {analysis && (
         <>
@@ -531,7 +563,12 @@ export default function FormatDetail() {
                       <div className="flex items-center gap-3 md:gap-6 flex-shrink-0 ml-3 md:ml-4">
                         <div className="text-right">
                           <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Videos</div>
-                          <div className="text-sm font-black text-white">{tactic.video_count}</div>
+                          <div className="text-sm font-black text-white">
+                            {tactic.video_count}
+                            {tactic.total_video_count > tactic.video_count && (
+                              <span className="text-[9px] text-slate-500 font-bold ml-1">/ {tactic.total_video_count}</span>
+                            )}
+                          </div>
                         </div>
                         {tactic.avg_execution_score != null && (
                           <div className="text-right">
@@ -652,94 +689,96 @@ export default function FormatDetail() {
               {formatSongs.length} song{formatSongs.length === 1 ? '' : 's'}
             </span>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
-            {formatSongs.map((song) => {
+          <div className="space-y-1.5">
+            {formatSongs.map((song, idx) => {
               const coverSrc = getStorageUrl(song.local_cover_path)
               const hasAudio = !!getAudioUrl(song)
               const isPlaying = audio.playingId === song.id
               const isLoading = audio.loadingId === song.id
               const vel = song.velocity >= 3
-                ? { icon: 'fa-fire', color: 'text-orange-400', bg: 'bg-orange-500/20' }
+                ? { icon: 'fa-fire', color: 'text-orange-400' }
                 : song.velocity >= 1.5
-                ? { icon: 'fa-arrow-trend-up', color: 'text-green-400', bg: 'bg-green-500/20' }
+                ? { icon: 'fa-arrow-trend-up', color: 'text-green-400' }
                 : null
               return (
                 <div
                   key={song.id}
-                  className={`glass-card rounded-xl overflow-hidden border transition-all group cursor-pointer ${
-                    isPlaying ? 'border-cyan-500/50 shadow-lg shadow-cyan-500/10' : 'border-white/5 hover:border-cyan-500/30'
-                  }`}
+                  className={`glass-card rounded-xl flex items-center gap-3 px-3 py-2.5 transition-all group ${
+                    hasAudio ? 'cursor-pointer' : ''
+                  } ${isPlaying ? 'border-cyan-500/50 shadow-lg shadow-cyan-500/10' : 'border-white/5 hover:border-cyan-500/30'}`}
                   onClick={hasAudio ? () => audio.toggle(song) : undefined}
                 >
-                  <div className="aspect-square bg-slate-900 relative overflow-hidden">
+                  {/* Rank */}
+                  <span className="text-[10px] font-black text-slate-600 w-4 text-center shrink-0">{idx + 1}</span>
+
+                  {/* Cover */}
+                  <div className="w-10 h-10 rounded-lg bg-slate-900 overflow-hidden shrink-0 relative">
                     {coverSrc ? (
-                      <img src={coverSrc} alt="" className={`w-full h-full object-cover transition-transform duration-500 ${isPlaying ? 'scale-105' : 'group-hover:scale-105'}`} loading="lazy" />
+                      <img src={coverSrc} alt="" className="w-full h-full object-cover" loading="lazy" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-cyan-500/10 to-pink-500/10">
-                        <i className="fas fa-music text-cyan-400/30 text-3xl" />
+                        <i className="fas fa-music text-cyan-400/30 text-sm" />
                       </div>
                     )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                    {hasAudio && (
-                      <div className={`absolute inset-0 flex items-center justify-center transition-opacity ${
-                        isPlaying || isLoading ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                      }`}>
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-sm transition-all ${
-                          isPlaying ? 'bg-cyan-500/30 scale-100' : 'bg-black/50 scale-90 group-hover:scale-100'
-                        }`}>
-                          {isLoading ? (
-                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                          ) : (
-                            <i className={`fas ${isPlaying ? 'fa-pause' : 'fa-play'} text-white text-sm ${!isPlaying ? 'ml-0.5' : ''}`} />
-                          )}
-                        </div>
+                    {hasAudio && (isPlaying || isLoading) && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                        {isLoading ? (
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <i className="fas fa-pause text-white text-[9px]" />
+                        )}
                       </div>
                     )}
-                    <div className="absolute top-2 right-2 flex items-center gap-1">
-                      {vel && (
-                        <span className={`text-[9px] font-black px-1.5 py-0.5 rounded ${vel.bg} ${vel.color} backdrop-blur-sm`}>
-                          <i className={`fas ${vel.icon} text-[7px]`} />
-                        </span>
-                      )}
-                      <i className={`fab fa-${song.platform === 'tiktok' ? 'tiktok' : 'instagram'} text-[10px] text-white/70`} />
-                    </div>
-                    <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
-                      <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 backdrop-blur-sm">
-                        {song.recent_video_count} videos
-                      </span>
-                      {song.count_3h > 0 && (
-                        <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-cyan-500/30 text-cyan-200 backdrop-blur-sm">
-                          <i className="fas fa-bolt text-[7px] mr-0.5" />{song.count_3h} · 3h
-                        </span>
-                      )}
-                    </div>
                     {isPlaying && (
                       <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black/30">
                         <div className="h-full bg-cyan-400 transition-all duration-200" style={{ width: `${audio.duration > 0 ? (audio.progress / audio.duration) * 100 : 0}%` }} />
                       </div>
                     )}
                   </div>
-                  <div className="p-3">
-                    <div className={`text-sm font-black truncate mb-0.5 transition-colors ${isPlaying ? 'text-cyan-300' : 'text-white group-hover:text-cyan-300'}`}>{song.title}</div>
-                    {song.artist && <div className="text-[10px] text-slate-500 font-bold truncate mb-1">{song.artist}</div>}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-[10px] text-slate-600 font-bold min-w-0">
-                        <span><i className="fas fa-eye mr-0.5 text-[8px]" />{formatNumber(song.recent_avg_views)}</span>
-                        {song.count_24h > 0 && <span><i className="fas fa-clock mr-0.5 text-[8px]" />{song.count_24h} · 24h</span>}
-                      </div>
-                      {hasAudio && (
-                        <a
-                          href={`/api/analysis/music/${song.id}/stream`}
-                          download
-                          onClick={(e) => e.stopPropagation()}
-                          className="w-6 h-6 rounded-md bg-white/5 hover:bg-cyan-500/20 flex items-center justify-center transition-colors shrink-0 ml-1"
-                          title="Download audio"
-                        >
-                          <i className="fas fa-download text-[9px] text-slate-400 hover:text-cyan-400" />
-                        </a>
-                      )}
-                    </div>
+
+                  {/* Title & Artist */}
+                  <div className="min-w-0 flex-1">
+                    <div className={`text-xs font-black truncate transition-colors ${isPlaying ? 'text-cyan-300' : 'text-white'}`}>{song.title}</div>
+                    {song.artist && <div className="text-[10px] text-slate-500 font-bold truncate">{song.artist}</div>}
                   </div>
+
+                  {/* Badges */}
+                  <div className="hidden sm:flex items-center gap-1.5 shrink-0">
+                    {vel && (
+                      <span className={`text-[9px] font-black ${vel.color}`}>
+                        <i className={`fas ${vel.icon} text-[8px]`} />
+                      </span>
+                    )}
+                    <i className={`fab fa-${song.platform === 'tiktok' ? 'tiktok' : 'instagram'} text-[10px] text-white/40`} />
+                  </div>
+
+                  {/* Stats — last 72h */}
+                  <div className="hidden md:flex items-center gap-4 shrink-0 text-[10px] font-bold text-slate-500">
+                    <span className="w-16 text-right"><i className="fas fa-eye mr-0.5 text-[8px]" />{formatNumber(song.views_72h)}</span>
+                    <span className="w-14 text-right text-cyan-400/80">{song.count_72h} vid{song.count_72h === 1 ? '' : 's'}</span>
+                    <span className="w-10 text-right text-slate-600">72h</span>
+                  </div>
+
+                  {/* Mobile stats */}
+                  <div className="flex md:hidden items-center gap-2 shrink-0 text-[10px] font-bold text-slate-500">
+                    <span className="text-cyan-400/80">{song.recent_video_count}</span>
+                  </div>
+
+                  {/* Download */}
+                  {hasAudio && (
+                    <a
+                      href={`/api/analysis/music/${song.id}/stream`}
+                      download
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-7 h-7 rounded-lg bg-white/5 hover:bg-cyan-500/20 flex items-center justify-center transition-colors shrink-0"
+                      title="Download audio"
+                    >
+                      <i className="fas fa-download text-[9px] text-slate-400 hover:text-cyan-400" />
+                    </a>
+                  )}
+                  {!hasAudio && (
+                    <div className="w-7 h-7 shrink-0" title="Audio not available — metadata only" />
+                  )}
                 </div>
               )
             })}
