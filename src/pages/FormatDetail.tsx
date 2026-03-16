@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { authFetch } from '../lib/api'
 import { getStorageUrl } from '../lib/media'
+import { useAudioPlayer, getAudioUrl } from '../lib/useAudioPlayer'
 import VideoStoryCarousel, { type CarouselVideo } from '../components/VideoStoryCarousel'
 import FineTunePanel from '../components/FineTunePanel'
 
@@ -167,6 +168,7 @@ export default function FormatDetail() {
   const [expandedTactic, setExpandedTactic] = useState<number | null>(null)
   const [formatSongs, setFormatSongs] = useState<FormatSong[]>([])
   const [songsLoading, setSongsLoading] = useState(false)
+  const audio = useAudioPlayer()
   const loaderRef = useRef<HTMLDivElement>(null)
 
   const fetchFormat = useCallback(() => {
@@ -653,22 +655,46 @@ export default function FormatDetail() {
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
             {formatSongs.map((song) => {
               const coverSrc = getStorageUrl(song.local_cover_path)
+              const hasAudio = !!getAudioUrl(song)
+              const isPlaying = audio.playingId === song.id
+              const isLoading = audio.loadingId === song.id
               const vel = song.velocity >= 3
                 ? { icon: 'fa-fire', color: 'text-orange-400', bg: 'bg-orange-500/20' }
                 : song.velocity >= 1.5
                 ? { icon: 'fa-arrow-trend-up', color: 'text-green-400', bg: 'bg-green-500/20' }
                 : null
               return (
-                <div key={song.id} className="glass-card rounded-xl overflow-hidden border border-white/5 hover:border-cyan-500/30 transition-all group">
+                <div
+                  key={song.id}
+                  className={`glass-card rounded-xl overflow-hidden border transition-all group cursor-pointer ${
+                    isPlaying ? 'border-cyan-500/50 shadow-lg shadow-cyan-500/10' : 'border-white/5 hover:border-cyan-500/30'
+                  }`}
+                  onClick={hasAudio ? () => audio.toggle(song) : undefined}
+                >
                   <div className="aspect-square bg-slate-900 relative overflow-hidden">
                     {coverSrc ? (
-                      <img src={coverSrc} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
+                      <img src={coverSrc} alt="" className={`w-full h-full object-cover transition-transform duration-500 ${isPlaying ? 'scale-105' : 'group-hover:scale-105'}`} loading="lazy" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-cyan-500/10 to-pink-500/10">
                         <i className="fas fa-music text-cyan-400/30 text-3xl" />
                       </div>
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                    {hasAudio && (
+                      <div className={`absolute inset-0 flex items-center justify-center transition-opacity ${
+                        isPlaying || isLoading ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                      }`}>
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-sm transition-all ${
+                          isPlaying ? 'bg-cyan-500/30 scale-100' : 'bg-black/50 scale-90 group-hover:scale-100'
+                        }`}>
+                          {isLoading ? (
+                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <i className={`fas ${isPlaying ? 'fa-pause' : 'fa-play'} text-white text-sm ${!isPlaying ? 'ml-0.5' : ''}`} />
+                          )}
+                        </div>
+                      </div>
+                    )}
                     <div className="absolute top-2 right-2 flex items-center gap-1">
                       {vel && (
                         <span className={`text-[9px] font-black px-1.5 py-0.5 rounded ${vel.bg} ${vel.color} backdrop-blur-sm`}>
@@ -687,13 +713,31 @@ export default function FormatDetail() {
                         </span>
                       )}
                     </div>
+                    {isPlaying && (
+                      <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black/30">
+                        <div className="h-full bg-cyan-400 transition-all duration-200" style={{ width: `${audio.duration > 0 ? (audio.progress / audio.duration) * 100 : 0}%` }} />
+                      </div>
+                    )}
                   </div>
                   <div className="p-3">
-                    <div className="text-sm font-black text-white truncate mb-0.5 group-hover:text-cyan-300 transition-colors">{song.title}</div>
+                    <div className={`text-sm font-black truncate mb-0.5 transition-colors ${isPlaying ? 'text-cyan-300' : 'text-white group-hover:text-cyan-300'}`}>{song.title}</div>
                     {song.artist && <div className="text-[10px] text-slate-500 font-bold truncate mb-1">{song.artist}</div>}
-                    <div className="flex items-center gap-2 text-[10px] text-slate-600 font-bold">
-                      <span><i className="fas fa-eye mr-0.5 text-[8px]" />{formatNumber(song.recent_avg_views)}</span>
-                      {song.count_24h > 0 && <span><i className="fas fa-clock mr-0.5 text-[8px]" />{song.count_24h} · 24h</span>}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-[10px] text-slate-600 font-bold min-w-0">
+                        <span><i className="fas fa-eye mr-0.5 text-[8px]" />{formatNumber(song.recent_avg_views)}</span>
+                        {song.count_24h > 0 && <span><i className="fas fa-clock mr-0.5 text-[8px]" />{song.count_24h} · 24h</span>}
+                      </div>
+                      {hasAudio && (
+                        <a
+                          href={`/api/analysis/music/${song.id}/stream`}
+                          download
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-6 h-6 rounded-md bg-white/5 hover:bg-cyan-500/20 flex items-center justify-center transition-colors shrink-0 ml-1"
+                          title="Download audio"
+                        >
+                          <i className="fas fa-download text-[9px] text-slate-400 hover:text-cyan-400" />
+                        </a>
+                      )}
                     </div>
                   </div>
                 </div>

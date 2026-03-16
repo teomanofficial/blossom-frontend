@@ -59,6 +59,8 @@ export default function ChoosePlan() {
       .then((data) => {
         if (data.status === 'active' || data.status === 'trialing' || data.status === 'past_due') {
           navigate('/dashboard', { replace: true })
+        } else if (data.status === 'payment_pending') {
+          navigate('/onboarding', { replace: true })
         }
       })
       .catch(() => {})
@@ -70,6 +72,10 @@ export default function ChoosePlan() {
     if (params.get('checkout') === 'success') {
       setCheckoutSuccess(true)
       window.history.replaceState({}, '', '/choose-plan')
+
+      // Persist payment pending state so it survives page refresh
+      authFetch('/api/billing/checkout-completed', { method: 'POST' }).catch(() => {})
+
       // Poll for subscription to become active, then redirect
       const poll = setInterval(async () => {
         try {
@@ -81,7 +87,7 @@ export default function ChoosePlan() {
           }
         } catch {}
       }, 2000)
-      // Redirect after 10s anyway
+      // Redirect after 10s anyway (payment_pending state persists in DB)
       setTimeout(() => {
         clearInterval(poll)
         navigate('/onboarding')

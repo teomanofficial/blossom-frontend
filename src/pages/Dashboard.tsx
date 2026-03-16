@@ -4,6 +4,7 @@ import toast from 'react-hot-toast'
 import { useAuth } from '../context/AuthContext'
 import { authFetch } from '../lib/api'
 import { getStorageUrl } from '../lib/media'
+import { useAudioPlayer, getAudioUrl } from '../lib/useAudioPlayer'
 import VideoStoryCarousel, { type CarouselVideo } from '../components/VideoStoryCarousel'
 
 /* ── Types ── */
@@ -11,6 +12,7 @@ interface Format { id: number; name: string; video_count: number; avg_views: num
 interface Hook { id: number; name: string; video_count: number; avg_views: number }
 interface MusicTrack {
   id: number; title: string; artist: string; cover_url: string; local_cover_path: string
+  play_url: string | null; local_audio_path: string | null
   video_count: number; total_views: number; avg_views: number; platform: string
 }
 interface Tactic {
@@ -133,14 +135,15 @@ function KeywordCloud({ keywords }: { keywords: TrendingKeyword[] }) {
         const color = CATEGORY_COLORS[k.category] || 'text-slate-300'
 
         return (
-          <span
+          <Link
             key={k.id}
-            className={`${color} font-bold hover:opacity-100 transition-opacity cursor-default capitalize`}
+            to="/dashboard/trends/topics-detail"
+            className={`${color} font-bold hover:opacity-100 transition-opacity cursor-pointer capitalize`}
             style={{ fontSize: `${fontSize}px`, opacity }}
             title={`${k.name} — ${k.video_count} videos, ${fmt(k.avg_views)} avg views (${k.category})`}
           >
             {k.name}
-          </span>
+          </Link>
         )
       })}
     </div>
@@ -212,6 +215,7 @@ export default function Dashboard() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [loading, setLoading] = useState(true)
   const [carouselData, setCarouselData] = useState<{ videos: CarouselVideo[]; initialIndex: number } | null>(null)
+  const audio = useAudioPlayer()
   const scrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -461,25 +465,62 @@ export default function Dashboard() {
                 </div>
               </div>
               <div className="space-y-1">
-                {stats.trending_music.length > 0 ? stats.trending_music.map((m) => (
-                  <div key={m.id} className="flex items-center gap-3 py-2.5 px-3 rounded-xl hover:bg-white/[0.04] transition-colors">
-                    {getStorageUrl(m.local_cover_path) ? (
-                      <img src={getStorageUrl(m.local_cover_path) || ''} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />
-                    ) : (
-                      <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
-                        <i className="fas fa-music text-slate-600 text-xs" />
+                {stats.trending_music.length > 0 ? stats.trending_music.map((m) => {
+                  const hasAudio = !!getAudioUrl(m)
+                  const isPlaying = audio.playingId === m.id
+                  const isLoading = audio.loadingId === m.id
+                  return (
+                    <div
+                      key={m.id}
+                      className={`flex items-center gap-3 py-2.5 px-3 rounded-xl transition-colors cursor-pointer ${
+                        isPlaying ? 'bg-cyan-500/10' : 'hover:bg-white/[0.04]'
+                      }`}
+                      onClick={hasAudio ? () => audio.toggle(m) : undefined}
+                    >
+                      <div className="relative shrink-0">
+                        {getStorageUrl(m.local_cover_path) ? (
+                          <img src={getStorageUrl(m.local_cover_path) || ''} alt="" className="w-10 h-10 rounded-lg object-cover" />
+                        ) : (
+                          <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center">
+                            <i className="fas fa-music text-slate-600 text-xs" />
+                          </div>
+                        )}
+                        {hasAudio && (
+                          <div className={`absolute inset-0 rounded-lg flex items-center justify-center transition-opacity ${
+                            isPlaying || isLoading ? 'opacity-100 bg-black/40' : 'opacity-0 hover:opacity-100 bg-black/40'
+                          }`}>
+                            {isLoading ? (
+                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                              <i className={`fas ${isPlaying ? 'fa-pause' : 'fa-play'} text-white text-[10px] ${!isPlaying ? 'ml-0.5' : ''}`} />
+                            )}
+                          </div>
+                        )}
                       </div>
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <div className="text-xs sm:text-sm font-bold truncate">{m.title || 'Unknown Track'}</div>
-                      <div className="text-[10px] sm:text-[11px] text-slate-500 font-medium truncate">{m.artist || 'Unknown Artist'}</div>
+                      <div className="min-w-0 flex-1">
+                        <div className={`text-xs sm:text-sm font-bold truncate ${isPlaying ? 'text-cyan-300' : ''}`}>{m.title || 'Unknown Track'}</div>
+                        <div className="text-[10px] sm:text-[11px] text-slate-500 font-medium truncate">{m.artist || 'Unknown Artist'}</div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <div className="text-right">
+                          <div className="text-[10px] sm:text-xs font-black text-emerald-400">{m.video_count} <span className="hidden sm:inline">vids</span></div>
+                          <div className="text-[9px] sm:text-[10px] text-slate-500 font-bold">{fmt(m.total_views)}</div>
+                        </div>
+                        {hasAudio && (
+                          <a
+                            href={`/api/analysis/music/${m.id}/stream`}
+                            download
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-7 h-7 rounded-md bg-white/5 hover:bg-cyan-500/20 flex items-center justify-center transition-colors"
+                            title="Download audio"
+                          >
+                            <i className="fas fa-download text-[9px] text-slate-400 hover:text-cyan-400" />
+                          </a>
+                        )}
+                      </div>
                     </div>
-                    <div className="text-right shrink-0">
-                      <div className="text-[10px] sm:text-xs font-black text-emerald-400">{m.video_count} <span className="hidden sm:inline">vids</span></div>
-                      <div className="text-[9px] sm:text-[10px] text-slate-500 font-bold">{fmt(m.total_views)}</div>
-                    </div>
-                  </div>
-                )) : (
+                  )
+                }) : (
                   <p className="text-xs text-slate-600 text-center py-6">Sounds will appear after video analysis</p>
                 )}
               </div>
@@ -525,11 +566,16 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-8 lg:mb-12">
             {/* Trending Keywords Cloud */}
             <div className="glass-card rounded-3xl p-5 sm:p-7">
-              <div className="flex items-center gap-2.5 mb-5">
-                <div className="w-8 h-8 bg-violet-500/20 rounded-xl flex items-center justify-center">
-                  <i className="fas fa-cloud text-violet-400 text-xs" />
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 bg-violet-500/20 rounded-xl flex items-center justify-center">
+                    <i className="fas fa-cloud text-violet-400 text-xs" />
+                  </div>
+                  <h2 className="text-sm sm:text-base font-bold">Trending Topics</h2>
                 </div>
-                <h2 className="text-sm sm:text-base font-bold">Trending Topics</h2>
+                <Link to="/dashboard/trends/topics-detail" className="text-[10px] font-black text-slate-500 uppercase tracking-widest hover:text-white transition-colors">
+                  View All
+                </Link>
               </div>
               <KeywordCloud keywords={stats.trending_keywords} />
               {stats.trending_keywords.length > 0 && (

@@ -60,6 +60,7 @@ import TrendingFormats from './pages/TrendingFormats'
 import TrendingHooks from './pages/TrendingHooks'
 import TrendingContents from './pages/TrendingContents'
 import TrendingSongs from './pages/TrendingSongs'
+import TrendingTopicDetail from './pages/TrendingTopicDetail'
 import ContentAnalyticsDashboard from './pages/ContentAnalyticsDashboard'
 import SiteAnalytics from './pages/SiteAnalytics'
 import Onboarding from './pages/Onboarding'
@@ -144,6 +145,7 @@ function App() {
         <Route path="trends/hooks" element={<TrendingHooks />} />
         <Route path="trends/contents" element={<TrendingContents />} />
         <Route path="trends/songs" element={<TrendingSongs />} />
+        <Route path="trends/topics-detail" element={<FeatureGate><TrendingTopicDetail /></FeatureGate>} />
         <Route path="trending" element={<Navigate to="/dashboard/trends" replace />} />
         <Route path="suggestions" element={<Suggestions />} />
         <Route path="suggestions/:id" element={<SuggestionDetail />} />

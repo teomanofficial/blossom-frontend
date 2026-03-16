@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { authFetch } from '../lib/api'
 import { getStorageUrl } from '../lib/media'
+import { useAudioPlayer, getAudioUrl } from '../lib/useAudioPlayer'
 import VideoStoryCarousel, { type CarouselVideo } from '../components/VideoStoryCarousel'
 
 /* ── Helpers ── */
@@ -334,8 +335,14 @@ function ContentCard({ content }: { content: TrendingContent }) {
   )
 }
 
-function SongCard({ song }: { song: TrendingSong }) {
+function SongCard({ song, isPlaying, isLoading, onToggle }: {
+  song: TrendingSong
+  isPlaying: boolean
+  isLoading: boolean
+  onToggle: () => void
+}) {
   const coverSrc = getStorageUrl(song.local_cover_path)
+  const hasAudio = !!getAudioUrl(song)
   const vel = song.velocity >= 3
     ? { icon: 'fa-fire', color: 'text-orange-400', bg: 'bg-orange-500/20' }
     : song.velocity >= 1.5
@@ -343,16 +350,36 @@ function SongCard({ song }: { song: TrendingSong }) {
     : null
 
   return (
-    <div className="shrink-0 w-[170px] sm:w-[190px] glass-card rounded-xl overflow-hidden border border-white/5 hover:border-cyan-500/30 transition-all group cursor-pointer">
+    <div
+      className={`shrink-0 w-[170px] sm:w-[190px] glass-card rounded-xl overflow-hidden border transition-all group cursor-pointer ${
+        isPlaying ? 'border-cyan-500/50 shadow-lg shadow-cyan-500/10' : 'border-white/5 hover:border-cyan-500/30'
+      }`}
+      onClick={hasAudio ? onToggle : undefined}
+    >
       <div className="aspect-square bg-slate-900 relative overflow-hidden">
         {coverSrc ? (
-          <img src={coverSrc} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+          <img src={coverSrc} alt="" className={`w-full h-full object-cover transition-transform duration-500 ${isPlaying ? 'scale-105' : 'group-hover:scale-105'}`} />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-cyan-500/10 to-pink-500/10">
             <i className="fas fa-music text-cyan-400/30 text-3xl" />
           </div>
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+        {hasAudio && (
+          <div className={`absolute inset-0 flex items-center justify-center transition-opacity ${
+            isPlaying || isLoading ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+          }`}>
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-sm transition-all ${
+              isPlaying ? 'bg-cyan-500/30 scale-100' : 'bg-black/50 scale-90 group-hover:scale-100'
+            }`}>
+              {isLoading ? (
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <i className={`fas ${isPlaying ? 'fa-pause' : 'fa-play'} text-white text-sm ${!isPlaying ? 'ml-0.5' : ''}`} />
+              )}
+            </div>
+          </div>
+        )}
         <div className="absolute top-2 right-2 flex items-center gap-1">
           {vel && (
             <span className={`text-[9px] font-black px-1.5 py-0.5 rounded ${vel.bg} ${vel.color} backdrop-blur-sm`}>
@@ -373,12 +400,25 @@ function SongCard({ song }: { song: TrendingSong }) {
         </div>
       </div>
       <div className="p-3">
-        <div className="text-sm font-black text-white truncate mb-0.5 group-hover:text-cyan-300 transition-colors">
+        <div className={`text-sm font-black truncate mb-0.5 transition-colors ${isPlaying ? 'text-cyan-300' : 'text-white group-hover:text-cyan-300'}`}>
           {song.title}
         </div>
         {song.artist && (
-          <div className="text-[10px] text-slate-500 font-bold truncate">
+          <div className="text-[10px] text-slate-500 font-bold truncate mb-1">
             {song.artist}
+          </div>
+        )}
+        {hasAudio && (
+          <div className="flex justify-end">
+            <a
+              href={`/api/analysis/music/${song.id}/stream`}
+              download
+              onClick={(e) => e.stopPropagation()}
+              className="w-6 h-6 rounded-md bg-white/5 hover:bg-cyan-500/20 flex items-center justify-center transition-colors"
+              title="Download audio"
+            >
+              <i className="fas fa-download text-[9px] text-slate-400 hover:text-cyan-400" />
+            </a>
           </div>
         )}
       </div>
@@ -404,6 +444,7 @@ export default function Trends() {
   const [loading, setLoading] = useState(true)
   const [days, setDays] = useState(30)
   const [carouselData, setCarouselData] = useState<{ videos: CarouselVideo[]; initialIndex: number } | null>(null)
+  const audio = useAudioPlayer()
 
   const postsScroll = useHorizontalScroll()
   const formatsScroll = useHorizontalScroll()
@@ -427,6 +468,7 @@ export default function Trends() {
   }, [days])
 
   useEffect(() => {
+    audio.stop()
     fetchData()
   }, [fetchData])
 
@@ -608,7 +650,13 @@ export default function Trends() {
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {data.songs.items.map((s) => (
-              <SongCard key={s.id} song={s} />
+              <SongCard
+                key={s.id}
+                song={s}
+                isPlaying={audio.playingId === s.id}
+                isLoading={audio.loadingId === s.id}
+                onToggle={() => audio.toggle(s)}
+              />
             ))}
           </div>
         ) : (

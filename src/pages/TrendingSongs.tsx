@@ -1,8 +1,9 @@
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { authFetch } from '../lib/api'
 import { getStorageUrl } from '../lib/media'
+import { useAudioPlayer, getAudioUrl } from '../lib/useAudioPlayer'
 
 /* ── Helpers ── */
 function fmt(n: number): string {
@@ -43,97 +44,6 @@ function velocityLabel(v: number): { icon: string; color: string; label: string 
   if (v >= 3) return { icon: 'fa-fire', color: 'text-orange-400', label: 'Exploding' }
   if (v >= 1.5) return { icon: 'fa-arrow-trend-up', color: 'text-green-400', label: 'Rising' }
   return null
-}
-
-function getAudioUrl(song: TrendingSong): string | null {
-  return song.local_audio_path || song.play_url || null
-}
-
-function useAudioPlayer() {
-  const audioRef = useRef<HTMLAudioElement | null>(null)
-  const [playingId, setPlayingId] = useState<number | null>(null)
-  const [loadingId, setLoadingId] = useState<number | null>(null)
-  const [progress, setProgress] = useState(0)
-  const [duration, setDuration] = useState(0)
-  const rafRef = useRef<number>(0)
-
-  const updateProgress = useCallback(() => {
-    const a = audioRef.current
-    if (a && !a.paused) {
-      setProgress(a.currentTime)
-      setDuration(a.duration || 0)
-      rafRef.current = requestAnimationFrame(updateProgress)
-    }
-  }, [])
-
-  const stop = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.pause()
-      audioRef.current.src = ''
-    }
-    cancelAnimationFrame(rafRef.current)
-    setPlayingId(null)
-    setLoadingId(null)
-    setProgress(0)
-    setDuration(0)
-  }, [])
-
-  const toggle = useCallback((song: TrendingSong) => {
-    const url = getAudioUrl(song)
-    if (!url) return
-
-    if (playingId === song.id) {
-      stop()
-      return
-    }
-
-    if (!audioRef.current) {
-      audioRef.current = new Audio()
-      audioRef.current.addEventListener('ended', () => {
-        setPlayingId(null)
-        setProgress(0)
-        cancelAnimationFrame(rafRef.current)
-      })
-      audioRef.current.addEventListener('error', () => {
-        setPlayingId(null)
-        setLoadingId(null)
-        setProgress(0)
-        cancelAnimationFrame(rafRef.current)
-      })
-    }
-
-    const a = audioRef.current
-    a.pause()
-    cancelAnimationFrame(rafRef.current)
-    setLoadingId(song.id)
-    setPlayingId(null)
-    a.src = url
-    a.load()
-
-    const onCanPlay = () => {
-      setLoadingId(null)
-      a.play().then(() => {
-        setPlayingId(song.id)
-        rafRef.current = requestAnimationFrame(updateProgress)
-      }).catch(() => {
-        setLoadingId(null)
-      })
-      a.removeEventListener('canplay', onCanPlay)
-    }
-    a.addEventListener('canplay', onCanPlay)
-  }, [playingId, stop, updateProgress])
-
-  useEffect(() => {
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause()
-        audioRef.current.src = ''
-      }
-      cancelAnimationFrame(rafRef.current)
-    }
-  }, [])
-
-  return { playingId, loadingId, progress, duration, toggle, stop }
 }
 
 const PAGE_SIZE = 24
@@ -305,14 +215,27 @@ export default function TrendingSongs() {
                         {s.artist}
                       </div>
                     )}
-                    <div className="flex items-center gap-2 text-[10px] text-slate-600 font-bold flex-wrap">
-                      {s.count_3h > 0 && (
-                        <span className="text-cyan-400"><i className="fas fa-bolt mr-0.5 text-[8px]" />{s.count_3h} · 3h</span>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-[10px] text-slate-600 font-bold flex-wrap min-w-0">
+                        {s.count_3h > 0 && (
+                          <span className="text-cyan-400"><i className="fas fa-bolt mr-0.5 text-[8px]" />{s.count_3h} · 3h</span>
+                        )}
+                        {s.count_24h > 0 && (
+                          <span><i className="fas fa-clock mr-0.5 text-[8px]" />{s.count_24h} · 24h</span>
+                        )}
+                        <span><i className="fas fa-eye mr-0.5 text-[8px]" />{fmt(s.recent_avg_views)}</span>
+                      </div>
+                      {hasAudio && (
+                        <a
+                          href={`/api/analysis/music/${s.id}/stream`}
+                          download
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-6 h-6 rounded-md bg-white/5 hover:bg-cyan-500/20 flex items-center justify-center transition-colors shrink-0 ml-1"
+                          title="Download audio"
+                        >
+                          <i className="fas fa-download text-[9px] text-slate-400 hover:text-cyan-400" />
+                        </a>
                       )}
-                      {s.count_24h > 0 && (
-                        <span><i className="fas fa-clock mr-0.5 text-[8px]" />{s.count_24h} · 24h</span>
-                      )}
-                      <span><i className="fas fa-eye mr-0.5 text-[8px]" />{fmt(s.recent_avg_views)}</span>
                     </div>
                   </div>
                 </div>

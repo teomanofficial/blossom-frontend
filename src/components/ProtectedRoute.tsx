@@ -53,6 +53,7 @@ export default function ProtectedRoute({ children }: { children: ReactNode }) {
   }
 
   // Redirect to choose plan if no active subscription (admins, VIP, and impersonating bypass)
+  // payment_pending = checkout completed but webhook not yet received — let them through
   if (!isAdmin && !isVip && !isImpersonating && subStatus === 'none') {
     return <Navigate to="/choose-plan" replace />
   }
