@@ -45,6 +45,7 @@ const managementItems = [
   { to: '/dashboard/onboarding-management', icon: 'fa-clipboard-check', label: 'Onboarding' },
   { to: '/dashboard/ai-model-lab', icon: 'fa-microchip', label: 'AI Model Lab' },
   { to: '/dashboard/hashtags', icon: 'fa-hashtag', label: 'Hashtags' },
+  { to: '/dashboard/site-analytics', icon: 'fa-chart-line', label: 'Site Analytics' },
 ]
 
 /* Bottom tab items for mobile */
@@ -84,6 +85,7 @@ const drawerRoutes = [
   '/dashboard/onboarding-management',
   '/dashboard/ai-model-lab',
   '/dashboard/hashtags',
+  '/dashboard/site-analytics',
 ]
 
 /* ── Nav Rail Link Component ── */

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { apiFetch } from '../lib/api'
+import { trackEvent, trackConversion } from '../lib/analytics'
 
 export default function Signup() {
   const navigate = useNavigate()
@@ -66,11 +67,14 @@ export default function Signup() {
     } else if (data.user && data.user.identities?.length === 0) {
       setError('An account with this email address already exists. Please sign in instead.')
     } else {
+      trackEvent('signup_completed', 'conversion', { method: 'email' })
+      trackConversion()
       navigate('/verify-email', { state: { email } })
     }
   }
 
   const handleGoogleSignup = async () => {
+    trackEvent('signup_google_initiated', 'conversion')
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {

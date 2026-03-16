@@ -61,6 +61,7 @@ import TrendingHooks from './pages/TrendingHooks'
 import TrendingContents from './pages/TrendingContents'
 import TrendingSongs from './pages/TrendingSongs'
 import ContentAnalyticsDashboard from './pages/ContentAnalyticsDashboard'
+import SiteAnalytics from './pages/SiteAnalytics'
 import Onboarding from './pages/Onboarding'
 import AuthCallback from './pages/AuthCallback'
 import Platforms from './pages/Platforms'
@@ -176,6 +177,7 @@ function App() {
         <Route path="category-requests" element={<AdminGate><CategoryRequestManagement /></AdminGate>} />
         <Route path="ai-model-lab" element={<AdminGate><AIModelLab /></AdminGate>} />
         <Route path="hashtags" element={<AdminGate><Hashtags /></AdminGate>} />
+        <Route path="site-analytics" element={<AdminGate><SiteAnalytics /></AdminGate>} />
       </Route>
     </Routes>
   )

@@ -5,11 +5,13 @@ import { Toaster } from 'react-hot-toast'
 import App from './App'
 import { AuthProvider } from './context/AuthContext'
 import { ImpersonationProvider } from './context/ImpersonationContext'
+import AnalyticsProvider from './components/AnalyticsProvider'
 import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <BrowserRouter>
+      <AnalyticsProvider>
       <AuthProvider>
         <ImpersonationProvider>
         <App />
@@ -35,6 +37,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         />
         </ImpersonationProvider>
       </AuthProvider>
+      </AnalyticsProvider>
     </BrowserRouter>
   </React.StrictMode>,
 )

@@ -4,6 +4,7 @@ import toast from 'react-hot-toast'
 import { useAuth } from '../context/AuthContext'
 import { authFetch, apiFetch } from '../lib/api'
 import { initializePaddle, Paddle } from '@paddle/paddle-js'
+import { trackPricingView, trackEvent } from '../lib/analytics'
 
 interface Plan {
   id: number
@@ -106,12 +107,20 @@ export default function ChoosePlan() {
   useEffect(() => {
     apiFetch('/api/billing/plans')
       .then((r) => r.json())
-      .then((data) => setPlans(data.plans || []))
+      .then((data) => {
+        setPlans(data.plans || [])
+        // Track pricing page view with all plan details
+        for (const plan of data.plans || []) {
+          trackPricingView('view', plan.slug, plan.name, plan.price_amount, plan.billing_interval)
+        }
+      })
       .catch(() => toast.error('Failed to load plans'))
       .finally(() => setLoading(false))
   }, [])
 
   const handleSubscribe = async (plan: Plan) => {
+    trackEvent('plan_checkout_initiated', 'conversion', { plan: plan.slug, price: plan.price_amount })
+    trackPricingView('click_cta', plan.slug, plan.name, plan.price_amount, plan.billing_interval)
     setSubscribing(plan.paddle_price_id)
     try {
       const res = await authFetch('/api/billing/checkout', {

@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { API_URL } from '../lib/api'
+import { trackEvent, trackConversion } from '../lib/analytics'
 
 export default function AuthCallback() {
   const navigate = useNavigate()
@@ -46,6 +47,16 @@ export default function AuthCallback() {
         }
         // Clean up token on failure too
         localStorage.removeItem('blossom_invite_token')
+      }
+
+      // Track OAuth signup conversion (only for new users, not returning logins)
+      const createdAt = data.session.user?.created_at
+      if (createdAt) {
+        const accountAge = Date.now() - new Date(createdAt).getTime()
+        if (accountAge < 60_000) { // created less than 60 seconds ago
+          trackEvent('signup_completed', 'conversion', { method: 'google' })
+          trackConversion()
+        }
       }
 
       navigate('/choose-category')
