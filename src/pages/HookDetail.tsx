@@ -458,12 +458,12 @@ export default function HookDetail() {
         </div>
       )}
 
-      {/* Videos Grid - The Receipts */}
+      {/* Videos Grid - Example Viral Videos */}
       {videos.length > 0 && (
         <div className="mb-12 md:mb-20">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-2 mb-6 md:mb-8">
             <div>
-              <h2 className="text-2xl md:text-3xl font-black font-display tracking-tight uppercase">The Receipts</h2>
+              <h2 className="text-2xl md:text-3xl font-black font-display tracking-tight uppercase">Example Viral Videos</h2>
               <p className="text-slate-500 text-xs md:text-sm font-medium">Real videos using this hook, ranked by views.</p>
             </div>
             <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">

@@ -177,6 +177,7 @@ export default function FormatDetail() {
   const [formatTactics, setFormatTactics] = useState<FormatTactic[]>([])
   const [tacticsLoading, setTacticsLoading] = useState(false)
   const [expandedTactic, setExpandedTactic] = useState<number | null>(null)
+  const [tacticVideosLoading, setTacticVideosLoading] = useState<Record<number, boolean>>({})
   const [formatSongs, setFormatSongs] = useState<FormatSong[]>([])
   const [songsLoading, setSongsLoading] = useState(false)
   const audio = useAudioPlayer()
@@ -230,6 +231,22 @@ export default function FormatDetail() {
       .then((data) => setFormatTactics(data.tactics || []))
       .catch(() => {})
       .finally(() => setTacticsLoading(false))
+  }, [id])
+
+  const loadMoreTacticVideos = useCallback((tacticId: number, currentCount: number) => {
+    setTacticVideosLoading((prev) => ({ ...prev, [tacticId]: true }))
+    authFetch(`/api/analysis/formats/${id}/tactics/${tacticId}/videos?limit=10&offset=${currentCount}`)
+      .then((r) => r.json())
+      .then((data) => {
+        const newVideos = data.videos || []
+        setFormatTactics((prev) =>
+          prev.map((t) =>
+            t.id === tacticId ? { ...t, videos: [...t.videos, ...newVideos] } : t
+          )
+        )
+      })
+      .catch(() => {})
+      .finally(() => setTacticVideosLoading((prev) => ({ ...prev, [tacticId]: false })))
   }, [id])
 
   const fetchSongs = useCallback(() => {
@@ -564,10 +581,7 @@ export default function FormatDetail() {
                         <div className="text-right">
                           <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Videos</div>
                           <div className="text-sm font-black text-white">
-                            {tactic.video_count}
-                            {tactic.total_video_count > tactic.video_count && (
-                              <span className="text-[9px] text-slate-500 font-bold ml-1">/ {tactic.total_video_count}</span>
-                            )}
+                            {tactic.total_video_count}
                           </div>
                         </div>
                         {tactic.avg_execution_score != null && (
@@ -649,16 +663,25 @@ export default function FormatDetail() {
                           )
                         })}
 
-                        {/* Show more indicator */}
-                        {tactic.video_count > tactic.videos.length && (
-                          <Link
-                            to={`/dashboard/tactics/${tactic.id}`}
-                            className="flex-shrink-0 w-28 aspect-[9/16] border-2 border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center text-center hover:border-indigo-500/30 transition-colors"
-                            onClick={(e) => e.stopPropagation()}
+                        {/* Load more videos */}
+                        {tactic.total_video_count > tactic.videos.length && (
+                          <button
+                            className="flex-shrink-0 w-28 aspect-[9/16] border-2 border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center text-center hover:border-indigo-500/30 transition-colors disabled:opacity-50"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              loadMoreTacticVideos(tactic.id, tactic.videos.length)
+                            }}
+                            disabled={tacticVideosLoading[tactic.id]}
                           >
-                            <div className="text-lg font-black text-slate-400 mb-1">+{tactic.video_count - tactic.videos.length}</div>
-                            <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">More</span>
-                          </Link>
+                            {tacticVideosLoading[tactic.id] ? (
+                              <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                            ) : (
+                              <>
+                                <div className="text-lg font-black text-slate-400 mb-1">+{tactic.total_video_count - tactic.videos.length}</div>
+                                <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Load more</span>
+                              </>
+                            )}
+                          </button>
                         )}
                       </div>
                     </div>
@@ -816,12 +839,12 @@ export default function FormatDetail() {
         </div>
       )}
 
-      {/* Videos Grid - The Receipts */}
+      {/* Videos Grid - Example Viral Videos */}
       {videos.length > 0 && (
         <div className="mb-12 md:mb-20">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-2 mb-6 md:mb-8">
             <div>
-              <h2 className="text-2xl md:text-3xl font-black font-display tracking-tight uppercase">The Receipts</h2>
+              <h2 className="text-2xl md:text-3xl font-black font-display tracking-tight uppercase">Example Viral Videos</h2>
               <p className="text-slate-500 text-xs md:text-sm font-medium">Real videos using this format, ranked by views.</p>
             </div>
             <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">

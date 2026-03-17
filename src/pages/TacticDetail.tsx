@@ -327,7 +327,7 @@ export default function TacticDetail() {
         <div className="mb-12 md:mb-20">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-2 mb-6 md:mb-8">
             <div>
-              <h2 className="text-2xl md:text-3xl font-black font-display tracking-tight uppercase">The Receipts</h2>
+              <h2 className="text-2xl md:text-3xl font-black font-display tracking-tight uppercase">Example Viral Videos</h2>
               <p className="text-slate-500 text-xs md:text-sm font-medium">Videos using this tactic, ranked by execution score.</p>
             </div>
             <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">

@@ -51,6 +51,7 @@ export interface CarouselVideo {
   final_viral_probability?: number | null
   duration_sec?: number | null
   raw_data?: any
+  local_carousel_media?: any
 }
 
 interface VideoStoryCarouselProps {
@@ -75,16 +76,32 @@ interface CarouselMediaItem {
   videoUrl: string | null
 }
 
-function extractCarouselItems(rawData: any): CarouselMediaItem[] {
+function extractCarouselItems(rawData: any, localCarouselMedia: any): CarouselMediaItem[] {
+  // Build a map of locally-downloaded carousel media (keyed by index)
+  const localMap = new Map<number, { localImagePath?: string | null; localVideoPath?: string | null }>()
+  if (Array.isArray(localCarouselMedia)) {
+    for (const lm of localCarouselMedia) {
+      localMap.set(lm.index, lm)
+    }
+  }
+
   if (!rawData) return []
   const rd = typeof rawData === 'string' ? JSON.parse(rawData) : rawData
   const items = rd.carousel_media || []
   if (!Array.isArray(items)) return []
-  return items.map((item: any) => ({
-    mediaType: item.media_type === 2 ? 'video' as const : 'image' as const,
-    imageUrl: item.image_versions2?.candidates?.[0]?.url || item.thumbnail_url || null,
-    videoUrl: item.media_type === 2 ? (item.video_url || item.video_versions?.[0]?.url || null) : null,
-  }))
+  return items.map((item: any, i: number) => {
+    const local = localMap.get(i)
+    const localImage = getStorageUrl(local?.localImagePath || null)
+    const localVideo = getStorageUrl(local?.localVideoPath || null)
+    const cdnImage = item.image_versions2?.candidates?.[0]?.url || item.thumbnail_url || null
+    const cdnVideo = item.media_type === 2 ? (item.video_url || item.video_versions?.[0]?.url || null) : null
+
+    return {
+      mediaType: item.media_type === 2 ? 'video' as const : 'image' as const,
+      imageUrl: localImage || cdnImage,
+      videoUrl: localVideo || cdnVideo,
+    }
+  })
 }
 
 function CarouselItemsViewer({ items, fallbackThumb }: { items: CarouselMediaItem[], fallbackThumb: string | null }) {
@@ -372,7 +389,7 @@ export default function VideoStoryCarousel({ videos: initialVideos, initialIndex
           >
             {/* Carousel viewer */}
             {video.content_type === 'carousel' ? (
-              <CarouselItemsViewer items={extractCarouselItems(video.raw_data)} fallbackThumb={thumb} />
+              <CarouselItemsViewer items={extractCarouselItems(video.raw_data, video.local_carousel_media)} fallbackThumb={thumb} />
             ) : videoUrl && !videoError ? (
               <>
                 <video
