@@ -39,8 +39,10 @@ interface Scheduler {
   frequency: string
   run_hour: number
   is_active: boolean
+  is_generic: boolean
   category_id: number | null
   category_title: string | null
+  max_videos_per_hashtag: number | null
   hashtag_count: number
   last_run_id: number | null
   last_run_status: string | null
@@ -405,6 +407,8 @@ export default function Discovery() {
     run_hour: 9,
     category_id: null as number | null,
     hashtag_ids: [] as number[],
+    is_generic: false,
+    max_videos_per_hashtag: null as number | null,
   })
 
   // Run detail expansion
@@ -579,6 +583,8 @@ export default function Discovery() {
         run_hour: scheduler.run_hour,
         category_id: scheduler.category_id,
         hashtag_ids: [],
+        is_generic: scheduler.is_generic || false,
+        max_videos_per_hashtag: scheduler.max_videos_per_hashtag || null,
       })
       // Load the scheduler's hashtags
       authFetch(`/api/analysis/trending/schedulers/${scheduler.id}`)
@@ -600,6 +606,8 @@ export default function Discovery() {
         run_hour: 9,
         category_id: null,
         hashtag_ids: [],
+        is_generic: false,
+        max_videos_per_hashtag: null,
       })
     }
     setShowSchedulerForm(true)
@@ -618,6 +626,8 @@ export default function Discovery() {
             frequency: schedulerForm.frequency,
             run_hour: schedulerForm.run_hour,
             category_id: schedulerForm.category_id,
+            is_generic: schedulerForm.is_generic,
+            max_videos_per_hashtag: schedulerForm.max_videos_per_hashtag,
           }),
         })
         // Sync hashtags: get current, remove missing, add new
@@ -646,6 +656,8 @@ export default function Discovery() {
             run_hour: schedulerForm.run_hour,
             category_id: schedulerForm.category_id,
             hashtag_ids: schedulerForm.hashtag_ids,
+            is_generic: schedulerForm.is_generic,
+            max_videos_per_hashtag: schedulerForm.max_videos_per_hashtag,
           }),
         })
       }
@@ -953,6 +965,47 @@ export default function Discovery() {
               <span className="text-[10px] font-black text-violet-400 uppercase tracking-widest">
                 {editingScheduler ? 'Edit Scheduler' : 'New Scheduler'}
               </span>
+              {!editingScheduler && (
+                <button
+                  onClick={() => {
+                    const genericHashtagNames = ['fyp', 'foryou', 'foryoupage', 'viral', 'trending', 'capcut', 'reels', 'explore']
+                    const matchingIds = hashtags
+                      .filter(h => genericHashtagNames.includes(h.hashtag.toLowerCase()))
+                      .map(h => h.id)
+                    setSchedulerForm({
+                      name: 'Generic Discovery',
+                      frequency: 'daily',
+                      run_hour: 6,
+                      category_id: null,
+                      hashtag_ids: matchingIds,
+                      is_generic: true,
+                      max_videos_per_hashtag: 250,
+                    })
+                  }}
+                  className="ml-auto bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 text-amber-400 px-3 py-1 rounded-lg text-[10px] font-bold hover:border-amber-500/50 transition-colors"
+                >
+                  <i className="fas fa-globe text-[8px] mr-1.5"></i>
+                  Use Generic Discovery Preset
+                </button>
+              )}
+            </div>
+
+            {/* Generic Discovery Toggle */}
+            <div className="mb-4 flex items-center gap-3">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={schedulerForm.is_generic}
+                  onChange={(e) => setSchedulerForm({ ...schedulerForm, is_generic: e.target.checked, ...(e.target.checked ? { category_id: null } : {}) })}
+                  className="w-3.5 h-3.5 rounded border-slate-600 text-violet-500 focus:ring-violet-500/50"
+                />
+                <span className="text-[10px] font-bold text-slate-400">Generic Discovery</span>
+              </label>
+              {schedulerForm.is_generic && (
+                <span className="text-[9px] text-amber-400/70 bg-amber-500/10 px-2 py-0.5 rounded">
+                  Auto-creates new categories from AI analysis
+                </span>
+              )}
             </div>
 
             {/* Name */}
@@ -999,20 +1052,38 @@ export default function Discovery() {
               )}
             </div>
 
-            {/* Category */}
-            <div className="mb-4">
-              <label className="text-[10px] font-bold text-slate-500 block mb-1.5">Category</label>
-              <select
-                value={schedulerForm.category_id ?? ''}
-                onChange={(e) => setSchedulerForm({ ...schedulerForm, category_id: e.target.value ? parseInt(e.target.value) : null })}
-                className="glass-input rounded-lg px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-violet-500/50 transition-colors"
-              >
-                <option value="">No category</option>
-                {categories.filter(c => c.is_active).map(c => (
-                  <option key={c.id} value={c.id}>{c.title}</option>
-                ))}
-              </select>
-            </div>
+            {/* Category (hidden when generic) */}
+            {!schedulerForm.is_generic && (
+              <div className="mb-4">
+                <label className="text-[10px] font-bold text-slate-500 block mb-1.5">Category</label>
+                <select
+                  value={schedulerForm.category_id ?? ''}
+                  onChange={(e) => setSchedulerForm({ ...schedulerForm, category_id: e.target.value ? parseInt(e.target.value) : null })}
+                  className="glass-input rounded-lg px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-violet-500/50 transition-colors"
+                >
+                  <option value="">No category</option>
+                  {categories.filter(c => c.is_active).map(c => (
+                    <option key={c.id} value={c.id}>{c.title}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Max Videos Per Hashtag (visible when generic or when user wants override) */}
+            {schedulerForm.is_generic && (
+              <div className="mb-4">
+                <label className="text-[10px] font-bold text-slate-500 block mb-1.5">Videos Per Hashtag</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={500}
+                  value={schedulerForm.max_videos_per_hashtag ?? ''}
+                  onChange={(e) => setSchedulerForm({ ...schedulerForm, max_videos_per_hashtag: e.target.value ? parseInt(e.target.value) : null })}
+                  placeholder="250"
+                  className="glass-input rounded-lg px-3 py-2 text-xs font-bold text-white w-32 focus:outline-none focus:border-violet-500/50 placeholder-slate-600 transition-colors"
+                />
+              </div>
+            )}
 
             {/* Hashtag Selection */}
             <div className="mb-5">
@@ -1095,6 +1166,16 @@ export default function Discovery() {
                 <div key={s.id} className="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.04] transition-colors">
                   <div className="flex items-center gap-3 flex-wrap">
                     <span className="text-sm font-black text-white">{s.name}</span>
+                    {s.is_generic && (
+                      <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded">
+                        <i className="fas fa-globe text-[8px] mr-1"></i>Generic
+                      </span>
+                    )}
+                    {s.max_videos_per_hashtag && (
+                      <span className="text-[10px] font-bold text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded">
+                        {s.max_videos_per_hashtag}/tag
+                      </span>
+                    )}
                     {s.category_title && (
                       <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">
                         {s.category_title}

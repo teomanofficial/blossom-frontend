@@ -26,6 +26,7 @@ interface Category {
   icon: string | null
   thumbnail_url: string | null
   is_active: boolean
+  created_by: string | null
   display_order: number
   domain_count: number
   domains: CategoryDomainSummary[]
@@ -642,6 +643,11 @@ export default function Categories() {
                     <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${cat.is_active ? 'bg-teal-500/10 text-teal-400' : 'bg-red-500/10 text-red-400'}`}>
                       {cat.is_active ? 'Active' : 'Inactive'}
                     </span>
+                    {cat.created_by === 'ai_discovery' && (
+                      <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-purple-500/10 text-purple-400">
+                        <i className="fas fa-robot text-[8px] mr-1"></i>AI Discovered
+                      </span>
+                    )}
                   </div>
 
                   {cat.description && (
