@@ -408,7 +408,7 @@ export default function Categories() {
               Management
             </span>
           </div>
-          <h1 className="text-4xl font-black font-display tracking-tighter mb-2">CONTENT CATEGORIES</h1>
+          <h1 className="text-2xl sm:text-4xl font-black font-display tracking-tighter mb-2">CONTENT CATEGORIES</h1>
           <p className="text-slate-500 text-sm font-medium">
             Group content domains into high-level categories for discovery and organization.
           </p>

@@ -98,13 +98,13 @@ export default function Settings() {
   return (
     <>
       {/* Page Header */}
-      <div className="mb-12">
+      <div className="mb-6 sm:mb-12">
         <div className="flex items-center gap-2 mb-3">
           <span className="px-2 py-0.5 bg-pink-500/10 text-pink-400 text-[10px] font-black uppercase tracking-widest rounded">
             Settings
           </span>
         </div>
-        <h1 className="text-4xl font-black tracking-tighter mb-2">
+        <h1 className="text-2xl sm:text-4xl font-black tracking-tighter mb-2">
           Billing & <span className="gradient-text">Subscription</span>
         </h1>
         <p className="text-slate-500 text-sm font-medium">

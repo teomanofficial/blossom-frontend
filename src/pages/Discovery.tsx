@@ -850,7 +850,7 @@ export default function Discovery() {
               Discovery
             </span>
           </div>
-          <h1 className="text-4xl font-black tracking-tighter mb-2 font-display">DISCOVERY</h1>
+          <h1 className="text-2xl sm:text-4xl font-black tracking-tighter mb-2 font-display">DISCOVERY</h1>
           <p className="text-slate-500 text-sm font-medium">
             Create schedulers to group hashtags, set run times, and discover trending content.
           </p>

@@ -129,7 +129,7 @@ export default function OrphanVideos() {
               Orphans
             </span>
           </div>
-          <h1 className="text-4xl font-black font-display tracking-tighter mb-2">ORPHAN VIDEOS</h1>
+          <h1 className="text-2xl sm:text-4xl font-black font-display tracking-tighter mb-2">ORPHAN VIDEOS</h1>
           <p className="text-slate-500 text-sm font-medium">
             Videos without keyword links — invisible to the category system. Run keyword backfill to fix.
           </p>

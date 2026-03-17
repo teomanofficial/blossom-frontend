@@ -127,7 +127,7 @@ export default function OrphanDomains() {
               Orphan Domains
             </span>
           </div>
-          <h1 className="text-4xl font-black font-display tracking-tighter mb-2">ORPHAN DOMAINS</h1>
+          <h1 className="text-2xl sm:text-4xl font-black font-display tracking-tighter mb-2">ORPHAN DOMAINS</h1>
           <p className="text-slate-500 text-sm font-medium">
             Domains not linked to any content category — invisible to category-based discovery.
           </p>

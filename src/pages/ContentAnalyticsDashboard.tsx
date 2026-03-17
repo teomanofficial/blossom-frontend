@@ -168,7 +168,7 @@ export default function ContentAnalyticsDashboard() {
               Analytics
             </span>
           </div>
-          <h1 className="text-4xl font-black font-display tracking-tighter mb-2">CONTENT OVERVIEW</h1>
+          <h1 className="text-2xl sm:text-4xl font-black font-display tracking-tighter mb-2">CONTENT OVERVIEW</h1>
           <p className="text-slate-500 text-sm font-medium">
             Distribution of posts and influencers across categories, domains, and hashtags.
           </p>

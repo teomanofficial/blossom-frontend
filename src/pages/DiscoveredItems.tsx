@@ -248,7 +248,7 @@ export default function DiscoveredItems() {
           <span className="px-2 py-0.5 bg-violet-500/10 text-violet-400 text-[10px] font-black uppercase tracking-widest rounded">
             Discovered Content
           </span>
-          <h1 className="text-4xl font-black tracking-tighter mb-2 mt-3 font-display">DISCOVERED ITEMS</h1>
+          <h1 className="text-2xl sm:text-4xl font-black tracking-tighter mb-2 mt-3 font-display">DISCOVERED ITEMS</h1>
           <p className="text-slate-500 text-sm font-medium">Browse, filter, and manage all content discovered through hashtag tracking.</p>
         </div>
         <div className="flex gap-3 text-[10px] font-black uppercase tracking-widest">

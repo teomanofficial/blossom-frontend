@@ -539,7 +539,7 @@ export default function Videos() {
               Content Lab
             </span>
           </div>
-          <h1 className="text-4xl font-black font-display tracking-tighter mb-2">SCAN & ANALYZE</h1>
+          <h1 className="text-2xl sm:text-4xl font-black font-display tracking-tighter mb-2">SCAN & ANALYZE</h1>
           <p className="text-slate-500 text-sm font-medium">
             Fetch videos from social media and run AI analysis to uncover viral patterns.
           </p>

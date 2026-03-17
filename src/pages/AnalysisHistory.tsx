@@ -125,7 +125,7 @@ export default function AnalysisHistory() {
                 History
               </span>
             </div>
-            <h1 className="text-4xl font-black font-display tracking-tighter mb-2">
+            <h1 className="text-2xl sm:text-4xl font-black font-display tracking-tighter mb-2">
               Virality Check <span className="gradient-text">History</span>
             </h1>
             <p className="text-slate-500 text-sm font-medium">

@@ -173,7 +173,7 @@ export default function ContentManagement() {
               Management
             </span>
           </div>
-          <h1 className="text-4xl font-black font-display tracking-tighter mb-2">CONTENT DOMAINS</h1>
+          <h1 className="text-2xl sm:text-4xl font-black font-display tracking-tighter mb-2">CONTENT DOMAINS</h1>
           <p className="text-slate-500 text-sm font-medium">
             Manage content domains extracted from analyzed videos. Domains power user personalization and content discovery.
           </p>
