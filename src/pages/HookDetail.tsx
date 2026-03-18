@@ -41,6 +41,7 @@ interface ClassAnalysis {
   what_defines_this_format?: string
   gold_standard_tactics?: TacticItem[]
   overrated_tactics?: TacticItem[]
+  harmful_tactics?: TacticItem[]
   execution_gaps?: TacticItem[]
   blueprint?: any
   video_list?: any[]
@@ -352,13 +353,16 @@ export default function HookDetail() {
           )}
 
           {/* Strategic Tactics Grid */}
-          <div className="grid lg:grid-cols-3 gap-6 md:gap-8 mb-12 md:mb-20">
+          <div className="grid lg:grid-cols-2 xl:grid-cols-4 gap-6 md:gap-8 mb-12 md:mb-20">
             {/* Gold Standard */}
             {analysis.gold_standard_tactics && analysis.gold_standard_tactics.length > 0 && (
               <div className="space-y-6">
-                <h3 className="text-teal-400 text-xs font-black uppercase tracking-widest flex items-center gap-2">
-                  <i className="fas fa-check-circle"></i> Gold Standard
-                </h3>
+                <div>
+                  <h3 className="text-teal-400 text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                    <i className="fas fa-check-circle"></i> Gold Standard
+                  </h3>
+                  <p className="text-[10px] text-slate-500 mt-1">Tactics that top-performing videos use significantly more than underperformers.</p>
+                </div>
                 <div className="space-y-4">
                   {analysis.gold_standard_tactics.map((tactic, i) => (
                     <div key={i} className="p-4 md:p-5 glass-card rounded-2xl border-l-4 border-l-teal-500">
@@ -382,9 +386,12 @@ export default function HookDetail() {
             {/* Execution Gaps */}
             {analysis.execution_gaps && analysis.execution_gaps.length > 0 && (
               <div className="space-y-6">
-                <h3 className="text-orange-400 text-xs font-black uppercase tracking-widest flex items-center gap-2">
-                  <i className="fas fa-exclamation-circle"></i> Execution Gaps
-                </h3>
+                <div>
+                  <h3 className="text-orange-400 text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                    <i className="fas fa-exclamation-circle"></i> Execution Gaps
+                  </h3>
+                  <p className="text-[10px] text-slate-500 mt-1">Tactics where top creators execute much better than the rest. Quality matters more than quantity here.</p>
+                </div>
                 <div className="space-y-4">
                   {analysis.execution_gaps.map((tactic, i) => (
                     <div key={i} className="p-4 md:p-5 glass-card rounded-2xl border-l-4 border-l-orange-500">
@@ -408,12 +415,44 @@ export default function HookDetail() {
             {/* Overrated */}
             {analysis.overrated_tactics && analysis.overrated_tactics.length > 0 && (
               <div className="space-y-6">
-                <h3 className="text-red-400 text-xs font-black uppercase tracking-widest flex items-center gap-2">
-                  <i className="fas fa-times-circle"></i> Overrated
-                </h3>
+                <div>
+                  <h3 className="text-red-400 text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                    <i className="fas fa-times-circle"></i> Overrated
+                  </h3>
+                  <p className="text-[10px] text-slate-500 mt-1">Tactics that underperforming videos use more often. Using these won't help your content stand out.</p>
+                </div>
                 <div className="space-y-4 opacity-70 hover:opacity-100 transition-opacity">
                   {analysis.overrated_tactics.map((tactic, i) => (
                     <div key={i} className="p-4 md:p-5 glass-card rounded-2xl border-l-4 border-l-red-500">
+                      {tactic.category && (
+                        <div className={`text-[10px] font-black uppercase mb-1 inline-block px-1.5 py-0.5 rounded ${getCategoryColor(tactic.category)}`}>
+                          {getCategoryLabel(tactic.category)}
+                        </div>
+                      )}
+                      <h4 className="font-bold text-white mb-2">{tactic.name || tactic.tactic}</h4>
+                      {(tactic.description || tactic.analysis || tactic.why) && (
+                        <p className="text-[11px] text-slate-400 font-medium leading-relaxed">
+                          {tactic.description || tactic.analysis || tactic.why}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Harmful */}
+            {analysis.harmful_tactics && analysis.harmful_tactics.length > 0 && (
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-rose-500 text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                    <i className="fas fa-skull-crossbones"></i> Harmful
+                  </h3>
+                  <p className="text-[10px] text-slate-500 mt-1">Tactics that actively damage performance. Almost exclusively found in the worst-performing videos — avoid these.</p>
+                </div>
+                <div className="space-y-4">
+                  {analysis.harmful_tactics.map((tactic, i) => (
+                    <div key={i} className="p-4 md:p-5 glass-card rounded-2xl border-l-4 border-l-rose-600 bg-rose-500/5">
                       {tactic.category && (
                         <div className={`text-[10px] font-black uppercase mb-1 inline-block px-1.5 py-0.5 rounded ${getCategoryColor(tactic.category)}`}>
                           {getCategoryLabel(tactic.category)}
