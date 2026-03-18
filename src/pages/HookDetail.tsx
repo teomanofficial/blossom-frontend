@@ -2,7 +2,8 @@ import { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { authFetch } from '../lib/api'
 import { getStorageUrl } from '../lib/media'
-import { parseBlueprint } from '../lib/blueprint'
+import { parseBlueprint, parseDefiningTraits } from '../lib/blueprint'
+import type { TraitWeight } from '../lib/blueprint'
 import { useAuth } from '../context/AuthContext'
 import VideoStoryCarousel, { type CarouselVideo } from '../components/VideoStoryCarousel'
 import FineTunePanel from '../components/FineTunePanel'
@@ -196,6 +197,13 @@ export default function HookDetail() {
   const analysis = hook?.class_analysis
 
   const blueprint = parseBlueprint(analysis?.blueprint)
+  const definingTraits = parseDefiningTraits(analysis?.what_defines_this_format)
+
+  const weightConfig: Record<TraitWeight, { label: string; bg: string; text: string; border: string }> = {
+    core: { label: 'Core', bg: 'bg-teal-500/10', text: 'text-teal-400', border: 'border-teal-500/20' },
+    important: { label: 'Important', bg: 'bg-teal-500/5', text: 'text-teal-400/70', border: 'border-teal-500/10' },
+    supporting: { label: 'Supporting', bg: 'bg-white/[0.02]', text: 'text-slate-500', border: 'border-white/5' },
+  }
 
   if (loading) {
     return (
@@ -353,12 +361,20 @@ export default function HookDetail() {
                     </div>
                   ))}
                 </div>
-                {analysis.what_defines_this_format && (
-                  <div className="p-6 bg-black/20 rounded-2xl border border-white/5">
-                    <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">What defines this hook:</h4>
-                    <p className="text-xs text-slate-400 font-semibold leading-loose">
-                      {analysis.what_defines_this_format}
-                    </p>
+                {definingTraits && definingTraits.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="text-[10px] font-black text-teal-400 uppercase tracking-widest mb-3">What defines this hook</h4>
+                    {definingTraits.map((trait, i) => {
+                      const cfg = weightConfig[trait.weight]
+                      return (
+                        <div key={i} className={`p-3 rounded-xl border ${cfg.bg} ${cfg.border}`}>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className={`text-[9px] font-black uppercase tracking-widest ${cfg.text}`}>{cfg.label}</span>
+                          </div>
+                          <p className="text-xs text-slate-300 font-medium leading-relaxed">{trait.text}</p>
+                        </div>
+                      )
+                    })}
                   </div>
                 )}
               </div>

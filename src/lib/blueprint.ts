@@ -51,6 +51,52 @@ function parseOldStep(s: any, index: number): BlueprintStep {
   }
 }
 
+// --- Defining Traits ---
+
+export type TraitWeight = 'core' | 'important' | 'supporting'
+
+export interface DefiningTrait {
+  text: string
+  weight: TraitWeight
+}
+
+const VALID_WEIGHTS: TraitWeight[] = ['core', 'important', 'supporting']
+
+function isValidWeight(w: any): w is TraitWeight {
+  return typeof w === 'string' && VALID_WEIGHTS.includes(w as TraitWeight)
+}
+
+export function parseDefiningTraits(raw: any): DefiningTrait[] | null {
+  if (!raw) return null
+
+  // New structured format — array of { text, weight }
+  if (Array.isArray(raw) && raw.length > 0 && typeof raw[0] === 'object' && raw[0].text) {
+    return raw
+      .filter((t: any) => t.text && typeof t.text === 'string')
+      .map((t: any) => ({
+        text: strip(t.text),
+        weight: isValidWeight(t.weight) ? t.weight : 'important',
+      }))
+  }
+
+  // Old format — plain string: split into sentences, all as "important"
+  if (typeof raw === 'string' && raw.trim()) {
+    const sentences = raw
+      .split(/\.(?:\s|$)/)
+      .map(s => s.trim())
+      .filter(s => s.length > 10)
+    if (sentences.length === 0) return [{ text: strip(raw), weight: 'core' }]
+    return sentences.map((s, i) => ({
+      text: strip(s.endsWith('.') ? s : s + '.'),
+      weight: (i === 0 ? 'core' : 'important') as TraitWeight,
+    }))
+  }
+
+  return null
+}
+
+// --- Blueprint ---
+
 export function parseBlueprint(raw: any): Blueprint | null {
   if (!raw) return null
 
