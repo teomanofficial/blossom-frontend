@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import toast from 'react-hot-toast'
 import { authFetch } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
+import { parseBlueprint } from '../lib/blueprint'
 
 interface FineTuneVideo {
   id: number
@@ -463,21 +464,35 @@ export default function FineTunePanel({ itemType, itemId, itemName }: FineTunePa
           )}
 
           {/* Blueprint from custom analysis */}
-          {analysis.blueprint && (
-            <div className="mb-4">
-              <h4 className="text-[10px] font-black text-pink-400 uppercase tracking-widest mb-2">Your Blueprint</h4>
-              <ul className="space-y-2">
-                {(Array.isArray(analysis.blueprint) ? analysis.blueprint : analysis.blueprint?.steps || []).slice(0, 5).map((step: any, i: number) => (
-                  <li key={i} className="flex items-start gap-2 text-[11px] text-slate-400 font-medium leading-relaxed">
-                    <span className="w-4 h-4 rounded-full bg-pink-500/20 text-pink-400 flex items-center justify-center text-[9px] flex-shrink-0 mt-0.5 font-black">
-                      {i + 1}
-                    </span>
-                    <span>{typeof step === 'string' ? step : step.instruction || step.text || step.name || ''}</span>
-                  </li>
+          {(() => {
+            const bp = parseBlueprint(analysis.blueprint)
+            if (!bp) return null
+            return (
+              <div className="mb-4">
+                <h4 className="text-[10px] font-black text-pink-400 uppercase tracking-widest mb-2">Your Blueprint</h4>
+                {bp.phases.map((phase) => (
+                  <div key={phase.phase_number}>
+                    {phase.phase_title && (
+                      <p className="text-[9px] font-black text-pink-300/50 uppercase tracking-widest mb-1 mt-2 first:mt-0">{phase.phase_title}</p>
+                    )}
+                    <ul className="space-y-2">
+                      {phase.steps.map((step) => (
+                        <li key={step.step_number} className="flex items-start gap-2 text-[11px] text-slate-400 font-medium leading-relaxed">
+                          <span className="w-4 h-4 rounded-full bg-pink-500/20 text-pink-400 flex items-center justify-center text-[9px] flex-shrink-0 mt-0.5 font-black">
+                            {step.step_number}
+                          </span>
+                          <span>
+                            {step.name && <strong className="text-white">{step.name}: </strong>}
+                            {step.instruction}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 ))}
-              </ul>
-            </div>
-          )}
+              </div>
+            )
+          })()}
 
           {/* Gold standard from custom analysis */}
           {analysis.gold_standard_tactics && analysis.gold_standard_tactics.length > 0 && (

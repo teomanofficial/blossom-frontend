@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { authFetch } from '../lib/api'
 import { getStorageUrl } from '../lib/media'
+import { parseBlueprint } from '../lib/blueprint'
 import VideoStoryCarousel, { type CarouselVideo } from '../components/VideoStoryCarousel'
 import FineTunePanel from '../components/FineTunePanel'
 
@@ -191,21 +192,7 @@ export default function HookDetail() {
 
   const analysis = hook?.class_analysis
 
-  const blueprintSteps: { name?: string; text: string }[] = (() => {
-    if (!analysis?.blueprint) return []
-    const bp = analysis.blueprint
-    const parseStep = (s: any): { name?: string; text: string } => {
-      if (typeof s === 'string') return { text: s }
-      return { name: s.name, text: s.instruction || s.description || s.text || (typeof s.step === 'string' ? s.step : '') }
-    }
-    if (Array.isArray(bp)) return bp.map(parseStep)
-    if (typeof bp === 'string') return bp.split('\n').filter(Boolean).map(s => ({ text: s }))
-    if (typeof bp === 'object') {
-      if (bp.steps && Array.isArray(bp.steps)) return bp.steps.map(parseStep)
-      return Object.values(bp).filter((v: any) => typeof v === 'string').map((v: any) => ({ text: v }))
-    }
-    return []
-  })()
+  const blueprint = parseBlueprint(analysis?.blueprint)
 
   if (loading) {
     return (
@@ -315,7 +302,7 @@ export default function HookDetail() {
       {analysis && (
         <>
           {/* The Blueprint */}
-          {blueprintSteps.length > 0 && (
+          {blueprint && (
             <div className="blueprint-box p-5 md:p-8 rounded-3xl mb-10 md:mb-16 relative overflow-hidden glass-card">
               <div className="absolute top-0 right-0 p-4 md:p-8 opacity-10">
                 <i className="fas fa-magnet text-5xl md:text-8xl text-orange-400"></i>
@@ -325,20 +312,34 @@ export default function HookDetail() {
               </h2>
               <div className="grid md:grid-cols-2 gap-6 md:gap-10">
                 <div className="space-y-4">
-                  <h3 className="text-xl font-black text-white uppercase tracking-tight">How to execute:</h3>
-                  <ul className="space-y-3">
-                    {blueprintSteps.slice(0, 6).map((step, i) => (
-                      <li key={i} className="flex items-start gap-3 text-sm text-slate-300 font-medium leading-relaxed">
-                        <span className="w-5 h-5 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center text-[10px] flex-shrink-0 mt-0.5 font-black">
-                          {i + 1}
-                        </span>
-                        <div>
-                          {step.name && <span className="font-black text-white">{step.name}: </span>}
-                          {step.text}
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
+                  <h3 className="text-xl font-black text-white uppercase tracking-tight">
+                    {blueprint.title || 'How to execute:'}
+                  </h3>
+                  {blueprint.phases.map((phase) => (
+                    <div key={phase.phase_number}>
+                      {phase.phase_title && (
+                        <h4 className="text-[11px] font-black text-orange-300/70 uppercase tracking-widest mb-2 mt-4 first:mt-0">
+                          {phase.phase_title}
+                        </h4>
+                      )}
+                      <ul className="space-y-3">
+                        {phase.steps.map((step) => (
+                          <li key={step.step_number} className="flex items-start gap-3 text-sm text-slate-300 font-medium leading-relaxed">
+                            <span className="w-5 h-5 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center text-[10px] flex-shrink-0 mt-0.5 font-black">
+                              {step.step_number}
+                            </span>
+                            <div>
+                              {step.name && <span className="font-black text-white">{step.name}: </span>}
+                              {step.instruction}
+                              {step.tip && (
+                                <span className="block text-[11px] text-orange-400/60 mt-1 italic">{step.tip}</span>
+                              )}
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
                 </div>
                 {analysis.what_defines_this_format && (
                   <div className="p-6 bg-black/20 rounded-2xl border border-white/5">
