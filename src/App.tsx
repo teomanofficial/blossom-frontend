@@ -17,7 +17,7 @@ import Tactics from './pages/Tactics'
 import TacticDetail from './pages/TacticDetail'
 import Videos from './pages/Videos'
 import ContentAnalysis from './pages/ContentAnalysis'
-import AnalysisHistory from './pages/AnalysisHistory'
+import AnalysisDetail from './pages/AnalysisDetail'
 import Influencers from './pages/Influencers'
 import InfluencerDetail from './pages/InfluencerDetail'
 import Discovery from './pages/Discovery'
@@ -132,7 +132,8 @@ function App() {
         <Route path="tactics/:id" element={<TacticDetail />} />
         <Route path="videos" element={<AdminGate><Videos /></AdminGate>} />
         <Route path="analyze" element={<ContentAnalysis />} />
-        <Route path="analyze/history" element={<AnalysisHistory />} />
+        <Route path="analyze/history" element={<Navigate to="/dashboard/analyze" replace />} />
+        <Route path="analyze/:id" element={<AnalysisDetail />} />
         <Route path="influencers" element={<FeatureGate><Influencers /></FeatureGate>} />
         <Route path="influencers/:id" element={<FeatureGate><InfluencerDetail /></FeatureGate>} />
         <Route path="discovery" element={<AdminGate><Discovery /></AdminGate>} />

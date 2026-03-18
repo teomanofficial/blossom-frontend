@@ -1,12 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
-import useEmblaCarousel from 'embla-carousel-react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { API_URL } from '../lib/api'
-import VideoStoryCarousel, { type CarouselVideo } from '../components/VideoStoryCarousel'
-import VersionTimeline from '../components/VersionTimeline'
-import VersionComparison from '../components/VersionComparison'
-import { getStorageUrl } from '../lib/media'
 
 // === Helper Functions ===
 
@@ -16,27 +11,66 @@ function formatNumber(n: number): string {
   return String(Math.round(n))
 }
 
-
 function formatFileSize(bytes: number): string {
   if (bytes >= 1_000_000) return (bytes / 1_000_000).toFixed(1) + ' MB'
   if (bytes >= 1_000) return (bytes / 1_000).toFixed(0) + ' KB'
   return bytes + ' B'
 }
 
+function formatDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
 // === Analysis Steps for Progress Stepper ===
 
 const ANALYSIS_STEPS = [
-  { key: 'upload', label: 'Upload Complete' },
-  { key: 'full_analysis', label: 'Full Video Analysis' },
-  { key: 'hook_analysis', label: 'Hook Analysis' },
-  { key: 'virality_scores', label: 'Virality Scoring' },
-  { key: 'improvement', label: 'Generating Improvements' },
+  { key: 'upload', label: 'Upload Complete', subtitle: 'Uploading your content...' },
+  { key: 'full_analysis', label: 'Format Analysis', subtitle: 'Analyzing viral format...' },
+  { key: 'hook_analysis', label: 'Hook Analysis', subtitle: 'Analyzing first 3.05 seconds...' },
+  { key: 'virality_scores', label: 'Virality Scoring', subtitle: 'Calculating engagement metrics...' },
+  { key: 'improvement', label: 'Generating Improvements', subtitle: null },
 ]
+
+const IMPROVEMENT_SUBTITLES = [
+  'Comparing with viral contents in same formats...',
+  'Extracting patterns...',
+  'Generating improvements...',
+]
+
+// === History Item Interface ===
+
+interface HistoryItem {
+  id: number
+  source_type: string
+  platform: string
+  source_url: string | null
+  thumbnail_path: string | null
+  title: string | null
+  caption: string | null
+  username: string | null
+  views: number
+  likes: number
+  comments_count: number
+  shares: number
+  saves: number
+  engagement_rate: number
+  status: string
+  error_message: string | null
+  optimization_score: number | null
+  created_at: string
+  version_group_id: string | null
+  version_number: number | null
+}
 
 export default function ContentAnalysis() {
   const { session, planSlug, proCredits } = useAuth()
   const navigate = useNavigate()
-  const [searchParams, setSearchParams] = useSearchParams()
 
   // Upload state
   const [mode, setMode] = useState<'url' | 'upload'>('url')
@@ -49,82 +83,57 @@ export default function ContentAnalysis() {
   // Analysis state
   const [uploadId, setUploadId] = useState<number | null>(null)
   const [analysisStatus, setAnalysisStatus] = useState<any>(null)
-  const [analysisResult, setAnalysisResult] = useState<any>(null)
 
-  // History count state
-  const [history, setHistory] = useState<any[]>([])
-
-  // Results tab state
-  const [activeTab, setActiveTab] = useState('improvements')
-  const [tacticSort, setTacticSort] = useState<'score' | 'time'>('score')
-  const [tacticFilter, setTacticFilter] = useState<string>('all')
-  const [expandedHooks, setExpandedHooks] = useState<Set<number>>(new Set())
-  const [exampleVideos, setExampleVideos] = useState<any>(null)
-  const [carouselVideos, setCarouselVideos] = useState<CarouselVideo[] | null>(null)
-  const [carouselIndex, setCarouselIndex] = useState(0)
-  const [loadingHistory, setLoadingHistory] = useState(false)
-
-  // Comment analysis state
-  const [commentAnalysis, setCommentAnalysis] = useState<any>(null)
-  const [commentLoading, setCommentLoading] = useState(false)
-  const [commentError, setCommentError] = useState<string | null>(null)
-
-  // Version re-check state
-  const [showRecheck, setShowRecheck] = useState(false)
-  const [recheckMode, setRecheckMode] = useState<'url' | 'upload'>('url')
-  const [recheckUrl, setRecheckUrl] = useState('')
-  const [recheckFile, setRecheckFile] = useState<File | null>(null)
-  const [recheckUploading, setRecheckUploading] = useState(false)
-  const [recheckError, setRecheckError] = useState<string | null>(null)
-  const recheckFileInputRef = useRef<HTMLInputElement>(null)
+  // History state
+  const [history, setHistory] = useState<HistoryItem[]>([])
+  const [historyLoading, setHistoryLoading] = useState(true)
+  const [historyTotal, setHistoryTotal] = useState(0)
+  const [historyOffset, setHistoryOffset] = useState(0)
+  const [retryingIds, setRetryingIds] = useState<Set<number>>(new Set())
+  const historyLimit = 20
 
   // Video thumbnail for loading screen
   const [videoThumbnail, setVideoThumbnail] = useState<string | null>(null)
+
+  // Improvement step subtitle cycling (sequential, no loop)
+  const [improvementSubtitleIdx, setImprovementSubtitleIdx] = useState(0)
 
   // Refs
   const fileInputRef = useRef<HTMLInputElement>(null)
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  // === Data Fetching ===
+  // === History Fetching ===
 
-  const fetchHistory = useCallback(async () => {
+  const fetchHistory = useCallback(async (currentOffset: number, silent = false) => {
     if (!session?.access_token) return
+    if (!silent) setHistoryLoading(true)
     try {
-      const resp = await fetch(`${API_URL}/api/content-analysis`, {
+      const resp = await fetch(`${API_URL}/api/content-analysis?limit=${historyLimit}&offset=${currentOffset}`, {
         headers: { Authorization: `Bearer ${session.access_token}` },
       })
       const data = await resp.json()
       if (resp.ok && data.uploads && Array.isArray(data.uploads)) {
         setHistory(data.uploads)
+        setHistoryTotal(data.total || 0)
       }
     } catch (err) {
       console.error('Failed to fetch history:', err)
+    } finally {
+      if (!silent) setHistoryLoading(false)
     }
   }, [session?.access_token])
 
   useEffect(() => {
-    fetchHistory()
-  }, [fetchHistory])
+    fetchHistory(historyOffset)
+  }, [fetchHistory, historyOffset])
 
-  // Load analysis from ?id= query param (coming from history page)
-  const fetchFullResult = useCallback(async (id: number, fromHistory = false) => {
-    if (!session?.access_token) return
-    if (fromHistory) setLoadingHistory(true)
-    try {
-      const resp = await fetch(`${API_URL}/api/content-analysis/${id}`, {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      })
-      const data = await resp.json()
-      if (resp.ok && !data.error) {
-        setAnalysisResult(data)
-        setActiveTab('improvements')
-      }
-    } catch (err) {
-      console.error('Failed to fetch result:', err)
-    } finally {
-      if (fromHistory) setLoadingHistory(false)
-    }
-  }, [session?.access_token])
+  // Auto-refresh when there are processing items
+  useEffect(() => {
+    const hasProcessing = history.some(h => h.status === 'analyzing' || h.status === 'pending')
+    if (!hasProcessing) return
+    const interval = setInterval(() => fetchHistory(historyOffset, true), 30000)
+    return () => clearInterval(interval)
+  }, [history, fetchHistory, historyOffset])
 
   // === Polling ===
 
@@ -149,8 +158,9 @@ export default function ContentAnalysis() {
 
         if (data.status === 'completed') {
           stopPolling()
-          fetchFullResult(id)
-          fetchHistory()
+          fetchHistory(historyOffset, true)
+          // Navigate to the detail page
+          navigate(`/dashboard/analyze/${id}`)
         } else if (data.status === 'error') {
           stopPolling()
           setUploadError(data.error || 'Analysis failed')
@@ -159,82 +169,12 @@ export default function ContentAnalysis() {
         console.error('Polling error:', err)
       }
     }, 2000)
-  }, [session?.access_token, stopPolling, fetchFullResult, fetchHistory])
+  }, [session?.access_token, stopPolling, fetchHistory, historyOffset, navigate])
 
   // Cleanup polling on unmount
   useEffect(() => {
     return () => stopPolling()
   }, [stopPolling])
-
-  // Load analysis from ?id= query param (from history page)
-  useEffect(() => {
-    const idParam = searchParams.get('id')
-    if (idParam && session?.access_token) {
-      const id = parseInt(idParam)
-      if (!isNaN(id)) {
-        setUploadId(id)
-        fetchFullResult(id, true)
-        // Clean up the URL
-        setSearchParams({}, { replace: true })
-      }
-    }
-  }, [searchParams, session?.access_token, fetchFullResult, setSearchParams])
-
-  // Fetch example viral videos once improvement data is available
-  useEffect(() => {
-    if (!analysisResult?.improvement?.improvement_json || !uploadId || !session?.access_token) return
-    setExampleVideos(null)
-    fetch(`${API_URL}/api/content-analysis/${uploadId}/examples`, {
-      headers: { Authorization: `Bearer ${session.access_token}` },
-    })
-      .then(r => r.json())
-      .then(data => { if (!data.error) setExampleVideos(data) })
-      .catch(() => {})
-  }, [analysisResult, uploadId, session?.access_token])
-
-  // === Comment Analysis ===
-
-  const fetchCommentAnalysis = useCallback(async (id: number) => {
-    if (!session?.access_token) return
-    try {
-      const resp = await fetch(`${API_URL}/api/analysis/uploads/${id}/comments-analysis`, {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      })
-      if (resp.ok) {
-        const data = await resp.json()
-        setCommentAnalysis(data)
-      }
-    } catch {}
-  }, [session?.access_token])
-
-  const triggerCommentAnalysis = async () => {
-    if (!uploadId || !session?.access_token) return
-    setCommentLoading(true)
-    setCommentError(null)
-    try {
-      const resp = await fetch(`${API_URL}/api/analysis/uploads/${uploadId}/analyze-comments`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      })
-      const data = await resp.json()
-      if (!resp.ok) {
-        setCommentError(data.error || 'Failed to analyze comments')
-      } else {
-        setCommentAnalysis({ ...data.analysis, total_comments_analyzed: data.comments_analyzed })
-      }
-    } catch (err: any) {
-      setCommentError(err.message || 'Failed to analyze comments')
-    } finally {
-      setCommentLoading(false)
-    }
-  }
-
-  // Load existing comment analysis when upload is loaded
-  useEffect(() => {
-    if (uploadId && session?.access_token) {
-      fetchCommentAnalysis(uploadId)
-    }
-  }, [uploadId, session?.access_token, fetchCommentAnalysis])
 
   // === Submit Handler ===
 
@@ -244,10 +184,7 @@ export default function ContentAnalysis() {
 
     setUploading(true)
     setUploadError(null)
-    setAnalysisResult(null)
     setAnalysisStatus(null)
-    setCommentAnalysis(null)
-    setCommentError(null)
 
     try {
       let resp: Response
@@ -290,83 +227,34 @@ export default function ContentAnalysis() {
     stopPolling()
     setUploadId(null)
     setAnalysisStatus(null)
-    setAnalysisResult(null)
     setUploadError(null)
     setUrl('')
     setFile(null)
     setVideoThumbnail(null)
-    setActiveTab('improvements')
   }
 
-  // === Handle Improve & Re-check ===
+  // === History Retry ===
 
-  const handleRecheck = async () => {
-    if (!uploadId || !session?.access_token) return
-    if (!recheckUrl && !recheckFile) {
-      setRecheckError('Please provide a video URL or file')
-      return
-    }
-
-    setRecheckUploading(true)
-    setRecheckError(null)
-
+  const handleRetry = async (e: React.MouseEvent, itemId: number) => {
+    e.stopPropagation()
+    if (!session?.access_token) return
+    setRetryingIds(prev => new Set(prev).add(itemId))
     try {
-      let response: any
-      if (recheckFile) {
-        const formData = new FormData()
-        formData.append('video', recheckFile)
-        response = await fetch(`${API_URL}/api/content-analysis/${uploadId}/new-version`, {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${session.access_token}` },
-          body: formData,
-        }).then(r => r.json())
-      } else {
-        response = await fetch(`${API_URL}/api/content-analysis/${uploadId}/new-version`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ url: recheckUrl }),
-        }).then(r => r.json())
-      }
-
-      if (response.error) {
-        setRecheckError(response.error)
-        return
-      }
-
-      // Reset re-check form and navigate to new version
-      setShowRecheck(false)
-      setRecheckUrl('')
-      setRecheckFile(null)
-      setAnalysisResult(null)
-      setUploadId(response.id)
-      setAnalysisStatus({ status: 'pending', steps: { upload: 'done', full_analysis: 'pending', hook_analysis: 'pending', classification: 'pending', benchmarks: 'pending', virality_scores: 'pending', improvement: 'pending' } })
-      fetchHistory()
-    } catch (err: any) {
-      setRecheckError(err.message || 'Failed to create new version')
-    } finally {
-      setRecheckUploading(false)
-    }
-  }
-
-  const handleVersionSelect = async (newUploadId: number) => {
-    if (newUploadId === uploadId) return
-    setUploadId(newUploadId)
-    setAnalysisResult(null)
-    setActiveTab('improvements')
-
-    try {
-      const res = await fetch(`${API_URL}/api/content-analysis/${newUploadId}`, {
-        headers: { 'Authorization': `Bearer ${session?.access_token}` },
+      const resp = await fetch(`${API_URL}/api/content-analysis/${itemId}/retry`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}` },
       })
-      const data = await res.json()
-      if (data.upload) {
-        setAnalysisResult(data)
+      if (resp.ok) {
+        setHistory(prev => prev.map(h => h.id === itemId ? { ...h, status: 'analyzing', error_message: null } : h))
       }
     } catch (err) {
-      console.error('Failed to load version:', err)
+      console.error('Retry failed:', err)
+    } finally {
+      setRetryingIds(prev => {
+        const next = new Set(prev)
+        next.delete(itemId)
+        return next
+      })
     }
   }
 
@@ -436,15 +324,26 @@ export default function ContentAnalysis() {
 
   const detectedPlatform = url.includes('tiktok') ? 'tiktok' : url.includes('instagram') || url.includes('instagr.am') ? 'instagram' : null
 
+  // === Improvement subtitle cycling (sequential, stops at last) ===
+  const improvementStepStatus = analysisStatus?.steps?.improvement
+  useEffect(() => {
+    if (improvementStepStatus !== 'running') {
+      setImprovementSubtitleIdx(0)
+      return
+    }
+    if (improvementSubtitleIdx >= IMPROVEMENT_SUBTITLES.length - 1) return
+    const timer = setTimeout(() => {
+      setImprovementSubtitleIdx(prev => Math.min(prev + 1, IMPROVEMENT_SUBTITLES.length - 1))
+    }, 3000)
+    return () => clearTimeout(timer)
+  }, [improvementStepStatus, improvementSubtitleIdx])
+
   // === Progress Step Status ===
 
   const getStepStatus = (stepIndex: number): 'done' | 'running' | 'pending' | 'error' => {
     if (!analysisStatus?.steps) return stepIndex === 0 ? 'done' : 'pending'
-
-    // Backend returns: { status, steps: { upload: 'done', full_analysis: 'running', ... } }
     const stepKey = ANALYSIS_STEPS[stepIndex]?.key
     if (!stepKey) return 'pending'
-
     const stepState = analysisStatus.steps[stepKey]
     if (stepState === 'done') return 'done'
     if (stepState === 'running') return 'running'
@@ -454,7 +353,10 @@ export default function ContentAnalysis() {
 
   // === Render ===
 
-  const isAnalyzing = uploadId !== null && !analysisResult && !loadingHistory && analysisStatus?.status !== 'error'
+  const isAnalyzing = uploadId !== null && analysisStatus?.status !== 'error'
+
+  const totalPages = Math.ceil(historyTotal / historyLimit)
+  const currentPage = Math.floor(historyOffset / historyLimit) + 1
 
   return (
     <>
@@ -480,41 +382,16 @@ export default function ContentAnalysis() {
               </div>
             )}
           </div>
-          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-            {analysisResult && (
-              <button
-                onClick={() => setShowRecheck(!showRecheck)}
-                aria-label="Improve and re-check"
-                className="px-3 sm:px-4 py-2 bg-gradient-to-r from-purple-500/20 to-teal-500/20 border border-purple-500/30 rounded-xl text-purple-300 hover:text-white hover:from-purple-500/30 hover:to-teal-500/30 transition-all text-xs sm:text-sm font-bold"
-              >
-                <i className="fas fa-redo sm:mr-2"></i>
-                <span className="hidden sm:inline">Improve & Re-check</span>
-              </button>
-            )}
-            {(uploadId || analysisResult) && (
-              <button
-                onClick={handleReset}
-                aria-label="New check"
-                className="px-3 sm:px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-all text-xs sm:text-sm font-bold"
-              >
-                <i className="fas fa-plus sm:mr-2"></i>
-                <span className="hidden sm:inline">New Check</span>
-              </button>
-            )}
+          {isAnalyzing && (
             <button
-              onClick={() => navigate('/dashboard/analyze/history')}
-              aria-label="View analysis history"
-              className="px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10"
+              onClick={handleReset}
+              aria-label="New check"
+              className="px-3 sm:px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-all text-xs sm:text-sm font-bold flex-shrink-0"
             >
-              <i className="fas fa-history sm:mr-2"></i>
-              <span className="hidden sm:inline">History</span>
-              {history.length > 0 && (
-                <span className="ml-1 sm:ml-2 px-1.5 py-0.5 bg-pink-500/20 text-pink-400 text-[10px] font-black rounded-full">
-                  {history.length}
-                </span>
-              )}
+              <i className="fas fa-plus sm:mr-2"></i>
+              <span className="hidden sm:inline">New Check</span>
             </button>
-          </div>
+          )}
         </div>
       </div>
 
@@ -522,2761 +399,7 @@ export default function ContentAnalysis() {
         {/* Main Content Area */}
         <div className="flex-1 min-w-0">
 
-          {/* === RESULTS VIEW === */}
-          {analysisResult ? (
-            <div>
-              {/* Back button */}
-              <button
-                onClick={handleReset}
-                className="mb-6 text-slate-400 hover:text-white text-sm font-bold transition-all"
-              >
-                <i className="fas fa-arrow-left mr-2"></i>
-                Back to upload
-              </button>
-
-              {/* Re-check form (shown when "Improve & Re-check" is clicked) */}
-              {showRecheck && (
-                <div className="mb-6 rounded-2xl border border-purple-500/20 bg-gradient-to-r from-purple-500/5 to-teal-500/5 p-5">
-                  <div className="flex items-center gap-2 mb-4">
-                    <i className="fas fa-redo text-purple-400"></i>
-                    <h3 className="font-bold text-white">Improve & Re-check</h3>
-                    <button onClick={() => setShowRecheck(false)} className="ml-auto text-slate-500 hover:text-white">
-                      <i className="fas fa-times"></i>
-                    </button>
-                  </div>
-
-                  {/* Mode toggle */}
-                  <div className="flex gap-2 mb-4">
-                    <button
-                      onClick={() => setRecheckMode('url')}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${recheckMode === 'url' ? 'bg-purple-500/20 text-purple-300' : 'text-slate-500 hover:text-slate-300'}`}
-                    >
-                      <i className="fas fa-link mr-1"></i> URL
-                    </button>
-                    <button
-                      onClick={() => setRecheckMode('upload')}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${recheckMode === 'upload' ? 'bg-purple-500/20 text-purple-300' : 'text-slate-500 hover:text-slate-300'}`}
-                    >
-                      <i className="fas fa-upload mr-1"></i> Upload
-                    </button>
-                  </div>
-
-                  {/* URL or file input */}
-                  {recheckMode === 'url' ? (
-                    <input
-                      type="text"
-                      value={recheckUrl}
-                      onChange={e => setRecheckUrl(e.target.value)}
-                      placeholder="Paste TikTok or Instagram URL..."
-                      className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm placeholder-slate-600 focus:outline-none focus:border-purple-500/50 mb-4"
-                    />
-                  ) : (
-                    <div className="mb-4">
-                      <input
-                        ref={recheckFileInputRef}
-                        type="file"
-                        accept="video/mp4,video/quicktime,video/webm"
-                        onChange={e => setRecheckFile(e.target.files?.[0] || null)}
-                        className="hidden"
-                      />
-                      <button
-                        onClick={() => recheckFileInputRef.current?.click()}
-                        className="w-full px-4 py-3 rounded-xl bg-white/5 border border-dashed border-white/10 text-slate-400 text-sm hover:bg-white/10 hover:border-purple-500/30 transition-all"
-                      >
-                        {recheckFile ? (
-                          <span className="text-white"><i className="fas fa-check-circle text-teal-400 mr-2"></i>{recheckFile.name}</span>
-                        ) : (
-                          <span><i className="fas fa-cloud-upload-alt mr-2"></i>Click to select improved video</span>
-                        )}
-                      </button>
-                    </div>
-                  )}
-
-                  {recheckError && (
-                    <p className="text-xs text-red-400 mb-3"><i className="fas fa-exclamation-circle mr-1"></i>{recheckError}</p>
-                  )}
-
-                  <button
-                    onClick={handleRecheck}
-                    disabled={recheckUploading || (!recheckUrl && !recheckFile)}
-                    className="w-full px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-500 to-teal-500 text-white text-sm font-bold disabled:opacity-40 hover:from-purple-600 hover:to-teal-600 transition-all"
-                  >
-                    {recheckUploading ? (
-                      <><i className="fas fa-spinner fa-spin mr-2"></i>Analyzing new version...</>
-                    ) : (
-                      <><i className="fas fa-play mr-2"></i>Analyze Improved Version</>
-                    )}
-                  </button>
-                </div>
-              )}
-
-              {/* Version Timeline */}
-              {analysisResult?.versionInfo && uploadId && (
-                <VersionTimeline
-                  uploadId={uploadId}
-                  versionInfo={analysisResult.versionInfo}
-                  onVersionSelect={handleVersionSelect}
-                />
-              )}
-
-              {/* Version Comparison */}
-              {analysisResult?.versionInfo && uploadId && (
-                <VersionComparison
-                  uploadId={uploadId}
-                  versionInfo={analysisResult.versionInfo}
-                />
-              )}
-
-<>
-  {(() => {
-    const full = analysisResult?.fullAnalysis?.analysis_json;
-    const hook = analysisResult?.hookAnalysis?.analysis_json;
-    const virality = analysisResult?.viralityAnalysis?.analysis_json;
-    const improv = analysisResult?.improvement?.improvement_json;
-    const upload = analysisResult?.upload;
-    const benchmarks = analysisResult?.benchmarks;
-    const topFormatVideos = analysisResult?.topFormatVideos;
-    const topHookVideos = analysisResult?.topHookVideos;
-    const hookClassAnalysis = benchmarks?.hook_class_analysis;
-    const hookTacticFrequency = analysisResult?.hookTacticFrequency;
-    const scoreBreakdown = improv?.score_breakdown;
-
-    const tabs = [
-      ...(improv ? [{ id: 'improvements', label: 'Improvements', icon: 'fa-rocket' }] : []),
-      { id: 'hook', label: 'Hook', icon: 'fa-magnet' },
-      { id: 'structure', label: 'Structure', icon: 'fa-layer-group' },
-      { id: 'tactics', label: 'Tactics', icon: 'fa-chess' },
-      { id: 'emotions', label: 'Emotions', icon: 'fa-heart' },
-      ...(virality ? [{ id: 'virality', label: 'Virality', icon: 'fa-fire' }] : []),
-      { id: 'weaknesses', label: 'Weaknesses', icon: 'fa-exclamation-triangle' },
-      ...(upload?.platform && upload?.platform_id ? [{ id: 'comments', label: 'Comments', icon: 'fa-comments' }] : []),
-    ];
-
-    const fmtTime = (sec: number | null | undefined) => {
-      if (sec == null) return '--';
-      const m = Math.floor(sec / 60);
-      const s = String(Math.round(sec) % 60).padStart(2, '0');
-      return `${m}:${s}`;
-    };
-
-    const categoryColors: Record<string, string> = {
-      hook_visual: 'bg-pink-500/20 text-pink-400',
-      hook_audio: 'bg-purple-500/20 text-purple-400',
-      hook_text: 'bg-blue-500/20 text-blue-400',
-      hook_structural: 'bg-indigo-500/20 text-indigo-400',
-      pacing: 'bg-teal-500/20 text-teal-400',
-      emotional: 'bg-rose-500/20 text-rose-400',
-      visual_style: 'bg-amber-500/20 text-amber-400',
-      audio_design: 'bg-violet-500/20 text-violet-400',
-      text_overlay: 'bg-cyan-500/20 text-cyan-400',
-      framing_angle: 'bg-emerald-500/20 text-emerald-400',
-      content_structure: 'bg-sky-500/20 text-sky-400',
-      shareability: 'bg-orange-500/20 text-orange-400',
-      engagement_bait: 'bg-yellow-500/20 text-yellow-400',
-      trend_leverage: 'bg-lime-500/20 text-lime-400',
-      identity_signal: 'bg-fuchsia-500/20 text-fuchsia-400',
-    };
-
-    const getCategoryColor = (cat: string) =>
-      categoryColors[cat?.toLowerCase()?.replace(/\s+/g, '_')] || 'bg-white/10 text-slate-300';
-
-    const scoreColor = (score: number) =>
-      score >= 70 ? 'text-teal-400' : score >= 40 ? 'text-yellow-400' : 'text-red-400';
-
-    const scoreBarColor = (score: number) =>
-      score >= 70
-        ? 'from-teal-500 to-teal-400'
-        : score >= 40
-        ? 'from-yellow-500 to-yellow-400'
-        : 'from-red-500 to-red-400';
-
-    const effortColor = (effort: string) => {
-      const e = effort?.toLowerCase();
-      if (e === 'low') return 'bg-teal-400/10 text-teal-400';
-      if (e === 'medium') return 'bg-yellow-400/10 text-yellow-400';
-      return 'bg-red-400/10 text-red-400';
-    };
-
-    // Gather all unique categories from full analysis tactics
-    const allCategories: string[] = Array.from(
-      new Set((full?.tactics || []).map((t: any) => t.category).filter(Boolean)) as Set<string>
-    );
-
-    // Sort tactics based on current sort mode
-    const sortedTactics = [...(full?.tactics || [])].sort((a: any, b: any) => {
-      if (tacticSort === 'score') return (b.execution_score || 0) - (a.execution_score || 0);
-      return (a.when_start || 0) - (b.when_start || 0);
-    });
-
-    const filteredTactics =
-      tacticFilter === 'all'
-        ? sortedTactics
-        : sortedTactics.filter((t: any) => t.category === tacticFilter);
-
-    // -- Example Video Components --
-    const openExampleCarousel = (videos: any[], index: number) => {
-      const mapped: CarouselVideo[] = videos.map((v: any) => ({
-        id: v.video_id,
-        platform: v.platform,
-        username: v.username,
-        content_url: v.content_url,
-        thumbnail_url: v.thumbnail_url,
-        local_thumbnail_path: v.local_thumbnail_path || null,
-        local_video_path: v.local_video_path || null,
-        views: v.views,
-        engagement_rate: v.engagement_rate,
-      }));
-      setCarouselVideos(mapped);
-      setCarouselIndex(index);
-    };
-
-    const ExampleVideoCard = ({ video, videos, index }: { video: any; videos: any[]; index: number }) => {
-      const thumb = getStorageUrl(video.local_thumbnail_path);
-      return (
-        <div
-          onClick={() => openExampleCarousel(videos, index)}
-          className="group relative w-[120px] flex-shrink-0 block cursor-pointer"
-        >
-          <div className="aspect-[9/16] rounded-xl overflow-hidden border border-white/5 group-hover:border-pink-500/30 transition-all">
-            {thumb ? (
-              <img src={thumb} alt={`@${video.username}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
-            ) : (
-              <div className="w-full h-full bg-slate-900 flex items-center justify-center"><i className="fas fa-film text-slate-700 text-lg"></i></div>
-            )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-between p-2">
-              <div className="flex items-center gap-1">
-                <div className="w-5 h-5 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center">
-                  <i className={`fab fa-${video.platform === 'tiktok' ? 'tiktok' : 'instagram'} text-[8px] text-white`}></i>
-                </div>
-              </div>
-              <div>
-                <div className="text-[9px] font-black text-white truncate mb-1">@{video.username}</div>
-                <div className="flex gap-1">
-                  <div className="bg-black/40 backdrop-blur-md px-1.5 py-0.5 rounded text-[8px] font-black text-white">
-                    <i className="fas fa-eye mr-0.5 text-[6px] text-slate-400"></i>{formatNumber(video.views)}
-                  </div>
-                  <div className="bg-black/40 backdrop-blur-md px-1.5 py-0.5 rounded text-[8px] font-black text-teal-400">
-                    {Number(video.engagement_rate).toFixed(1)}%
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-              <div className="w-5 h-5 rounded-full bg-pink-500/80 backdrop-blur-md flex items-center justify-center">
-                <i className="fas fa-play text-[7px] text-white"></i>
-              </div>
-            </div>
-          </div>
-          <p className="mt-1.5 px-0.5 text-[9px] text-slate-500 leading-tight line-clamp-2">{video.match_reason}</p>
-        </div>
-      );
-    };
-
-    const VideoCarousel = ({ videos }: { videos: any[] }) => {
-      const [emblaRef, emblaApi] = useEmblaCarousel({ align: 'start', containScroll: 'trimSnaps', dragFree: true });
-      const [canScrollPrev, setCanScrollPrev] = useState(false);
-      const [canScrollNext, setCanScrollNext] = useState(false);
-
-      const onSelect = useCallback(() => {
-        if (!emblaApi) return;
-        setCanScrollPrev(emblaApi.canScrollPrev());
-        setCanScrollNext(emblaApi.canScrollNext());
-      }, [emblaApi]);
-
-      useEffect(() => {
-        if (!emblaApi) return;
-        onSelect();
-        emblaApi.on('select', onSelect);
-        emblaApi.on('reInit', onSelect);
-        return () => { emblaApi.off('select', onSelect); emblaApi.off('reInit', onSelect); };
-      }, [emblaApi, onSelect]);
-
-      return (
-        <div className="relative group/carousel">
-          {canScrollPrev && (
-            <button
-              onClick={() => emblaApi?.scrollPrev()}
-              className="absolute left-0 top-0 bottom-8 z-10 w-8 flex items-center justify-start bg-gradient-to-r from-black/60 to-transparent rounded-l-xl opacity-0 group-hover/carousel:opacity-100 transition-opacity"
-            >
-              <i className="fas fa-chevron-left text-xs text-white/80 ml-1.5"></i>
-            </button>
-          )}
-          <div ref={emblaRef} className="overflow-hidden">
-            <div className="flex gap-3">
-              {videos.map((v: any, i: number) => (
-                <div key={v.video_id} className="flex-[0_0_120px] min-w-0">
-                  <ExampleVideoCard video={v} videos={videos} index={i} />
-                </div>
-              ))}
-            </div>
-          </div>
-          {canScrollNext && (
-            <button
-              onClick={() => emblaApi?.scrollNext()}
-              className="absolute right-0 top-0 bottom-8 z-10 w-8 flex items-center justify-end bg-gradient-to-l from-black/60 to-transparent rounded-r-xl opacity-0 group-hover/carousel:opacity-100 transition-opacity"
-            >
-              <i className="fas fa-chevron-right text-xs text-white/80 mr-1.5"></i>
-            </button>
-          )}
-          {videos.length > 4 && (
-            <div className="flex items-center justify-center mt-2">
-              <span className="text-[9px] text-slate-600">{videos.length} videos — scroll to see more</span>
-            </div>
-          )}
-        </div>
-      );
-    };
-
-    const ExampleVideoRow = ({ videos, label }: { videos: any[] | undefined; label?: string }) => {
-      if (!videos || !Array.isArray(videos) || videos.length === 0) return null;
-      // Flatten if nested arrays
-      const flat = Array.isArray(videos[0]) ? videos.flat() : videos;
-      if (flat.length === 0) return null;
-      return (
-        <div className="mt-4 pt-4 border-t border-white/5">
-          <div className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-3">
-            <i className="fas fa-play-circle mr-1.5 text-pink-400/50"></i>{label || 'See it done right'}
-          </div>
-          <VideoCarousel videos={flat} />
-        </div>
-      );
-    };
-
-    return (
-      <div className="space-y-6">
-        {/* ═══════════════════════════════════════════════════════════ */}
-        {/* OVERVIEW — always visible as header                          */}
-        {/* ═══════════════════════════════════════════════════════════ */}
-        <div className="space-y-6">
-          {/* Video info card */}
-          <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
-            <div className="flex flex-col md:flex-row gap-4 sm:gap-6">
-              {/* Thumbnail */}
-              {upload?.thumbnail_path && (
-                <div className="w-full md:w-48 flex-shrink-0">
-                  <div className="aspect-[9/16] rounded-xl overflow-hidden bg-slate-900">
-                    <img
-                      src={upload.thumbnail_path.startsWith('http') ? upload.thumbnail_path : `/media/${upload.thumbnail_path.split('/').pop()}`}
-                      alt="Video thumbnail"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                </div>
-              )}
-
-              <div className="flex-1 space-y-4">
-                {/* Platform + Username */}
-                <div className="flex items-center gap-3">
-                  {upload?.platform && (
-                    <span className="px-3 py-1 rounded-full text-xs font-black bg-white/10 capitalize flex items-center gap-1.5">
-                      <i className={`fab fa-${upload.platform === 'tiktok' ? 'tiktok' : 'instagram'} text-[10px]`}></i>
-                      {upload.platform}
-                    </span>
-                  )}
-                  {upload?.username && (
-                    <span className="text-sm font-bold text-slate-300">@{upload.username}</span>
-                  )}
-                  {upload?.source_type && (
-                    <span className="px-2 py-0.5 rounded text-[9px] font-black bg-white/5 text-slate-500 uppercase">
-                      {upload.source_type}
-                    </span>
-                  )}
-                </div>
-
-                {/* Caption */}
-                {upload?.caption && (
-                  <p className="text-sm text-slate-400 leading-relaxed line-clamp-3">{upload.caption}</p>
-                )}
-
-                {/* One-line verdict */}
-                {full?.one_line_verdict && (
-                  <div className="pt-2">
-                    <p className="text-base sm:text-xl font-black gradient-text leading-snug">{full.one_line_verdict}</p>
-                  </div>
-                )}
-
-                {/* Format + Hook class badges */}
-                <div className="flex flex-wrap gap-2 pt-1">
-                  {full?.format_class && (
-                    <span className="px-3 py-1 rounded-full text-xs font-black bg-pink-500/15 text-pink-400 capitalize">
-                      <i className="fas fa-shapes mr-1.5 text-[9px]"></i>
-                      {full.format_class}
-                    </span>
-                  )}
-                  {hook?.hook_class && (
-                    <span className="px-3 py-1 rounded-full text-xs font-black bg-purple-500/15 text-purple-400 capitalize">
-                      <i className="fas fa-magnet mr-1.5 text-[9px]"></i>
-                      {hook.hook_class}
-                    </span>
-                  )}
-                </div>
-
-                {/* Scores inline */}
-                {(improv?.optimization_score != null || virality?.overall_virality_score != null) && (
-                  <div className="grid grid-cols-2 gap-2 sm:gap-3 pt-2">
-                    {improv?.optimization_score != null && (
-                      <div className="bg-white/[0.03] rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 border border-white/5 flex items-center gap-2 sm:gap-3 min-w-0">
-                        <div className={`text-2xl sm:text-3xl font-black ${scoreColor(improv.optimization_score)} flex-shrink-0`}>
-                          {improv.optimization_score}
-                        </div>
-                        <div className="min-w-0">
-                          <div className="text-[8px] sm:text-[9px] font-black text-slate-500 uppercase tracking-widest truncate">Optimization</div>
-                          <div className="text-[8px] sm:text-[9px] text-slate-600">out of 100</div>
-                        </div>
-                      </div>
-                    )}
-                    {virality?.overall_virality_score != null && (
-                      <div className="bg-white/[0.03] rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 border border-white/5 flex items-center gap-2 sm:gap-3 min-w-0">
-                        <div className={`text-2xl sm:text-3xl font-black ${scoreColor(virality.overall_virality_score)} flex-shrink-0`}>
-                          {virality.overall_virality_score}
-                        </div>
-                        <div className="min-w-0">
-                          <div className="text-[8px] sm:text-[9px] font-black text-slate-500 uppercase tracking-widest truncate">
-                            <i className="fas fa-fire mr-1 text-orange-400"></i>Virality
-                          </div>
-                          <div className="text-[8px] sm:text-[9px] text-slate-600">out of 100</div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-                {/* Score Breakdown */}
-                {scoreBreakdown && (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 pt-2">
-                    {[
-                      { label: 'Hook Power', value: scoreBreakdown.hook_power, icon: 'fa-bolt' },
-                      { label: 'Retention', value: scoreBreakdown.retention_strength, icon: 'fa-magnet' },
-                      { label: 'Emotional Impact', value: scoreBreakdown.emotional_impact, icon: 'fa-heart' },
-                      { label: 'Shareability', value: scoreBreakdown.shareability, icon: 'fa-share-alt' },
-                      { label: 'Tactic Execution', value: scoreBreakdown.tactic_execution, icon: 'fa-crosshairs' },
-                    ].map((card) => (
-                      <div key={card.label} className="bg-white/[0.03] rounded-xl px-2.5 sm:px-3 py-2 border border-white/5 flex items-center gap-2 min-w-0">
-                        <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                          (card.value || 0) >= 70
-                            ? 'border-teal-400/50'
-                            : (card.value || 0) >= 40
-                            ? 'border-yellow-400/50'
-                            : 'border-red-400/50'
-                        }`}>
-                          <span className={`text-xs sm:text-sm font-black ${scoreColor(card.value || 0)}`}>
-                            {card.value ?? '--'}
-                          </span>
-                        </div>
-                        <div className="text-[8px] sm:text-[9px] font-black text-slate-500 uppercase tracking-wider min-w-0 truncate">
-                          {card.label}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ── Format & Hook Class Benchmarks ── */}
-        {(benchmarks?.format_name || benchmarks?.hook_name) && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {benchmarks?.format_name && (
-              <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6 flex flex-col">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-black text-white flex items-center gap-2">
-                    <i className="fas fa-tags text-pink-400 text-xs"></i>Format Class
-                  </h3>
-                  {benchmarks.format_lifecycle && (
-                    <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${
-                      benchmarks.format_lifecycle === 'emerging' ? 'bg-teal-500/15 text-teal-400' :
-                      benchmarks.format_lifecycle === 'rising' ? 'bg-lime-500/15 text-lime-400' :
-                      benchmarks.format_lifecycle === 'peaking' ? 'bg-orange-500/15 text-orange-400' :
-                      benchmarks.format_lifecycle === 'stable' ? 'bg-blue-500/15 text-blue-400' :
-                      'bg-red-500/15 text-red-400'
-                    }`}>{benchmarks.format_lifecycle}</span>
-                  )}
-                </div>
-                <p className="text-lg font-black text-white mb-3 capitalize">{benchmarks.format_name}</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-white/[0.03] rounded-xl p-3 border border-white/5">
-                    <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Videos</div>
-                    <div className="text-lg font-black text-white">{formatNumber(benchmarks.format_video_count || 0)}</div>
-                  </div>
-                  <div className="bg-white/[0.03] rounded-xl p-3 border border-white/5">
-                    <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Avg Views</div>
-                    <div className="text-lg font-black text-white">{formatNumber(benchmarks.format_avg_views || 0)}</div>
-                  </div>
-                </div>
-                {benchmarks.format_avg_engagement != null && (
-                  <div className="mt-3 bg-white/[0.03] rounded-xl p-3 border border-white/5">
-                    <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Avg Engagement</div>
-                    <div className="text-lg font-black text-white">{Number(benchmarks.format_avg_engagement).toFixed(1)}%</div>
-                  </div>
-                )}
-                {virality?.benchmark_comparison?.views_vs_format_avg && (
-                  <div className="mt-4 mb-2 text-xs font-bold text-slate-400">
-                    <i className="fas fa-chart-line mr-1 text-[9px]"></i>
-                    {virality.benchmark_comparison.views_vs_format_avg}
-                  </div>
-                )}
-                {topFormatVideos && topFormatVideos.length > 0 && (
-                  <div className="mt-auto pt-5 border-t border-white/5" style={{ marginTop: 'auto' }}>
-                    <div className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-3">
-                      <i className="fas fa-crown mr-1.5 text-pink-400/50"></i>Top by views
-                    </div>
-                    <VideoCarousel videos={topFormatVideos} />
-                  </div>
-                )}
-              </div>
-            )}
-            {benchmarks?.hook_name && (
-              <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6 flex flex-col">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-black text-white flex items-center gap-2">
-                    <i className="fas fa-magnet text-purple-400 text-xs"></i>Hook Class
-                  </h3>
-                  {benchmarks.hook_lifecycle && (
-                    <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${
-                      benchmarks.hook_lifecycle === 'emerging' ? 'bg-teal-500/15 text-teal-400' :
-                      benchmarks.hook_lifecycle === 'rising' ? 'bg-lime-500/15 text-lime-400' :
-                      benchmarks.hook_lifecycle === 'peaking' ? 'bg-orange-500/15 text-orange-400' :
-                      benchmarks.hook_lifecycle === 'stable' ? 'bg-blue-500/15 text-blue-400' :
-                      'bg-red-500/15 text-red-400'
-                    }`}>{benchmarks.hook_lifecycle}</span>
-                  )}
-                </div>
-                <p className="text-lg font-black text-white mb-3 capitalize">{benchmarks.hook_name}</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-white/[0.03] rounded-xl p-3 border border-white/5">
-                    <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Videos</div>
-                    <div className="text-lg font-black text-white">{formatNumber(benchmarks.hook_video_count || 0)}</div>
-                  </div>
-                  <div className="bg-white/[0.03] rounded-xl p-3 border border-white/5">
-                    <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Avg Views</div>
-                    <div className="text-lg font-black text-white">{formatNumber(benchmarks.hook_avg_views || 0)}</div>
-                  </div>
-                </div>
-                {benchmarks.hook_avg_engagement != null && (
-                  <div className="mt-3 bg-white/[0.03] rounded-xl p-3 border border-white/5">
-                    <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Avg Engagement</div>
-                    <div className="text-lg font-black text-white">{Number(benchmarks.hook_avg_engagement).toFixed(1)}%</div>
-                  </div>
-                )}
-                {topHookVideos && topHookVideos.length > 0 && (
-                  <div className="mt-auto pt-5 border-t border-white/5" style={{ marginTop: 'auto' }}>
-                    <div className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-3">
-                      <i className="fas fa-crown mr-1.5 text-purple-400/50"></i>Top by views
-                    </div>
-                    <VideoCarousel videos={topHookVideos} />
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ── Divider between Overview header and Analysis tabs ── */}
-        <div className="flex items-center gap-4 pt-2">
-          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
-          <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Detailed Analysis</span>
-          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
-        </div>
-
-        {/* ── Tab Navigation ── */}
-        <div className="-mx-4 px-4 sm:mx-0 sm:px-0 overflow-x-auto scrollbar-hide pb-1 sm:pb-0">
-          <div className="flex gap-1.5 sm:gap-2 sm:flex-wrap min-w-max sm:min-w-0">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap ${
-                  activeTab === tab.id
-                    ? 'bg-white/10 text-white font-black'
-                    : 'text-slate-400 hover:text-white hover:bg-white/5'
-                }`}
-              >
-                <i className={`fas ${tab.icon} text-[10px]`}></i>
-                {tab.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* ════════════════════════════════════════════════════════ */}
-        {/* TAB: IMPROVEMENTS                                       */}
-        {/* ════════════════════════════════════════════════════════ */}
-        {activeTab === 'improvements' && improv && (
-          <div className="relative rounded-2xl p-[1px] bg-gradient-to-r from-pink-500/40 via-orange-400/40 to-yellow-400/40">
-            <div className="rounded-2xl bg-slate-950/90 backdrop-blur-xl">
-              {/* Header */}
-              <div className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 border-b border-white/[0.06] flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-pink-500 to-orange-400 flex items-center justify-center flex-shrink-0">
-                    <i className="fas fa-rocket text-white text-xs sm:text-sm"></i>
-                  </div>
-                  <div className="min-w-0">
-                    <h2 className="text-sm sm:text-lg font-black text-white tracking-tight truncate">How to Improve This Content</h2>
-                    <p className="text-[10px] sm:text-xs text-slate-500">
-                      Actionable suggestions to boost performance
-                      {improv?.fine_tune_enhanced && (
-                        <span className="ml-2 px-2 py-0.5 bg-pink-500/15 text-pink-400 text-[9px] font-black rounded-md uppercase tracking-widest">
-                          <i className="fas fa-sliders mr-1"></i>Fine-tuned
-                        </span>
-                      )}
-                    </p>
-                  </div>
-                </div>
-                {improv?.optimization_score != null && (
-                  <div className="text-right flex-shrink-0">
-                    <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Score</div>
-                    <div className={`text-2xl sm:text-3xl font-black ${scoreColor(improv.optimization_score)}`}>{improv.optimization_score}<span className="text-xs sm:text-sm text-slate-600">/100</span></div>
-                  </div>
-                )}
-              </div>
-
-              {/* Improvements content */}
-              <div className="p-4 sm:p-6 space-y-6 sm:space-y-8">
-
-                {/* ── Version Progress Summary (if versioned) ── */}
-                {improv?.version_progress && (
-                  <div className="rounded-xl bg-gradient-to-r from-purple-500/5 to-teal-500/5 border border-purple-500/15 p-4">
-                    <div className="flex items-center gap-3 mb-2">
-                      <i className="fas fa-chart-line text-purple-400 text-xs"></i>
-                      <span className="text-xs font-black text-purple-300 uppercase tracking-widest">Version Progress</span>
-                      {improv.version_progress.fixed_weaknesses?.length > 0 && (
-                        <span className="px-2 py-0.5 text-[9px] font-bold rounded-full bg-teal-500/15 text-teal-300">
-                          {improv.version_progress.fixed_weaknesses.length} weaknesses fixed
-                        </span>
-                      )}
-                      {improv.version_progress.implemented_items?.length > 0 && (
-                        <span className="px-2 py-0.5 text-[9px] font-bold rounded-full bg-teal-500/15 text-teal-300">
-                          {improv.version_progress.implemented_items.length} suggestions implemented
-                        </span>
-                      )}
-                    </div>
-                    {improv.version_progress.overall_progress_summary && (
-                      <p className="text-sm text-slate-300 leading-relaxed">{improv.version_progress.overall_progress_summary}</p>
-                    )}
-                  </div>
-                )}
-
-                {/* ── Priority Actions ── */}
-                {improv?.priority_actions && improv.priority_actions.length > 0 && (
-                  <div>
-                    <h3 className="text-sm font-black text-white mb-4 flex items-center gap-2">
-                      <i className="fas fa-list-ol text-pink-400 text-xs"></i>Priority Actions
-                    </h3>
-                    <div className="space-y-3">
-                      {improv.priority_actions.map((action: any, idx: number) => (
-                        <div key={idx} className="flex items-start gap-4 bg-white/[0.03] rounded-xl p-4 border border-white/5">
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-500 to-orange-400 flex items-center justify-center flex-shrink-0">
-                            <span className="text-xs font-black text-white">{action.rank ?? idx + 1}</span>
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-sm font-bold text-white mb-2">{action.action}</p>
-                            <div className="flex items-center gap-2">
-                              {action.effort && (
-                                <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black ${effortColor(action.effort)}`}>
-                                  <i className="fas fa-bolt mr-1 text-[8px]"></i>{action.effort} effort
-                                </span>
-                              )}
-                              {action.expected_impact && (
-                                <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black bg-indigo-500/10 text-indigo-400">
-                                  <i className="fas fa-chart-line mr-1 text-[8px]"></i>{action.expected_impact}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    <ExampleVideoRow videos={exampleVideos?.priority_actions?.flatMap((p: any) => p.examples)} label="Top videos using these strategies" />
-                  </div>
-                )}
-
-                {/* ── Alternative Hooks ── */}
-                {improv?.alternative_hooks && improv.alternative_hooks.length > 0 && (
-                  <div>
-                    <h3 className="text-sm font-black text-white mb-4 flex items-center gap-2">
-                      <i className="fas fa-magic text-purple-400 text-xs"></i>Alternative Hooks
-                    </h3>
-                    <div className="space-y-4">
-                      {improv.alternative_hooks.map((alt: any, idx: number) => (
-                        <div key={idx} className="bg-white/[0.03] rounded-xl border border-white/5 overflow-hidden">
-                          <button
-                            onClick={() => {
-                              setExpandedHooks((prev: Set<number>) => {
-                                const next = new Set(prev);
-                                if (next.has(idx)) next.delete(idx);
-                                else next.add(idx);
-                                return next;
-                              });
-                            }}
-                            className="w-full flex items-center justify-between p-4 hover:bg-white/[0.02] transition-colors text-left"
-                          >
-                            <div className="flex items-center gap-3">
-                              <span className="px-3 py-1 rounded-full text-[10px] font-black bg-purple-500/15 text-purple-400 capitalize">
-                                {alt.type}
-                              </span>
-                              {alt.estimated_scroll_stop_improvement && (
-                                <span className="text-[10px] font-bold text-teal-400">
-                                  <i className="fas fa-arrow-up mr-0.5 text-[8px]"></i>{alt.estimated_scroll_stop_improvement}
-                                </span>
-                              )}
-                            </div>
-                            <i className={`fas fa-chevron-${expandedHooks.has(idx) ? 'up' : 'down'} text-slate-500 text-xs`}></i>
-                          </button>
-                          {expandedHooks.has(idx) && (
-                            <div className="px-4 pb-4 space-y-3 border-t border-white/5 pt-3">
-                              <div>
-                                <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Script</div>
-                                <p className="text-sm text-white bg-white/[0.03] rounded-lg p-3 border border-white/5 leading-relaxed">{alt.script}</p>
-                              </div>
-                              <div>
-                                <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Why It's Better</div>
-                                <p className="text-sm text-slate-400">{alt.why_better}</p>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                    <ExampleVideoRow videos={exampleVideos?.alternative_hooks?.flatMap((p: any) => p.examples)} label="Videos with scroll-stopping hooks" />
-                  </div>
-                )}
-
-                {/* ── Retention Improvements ── */}
-                {improv?.retention_improvements && improv.retention_improvements.length > 0 && (
-                  <div>
-                    <h3 className="text-sm font-black text-white mb-4 flex items-center gap-2">
-                      <i className="fas fa-user-clock text-blue-400 text-xs"></i>Retention Improvements
-                    </h3>
-                    <div className="space-y-4">
-                      {improv.retention_improvements.map((ret: any, idx: number) => (
-                        <div key={idx} className="bg-white/[0.03] rounded-xl p-5 border border-white/5">
-                          <div className="flex items-center gap-3 mb-3">
-                            <span className="px-2.5 py-1 rounded-lg text-xs font-black bg-blue-500/15 text-blue-400">
-                              <i className="fas fa-clock mr-1 text-[9px]"></i>{fmtTime(ret.timestamp_sec)}
-                            </span>
-                            {ret.tactic_to_add && (
-                              <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black bg-indigo-500/10 text-indigo-400">
-                                + {ret.tactic_to_add}
-                              </span>
-                            )}
-                          </div>
-                          <div className="mb-3">
-                            <div className="flex items-center gap-1.5 mb-1">
-                              <div className="w-2 h-2 rounded-full bg-red-400"></div>
-                              <span className="text-[10px] font-black text-red-400 uppercase tracking-widest">Current Issue</span>
-                            </div>
-                            <p className="text-sm text-red-300/80 pl-3.5">{ret.current_issue}</p>
-                          </div>
-                          <div className="mb-2">
-                            <div className="flex items-center gap-1.5 mb-1">
-                              <div className="w-2 h-2 rounded-full bg-teal-400"></div>
-                              <span className="text-[10px] font-black text-teal-400 uppercase tracking-widest">Suggested Change</span>
-                            </div>
-                            <p className="text-sm text-teal-300/80 pl-3.5">{ret.suggested_change}</p>
-                          </div>
-                          {ret.expected_impact && (
-                            <div className="text-xs text-slate-500 pl-3.5 italic">
-                              <i className="fas fa-chart-line mr-1 text-[9px]"></i>{ret.expected_impact}
-                            </div>
-                          )}
-                          <ExampleVideoRow videos={exampleVideos?.retention_improvements?.[idx]?.examples} label="See this tactic in action" />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* ── Missing High-Impact Tactics ── */}
-                {improv?.missing_high_impact_tactics && improv.missing_high_impact_tactics.length > 0 && (
-                  <div>
-                    <h3 className="text-sm font-black text-white mb-4 flex items-center gap-2">
-                      <i className="fas fa-puzzle-piece text-amber-400 text-xs"></i>Missing High-Impact Tactics
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {improv.missing_high_impact_tactics.map((tactic: any, idx: number) => (
-                        <div key={idx} className="bg-white/[0.03] rounded-xl p-5 border border-white/5 border-l-4 border-l-amber-400/50">
-                          <div className="flex items-center gap-2 mb-3">
-                            <span className="text-sm font-black text-white">{tactic.tactic_name}</span>
-                            {tactic.category && (
-                              <span className={`px-2 py-0.5 rounded-full text-[9px] font-black ${getCategoryColor(tactic.category)}`}>
-                                {(tactic.category || '').replace(/_/g, ' ')}
-                              </span>
-                            )}
-                          </div>
-                          {tactic.where_to_insert && (
-                            <div className="mb-2">
-                              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Where: </span>
-                              <span className="text-xs text-slate-400">{tactic.where_to_insert}</span>
-                            </div>
-                          )}
-                          {tactic.implementation && (
-                            <div className="mb-2">
-                              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">How: </span>
-                              <span className="text-xs text-slate-300">{tactic.implementation}</span>
-                            </div>
-                          )}
-                          {tactic.why_high_impact && (
-                            <div className="mt-2 pt-2 border-t border-white/5">
-                              <span className="text-[10px] font-black text-amber-400 uppercase tracking-widest">Why High Impact: </span>
-                              <span className="text-xs text-slate-400">{tactic.why_high_impact}</span>
-                            </div>
-                          )}
-                          <ExampleVideoRow videos={exampleVideos?.missing_tactics?.[idx]?.examples} label="This video nails it" />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* ── Before / After Rewrites ── */}
-                {improv?.before_after_rewrites && improv.before_after_rewrites.length > 0 && (
-                  <div>
-                    <h3 className="text-sm font-black text-white mb-4 flex items-center gap-2">
-                      <i className="fas fa-exchange-alt text-emerald-400 text-xs"></i>Before / After Rewrites
-                    </h3>
-                    <div className="space-y-6">
-                      {improv.before_after_rewrites.map((rw: any, idx: number) => (
-                        <div key={idx} className="space-y-3">
-                          {rw.section && (
-                            <div className="text-xs font-black text-white uppercase tracking-widest">
-                              <i className="fas fa-tag mr-1.5 text-[9px] text-slate-500"></i>{rw.section}
-                            </div>
-                          )}
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="bg-red-500/[0.04] rounded-xl p-4 border border-red-500/10">
-                              <div className="flex items-center gap-1.5 mb-2">
-                                <div className="w-2 h-2 rounded-full bg-red-400"></div>
-                                <span className="text-[10px] font-black text-red-400 uppercase tracking-widest">Before</span>
-                              </div>
-                              <p className="text-sm text-red-300/70 leading-relaxed">{rw.before}</p>
-                            </div>
-                            <div className="bg-teal-500/[0.04] rounded-xl p-4 border border-teal-500/10">
-                              <div className="flex items-center gap-1.5 mb-2">
-                                <div className="w-2 h-2 rounded-full bg-teal-400"></div>
-                                <span className="text-[10px] font-black text-teal-400 uppercase tracking-widest">After</span>
-                              </div>
-                              <p className="text-sm text-teal-300/70 leading-relaxed">{rw.after}</p>
-                            </div>
-                          </div>
-                          {rw.improvement_rationale && (
-                            <div className="bg-white/[0.02] rounded-lg p-3 border border-white/5">
-                              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest mr-2">Rationale:</span>
-                              <span className="text-xs text-slate-400">{rw.improvement_rationale}</span>
-                            </div>
-                          )}
-                          <ExampleVideoRow videos={exampleVideos?.before_after?.[idx]?.examples} label="Example of the improved version" />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* ── Engagement Amplifiers ── */}
-                {improv?.engagement_amplifiers && (
-                  <div>
-                    <h3 className="text-sm font-black text-white mb-4 flex items-center gap-2">
-                      <i className="fas fa-bullhorn text-yellow-400 text-xs"></i>Engagement Amplifiers
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                      <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5">
-                        <div className="text-[10px] font-black text-yellow-400 uppercase tracking-widest mb-3">
-                          <i className="fas fa-comment mr-1"></i>Comment Bait
-                        </div>
-                        {improv.engagement_amplifiers.comment_bait_suggestions?.length > 0 ? (
-                          <ul className="space-y-2">
-                            {improv.engagement_amplifiers.comment_bait_suggestions.map((s: string, idx: number) => (
-                              <li key={idx} className="text-xs text-slate-300 flex items-start gap-2">
-                                <i className="fas fa-chevron-right text-yellow-400/50 text-[7px] mt-1 flex-shrink-0"></i>
-                                {s}
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p className="text-xs text-slate-600">No suggestions</p>
-                        )}
-                      </div>
-                      <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5">
-                        <div className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-3">
-                          <i className="fas fa-bookmark mr-1"></i>Save Triggers
-                        </div>
-                        {improv.engagement_amplifiers.save_worthy_moments?.length > 0 ? (
-                          <ul className="space-y-2">
-                            {improv.engagement_amplifiers.save_worthy_moments.map((s: string, idx: number) => (
-                              <li key={idx} className="text-xs text-slate-300 flex items-start gap-2">
-                                <i className="fas fa-chevron-right text-blue-400/50 text-[7px] mt-1 flex-shrink-0"></i>
-                                {s}
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p className="text-xs text-slate-600">No suggestions</p>
-                        )}
-                      </div>
-                      <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5">
-                        <div className="text-[10px] font-black text-orange-400 uppercase tracking-widest mb-3">
-                          <i className="fas fa-share-alt mr-1"></i>Share Triggers
-                        </div>
-                        {improv.engagement_amplifiers.share_triggers?.length > 0 ? (
-                          <ul className="space-y-2">
-                            {improv.engagement_amplifiers.share_triggers.map((s: string, idx: number) => (
-                              <li key={idx} className="text-xs text-slate-300 flex items-start gap-2">
-                                <i className="fas fa-chevron-right text-orange-400/50 text-[7px] mt-1 flex-shrink-0"></i>
-                                {s}
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p className="text-xs text-slate-600">No suggestions</p>
-                        )}
-                      </div>
-                    </div>
-                    {improv.engagement_amplifiers.duet_stitch_potential && (
-                      <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5">
-                        <div className="text-[10px] font-black text-fuchsia-400 uppercase tracking-widest mb-2">
-                          <i className="fas fa-layer-group mr-1"></i>Duet / Stitch Potential
-                        </div>
-                        <p className="text-sm text-slate-300">{improv.engagement_amplifiers.duet_stitch_potential}</p>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* ── Trend Alignment ── */}
-                {improv?.trend_alignment && (
-                  <div>
-                    <h3 className="text-sm font-black text-white mb-4 flex items-center gap-2">
-                      <i className="fas fa-fire text-lime-400 text-xs"></i>Trend Alignment
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5">
-                        <div className="text-[10px] font-black text-lime-400 uppercase tracking-widest mb-3">
-                          <i className="fas fa-trending-up mr-1"></i>Trends to Leverage
-                        </div>
-                        {improv.trend_alignment.current_trends_to_leverage?.length > 0 ? (
-                          <ul className="space-y-2">
-                            {improv.trend_alignment.current_trends_to_leverage.map((t: string, idx: number) => (
-                              <li key={idx} className="text-xs text-slate-300 flex items-start gap-2">
-                                <i className="fas fa-fire text-lime-400/50 text-[7px] mt-1 flex-shrink-0"></i>
-                                {t}
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p className="text-xs text-slate-600">No suggestions</p>
-                        )}
-                      </div>
-                      <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5">
-                        <div className="text-[10px] font-black text-cyan-400 uppercase tracking-widest mb-3">
-                          <i className="fas fa-random mr-1"></i>Format Remixes
-                        </div>
-                        {improv.trend_alignment.format_remix_suggestions?.length > 0 ? (
-                          <ul className="space-y-2">
-                            {improv.trend_alignment.format_remix_suggestions.map((f: string, idx: number) => (
-                              <li key={idx} className="text-xs text-slate-300 flex items-start gap-2">
-                                <i className="fas fa-shapes text-cyan-400/50 text-[7px] mt-1 flex-shrink-0"></i>
-                                {f}
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p className="text-xs text-slate-600">No suggestions</p>
-                        )}
-                      </div>
-                      <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5">
-                        <div className="text-[10px] font-black text-violet-400 uppercase tracking-widest mb-3">
-                          <i className="fas fa-music mr-1"></i>Audio Suggestions
-                        </div>
-                        {improv.trend_alignment.audio_suggestions?.length > 0 ? (
-                          <ul className="space-y-2">
-                            {improv.trend_alignment.audio_suggestions.map((a: string, idx: number) => (
-                              <li key={idx} className="text-xs text-slate-300 flex items-start gap-2">
-                                <i className="fas fa-volume-up text-violet-400/50 text-[7px] mt-1 flex-shrink-0"></i>
-                                {a}
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p className="text-xs text-slate-600">No suggestions</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* ── Virality Optimization ── */}
-                {improv?.virality_optimization && (
-                  <div>
-                    <h3 className="text-sm font-black text-white mb-4 flex items-center gap-2">
-                      <i className="fas fa-fire text-orange-400 text-xs"></i>Virality Optimization
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {[
-                        { label: 'SEO Improvements', items: improv.virality_optimization.seo_improvements, icon: 'fa-search', color: 'teal' },
-                        { label: 'Shareability Boosters', items: improv.virality_optimization.shareability_boosters, icon: 'fa-share-alt', color: 'orange' },
-                        { label: 'Save Triggers to Add', items: improv.virality_optimization.save_triggers_to_add, icon: 'fa-bookmark', color: 'blue' },
-                        { label: 'Authenticity Adjustments', items: improv.virality_optimization.authenticity_adjustments, icon: 'fa-fingerprint', color: 'emerald' },
-                        { label: 'Platform-Specific Fixes', items: improv.virality_optimization.platform_specific_fixes, icon: 'fa-mobile-alt', color: 'purple' },
-                      ].filter(section => section.items && section.items.length > 0).map((section) => (
-                        <div key={section.label} className="bg-white/[0.03] rounded-xl p-4 border border-white/5">
-                          <div className={`text-[10px] font-black text-${section.color}-400 uppercase tracking-widest mb-3`}>
-                            <i className={`fas ${section.icon} mr-1`}></i>{section.label}
-                          </div>
-                          <ul className="space-y-2">
-                            {section.items.map((item: string, idx: number) => (
-                              <li key={idx} className="text-xs text-slate-300 flex items-start gap-2">
-                                <i className={`fas fa-check text-${section.color}-400/50 text-[7px] mt-1 flex-shrink-0`}></i>
-                                {item}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* ── Data-Grounded Actions (from benchmarks) ── */}
-                {improv?.benchmark_grounded_actions && improv.benchmark_grounded_actions.length > 0 && (
-                  <div>
-                    <h3 className="text-sm font-black text-white mb-1 flex items-center gap-2">
-                      <i className="fas fa-database text-cyan-400 text-xs"></i>Data-Grounded Actions
-                    </h3>
-                    <p className="text-[10px] text-slate-500 mb-4">Based on analysis of 34,000+ videos in our database</p>
-                    <div className="space-y-3">
-                      {improv.benchmark_grounded_actions.map((bga: any, idx: number) => (
-                        <div key={idx} className="bg-white/[0.03] rounded-xl p-5 border border-white/5 border-l-4 border-l-cyan-400/50">
-                          <p className="text-sm font-bold text-white mb-3">{bga.action}</p>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                            {bga.current_state && (
-                              <div>
-                                <div className="flex items-center gap-1.5 mb-1">
-                                  <div className="w-1.5 h-1.5 rounded-full bg-red-400"></div>
-                                  <span className="text-[9px] font-black text-red-400 uppercase tracking-widest">Current</span>
-                                </div>
-                                <p className="text-xs text-red-300/70">{bga.current_state}</p>
-                              </div>
-                            )}
-                            {bga.benchmark_target && (
-                              <div>
-                                <div className="flex items-center gap-1.5 mb-1">
-                                  <div className="w-1.5 h-1.5 rounded-full bg-teal-400"></div>
-                                  <span className="text-[9px] font-black text-teal-400 uppercase tracking-widest">Target</span>
-                                </div>
-                                <p className="text-xs text-teal-300/70">{bga.benchmark_target}</p>
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-3 flex-wrap">
-                            {bga.data_source && (
-                              <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black bg-cyan-500/10 text-cyan-400">
-                                <i className="fas fa-database mr-1 text-[7px]"></i>{bga.data_source}
-                              </span>
-                            )}
-                            {bga.expected_lift && (
-                              <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black bg-lime-500/10 text-lime-400">
-                                <i className="fas fa-arrow-up mr-1 text-[7px]"></i>{bga.expected_lift}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ════════════════════════════════════════════════════════ */}
-        {/* TAB: HOOK ANALYSIS                                      */}
-        {/* ════════════════════════════════════════════════════════ */}
-        {activeTab === 'hook' && (
-          <div className="space-y-6">
-            {/* Scroll-stop power score */}
-            {hook?.first_frame && (
-              <div className="glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-8 text-center">
-                <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">
-                  Scroll-Stop Power
-                </div>
-                <div className={`text-5xl sm:text-7xl font-black ${scoreColor(hook.first_frame.scroll_stop_power || 0)}`}>
-                  {hook.first_frame.scroll_stop_power ?? '--'}
-                </div>
-                <div className="text-xs text-slate-500 mt-2">out of 100</div>
-              </div>
-            )}
-
-            {/* Hook class + verdict */}
-            <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6 space-y-3">
-              {hook?.hook_class && (
-                <div className="flex items-center gap-3">
-                  <span className="px-3 py-1 rounded-full text-xs font-black bg-purple-500/15 text-purple-400 capitalize">
-                    {hook.hook_class}
-                  </span>
-                </div>
-              )}
-              {hook?.verdict && (
-                <p className="text-base font-bold text-white leading-relaxed">{hook.verdict}</p>
-              )}
-            </div>
-
-            {/* First Frame Analysis */}
-            {hook?.first_frame && (
-              <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
-                <h3 className="text-lg font-bold text-white mb-4">
-                  <i className="fas fa-image mr-2 text-pink-400 text-sm"></i>First Frame
-                </h3>
-                <div className="space-y-3">
-                  <div>
-                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Description</div>
-                    <p className="text-sm text-slate-300">{hook.first_frame.description}</p>
-                  </div>
-                  <div>
-                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Why It Stops The Scroll</div>
-                    <p className="text-sm text-slate-400">{hook.first_frame.why}</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Hook Tactics */}
-            {hook?.tactics && hook.tactics.length > 0 && (
-              <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
-                <h3 className="text-lg font-bold text-white mb-4">
-                  <i className="fas fa-chess mr-2 text-indigo-400 text-sm"></i>Hook Tactics
-                </h3>
-                <div className="space-y-4">
-                  {hook.tactics.map((tactic: any, idx: number) => {
-                    const tacticNameLower = (tactic.name || '').toLowerCase().trim();
-                    const isGoldStandard = hookTacticFrequency?.gold_standard?.some(
-                      (gs: any) => (gs.name || '').toLowerCase().trim() === tacticNameLower
-                    );
-                    const isOverrated = hookTacticFrequency?.overrated?.some(
-                      (ov: any) => (ov.name || '').toLowerCase().trim() === tacticNameLower
-                    );
-                    const execGap = hookTacticFrequency?.execution_gaps?.find(
-                      (eg: any) => (eg.name || '').toLowerCase().trim() === tacticNameLower
-                    );
-                    return (
-                    <div key={idx} className="bg-white/[0.03] rounded-xl p-4 border border-white/5">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-sm font-black text-white">{tactic.name}</span>
-                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-black ${getCategoryColor(tactic.category)}`}>
-                            {tactic.category}
-                          </span>
-                          {isGoldStandard && (
-                            <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-teal-500/15 text-teal-400 border border-teal-500/20">
-                              <i className="fas fa-check mr-0.5 text-[7px]"></i>Gold Standard
-                            </span>
-                          )}
-                          {isOverrated && (
-                            <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-red-500/15 text-red-400 border border-red-500/20">
-                              <i className="fas fa-exclamation mr-0.5 text-[7px]"></i>Overrated
-                            </span>
-                          )}
-                          {execGap && (
-                            <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-orange-500/15 text-orange-400 border border-orange-500/20">
-                              <i className="fas fa-arrows-alt-v mr-0.5 text-[7px]"></i>Exec Gap
-                              {execGap.avg_score_top != null && execGap.avg_score_bottom != null && (
-                                <span className="ml-1 text-[8px] opacity-75">
-                                  (top: {Math.round(execGap.avg_score_top)} / bottom: {Math.round(execGap.avg_score_bottom)})
-                                </span>
-                              )}
-                            </span>
-                          )}
-                        </div>
-                        <span className={`text-sm font-black ${scoreColor(tactic.execution_score || 0)}`}>
-                          {tactic.execution_score}
-                        </span>
-                      </div>
-                      {/* Score bar */}
-                      <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden mb-3">
-                        <div
-                          className={`h-full rounded-full bg-gradient-to-r ${scoreBarColor(tactic.execution_score || 0)}`}
-                          style={{ width: `${Math.min(100, tactic.execution_score || 0)}%` }}
-                        ></div>
-                      </div>
-                      {tactic.when_sec != null && (
-                        <div className="text-[10px] font-bold text-slate-500 mb-1">
-                          <i className="fas fa-clock mr-1"></i>{fmtTime(tactic.when_sec)}
-                        </div>
-                      )}
-                      <p className="text-sm text-slate-300 mb-1">{tactic.what}</p>
-                      {tactic.viewer_effect && (
-                        <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-bold bg-white/5 text-slate-400 mt-1">
-                          {tactic.viewer_effect}
-                        </span>
-                      )}
-                      {tactic.execution_note && (
-                        <p className="text-xs text-slate-500 mt-1 italic">{tactic.execution_note}</p>
-                      )}
-                    </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Promise Setup */}
-            {hook?.promise_setup && (
-              <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
-                <h3 className="text-lg font-bold text-white mb-4">
-                  <i className="fas fa-bullseye mr-2 text-orange-400 text-sm"></i>Promise Setup
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5">
-                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Promise Planted</div>
-                    <div className="flex items-center gap-2">
-                      {hook.promise_setup.promise_planted ? (
-                        <span className="text-teal-400 font-black text-sm"><i className="fas fa-check-circle mr-1"></i>Yes</span>
-                      ) : (
-                        <span className="text-red-400 font-black text-sm"><i className="fas fa-times-circle mr-1"></i>No</span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5">
-                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Single Promise</div>
-                    <div className="flex items-center gap-2">
-                      {hook.promise_setup.is_single_promise ? (
-                        <span className="text-teal-400 font-black text-sm"><i className="fas fa-check-circle mr-1"></i>Yes</span>
-                      ) : (
-                        <span className="text-yellow-400 font-black text-sm"><i className="fas fa-exclamation-circle mr-1"></i>No</span>
-                      )}
-                    </div>
-                  </div>
-                  {hook.promise_setup.promise_text && (
-                    <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5 md:col-span-2">
-                      <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Promise Text</div>
-                      <p className="text-sm text-slate-300">{hook.promise_setup.promise_text}</p>
-                    </div>
-                  )}
-                  <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5">
-                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Curiosity Loop</div>
-                    {hook.promise_setup.curiosity_loop_opened ? (
-                      <span className="text-teal-400 font-black text-sm"><i className="fas fa-check-circle mr-1"></i>Opened</span>
-                    ) : (
-                      <span className="text-slate-500 font-black text-sm"><i className="fas fa-minus-circle mr-1"></i>Not opened</span>
-                    )}
-                  </div>
-                  {hook.promise_setup.loop_description && (
-                    <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5">
-                      <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Loop Description</div>
-                      <p className="text-sm text-slate-400">{hook.promise_setup.loop_description}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Audio in First 3s */}
-            {hook?.audio_in_first_3s && (
-              <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
-                <h3 className="text-lg font-bold text-white mb-4">
-                  <i className="fas fa-volume-up mr-2 text-violet-400 text-sm"></i>Audio (First 3 Seconds)
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5">
-                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Type</div>
-                    <p className="text-sm font-bold text-white capitalize">{hook.audio_in_first_3s.type}</p>
-                  </div>
-                  <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5">
-                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Description</div>
-                    <p className="text-sm text-slate-300">{hook.audio_in_first_3s.description}</p>
-                  </div>
-                  <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5">
-                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Impact</div>
-                    <p className="text-sm text-slate-400">{hook.audio_in_first_3s.impact}</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Anti-Patterns */}
-            {hook?.anti_patterns_detected && hook.anti_patterns_detected.length > 0 && (
-              <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
-                <h3 className="text-lg font-bold text-white mb-4">
-                  <i className="fas fa-shield-alt mr-2 text-red-400 text-sm"></i>Anti-Patterns Detected
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  {hook.anti_patterns_detected.map((pattern: string, idx: number) => (
-                    <span key={idx} className="px-3 py-1.5 rounded-full text-xs font-black bg-red-500/10 text-red-400 border border-red-500/20">
-                      <i className="fas fa-exclamation-triangle mr-1.5 text-[9px]"></i>
-                      {pattern}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* ── HOOK CLASS COMPARISON ── */}
-
-            {/* Section A: Your Hook vs Hook Class Benchmark */}
-            {benchmarks?.hook_name && (
-              <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
-                <h3 className="text-lg font-bold text-white mb-4">
-                  <i className="fas fa-chart-bar mr-2 text-purple-400 text-sm"></i>Your Hook vs "{benchmarks.hook_name}"
-                </h3>
-                {(benchmarks.hook_video_count || 0) <= 1 ? (
-                  <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5">
-                    <p className="text-sm text-slate-400 italic">
-                      <i className="fas fa-info-circle mr-1.5 text-slate-500"></i>
-                      This hook class was just identified. More data will accumulate as similar videos are analyzed.
-                    </p>
-                  </div>
-                ) : (
-                  <>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      {virality?.benchmark_comparison?.hook_percentile != null && (
-                        <div className="bg-white/[0.03] rounded-xl p-3 border border-white/5">
-                          <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Hook Percentile</div>
-                          <div className={`text-xl font-black ${scoreColor(virality.benchmark_comparison.hook_percentile)}`}>
-                            {virality.benchmark_comparison.hook_percentile}<span className="text-xs text-slate-500">%ile</span>
-                          </div>
-                        </div>
-                      )}
-                      <div className="bg-white/[0.03] rounded-xl p-3 border border-white/5">
-                        <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Videos in Class</div>
-                        <div className="text-xl font-black text-white">{formatNumber(benchmarks.hook_video_count || 0)}</div>
-                      </div>
-                      <div className="bg-white/[0.03] rounded-xl p-3 border border-white/5">
-                        <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Class Avg Views</div>
-                        <div className="text-xl font-black text-white">{formatNumber(benchmarks.hook_avg_views || 0)}</div>
-                      </div>
-                      {benchmarks.hook_avg_engagement != null && (
-                        <div className="bg-white/[0.03] rounded-xl p-3 border border-white/5">
-                          <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Class Avg Engagement</div>
-                          <div className="text-xl font-black text-white">{Number(benchmarks.hook_avg_engagement).toFixed(1)}%</div>
-                        </div>
-                      )}
-                    </div>
-                    {benchmarks.hook_lifecycle && (
-                      <div className="mt-3 flex items-center gap-2">
-                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Stage:</span>
-                        <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${
-                          benchmarks.hook_lifecycle === 'emerging' ? 'bg-teal-500/15 text-teal-400' :
-                          benchmarks.hook_lifecycle === 'rising' ? 'bg-lime-500/15 text-lime-400' :
-                          benchmarks.hook_lifecycle === 'peaking' ? 'bg-orange-500/15 text-orange-400' :
-                          benchmarks.hook_lifecycle === 'stable' ? 'bg-blue-500/15 text-blue-400' :
-                          'bg-red-500/15 text-red-400'
-                        }`}>{benchmarks.hook_lifecycle}</span>
-                      </div>
-                    )}
-                    {(benchmarks.hook_video_count || 0) < 3 && (benchmarks.hook_video_count || 0) > 1 && (
-                      <div className="mt-3 text-xs text-slate-500 italic">
-                        <i className="fas fa-info-circle mr-1"></i>
-                        Limited data ({benchmarks.hook_video_count} videos). Comparison may not be statistically meaningful.
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            )}
-
-            {/* Section B: Gold Standard / Execution Gaps / Overrated from class_analysis */}
-            {hookClassAnalysis &&
-              (hookClassAnalysis.gold_standard_tactics?.length > 0 ||
-               hookClassAnalysis.execution_gaps?.length > 0 ||
-               hookClassAnalysis.overrated_tactics?.length > 0) && (
-                <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
-                  <h3 className="text-lg font-bold text-white mb-6">
-                    <i className="fas fa-microscope mr-2 text-purple-400 text-sm"></i>Hook Class Best & Worst Practices
-                  </h3>
-                  <div className="grid lg:grid-cols-3 gap-6">
-                    {/* Gold Standard */}
-                    {hookClassAnalysis.gold_standard_tactics?.length > 0 && (
-                      <div className="space-y-4">
-                        <h4 className="text-teal-400 text-xs font-black uppercase tracking-widest flex items-center gap-2">
-                          <i className="fas fa-check-circle"></i> Gold Standard
-                        </h4>
-                        <div className="space-y-3">
-                          {hookClassAnalysis.gold_standard_tactics.map((tactic: any, i: number) => (
-                            <div key={i} className="p-4 bg-white/[0.03] rounded-xl border border-white/5 border-l-4 border-l-teal-500">
-                              {tactic.category && (
-                                <div className={`text-[10px] font-black uppercase mb-1 inline-block px-1.5 py-0.5 rounded ${getCategoryColor(tactic.category)}`}>
-                                  {tactic.category}
-                                </div>
-                              )}
-                              <h5 className="font-bold text-white text-sm mb-1">{tactic.tactic || tactic.name}</h5>
-                              {(tactic.analysis || tactic.description || tactic.why) && (
-                                <p className="text-[11px] text-slate-400 leading-relaxed">
-                                  {tactic.analysis || tactic.description || tactic.why}
-                                </p>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Execution Gaps */}
-                    {hookClassAnalysis.execution_gaps?.length > 0 && (
-                      <div className="space-y-4">
-                        <h4 className="text-orange-400 text-xs font-black uppercase tracking-widest flex items-center gap-2">
-                          <i className="fas fa-exclamation-circle"></i> Execution Gaps
-                        </h4>
-                        <div className="space-y-3">
-                          {hookClassAnalysis.execution_gaps.map((tactic: any, i: number) => (
-                            <div key={i} className="p-4 bg-white/[0.03] rounded-xl border border-white/5 border-l-4 border-l-orange-500">
-                              {tactic.category && (
-                                <div className={`text-[10px] font-black uppercase mb-1 inline-block px-1.5 py-0.5 rounded ${getCategoryColor(tactic.category)}`}>
-                                  {tactic.category}
-                                </div>
-                              )}
-                              <h5 className="font-bold text-white text-sm mb-1">{tactic.tactic || tactic.name}</h5>
-                              {(tactic.analysis || tactic.description || tactic.why) && (
-                                <p className="text-[11px] text-slate-400 leading-relaxed">
-                                  {tactic.analysis || tactic.description || tactic.why}
-                                </p>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Overrated */}
-                    {hookClassAnalysis.overrated_tactics?.length > 0 && (
-                      <div className="space-y-4">
-                        <h4 className="text-red-400 text-xs font-black uppercase tracking-widest flex items-center gap-2">
-                          <i className="fas fa-times-circle"></i> Overrated
-                        </h4>
-                        <div className="space-y-3">
-                          {hookClassAnalysis.overrated_tactics.map((tactic: any, i: number) => (
-                            <div key={i} className="p-4 bg-white/[0.03] rounded-xl border border-white/5 border-l-4 border-l-red-500 opacity-80 hover:opacity-100 transition-opacity">
-                              {tactic.category && (
-                                <div className={`text-[10px] font-black uppercase mb-1 inline-block px-1.5 py-0.5 rounded ${getCategoryColor(tactic.category)}`}>
-                                  {tactic.category}
-                                </div>
-                              )}
-                              <h5 className="font-bold text-white text-sm mb-1">{tactic.tactic || tactic.name}</h5>
-                              {(tactic.analysis || tactic.description || tactic.why) && (
-                                <p className="text-[11px] text-slate-400 leading-relaxed">
-                                  {tactic.analysis || tactic.description || tactic.why}
-                                </p>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-            )}
-
-            {/* Section D: Missing Gold Standard Hook Tactics */}
-            {(() => {
-              if (!hookTacticFrequency?.gold_standard?.length || !hook?.tactics) return null;
-              const userTacticNames = new Set(
-                (hook.tactics as any[]).map((t: any) => (t.name || '').toLowerCase().trim())
-              );
-              const missing = hookTacticFrequency.gold_standard.filter(
-                (gs: any) => !userTacticNames.has((gs.name || '').toLowerCase().trim())
-              );
-              if (missing.length === 0) return null;
-              return (
-                <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
-                  <h3 className="text-lg font-bold text-white mb-4">
-                    <i className="fas fa-trophy mr-2 text-amber-400 text-sm"></i>Missing Gold-Standard Hook Tactics
-                  </h3>
-                  <p className="text-xs text-slate-400 mb-4">
-                    Top performers in this hook class use these tactics significantly more often.
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {missing.map((t: any, i: number) => (
-                      <div key={i} className="px-3 py-2 rounded-xl text-xs bg-amber-500/10 border border-amber-500/20">
-                        <span className="font-black text-amber-400">
-                          <i className="fas fa-plus mr-1 text-[8px]"></i>{t.name}
-                        </span>
-                        {t.top_freq != null && t.bottom_freq != null && (
-                          <span className="text-amber-400/60 ml-2 text-[10px]">
-                            {t.top_freq}% top vs {t.bottom_freq}% bottom
-                          </span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* Section E: Top Performers in Hook Class */}
-            {topHookVideos && topHookVideos.length > 0 && benchmarks?.hook_name && (
-              <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
-                <h3 className="text-lg font-bold text-white mb-4">
-                  <i className="fas fa-crown mr-2 text-purple-400 text-sm"></i>Top Performers — "{benchmarks.hook_name}"
-                </h3>
-                <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none' }}>
-                  {topHookVideos.map((v: any, i: number) => (
-                    <ExampleVideoCard key={v.video_id} video={v} videos={topHookVideos} index={i} />
-                  ))}
-                </div>
-                {topHookVideos.length > 4 && (
-                  <div className="flex items-center justify-center gap-1 mt-2">
-                    <i className="fas fa-chevron-left text-[7px] text-slate-600"></i>
-                    {Array.from({ length: Math.min(topHookVideos.length, 8) }).map((_, i) => (
-                      <div key={i} className={`w-1.5 h-1.5 rounded-full ${i < 4 ? 'bg-purple-400/60' : 'bg-slate-700'}`} />
-                    ))}
-                    <i className="fas fa-chevron-right text-[7px] text-slate-600"></i>
-                    <span className="text-[9px] text-slate-600 ml-1">{topHookVideos.length} videos</span>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ════════════════════════════════════════════════════════ */}
-        {/* TAB 3: STRUCTURE & FORMAT                               */}
-        {/* ════════════════════════════════════════════════════════ */}
-        {activeTab === 'structure' && (
-          <div className="space-y-6">
-            {/* Format Class */}
-            {full?.format_class && (
-              <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
-                <h3 className="text-lg font-bold text-white mb-2">
-                  <i className="fas fa-shapes mr-2 text-pink-400 text-sm"></i>Format Class
-                </h3>
-                <span className="px-4 py-1.5 rounded-full text-sm font-black bg-pink-500/15 text-pink-400 capitalize inline-block">
-                  {full.format_class}
-                </span>
-              </div>
-            )}
-
-            {/* Timeline Visualization */}
-            {full?.structural_breakdown && (
-              <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
-                <h3 className="text-lg font-bold text-white mb-4">
-                  <i className="fas fa-stream mr-2 text-indigo-400 text-sm"></i>Timeline Breakdown
-                </h3>
-                {(() => {
-                  const sb = full.structural_breakdown;
-                  const totalDur = sb.total_seconds || 1;
-                  const hookPct = ((sb.hook_seconds || 0) / totalDur) * 100;
-                  const setupPct = ((sb.setup_seconds || 0) / totalDur) * 100;
-                  const payoffPct = ((sb.payoff_seconds || 0) / totalDur) * 100;
-
-                  return (
-                    <div className="space-y-4">
-                      {/* Bar */}
-                      <div className="w-full h-10 rounded-xl overflow-hidden flex">
-                        {hookPct > 0 && (
-                          <div
-                            className="h-full bg-gradient-to-r from-pink-500 to-orange-400 flex items-center justify-center relative group"
-                            style={{ width: `${Math.max(hookPct, 5)}%` }}
-                          >
-                            <span className="text-[9px] font-black text-white/90 uppercase">Hook</span>
-                          </div>
-                        )}
-                        {setupPct > 0 && (
-                          <div
-                            className="h-full bg-gradient-to-r from-blue-600 to-indigo-500 flex items-center justify-center relative group"
-                            style={{ width: `${Math.max(setupPct, 5)}%` }}
-                          >
-                            <span className="text-[9px] font-black text-white/90 uppercase">Setup</span>
-                          </div>
-                        )}
-                        {payoffPct > 0 && (
-                          <div
-                            className="h-full bg-gradient-to-r from-teal-500 to-emerald-400 flex items-center justify-center relative group"
-                            style={{ width: `${Math.max(payoffPct, 5)}%` }}
-                          >
-                            <span className="text-[9px] font-black text-white/90 uppercase">Payoff</span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Duration Labels */}
-                      <div className="flex gap-4">
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 rounded bg-gradient-to-r from-pink-500 to-orange-400"></div>
-                          <span className="text-xs font-bold text-slate-400">Hook: {sb.hook_seconds ?? 0}s</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 rounded bg-gradient-to-r from-blue-600 to-indigo-500"></div>
-                          <span className="text-xs font-bold text-slate-400">Setup: {sb.setup_seconds ?? 0}s</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 rounded bg-gradient-to-r from-teal-500 to-emerald-400"></div>
-                          <span className="text-xs font-bold text-slate-400">Payoff: {sb.payoff_seconds ?? 0}s</span>
-                        </div>
-                        <span className="text-xs font-bold text-slate-500 ml-auto">Total: {sb.total_seconds ?? 0}s</span>
-                      </div>
-                    </div>
-                  );
-                })()}
-              </div>
-            )}
-
-            {/* Stats Grid */}
-            {full?.structural_breakdown && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
-                {[
-                  { label: 'Pacing Style', value: full.structural_breakdown.pacing_style, icon: 'fa-tachometer-alt' },
-                  { label: 'Avg Shot Length', value: full.structural_breakdown.avg_shot_length_sec != null ? `${full.structural_breakdown.avg_shot_length_sec}s` : '--', icon: 'fa-camera' },
-                  { label: 'Movement Frequency', value: full.structural_breakdown.movement_frequency, icon: 'fa-running' },
-                  { label: 'Open Loop', value: full.structural_breakdown.has_open_loop ? 'Yes' : 'No', icon: 'fa-redo' },
-                ].map((stat) => (
-                  <div key={stat.label} className="glass-card rounded-2xl sm:rounded-3xl p-3 sm:p-5">
-                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">
-                      <i className={`fas ${stat.icon} mr-1`}></i>{stat.label}
-                    </div>
-                    <div className="text-sm font-black text-white capitalize">{stat.value || '--'}</div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Loop Description */}
-            {full?.structural_breakdown?.loop_description && (
-              <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
-                <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">
-                  <i className="fas fa-redo mr-1"></i>Loop Description
-                </div>
-                <p className="text-sm text-slate-300">{full.structural_breakdown.loop_description}</p>
-              </div>
-            )}
-
-            {/* Promise Analysis */}
-            {full?.promise && (
-              <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
-                <h3 className="text-lg font-bold text-white mb-4">
-                  <i className="fas fa-bullseye mr-2 text-orange-400 text-sm"></i>Promise Analysis
-                </h3>
-                <div className="space-y-4">
-                  {full.promise.statement && (
-                    <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5">
-                      <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Promise Statement</div>
-                      <p className="text-sm text-white font-semibold">{full.promise.statement}</p>
-                    </div>
-                  )}
-                  <div className="grid grid-cols-3 gap-2 sm:gap-4">
-                    <div className="bg-white/[0.03] rounded-xl p-3 sm:p-4 border border-white/5 text-center">
-                      <div className="text-[9px] sm:text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Clarity</div>
-                      <div className={`text-lg sm:text-2xl font-black ${scoreColor(((full.promise.clarity || 0) / 10) * 100)}`}>
-                        {full.promise.clarity ?? '--'}<span className="text-xs sm:text-sm text-slate-500">/10</span>
-                      </div>
-                    </div>
-                    <div className="bg-white/[0.03] rounded-xl p-3 sm:p-4 border border-white/5 text-center">
-                      <div className="text-[9px] sm:text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Single Promise</div>
-                      {full.promise.is_single_promise ? (
-                        <div className="text-teal-400 font-black"><i className="fas fa-check-circle text-lg sm:text-xl"></i></div>
-                      ) : (
-                        <div className="text-yellow-400 font-black"><i className="fas fa-exclamation-circle text-lg sm:text-xl"></i></div>
-                      )}
-                    </div>
-                    <div className="bg-white/[0.03] rounded-xl p-3 sm:p-4 border border-white/5 text-center">
-                      <div className="text-[9px] sm:text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Payoff Delivered</div>
-                      {full.promise.payoff_delivered ? (
-                        <div className="text-teal-400 font-black"><i className="fas fa-check-circle text-lg sm:text-xl"></i></div>
-                      ) : (
-                        <div className="text-red-400 font-black"><i className="fas fa-times-circle text-lg sm:text-xl"></i></div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Shareability */}
-            {full?.shareability && (
-              <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
-                <h3 className="text-lg font-bold text-white mb-4">
-                  <i className="fas fa-share-alt mr-2 text-orange-400 text-sm"></i>Shareability
-                </h3>
-                <div className="space-y-4">
-                  {full.shareability.would_share_because && (
-                    <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5">
-                      <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Would Share Because</div>
-                      <p className="text-sm text-slate-300">{full.shareability.would_share_because}</p>
-                    </div>
-                  )}
-                  {full.shareability.identity_signal && (
-                    <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5">
-                      <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Identity Signal</div>
-                      <p className="text-sm text-slate-300">{full.shareability.identity_signal}</p>
-                    </div>
-                  )}
-                  {full.shareability.share_trigger && (
-                    <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5">
-                      <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Share Trigger</div>
-                      <p className="text-sm text-white font-semibold">{full.shareability.share_trigger}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ════════════════════════════════════════════════════════ */}
-        {/* TAB 4: TACTICS                                          */}
-        {/* ════════════════════════════════════════════════════════ */}
-        {activeTab === 'tactics' && (
-          <div className="space-y-6">
-            {/* Sort & Filter Controls */}
-            <div className="flex flex-col md:flex-row gap-4">
-              {/* Sort */}
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Sort</span>
-                <button
-                  onClick={() => setTacticSort('score')}
-                  className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-colors ${
-                    tacticSort === 'score' ? 'bg-white/10 text-white' : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
-                  }`}
-                >
-                  <i className="fas fa-sort-amount-down mr-1 text-[9px]"></i>Score
-                </button>
-                <button
-                  onClick={() => setTacticSort('time')}
-                  className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-colors ${
-                    tacticSort === 'time' ? 'bg-white/10 text-white' : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
-                  }`}
-                >
-                  <i className="fas fa-clock mr-1 text-[9px]"></i>Timestamp
-                </button>
-              </div>
-
-              {/* Category Filter */}
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Filter</span>
-                <button
-                  onClick={() => setTacticFilter('all')}
-                  className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-colors ${
-                    tacticFilter === 'all' ? 'bg-white/10 text-white' : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
-                  }`}
-                >
-                  All
-                </button>
-                {allCategories.map((cat: string) => (
-                  <button
-                    key={cat}
-                    onClick={() => setTacticFilter(cat)}
-                    className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-colors capitalize ${
-                      tacticFilter === cat
-                        ? `${getCategoryColor(cat)}`
-                        : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
-                    }`}
-                  >
-                    {cat.replace(/_/g, ' ')}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Tactic Count */}
-            <div className="text-xs font-bold text-slate-500">
-              Showing {filteredTactics.length} tactic{filteredTactics.length !== 1 ? 's' : ''}
-            </div>
-
-            {/* Tactic Cards */}
-            <div className="space-y-4">
-              {filteredTactics.map((tactic: any, idx: number) => (
-                <div key={idx} className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-5">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-black text-white">{tactic.name}</span>
-                      <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black ${getCategoryColor(tactic.category)}`}>
-                        {(tactic.category || '').replace(/_/g, ' ')}
-                      </span>
-                    </div>
-                    <span className={`text-lg font-black ${scoreColor(tactic.execution_score || 0)} flex-shrink-0 ml-3`}>
-                      {tactic.execution_score ?? '--'}
-                    </span>
-                  </div>
-
-                  {/* Score bar */}
-                  <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden mb-3">
-                    <div
-                      className={`h-full rounded-full bg-gradient-to-r ${scoreBarColor(tactic.execution_score || 0)} transition-all`}
-                      style={{ width: `${Math.min(100, tactic.execution_score || 0)}%` }}
-                    ></div>
-                  </div>
-
-                  {/* Timestamp */}
-                  {(tactic.when_start != null || tactic.when_end != null) && (
-                    <div className="text-[10px] font-bold text-slate-500 mb-2">
-                      <i className="fas fa-clock mr-1"></i>
-                      {fmtTime(tactic.when_start)}
-                      {tactic.when_end != null && ` - ${fmtTime(tactic.when_end)}`}
-                    </div>
-                  )}
-
-                  {/* What */}
-                  <p className="text-sm text-white mb-2">{tactic.what}</p>
-
-                  {/* Why it works */}
-                  {tactic.why_it_works && (
-                    <p className="text-xs text-slate-400 mb-2">
-                      <i className="fas fa-brain mr-1 text-[9px] text-slate-500"></i>
-                      {tactic.why_it_works}
-                    </p>
-                  )}
-
-                  {/* Viewer effect */}
-                  {tactic.viewer_effect && (
-                    <span className="inline-block px-2.5 py-1 rounded-full text-[9px] font-bold bg-white/5 text-slate-400 mr-2">
-                      <i className="fas fa-eye mr-1 text-[8px]"></i>{tactic.viewer_effect}
-                    </span>
-                  )}
-
-                  {/* Execution note */}
-                  {tactic.execution_note && (
-                    <p className="text-[11px] text-slate-500 mt-2 italic">{tactic.execution_note}</p>
-                  )}
-                </div>
-              ))}
-
-              {filteredTactics.length === 0 && (
-                <div className="glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-8 text-center">
-                  <p className="text-sm text-slate-500">No tactics found for this filter.</p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* ════════════════════════════════════════════════════════ */}
-        {/* TAB 5: EMOTIONS                                         */}
-        {/* ════════════════════════════════════════════════════════ */}
-        {activeTab === 'emotions' && (
-          <div className="space-y-6">
-            {/* Primary Emotion */}
-            {full?.emotional_architecture?.primary_emotion && (
-              <div className="glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-8 text-center">
-                <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">Primary Emotion</div>
-                <div className="text-2xl sm:text-4xl font-black gradient-text capitalize">{full.emotional_architecture.primary_emotion.replace(/[_-]/g, ' ')}</div>
-              </div>
-            )}
-
-            {/* Emotion Shifts */}
-            {full?.emotional_architecture?.emotion_shifts && full.emotional_architecture.emotion_shifts.length > 0 && (
-              <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
-                <h3 className="text-lg font-bold text-white mb-4">
-                  <i className="fas fa-exchange-alt mr-2 text-rose-400 text-sm"></i>Emotion Shifts
-                </h3>
-                <div className="flex flex-wrap items-center gap-2">
-                  {full.emotional_architecture.emotion_shifts.map((shift: string, idx: number) => (
-                    <div key={idx} className="flex items-center gap-2">
-                      <span className="px-3 py-1.5 rounded-full text-xs font-black bg-rose-500/10 text-rose-400 capitalize">
-                        {shift.replace(/[_-]/g, ' ')}
-                      </span>
-                      {idx < full.emotional_architecture.emotion_shifts.length - 1 && (
-                        <i className="fas fa-arrow-right text-slate-600 text-[10px]"></i>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Emotional Architecture Details */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {full?.emotional_architecture?.arousal_curve && (
-                <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-5">
-                  <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">
-                    <i className="fas fa-chart-line mr-1"></i>Arousal Curve
-                  </div>
-                  <p className="text-sm font-bold text-white capitalize">{full.emotional_architecture.arousal_curve.replace(/[_-]/g, ' ')}</p>
-                </div>
-              )}
-              {full?.emotional_architecture?.specificity_level && (
-                <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-5">
-                  <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">
-                    <i className="fas fa-microscope mr-1"></i>Specificity Level
-                  </div>
-                  <p className="text-sm font-bold text-white capitalize">{full.emotional_architecture.specificity_level.replace(/[_-]/g, ' ')}</p>
-                </div>
-              )}
-              {full?.emotional_architecture?.opinion_strength && (
-                <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-5">
-                  <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">
-                    <i className="fas fa-fist-raised mr-1"></i>Opinion Strength
-                  </div>
-                  <p className="text-sm font-bold text-white capitalize">{full.emotional_architecture.opinion_strength.replace(/[_-]/g, ' ')}</p>
-                </div>
-              )}
-              {full?.emotional_architecture?.relatability_moment && (
-                <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-5">
-                  <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">
-                    <i className="fas fa-users mr-1"></i>Relatability Moment
-                  </div>
-                  <p className="text-sm text-slate-300">{full.emotional_architecture.relatability_moment}</p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* ════════════════════════════════════════════════════════ */}
-        {/* TAB: VIRALITY SCORING                                    */}
-        {/* ════════════════════════════════════════════════════════ */}
-        {activeTab === 'virality' && virality && (
-          <div className="space-y-6">
-            {/* Overall Virality Score */}
-            <div className="glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-8 text-center">
-              <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">
-                <i className="fas fa-fire mr-1 text-orange-400"></i>Overall Virality Score
-              </div>
-              <div className={`text-5xl sm:text-7xl font-black ${scoreColor(virality.overall_virality_score || 0)}`}>
-                {virality.overall_virality_score ?? '--'}
-              </div>
-              <div className="text-xs text-slate-500 mt-2">out of 100</div>
-            </div>
-
-            {/* Universal Score Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 sm:gap-4">
-              {[
-                { label: 'Shareability', value: virality.shareability?.score, icon: 'fa-share-alt', color: 'orange' },
-                { label: 'Save Value', value: virality.save_value?.score, icon: 'fa-bookmark', color: 'blue' },
-                { label: 'Rewatch', value: virality.rewatch?.score, icon: 'fa-redo', color: 'purple' },
-                { label: 'Authenticity', value: virality.authenticity?.score, icon: 'fa-fingerprint', color: 'teal' },
-                { label: 'Emotional ROI', value: virality.emotional_roi?.score, icon: 'fa-heart', color: 'pink' },
-              ].map((card) => (
-                <div key={card.label} className="glass-card rounded-2xl sm:rounded-3xl p-3 sm:p-5 text-center">
-                  <div className={`w-12 h-12 sm:w-16 sm:h-16 mx-auto rounded-full border-2 flex items-center justify-center mb-2 sm:mb-3 ${
-                    (card.value || 0) >= 70 ? 'border-teal-400/50' : (card.value || 0) >= 40 ? 'border-yellow-400/50' : 'border-red-400/50'
-                  }`}>
-                    <span className={`text-lg sm:text-2xl font-black ${scoreColor(card.value || 0)}`}>
-                      {card.value ?? '--'}
-                    </span>
-                  </div>
-                  <div className="text-[9px] sm:text-[10px] font-black text-slate-500 uppercase tracking-wider">
-                    <i className={`fas ${card.icon} mr-1 text-[8px]`}></i>
-                    {card.label}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* ── Benchmark Comparison ── */}
-            {(virality.benchmark_comparison || virality.format_momentum) && (
-              <div className="space-y-4">
-                {/* Niche Percentile */}
-                {virality.benchmark_comparison?.niche_rank && (
-                  <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
-                    <h3 className="text-sm font-black text-white mb-4 flex items-center gap-2">
-                      <i className="fas fa-chart-bar text-cyan-400 text-xs"></i>Niche Ranking
-                    </h3>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4">
-                      <div className="bg-white/[0.03] rounded-xl p-3 sm:p-4 border border-white/5 text-center col-span-2 sm:col-span-1">
-                        <div className={`text-lg sm:text-2xl font-black mb-1 ${
-                          virality.benchmark_comparison.niche_rank.includes('top_1') ? 'text-teal-400' :
-                          virality.benchmark_comparison.niche_rank.includes('top_5') ? 'text-lime-400' :
-                          virality.benchmark_comparison.niche_rank.includes('top_10') ? 'text-yellow-400' :
-                          virality.benchmark_comparison.niche_rank.includes('top_25') ? 'text-orange-400' :
-                          'text-slate-400'
-                        }`}>{virality.benchmark_comparison.niche_rank.replace(/_/g, ' ').replace('pct', '%')}</div>
-                        <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Niche Rank</div>
-                      </div>
-                      {virality.benchmark_comparison.format_percentile != null && (
-                        <div className="bg-white/[0.03] rounded-xl p-3 sm:p-4 border border-white/5 text-center">
-                          <div className={`text-lg sm:text-2xl font-black mb-1 ${scoreColor(virality.benchmark_comparison.format_percentile)}`}>
-                            {virality.benchmark_comparison.format_percentile}%
-                          </div>
-                          <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Format %ile</div>
-                        </div>
-                      )}
-                      {virality.benchmark_comparison.hook_percentile != null && (
-                        <div className="bg-white/[0.03] rounded-xl p-3 sm:p-4 border border-white/5 text-center">
-                          <div className={`text-lg sm:text-2xl font-black mb-1 ${scoreColor(virality.benchmark_comparison.hook_percentile)}`}>
-                            {virality.benchmark_comparison.hook_percentile}%
-                          </div>
-                          <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Hook %ile</div>
-                        </div>
-                      )}
-                    </div>
-                    {virality.benchmark_comparison.engagement_vs_niche_avg && (
-                      <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5 mt-4">
-                        <div className="text-sm font-black text-white mb-1">{virality.benchmark_comparison.engagement_vs_niche_avg}</div>
-                        <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest">vs Niche Avg</div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Tactic Gap Analysis */}
-                {virality.benchmark_comparison && (
-                  <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
-                    <h3 className="text-sm font-black text-white mb-4 flex items-center gap-2">
-                      <i className="fas fa-chess text-amber-400 text-xs"></i>Tactic Gap Analysis
-                    </h3>
-
-                    {/* Missing gold standard tactics */}
-                    {virality.benchmark_comparison.missing_gold_standard_tactics?.length > 0 && (
-                      <div className="mb-4">
-                        <div className="text-[10px] font-black text-amber-400 uppercase tracking-widest mb-3">
-                          <i className="fas fa-trophy mr-1"></i>Missing Gold-Standard Tactics
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          {virality.benchmark_comparison.missing_gold_standard_tactics.map((t: string, i: number) => (
-                            <span key={i} className="px-3 py-1.5 rounded-full text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                              <i className="fas fa-plus mr-1 text-[8px]"></i>{t}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Overrated tactics present */}
-                    {virality.benchmark_comparison.overrated_tactics_present?.length > 0 && (
-                      <div className="mb-4">
-                        <div className="text-[10px] font-black text-red-400 uppercase tracking-widest mb-3">
-                          <i className="fas fa-exclamation-triangle mr-1"></i>Overrated Tactics Used
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          {virality.benchmark_comparison.overrated_tactics_present.map((t: string, i: number) => (
-                            <span key={i} className="px-3 py-1.5 rounded-full text-xs font-bold bg-red-500/10 text-red-400 border border-red-500/20">
-                              <i className="fas fa-minus mr-1 text-[8px]"></i>{t}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Gap analysis summary */}
-                    {virality.benchmark_comparison.tactic_gap_analysis && (
-                      <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5">
-                        <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Analysis</div>
-                        <p className="text-sm text-slate-300 leading-relaxed">{virality.benchmark_comparison.tactic_gap_analysis}</p>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Format Momentum */}
-                {virality.format_momentum && (
-                  <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
-                    <h3 className="text-sm font-black text-white mb-4 flex items-center gap-2">
-                      <i className="fas fa-bolt text-lime-400 text-xs"></i>Format Momentum
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {virality.format_momentum.lifecycle_stage && (
-                        <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5">
-                          <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Lifecycle Stage</div>
-                          <span className={`text-sm font-black capitalize ${
-                            virality.format_momentum.lifecycle_stage === 'emerging' ? 'text-teal-400' :
-                            virality.format_momentum.lifecycle_stage === 'rising' ? 'text-lime-400' :
-                            virality.format_momentum.lifecycle_stage === 'peaking' ? 'text-orange-400' :
-                            virality.format_momentum.lifecycle_stage === 'stable' ? 'text-blue-400' :
-                            'text-red-400'
-                          }`}>{virality.format_momentum.lifecycle_stage}</span>
-                        </div>
-                      )}
-                      {virality.format_momentum.timing_assessment && (
-                        <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5">
-                          <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Timing Assessment</div>
-                          <p className="text-sm text-slate-300">{virality.format_momentum.timing_assessment}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Shareability Details */}
-            {virality.shareability && (
-              <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
-                <h3 className="text-lg font-bold text-white mb-4">
-                  <i className="fas fa-share-alt mr-2 text-orange-400 text-sm"></i>Shareability
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {virality.shareability.social_currency_type && (
-                    <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5">
-                      <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Social Currency</div>
-                      <p className="text-sm text-slate-300">{virality.shareability.social_currency_type}</p>
-                    </div>
-                  )}
-                  {virality.shareability.share_motivation && (
-                    <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5">
-                      <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Share Motivation</div>
-                      <p className="text-sm text-slate-300">{virality.shareability.share_motivation}</p>
-                    </div>
-                  )}
-                  {virality.shareability.share_friction && (
-                    <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5 md:col-span-2">
-                      <div className="text-[10px] font-black text-red-400 uppercase tracking-widest mb-2">Share Friction</div>
-                      <p className="text-sm text-red-300/70">{virality.shareability.share_friction}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Rewatch Analysis */}
-            {virality.rewatch && (
-              <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
-                <h3 className="text-lg font-bold text-white mb-4">
-                  <i className="fas fa-redo mr-2 text-purple-400 text-sm"></i>Rewatch Analysis
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5">
-                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Loop Detected</div>
-                    {virality.rewatch.loop_detected ? (
-                      <span className="text-teal-400 font-black text-sm"><i className="fas fa-check-circle mr-1"></i>Yes — {virality.rewatch.loop_type}</span>
-                    ) : (
-                      <span className="text-slate-500 font-black text-sm"><i className="fas fa-minus-circle mr-1"></i>No loop</span>
-                    )}
-                  </div>
-                  <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5">
-                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Info Density</div>
-                    <span className={`font-black text-sm capitalize ${
-                      virality.rewatch.information_density === 'overwhelming' || virality.rewatch.information_density === 'high'
-                        ? 'text-teal-400' : virality.rewatch.information_density === 'moderate' ? 'text-yellow-400' : 'text-red-400'
-                    }`}>{virality.rewatch.information_density}</span>
-                  </div>
-                  {virality.rewatch.hidden_details && virality.rewatch.hidden_details.length > 0 && (
-                    <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5">
-                      <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Hidden Details</div>
-                      <ul className="space-y-1">
-                        {virality.rewatch.hidden_details.map((d: string, i: number) => (
-                          <li key={i} className="text-xs text-slate-400 flex items-start gap-1.5">
-                            <i className="fas fa-eye text-[8px] text-purple-400 mt-1 flex-shrink-0"></i>{d}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Authenticity */}
-            {virality.authenticity && (
-              <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
-                <h3 className="text-lg font-bold text-white mb-4">
-                  <i className="fas fa-fingerprint mr-2 text-teal-400 text-sm"></i>Authenticity
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5">
-                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Production Level</div>
-                    <span className="text-sm font-black text-white capitalize">{virality.authenticity.production_level?.replace(/_/g, ' ')}</span>
-                  </div>
-                  <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5">
-                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">AI Detection Risk</div>
-                    <span className={`font-black text-sm capitalize ${
-                      virality.authenticity.ai_detection_risk === 'none' || virality.authenticity.ai_detection_risk === 'low'
-                        ? 'text-teal-400' : virality.authenticity.ai_detection_risk === 'medium' ? 'text-yellow-400' : 'text-red-400'
-                    }`}>{virality.authenticity.ai_detection_risk}</span>
-                  </div>
-                  {virality.authenticity.signals && virality.authenticity.signals.length > 0 && (
-                    <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5 md:col-span-2">
-                      <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Signals</div>
-                      <div className="flex flex-wrap gap-2">
-                        {virality.authenticity.signals.map((s: string, i: number) => (
-                          <span key={i} className="px-2.5 py-1 rounded-full text-xs font-bold bg-white/5 text-slate-300">{s}</span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Save Value */}
-            {virality.save_value && virality.save_value.save_triggers && virality.save_value.save_triggers.length > 0 && (
-              <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
-                <h3 className="text-lg font-bold text-white mb-4">
-                  <i className="fas fa-bookmark mr-2 text-blue-400 text-sm"></i>Save Value
-                  {virality.save_value.save_category && virality.save_value.save_category !== 'none' && (
-                    <span className="ml-3 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-blue-500/15 text-blue-400 capitalize">
-                      {virality.save_value.save_category}
-                    </span>
-                  )}
-                </h3>
-                <ul className="space-y-2">
-                  {virality.save_value.save_triggers.map((t: string, i: number) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-slate-300">
-                      <i className="fas fa-bookmark text-[9px] text-blue-400 mt-1.5 flex-shrink-0"></i>{t}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Emotional ROI */}
-            {virality.emotional_roi && (
-              <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
-                <h3 className="text-lg font-bold text-white mb-4">
-                  <i className="fas fa-heart mr-2 text-pink-400 text-sm"></i>Emotional ROI
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {virality.emotional_roi.promise_quality && (
-                    <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5">
-                      <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Promise</div>
-                      <p className="text-sm text-slate-300">{virality.emotional_roi.promise_quality}</p>
-                    </div>
-                  )}
-                  {virality.emotional_roi.payoff_quality && (
-                    <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5">
-                      <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Payoff Quality</div>
-                      <span className={`font-black text-sm capitalize ${
-                        virality.emotional_roi.payoff_quality === 'exceeded' || virality.emotional_roi.payoff_quality === 'satisfying'
-                          ? 'text-teal-400' : virality.emotional_roi.payoff_quality === 'adequate' ? 'text-yellow-400' : 'text-red-400'
-                      }`}>{virality.emotional_roi.payoff_quality}</span>
-                    </div>
-                  )}
-                  {virality.emotional_roi.curiosity_resolution && (
-                    <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5">
-                      <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Curiosity Resolution</div>
-                      <p className="text-sm text-slate-400">{virality.emotional_roi.curiosity_resolution}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Retention Danger Zones */}
-            {((virality.retention_model?.danger_zones ?? virality.retention_danger_zones) || []).length > 0 && (
-              <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
-                <h3 className="text-lg font-bold text-white mb-4">
-                  <i className="fas fa-exclamation-triangle mr-2 text-yellow-400 text-sm"></i>Retention Danger Zones
-                </h3>
-                {virality.retention_model?.completion_rate_estimate != null && (
-                  <div className="flex items-center gap-4 mb-4 text-sm">
-                    <span className="text-slate-400">Est. completion rate: <span className="text-white font-bold">{virality.retention_model.completion_rate_estimate}%</span></span>
-                    <span className="text-slate-400">Rewatch: <span className="text-white font-bold">{virality.retention_model.rewatch_probability}</span></span>
-                  </div>
-                )}
-                <div className="space-y-3">
-                  {(virality.retention_model?.danger_zones ?? virality.retention_danger_zones ?? []).map((zone: any, idx: number) => (
-                    <div key={idx} className={`rounded-xl p-4 border ${
-                      zone.risk_level === 'high' ? 'bg-red-500/[0.04] border-red-500/10'
-                        : zone.risk_level === 'medium' ? 'bg-yellow-500/[0.04] border-yellow-500/10'
-                        : 'bg-white/[0.02] border-white/5'
-                    }`}>
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm font-black text-white">
-                            <i className="fas fa-clock mr-1 text-xs text-slate-500"></i>
-                            {fmtTime(zone.timestamp_sec)}
-                          </span>
-                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${
-                            zone.risk_level === 'high' ? 'bg-red-500/20 text-red-400'
-                              : zone.risk_level === 'medium' ? 'bg-yellow-500/20 text-yellow-400'
-                              : 'bg-white/10 text-slate-400'
-                          }`}>{zone.risk_level} risk</span>
-                        </div>
-                      </div>
-                      <p className="text-sm text-slate-300 mb-2">{zone.reason}</p>
-                      {zone.fix_suggestion && (
-                        <div className="flex items-start gap-1.5 text-xs text-teal-400">
-                          <i className="fas fa-lightbulb text-[9px] mt-0.5"></i>
-                          <span>{zone.fix_suggestion}</span>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Platform-Specific: TikTok */}
-            {upload?.platform === 'tiktok' && virality.tiktok_specific && virality.tiktok_specific.seo_score != null && (
-              <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
-                <h3 className="text-lg font-bold text-white mb-4">
-                  <i className="fab fa-tiktok mr-2 text-sm"></i>TikTok-Specific Scores
-                </h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-4 mb-4">
-                  {[
-                    { label: 'SEO Score', value: virality.tiktok_specific.seo_score, icon: 'fa-search' },
-                    { label: 'Golden 2s Alignment', value: virality.tiktok_specific.golden_2s_alignment, icon: 'fa-bullseye' },
-                  ].filter(c => c.value != null).map((card) => (
-                    <div key={card.label} className="bg-white/[0.03] rounded-xl p-3 sm:p-4 border border-white/5 text-center">
-                      <div className={`text-2xl sm:text-3xl font-black mb-1 ${scoreColor(card.value || 0)}`}>{card.value}</div>
-                      <div className="text-[10px] font-black text-slate-500 uppercase tracking-wider">
-                        <i className={`fas ${card.icon} mr-1 text-[8px]`}></i>{card.label}
-                      </div>
-                    </div>
-                  ))}
-                  {virality.tiktok_specific.audio_niche_fit && (
-                    <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5 text-center">
-                      <div className="text-lg font-black text-white mb-1 capitalize">{virality.tiktok_specific.audio_niche_fit.replace(/_/g, ' ')}</div>
-                      <div className="text-[10px] font-black text-slate-500 uppercase tracking-wider">
-                        <i className="fas fa-music mr-1 text-[8px]"></i>Audio Niche Fit
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* SEO Details */}
-                <div className="space-y-3">
-                  {virality.tiktok_specific.searchable_phrases && virality.tiktok_specific.searchable_phrases.length > 0 && (
-                    <div className="bg-white/[0.02] rounded-xl p-4 border border-white/5">
-                      <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Searchable Phrases</div>
-                      <div className="flex flex-wrap gap-2">
-                        {virality.tiktok_specific.searchable_phrases.map((p: string, i: number) => (
-                          <span key={i} className="px-2.5 py-1 rounded-full text-xs font-bold bg-teal-500/10 text-teal-400">"{p}"</span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {virality.tiktok_specific.caption_seo_keywords && virality.tiktok_specific.caption_seo_keywords.length > 0 && (
-                    <div className="bg-white/[0.02] rounded-xl p-4 border border-white/5">
-                      <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Caption SEO Keywords</div>
-                      <div className="flex flex-wrap gap-2">
-                        {virality.tiktok_specific.caption_seo_keywords.map((k: string, i: number) => (
-                          <span key={i} className="px-2.5 py-1 rounded-full text-xs font-bold bg-white/5 text-slate-300">{k}</span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {virality.tiktok_specific.golden_2s_mismatch && (
-                    <div className="bg-yellow-500/[0.04] rounded-xl p-4 border border-yellow-500/10">
-                      <div className="text-[10px] font-black text-yellow-400 uppercase tracking-widest mb-2">Golden 2s Mismatch</div>
-                      <p className="text-sm text-yellow-300/70">{virality.tiktok_specific.golden_2s_mismatch}</p>
-                    </div>
-                  )}
-                  {virality.tiktok_specific.audio_niche_reasoning && (
-                    <div className="bg-white/[0.02] rounded-xl p-4 border border-white/5">
-                      <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Audio Niche Analysis</div>
-                      <p className="text-sm text-slate-400">{virality.tiktok_specific.audio_niche_reasoning}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Platform-Specific: Instagram */}
-            {upload?.platform === 'instagram' && virality.instagram_specific && virality.instagram_specific.dm_shareability_score != null && (
-              <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
-                <h3 className="text-lg font-bold text-white mb-4">
-                  <i className="fab fa-instagram mr-2 text-sm"></i>Instagram-Specific Scores
-                </h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 mb-4">
-                  {[
-                    { label: 'DM Shareability', value: virality.instagram_specific.dm_shareability_score, icon: 'fa-paper-plane' },
-                    { label: 'Platform Native', value: virality.instagram_specific.platform_native_score, icon: 'fa-check-circle' },
-                    { label: 'Topic Clarity', value: virality.instagram_specific.topic_category_clarity, icon: 'fa-tag' },
-                    { label: 'Visual Fidelity', value: virality.instagram_specific.visual_fidelity_score, icon: 'fa-camera' },
-                  ].filter(c => c.value != null).map((card) => (
-                    <div key={card.label} className="bg-white/[0.03] rounded-xl p-3 sm:p-4 border border-white/5 text-center">
-                      <div className={`text-2xl sm:text-3xl font-black mb-1 ${scoreColor(card.value || 0)}`}>{card.value}</div>
-                      <div className="text-[10px] font-black text-slate-500 uppercase tracking-wider">
-                        <i className={`fas ${card.icon} mr-1 text-[8px]`}></i>{card.label}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Instagram Details */}
-                <div className="space-y-3">
-                  {virality.instagram_specific.conversation_starter && (
-                    <div className="bg-white/[0.02] rounded-xl p-4 border border-white/5">
-                      <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Conversation Starter</div>
-                      <p className="text-sm text-slate-300">{virality.instagram_specific.conversation_starter}</p>
-                      {virality.instagram_specific.dm_reaction_type && virality.instagram_specific.dm_reaction_type !== 'none' && (
-                        <span className="inline-block mt-2 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-orange-500/10 text-orange-400 capitalize">
-                          {virality.instagram_specific.dm_reaction_type.replace(/_/g, ' ')}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                  {virality.instagram_specific.topic_category && (
-                    <div className="bg-white/[0.02] rounded-xl p-4 border border-white/5">
-                      <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Algorithm Topic Category</div>
-                      <span className="px-3 py-1 rounded-full text-xs font-black bg-purple-500/15 text-purple-400 capitalize">{virality.instagram_specific.topic_category}</span>
-                    </div>
-                  )}
-                  {virality.instagram_specific.platform_native_issues && virality.instagram_specific.platform_native_issues.length > 0 && (
-                    <div className="bg-red-500/[0.04] rounded-xl p-4 border border-red-500/10">
-                      <div className="text-[10px] font-black text-red-400 uppercase tracking-widest mb-2">Platform Native Issues</div>
-                      <ul className="space-y-1">
-                        {virality.instagram_specific.platform_native_issues.map((issue: string, i: number) => (
-                          <li key={i} className="text-sm text-red-300/70 flex items-start gap-1.5">
-                            <i className="fas fa-exclamation-circle text-[9px] text-red-400 mt-1 flex-shrink-0"></i>{issue}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  {virality.instagram_specific.visual_fidelity_notes && (
-                    <div className="bg-white/[0.02] rounded-xl p-4 border border-white/5">
-                      <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Visual Fidelity Notes</div>
-                      <p className="text-sm text-slate-400">{virality.instagram_specific.visual_fidelity_notes}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ════════════════════════════════════════════════════════ */}
-        {/* TAB 7: WEAKNESSES                                       */}
-        {/* ════════════════════════════════════════════════════════ */}
-        {activeTab === 'weaknesses' && (
-          <div className="space-y-4">
-            {/* Resolved weaknesses from previous version */}
-            {improv?.version_progress?.fixed_weaknesses?.length > 0 && (
-              <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-teal-500/10 bg-teal-500/[0.02]">
-                <h3 className="text-sm font-black text-teal-400 mb-3 flex items-center gap-2">
-                  <i className="fas fa-check-circle text-xs"></i>
-                  Resolved from Previous Version ({improv.version_progress.fixed_weaknesses.length})
-                </h3>
-                <div className="space-y-2">
-                  {improv.version_progress.fixed_weaknesses.map((fw: any, i: number) => (
-                    <div key={i} className="flex items-start gap-2 text-sm">
-                      <i className="fas fa-check text-teal-400 mt-0.5 text-xs"></i>
-                      <span className="text-slate-400 line-through opacity-70">{fw.assessment || fw.ref}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {full?.weaknesses && full.weaknesses.length > 0 ? (
-              full.weaknesses.map((w: any, idx: number) => (
-                <div key={idx} className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
-                  {/* Weakness heading */}
-                  <div className="flex items-start gap-3 mb-4">
-                    <div className="w-8 h-8 rounded-full bg-red-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <i className="fas fa-exclamation text-red-400 text-xs"></i>
-                    </div>
-                    <h3 className="text-base font-black text-white">{w.what}</h3>
-                  </div>
-
-                  {/* Impact */}
-                  {w.impact && (
-                    <div className="bg-red-500/[0.04] rounded-xl p-4 border border-red-500/10 mb-3">
-                      <div className="flex items-center gap-1.5 mb-1">
-                        <div className="w-2 h-2 rounded-full bg-red-400"></div>
-                        <span className="text-[10px] font-black text-red-400 uppercase tracking-widest">Impact</span>
-                      </div>
-                      <p className="text-sm text-red-300/70 pl-3.5">{w.impact}</p>
-                    </div>
-                  )}
-
-                  {/* Fix */}
-                  {w.fix && (
-                    <div className="bg-teal-500/[0.04] rounded-xl p-4 border border-teal-500/10">
-                      <div className="flex items-center gap-1.5 mb-1">
-                        <div className="w-2 h-2 rounded-full bg-teal-400"></div>
-                        <span className="text-[10px] font-black text-teal-400 uppercase tracking-widest">Suggested Fix</span>
-                      </div>
-                      <p className="text-sm text-teal-300/70 pl-3.5">{w.fix}</p>
-                    </div>
-                  )}
-                </div>
-              ))
-            ) : (
-              <div className="glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-8 text-center">
-                <div className="w-16 h-16 mx-auto mb-4 bg-teal-400/10 rounded-full flex items-center justify-center">
-                  <i className="fas fa-check text-teal-400 text-xl"></i>
-                </div>
-                <h3 className="font-black text-lg mb-2">No Major Weaknesses</h3>
-                <p className="text-sm text-slate-500">Great job! No significant weaknesses were found in this content.</p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ════════════════════════════════════════════════════════ */}
-        {/* TAB: COMMENTS                                          */}
-        {/* ════════════════════════════════════════════════════════ */}
-        {activeTab === 'comments' && (
-          <div className="space-y-4">
-            {commentAnalysis ? (
-              <>
-                {/* Summary */}
-                {commentAnalysis.summary && (
-                  <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center">
-                        <i className="fas fa-quote-left text-blue-400 text-xs"></i>
-                      </div>
-                      <h3 className="text-sm font-black text-white uppercase tracking-widest">Comment Summary</h3>
-                    </div>
-                    <p className="text-sm text-slate-300 leading-relaxed">{commentAnalysis.summary}</p>
-                    <div className="mt-3 text-[10px] font-bold text-slate-600">
-                      {commentAnalysis.total_comments_analyzed || commentAnalysis.total_analyzed} comments analyzed
-                    </div>
-                  </div>
-                )}
-
-                {/* Scores Row */}
-                <div className="grid grid-cols-3 gap-3">
-                  {[
-                    { label: 'Buyer Intent', score: commentAnalysis.buyer_intent_score, color: 'emerald', icon: 'fa-shopping-cart' },
-                    { label: 'Community', score: commentAnalysis.community_engagement_score, color: 'blue', icon: 'fa-users' },
-                    { label: 'Controversy', score: commentAnalysis.controversy_score, color: 'orange', icon: 'fa-bolt' },
-                  ].map(({ label, score, color, icon }) => (
-                    <div key={label} className="glass-card rounded-2xl p-5 text-center">
-                      <div className={`w-10 h-10 mx-auto mb-2 rounded-full bg-${color}-500/10 flex items-center justify-center`}>
-                        <i className={`fas ${icon} text-${color}-400 text-sm`}></i>
-                      </div>
-                      <div className="text-2xl font-black text-white">{score ?? '--'}</div>
-                      <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">{label}</div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Sentiment Distribution */}
-                {commentAnalysis.sentiment_distribution && (
-                  <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
-                    <h3 className="text-xs font-black text-white uppercase tracking-widest mb-4">Sentiment Distribution</h3>
-                    <div className="space-y-2">
-                      {Object.entries(commentAnalysis.sentiment_distribution).map(([key, val]: [string, any]) => (
-                        <div key={key} className="flex items-center gap-3">
-                          <span className="text-xs font-bold text-slate-400 w-16 capitalize">{key}</span>
-                          <div className="flex-1 h-2 bg-white/5 rounded-full overflow-hidden">
-                            <div
-                              className={`h-full rounded-full ${key === 'positive' ? 'bg-emerald-500' : key === 'negative' ? 'bg-red-500' : key === 'mixed' ? 'bg-orange-500' : 'bg-slate-500'}`}
-                              style={{ width: `${val}%` }}
-                            />
-                          </div>
-                          <span className="text-xs font-black text-white w-10 text-right">{val}%</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Top Themes */}
-                {commentAnalysis.top_themes && commentAnalysis.top_themes.length > 0 && (
-                  <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
-                    <h3 className="text-xs font-black text-white uppercase tracking-widest mb-4">Top Themes</h3>
-                    <div className="space-y-3">
-                      {(Array.isArray(commentAnalysis.top_themes) ? commentAnalysis.top_themes : []).map((theme: any, i: number) => (
-                        <div key={i} className="bg-white/[0.02] rounded-xl p-4 border border-white/5">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-black text-white">{theme.theme}</span>
-                            <div className="flex items-center gap-2">
-                              <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${
-                                theme.sentiment === 'positive' ? 'bg-emerald-500/10 text-emerald-400' :
-                                theme.sentiment === 'negative' ? 'bg-red-500/10 text-red-400' :
-                                'bg-slate-500/10 text-slate-400'
-                              }`}>{theme.sentiment}</span>
-                              <span className="text-[10px] font-bold text-slate-500">{theme.count} comments</span>
-                            </div>
-                          </div>
-                          {theme.example_comment && (
-                            <p className="text-xs text-slate-400 italic pl-3 border-l-2 border-white/10">{theme.example_comment}</p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Notable Comments */}
-                {commentAnalysis.notable_comments && commentAnalysis.notable_comments.length > 0 && (
-                  <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
-                    <h3 className="text-xs font-black text-white uppercase tracking-widest mb-4">Notable Comments</h3>
-                    <div className="space-y-3">
-                      {(Array.isArray(commentAnalysis.notable_comments) ? commentAnalysis.notable_comments : []).map((c: any, i: number) => (
-                        <div key={i} className="bg-white/[0.02] rounded-xl p-4 border border-white/5">
-                          <p className="text-sm text-slate-300 mb-2">{c.text}</p>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="px-2 py-0.5 rounded text-[9px] font-black bg-violet-500/10 text-violet-400 uppercase">{c.intent?.replace('_', ' ')}</span>
-                            <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${
-                              c.sentiment === 'positive' ? 'bg-emerald-500/10 text-emerald-400' :
-                              c.sentiment === 'negative' ? 'bg-red-500/10 text-red-400' :
-                              'bg-slate-500/10 text-slate-400'
-                            }`}>{c.sentiment}</span>
-                            {c.why_notable && <span className="text-[10px] text-slate-500">{c.why_notable}</span>}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Actionable Insights */}
-                {commentAnalysis.actionable_insights && commentAnalysis.actionable_insights.length > 0 && (
-                  <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
-                    <h3 className="text-xs font-black text-white uppercase tracking-widest mb-4">Actionable Insights</h3>
-                    <div className="space-y-2">
-                      {commentAnalysis.actionable_insights.map((insight: string, i: number) => (
-                        <div key={i} className="flex items-start gap-3">
-                          <div className="w-6 h-6 rounded-full bg-teal-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                            <span className="text-[10px] font-black text-teal-400">{i + 1}</span>
-                          </div>
-                          <p className="text-sm text-slate-300">{insight}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Audience Signals */}
-                {commentAnalysis.audience_signals && (
-                  <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
-                    <h3 className="text-xs font-black text-white uppercase tracking-widest mb-4">Audience Signals</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {commentAnalysis.audience_signals.demographics_hints?.length > 0 && (
-                        <div>
-                          <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Demographics</div>
-                          {commentAnalysis.audience_signals.demographics_hints.map((h: string, i: number) => (
-                            <div key={i} className="text-xs text-slate-400 mb-1">- {h}</div>
-                          ))}
-                        </div>
-                      )}
-                      {commentAnalysis.audience_signals.content_requests?.length > 0 && (
-                        <div>
-                          <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Content Requests</div>
-                          {commentAnalysis.audience_signals.content_requests.map((r: string, i: number) => (
-                            <div key={i} className="text-xs text-slate-400 mb-1">- {r}</div>
-                          ))}
-                        </div>
-                      )}
-                      {commentAnalysis.audience_signals.pain_points?.length > 0 && (
-                        <div>
-                          <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Pain Points</div>
-                          {commentAnalysis.audience_signals.pain_points.map((p: string, i: number) => (
-                            <div key={i} className="text-xs text-slate-400 mb-1">- {p}</div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Re-analyze button */}
-                <div className="text-center pt-2">
-                  <button
-                    onClick={triggerCommentAnalysis}
-                    disabled={commentLoading}
-                    className="text-xs font-bold text-slate-500 hover:text-slate-300 transition-colors disabled:opacity-50"
-                  >
-                    {commentLoading ? 'Analyzing...' : 'Re-analyze Comments'}
-                  </button>
-                </div>
-              </>
-            ) : (
-              <div className="glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-8 text-center">
-                <div className="w-16 h-16 mx-auto mb-4 bg-blue-400/10 rounded-full flex items-center justify-center">
-                  <i className="fas fa-comments text-blue-400 text-xl"></i>
-                </div>
-                <h3 className="font-black text-lg mb-2">Comment Analysis</h3>
-                <p className="text-sm text-slate-500 mb-6 max-w-md mx-auto">
-                  Analyze the comment section to uncover buyer intent, audience sentiment, content ideas, and actionable insights.
-                </p>
-                {commentError && (
-                  <div className="mb-4 px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/20 text-xs text-red-400 max-w-md mx-auto">
-                    {commentError}
-                  </div>
-                )}
-                <button
-                  onClick={triggerCommentAnalysis}
-                  disabled={commentLoading}
-                  className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest hover:opacity-90 transition-opacity disabled:opacity-50"
-                >
-                  {commentLoading ? (
-                    <span className="flex items-center gap-2">
-                      <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Fetching & Analyzing...
-                    </span>
-                  ) : 'Analyze Comments'}
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    );
-  })()}
-</>
-{/* === RESULTS DISPLAY END === */}
-            </div>
-
-          ) : loadingHistory ? (
-            /* === SKELETON LOADING — matches result page layout === */
-            <div>
-              <div className="mb-6 h-4 w-32 bg-white/5 rounded animate-pulse"></div>
-              <div className="space-y-6">
-                {/* Skeleton: Video info card */}
-                <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
-                  <div className="flex flex-col md:flex-row gap-6">
-                    <div className="w-full md:w-48 flex-shrink-0">
-                      <div className="aspect-[9/16] rounded-xl bg-white/5 animate-pulse"></div>
-                    </div>
-                    <div className="flex-1 space-y-4">
-                      <div className="flex items-center gap-3">
-                        <div className="h-6 w-24 bg-white/5 rounded-full animate-pulse"></div>
-                        <div className="h-5 w-28 bg-white/5 rounded animate-pulse"></div>
-                      </div>
-                      <div className="space-y-2">
-                        <div className="h-4 w-full bg-white/5 rounded animate-pulse"></div>
-                        <div className="h-4 w-3/4 bg-white/5 rounded animate-pulse"></div>
-                      </div>
-                      <div className="pt-2">
-                        <div className="h-6 w-2/3 bg-white/5 rounded animate-pulse"></div>
-                      </div>
-                      <div className="flex gap-2 pt-1">
-                        <div className="h-7 w-28 bg-white/5 rounded-full animate-pulse"></div>
-                        <div className="h-7 w-24 bg-white/5 rounded-full animate-pulse"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Skeleton: Score cards */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-8 text-center space-y-3">
-                    <div className="h-3 w-28 mx-auto bg-white/5 rounded animate-pulse"></div>
-                    <div className="h-14 w-20 mx-auto bg-white/5 rounded animate-pulse"></div>
-                    <div className="h-3 w-16 mx-auto bg-white/5 rounded animate-pulse"></div>
-                  </div>
-                  <div className="glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-8 text-center space-y-3">
-                    <div className="h-3 w-28 mx-auto bg-white/5 rounded animate-pulse"></div>
-                    <div className="h-14 w-20 mx-auto bg-white/5 rounded animate-pulse"></div>
-                    <div className="h-3 w-16 mx-auto bg-white/5 rounded animate-pulse"></div>
-                  </div>
-                </div>
-
-                {/* Skeleton: Score breakdown */}
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                  {[...Array(5)].map((_, i) => (
-                    <div key={i} className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-5 text-center space-y-3">
-                      <div className="w-16 h-16 mx-auto rounded-full border-2 border-white/5 animate-pulse"></div>
-                      <div className="h-3 w-16 mx-auto bg-white/5 rounded animate-pulse"></div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Skeleton: Divider */}
-                <div className="flex items-center gap-4 pt-2">
-                  <div className="h-px flex-1 bg-white/5"></div>
-                  <div className="h-3 w-28 bg-white/5 rounded animate-pulse"></div>
-                  <div className="h-px flex-1 bg-white/5"></div>
-                </div>
-
-                {/* Skeleton: Tab bar */}
-                <div className="flex flex-wrap gap-2">
-                  {[...Array(6)].map((_, i) => (
-                    <div key={i} className="h-9 rounded-xl bg-white/5 animate-pulse" style={{ width: `${70 + i * 10}px` }}></div>
-                  ))}
-                </div>
-
-                {/* Skeleton: Tab content (improvements card) */}
-                <div className="rounded-2xl border border-white/[0.06] p-6 space-y-5">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-white/5 animate-pulse"></div>
-                    <div className="space-y-2">
-                      <div className="h-5 w-48 bg-white/5 rounded animate-pulse"></div>
-                      <div className="h-3 w-64 bg-white/5 rounded animate-pulse"></div>
-                    </div>
-                  </div>
-                  <div className="space-y-4 pt-2">
-                    {[...Array(3)].map((_, i) => (
-                      <div key={i} className="glass-card rounded-xl p-4 space-y-3">
-                        <div className="flex items-center gap-2">
-                          <div className="h-5 w-5 rounded bg-white/5 animate-pulse"></div>
-                          <div className="h-4 w-3/4 bg-white/5 rounded animate-pulse"></div>
-                        </div>
-                        <div className="h-3 w-full bg-white/5 rounded animate-pulse"></div>
-                        <div className="h-3 w-2/3 bg-white/5 rounded animate-pulse"></div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-          ) : isAnalyzing ? (
+          {isAnalyzing ? (
             /* === PROGRESS STEPPER — Content Deconstruction === */
             <div className="relative">
               {/* Ambient glow spheres */}
@@ -3395,6 +518,13 @@ export default function ContentAnalysis() {
                             >
                               {step.label}
                             </h4>
+                            {status === 'running' && (
+                              <p className="text-[11px] text-slate-400 mt-0.5 transition-all duration-300">
+                                {step.key === 'improvement'
+                                  ? IMPROVEMENT_SUBTITLES[improvementSubtitleIdx]
+                                  : step.subtitle}
+                              </p>
+                            )}
                           </div>
                         </div>
                       )
@@ -3442,176 +572,392 @@ export default function ContentAnalysis() {
             </div>
 
           ) : (
-            /* === UPLOAD FORM === */
-            <div className="glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-8">
-              {/* Mode Toggle Pills */}
-              <div className="flex items-center gap-1 bg-white/5 rounded-xl p-1 mb-8 w-fit">
-                <button
-                  onClick={() => { setMode('url'); setUploadError(null) }}
-                  className={`px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${
-                    mode === 'url'
-                      ? 'bg-white/10 text-white shadow-sm'
-                      : 'text-slate-400 hover:text-white hover:bg-white/5'
-                  }`}
-                >
-                  <i className="fas fa-link mr-2"></i>
-                  Paste URL
-                </button>
-                <button
-                  onClick={() => { setMode('upload'); setUploadError(null) }}
-                  className={`px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${
-                    mode === 'upload'
-                      ? 'bg-white/10 text-white shadow-sm'
-                      : 'text-slate-400 hover:text-white hover:bg-white/5'
-                  }`}
-                >
-                  <i className="fas fa-cloud-upload-alt mr-2"></i>
-                  Upload File
-                </button>
-              </div>
-
-              {/* URL Mode */}
-              {mode === 'url' && (
-                <div className="space-y-4">
-                  <div className="relative">
-                    {/* Platform icon */}
-                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">
-                      {detectedPlatform === 'tiktok' ? (
-                        <i className="fab fa-tiktok text-lg"></i>
-                      ) : detectedPlatform === 'instagram' ? (
-                        <i className="fab fa-instagram text-lg text-pink-400"></i>
-                      ) : (
-                        <i className="fas fa-link text-lg"></i>
-                      )}
-                    </div>
-                    <input
-                      type="text"
-                      value={url}
-                      onChange={(e) => { setUrl(e.target.value); setUploadError(null) }}
-                      onKeyDown={(e) => { if (e.key === 'Enter' && url.trim()) handleSubmit() }}
-                      placeholder="Paste a TikTok or Instagram URL..."
-                      className="bg-white/5 border border-white/10 rounded-xl pl-12 pr-4 py-4 text-white placeholder:text-slate-500 w-full focus:border-pink-500/50 focus:outline-none transition-all text-sm"
-                    />
-                    {url && detectedPlatform && (
-                      <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                        <span className={`px-2 py-0.5 text-[10px] font-black uppercase tracking-widest rounded ${
-                          detectedPlatform === 'tiktok'
-                            ? 'bg-white/10 text-white'
-                            : 'bg-pink-500/10 text-pink-400'
-                        }`}>
-                          {detectedPlatform}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
+            /* === UPLOAD FORM + HISTORY === */
+            <div className="space-y-10">
+              {/* Upload Form */}
+              <div className="glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-8">
+                {/* Mode Toggle Pills */}
+                <div className="flex items-center gap-1 bg-white/5 rounded-xl p-1 mb-8 w-fit">
                   <button
-                    onClick={handleSubmit}
-                    disabled={uploading || !url.trim()}
-                    className="w-full px-6 py-3.5 bg-gradient-to-r from-pink-500 to-orange-400 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-pink-500/25 transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-none"
-                  >
-                    {uploading ? (
-                      <>
-                        <i className="fas fa-spinner fa-spin mr-2"></i>
-                        Analyzing...
-                      </>
-                    ) : (
-                      <>
-                        <i className="fas fa-wand-magic-sparkles mr-2"></i>
-                        Analyze
-                      </>
-                    )}
-                  </button>
-                </div>
-              )}
-
-              {/* Upload Mode */}
-              {mode === 'upload' && (
-                <div className="space-y-4">
-                  {/* Drag & Drop Zone */}
-                  <div
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onDrop={handleDrop}
-                    onClick={() => fileInputRef.current?.click()}
-                    className={`border-2 border-dashed rounded-2xl p-10 text-center cursor-pointer transition-all ${
-                      dragOver
-                        ? 'border-pink-500/50 bg-pink-500/5'
-                        : file
-                        ? 'border-green-500/30 bg-green-500/5'
-                        : 'border-white/10 hover:border-white/20 hover:bg-white/[0.02]'
+                    onClick={() => { setMode('url'); setUploadError(null) }}
+                    className={`px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${
+                      mode === 'url'
+                        ? 'bg-white/10 text-white shadow-sm'
+                        : 'text-slate-400 hover:text-white hover:bg-white/5'
                     }`}
                   >
-                    {file ? (
-                      <div className="space-y-3">
-                        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-green-500/10">
-                          <i className="fas fa-file-video text-2xl text-green-400"></i>
-                        </div>
-                        <div>
-                          <p className="text-white font-bold text-sm">{file.name}</p>
-                          <p className="text-slate-500 text-xs mt-1">{formatFileSize(file.size)}</p>
-                        </div>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setFile(null) }}
-                          className="text-xs text-slate-500 hover:text-red-400 transition-all"
-                        >
-                          <i className="fas fa-times mr-1"></i>
-                          Remove
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-white/5">
-                          <i className="fas fa-cloud-upload-alt text-2xl text-slate-500"></i>
-                        </div>
-                        <div>
-                          <p className="text-slate-300 font-bold text-sm">
-                            Drop your video here or{' '}
-                            <span className="text-pink-400">browse</span>
-                          </p>
-                          <p className="text-slate-600 text-xs mt-1">MP4, MOV, WebM up to 500MB</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Hidden file input */}
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="video/*"
-                    onChange={handleFileSelect}
-                    className="hidden"
-                  />
-
-                  <button
-                    onClick={handleSubmit}
-                    disabled={uploading || !file}
-                    className="w-full px-6 py-3.5 bg-gradient-to-r from-pink-500 to-orange-400 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-pink-500/25 transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-none"
-                  >
-                    {uploading ? (
-                      <>
-                        <i className="fas fa-spinner fa-spin mr-2"></i>
-                        Uploading...
-                      </>
-                    ) : (
-                      <>
-                        <i className="fas fa-wand-magic-sparkles mr-2"></i>
-                        Analyze
-                      </>
-                    )}
+                    <i className="fas fa-link mr-2"></i>
+                    Paste URL
                   </button>
+                  <button
+                    onClick={() => { setMode('upload'); setUploadError(null) }}
+                    className={`px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${
+                      mode === 'upload'
+                        ? 'bg-white/10 text-white shadow-sm'
+                        : 'text-slate-400 hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    <i className="fas fa-cloud-upload-alt mr-2"></i>
+                    Upload File
+                  </button>
+                </div>
+
+                {/* URL Mode */}
+                {mode === 'url' && (
+                  <div className="space-y-4">
+                    <div className="relative">
+                      {/* Platform icon */}
+                      <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">
+                        {detectedPlatform === 'tiktok' ? (
+                          <i className="fab fa-tiktok text-lg"></i>
+                        ) : detectedPlatform === 'instagram' ? (
+                          <i className="fab fa-instagram text-lg text-pink-400"></i>
+                        ) : (
+                          <i className="fas fa-link text-lg"></i>
+                        )}
+                      </div>
+                      <input
+                        type="text"
+                        value={url}
+                        onChange={(e) => { setUrl(e.target.value); setUploadError(null) }}
+                        onKeyDown={(e) => { if (e.key === 'Enter' && url.trim()) handleSubmit() }}
+                        placeholder="Paste a TikTok or Instagram URL..."
+                        className="bg-white/5 border border-white/10 rounded-xl pl-12 pr-4 py-4 text-white placeholder:text-slate-500 w-full focus:border-pink-500/50 focus:outline-none transition-all text-sm"
+                      />
+                      {url && detectedPlatform && (
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                          <span className={`px-2 py-0.5 text-[10px] font-black uppercase tracking-widest rounded ${
+                            detectedPlatform === 'tiktok'
+                              ? 'bg-white/10 text-white'
+                              : 'bg-pink-500/10 text-pink-400'
+                          }`}>
+                            {detectedPlatform}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    <button
+                      onClick={handleSubmit}
+                      disabled={uploading || !url.trim()}
+                      className="w-full px-6 py-3.5 bg-gradient-to-r from-pink-500 to-orange-400 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-pink-500/25 transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-none"
+                    >
+                      {uploading ? (
+                        <>
+                          <i className="fas fa-spinner fa-spin mr-2"></i>
+                          Analyzing...
+                        </>
+                      ) : (
+                        <>
+                          <i className="fas fa-wand-magic-sparkles mr-2"></i>
+                          Analyze
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
+
+                {/* Upload Mode */}
+                {mode === 'upload' && (
+                  <div className="space-y-4">
+                    {/* Drag & Drop Zone */}
+                    <div
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={handleDrop}
+                      onClick={() => fileInputRef.current?.click()}
+                      className={`border-2 border-dashed rounded-2xl p-10 text-center cursor-pointer transition-all ${
+                        dragOver
+                          ? 'border-pink-500/50 bg-pink-500/5'
+                          : file
+                          ? 'border-green-500/30 bg-green-500/5'
+                          : 'border-white/10 hover:border-white/20 hover:bg-white/[0.02]'
+                      }`}
+                    >
+                      {file ? (
+                        <div className="space-y-3">
+                          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-green-500/10">
+                            <i className="fas fa-file-video text-2xl text-green-400"></i>
+                          </div>
+                          <div>
+                            <p className="text-white font-bold text-sm">{file.name}</p>
+                            <p className="text-slate-500 text-xs mt-1">{formatFileSize(file.size)}</p>
+                          </div>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setFile(null) }}
+                            className="text-xs text-slate-500 hover:text-red-400 transition-all"
+                          >
+                            <i className="fas fa-times mr-1"></i>
+                            Remove
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-white/5">
+                            <i className="fas fa-cloud-upload-alt text-2xl text-slate-500"></i>
+                          </div>
+                          <div>
+                            <p className="text-slate-300 font-bold text-sm">
+                              Drop your video here or{' '}
+                              <span className="text-pink-400">browse</span>
+                            </p>
+                            <p className="text-slate-600 text-xs mt-1">MP4, MOV, WebM up to 500MB</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Hidden file input */}
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="video/*"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                    />
+
+                    <button
+                      onClick={handleSubmit}
+                      disabled={uploading || !file}
+                      className="w-full px-6 py-3.5 bg-gradient-to-r from-pink-500 to-orange-400 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-pink-500/25 transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-none"
+                    >
+                      {uploading ? (
+                        <>
+                          <i className="fas fa-spinner fa-spin mr-2"></i>
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <i className="fas fa-wand-magic-sparkles mr-2"></i>
+                          Analyze
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
+
+                {/* Upload Error */}
+                {uploadError && (
+                  <div className="mt-4 px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-3">
+                    <i className="fas fa-exclamation-circle text-red-400 mt-0.5"></i>
+                    <div>
+                      <p className="text-red-400 text-sm font-bold">Upload failed</p>
+                      <p className="text-red-400/70 text-xs mt-0.5">{uploadError}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* ═══════════════════════════════════════════════════════════ */}
+              {/* HISTORY LIST                                                */}
+              {/* ═══════════════════════════════════════════════════════════ */}
+
+              {/* Stats Bar */}
+              <div className="grid grid-cols-3 gap-4">
+                <div className="glass-card rounded-3xl p-5">
+                  <div className="text-slate-500 text-xs font-bold uppercase tracking-widest mb-1">Total Checks</div>
+                  <div className="text-2xl font-black text-white">{historyTotal}</div>
+                </div>
+                <div className="glass-card rounded-3xl p-5">
+                  <div className="text-slate-500 text-xs font-bold uppercase tracking-widest mb-1">Completed</div>
+                  <div className="text-2xl font-black text-green-400">
+                    {history.filter(h => h.status === 'completed').length}
+                  </div>
+                </div>
+                <div className="glass-card rounded-3xl p-5">
+                  <div className="text-slate-500 text-xs font-bold uppercase tracking-widest mb-1">Avg Score</div>
+                  <div className="text-2xl font-black text-pink-400">
+                    {(() => {
+                      const scored = history.filter(h => h.optimization_score != null)
+                      if (scored.length === 0) return '—'
+                      const avg = scored.reduce((sum, h) => sum + (Number(h.optimization_score) || 0), 0) / scored.length
+                      return Math.round(avg)
+                    })()}
+                  </div>
+                </div>
+              </div>
+
+              {/* History List */}
+              {historyLoading ? (
+                <div className="flex items-center justify-center py-20">
+                  <i className="fas fa-spinner fa-spin text-2xl text-pink-400 mr-3"></i>
+                  <span className="text-slate-400">Loading history...</span>
+                </div>
+              ) : history.length === 0 ? (
+                <div className="glass-card rounded-3xl p-16 text-center">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white/5 mb-4">
+                    <i className="fas fa-inbox text-3xl text-slate-600"></i>
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-400 mb-2">No analyses yet</h3>
+                  <p className="text-slate-600 text-sm">Start by analyzing a video above to see your history here.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {history.map((item) => (
+                    <div
+                      key={item.id}
+                      onClick={() => {
+                        if (item.status === 'completed') {
+                          navigate(`/dashboard/analyze/${item.id}`)
+                        }
+                      }}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && item.status === 'completed') { e.preventDefault(); navigate(`/dashboard/analyze/${item.id}`); } }}
+                      className={`w-full text-left glass-card rounded-3xl p-5 transition-all group border border-transparent ${
+                        item.status === 'completed'
+                          ? 'hover:bg-white/[0.06] hover:border-white/10 cursor-pointer'
+                          : ''
+                      }`}
+                    >
+                      <div className="flex items-center gap-5">
+                        {/* Thumbnail */}
+                        <div className="w-20 h-28 rounded-xl bg-white/5 flex-shrink-0 flex items-center justify-center overflow-hidden">
+                          {item.thumbnail_path ? (
+                            <img
+                              src={item.thumbnail_path.startsWith('http') ? item.thumbnail_path : `/media/${item.thumbnail_path.split('/').pop()}`}
+                              alt=""
+                              className="w-full h-full object-cover rounded-xl"
+                            />
+                          ) : (
+                            <i className={`fab fa-${item.platform === 'tiktok' ? 'tiktok' : item.platform === 'instagram' ? 'instagram' : 'video'} text-xl ${
+                              item.platform === 'tiktok' ? 'text-white' : item.platform === 'instagram' ? 'text-pink-400' : 'text-slate-500'
+                            }`}></i>
+                          )}
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <span className={`px-2 py-0.5 text-[10px] font-black uppercase tracking-widest rounded ${
+                              item.platform === 'tiktok'
+                                ? 'bg-white/10 text-white'
+                                : item.platform === 'instagram'
+                                ? 'bg-pink-500/10 text-pink-400'
+                                : 'bg-slate-500/10 text-slate-400'
+                            }`}>
+                              {item.platform || 'upload'}
+                            </span>
+                            {item.username && (
+                              <span className="text-xs text-slate-500">@{item.username}</span>
+                            )}
+                            {item.version_number != null && item.version_number > 1 && (
+                              <span className="px-1.5 py-0.5 text-[9px] font-black rounded-md bg-purple-500/15 text-purple-400 border border-purple-500/20">
+                                v{item.version_number}
+                              </span>
+                            )}
+                            <span className="text-[10px] text-slate-600 ml-auto">{formatDate(item.created_at)}</span>
+                          </div>
+
+                          {/* Title (primary) — fallback to caption, then filename hint */}
+                          <p className="text-sm font-bold text-white truncate mb-1">
+                            {item.title || item.caption || 'Untitled'}
+                          </p>
+
+                          {/* Caption (secondary, if different from title) */}
+                          {item.caption && item.title && item.caption !== item.title && (
+                            <p className="text-xs text-slate-500 truncate mb-1.5">{item.caption}</p>
+                          )}
+
+                          {/* Stats row */}
+                          <div className="flex items-center gap-4 text-xs text-slate-500">
+                            {item.views > 0 && (
+                              <span><i className="fas fa-eye mr-1"></i>{formatNumber(item.views)}</span>
+                            )}
+                            {item.likes > 0 && (
+                              <span><i className="fas fa-heart mr-1"></i>{formatNumber(item.likes)}</span>
+                            )}
+                            {item.comments_count > 0 && (
+                              <span><i className="fas fa-comment mr-1"></i>{formatNumber(item.comments_count)}</span>
+                            )}
+                            {item.shares > 0 && (
+                              <span><i className="fas fa-share mr-1"></i>{formatNumber(item.shares)}</span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Score + Status */}
+                        <div className="flex items-center gap-3 flex-shrink-0">
+                          {item.optimization_score != null && (
+                            <div className={`text-center px-3 py-2 rounded-xl ${
+                              item.optimization_score >= 80
+                                ? 'bg-green-500/10'
+                                : item.optimization_score >= 50
+                                ? 'bg-yellow-500/10'
+                                : 'bg-red-500/10'
+                            }`}>
+                              <div className={`text-lg font-black ${
+                                item.optimization_score >= 80
+                                  ? 'text-green-400'
+                                  : item.optimization_score >= 50
+                                  ? 'text-yellow-400'
+                                  : 'text-red-400'
+                              }`}>
+                                {item.optimization_score}
+                              </div>
+                              <div className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Score</div>
+                            </div>
+                          )}
+
+                          {item.status === 'error' ? (
+                            <button
+                              onClick={(e) => handleRetry(e, item.id)}
+                              disabled={retryingIds.has(item.id)}
+                              className="px-3 py-1.5 text-xs font-bold rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
+                              title={item.error_message || 'Analysis failed'}
+                            >
+                              {retryingIds.has(item.id) ? (
+                                <><i className="fas fa-spinner fa-spin mr-1.5"></i>Retrying...</>
+                              ) : (
+                                <><i className="fas fa-rotate-right mr-1.5"></i>Retry</>
+                              )}
+                            </button>
+                          ) : (
+                            <span className={`px-3 py-1.5 text-xs font-bold rounded-lg ${
+                              item.status === 'completed'
+                                ? 'bg-green-500/10 text-green-500'
+                                : 'bg-yellow-500/10 text-yellow-400'
+                            }`}>
+                              {item.status === 'completed' ? (
+                                <><i className="fas fa-check mr-1.5"></i>Done</>
+                              ) : (
+                                <><i className="fas fa-spinner fa-spin mr-1.5"></i>Processing</>
+                              )}
+                            </span>
+                          )}
+
+                          {item.status === 'completed' && (
+                            <i className="fas fa-chevron-right text-slate-700 group-hover:text-slate-400 transition-colors"></i>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
 
-              {/* Upload Error */}
-              {uploadError && (
-                <div className="mt-4 px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-3">
-                  <i className="fas fa-exclamation-circle text-red-400 mt-0.5"></i>
-                  <div>
-                    <p className="text-red-400 text-sm font-bold">Upload failed</p>
-                    <p className="text-red-400/70 text-xs mt-0.5">{uploadError}</p>
-                  </div>
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-3">
+                  <button
+                    onClick={() => setHistoryOffset(Math.max(0, historyOffset - historyLimit))}
+                    disabled={historyOffset === 0}
+                    className="px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-all text-sm font-bold disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    <i className="fas fa-chevron-left mr-2"></i>
+                    Previous
+                  </button>
+                  <span className="text-sm text-slate-500 font-bold">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <button
+                    onClick={() => setHistoryOffset(historyOffset + historyLimit)}
+                    disabled={currentPage >= totalPages}
+                    className="px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-all text-sm font-bold disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    Next
+                    <i className="fas fa-chevron-right ml-2"></i>
+                  </button>
                 </div>
               )}
             </div>
@@ -3619,14 +965,6 @@ export default function ContentAnalysis() {
         </div>
 
       </div>
-
-      {carouselVideos && (
-        <VideoStoryCarousel
-          videos={carouselVideos}
-          initialIndex={carouselIndex}
-          onClose={() => setCarouselVideos(null)}
-        />
-      )}
     </>
   )
 }
