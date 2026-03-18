@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { authFetch } from '../lib/api'
 import { getStorageUrl } from '../lib/media'
 import { parseBlueprint } from '../lib/blueprint'
+import { useAuth } from '../context/AuthContext'
 import VideoStoryCarousel, { type CarouselVideo } from '../components/VideoStoryCarousel'
 import FineTunePanel from '../components/FineTunePanel'
 
@@ -68,6 +69,7 @@ interface HookDetail {
   class_analysis: ClassAnalysis | null
   analysis_updated_at: string | null
   analysis_video_count: number | null
+  total_platform_videos: number
   videos: HookVideo[]
   pagination?: Pagination
 }
@@ -114,6 +116,7 @@ function getCategoryLabel(category: string): string {
 
 export default function HookDetail() {
   const { id } = useParams()
+  const { profile } = useAuth()
   const [hook, setHook] = useState<HookDetail | null>(null)
   const [videos, setVideos] = useState<HookVideo[]>([])
   const [pagination, setPagination] = useState<Pagination | null>(null)
@@ -214,9 +217,6 @@ export default function HookDetail() {
   }
 
   const totalVideoCount = pagination?.total ?? videos.length
-  const avgHookEffectiveness = videos.length > 0
-    ? videos.reduce((sum, v) => sum + (v.hook_effectiveness || 0), 0) / Math.max(videos.filter(v => v.hook_effectiveness != null).length, 1)
-    : 0
 
   return (
     <>
@@ -229,15 +229,27 @@ export default function HookDetail() {
           <span className="text-slate-600 text-xs shrink-0">/</span>
           <span className="text-white text-xs font-black uppercase tracking-widest truncate">{hook.name}</span>
         </div>
-        {!analysis && totalVideoCount >= 3 && (
-          <button
-            onClick={triggerAnalysis}
-            disabled={analyzing}
-            className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-[11px] font-black px-4 py-2 md:px-6 md:py-2.5 rounded-xl transition-all shrink-0 ml-3"
-          >
-            {analyzing ? 'ANALYZING...' : 'RUN AI ANALYSIS'}
-          </button>
-        )}
+        <div className="flex items-center gap-2 shrink-0 ml-3">
+          {!analysis && totalVideoCount >= 3 && (
+            <button
+              onClick={triggerAnalysis}
+              disabled={analyzing}
+              className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-[11px] font-black px-4 py-2 md:px-6 md:py-2.5 rounded-xl transition-all"
+            >
+              {analyzing ? 'ANALYZING...' : 'RUN AI ANALYSIS'}
+            </button>
+          )}
+          {profile?.user_type === 'admin' && (
+            <button
+              onClick={triggerAnalysis}
+              disabled={analyzing}
+              className="bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white text-[11px] font-black px-4 py-2 md:px-6 md:py-2.5 rounded-xl transition-all flex items-center gap-1.5"
+            >
+              <i className="fas fa-sync-alt text-[9px]"></i>
+              {analyzing ? 'RETRAINING...' : 'RETRAIN'}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Analysis Error Alert */}
@@ -288,9 +300,9 @@ export default function HookDetail() {
           <div className="text-xl md:text-2xl font-black text-white">{totalVideoCount}</div>
         </div>
         <div className="p-4 md:p-6 glass-card rounded-3xl">
-          <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Hook Power</div>
+          <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Usage</div>
           <div className="text-xl md:text-2xl font-black text-pink-400">
-            {avgHookEffectiveness > 0 ? Math.round(avgHookEffectiveness * 100) + '%' : '--'}
+            {hook.total_platform_videos > 0 ? ((totalVideoCount / hook.total_platform_videos) * 100).toFixed(1) + '%' : '--'}
           </div>
         </div>
       </div>

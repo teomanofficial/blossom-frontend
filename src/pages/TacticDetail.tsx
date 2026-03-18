@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { authFetch } from '../lib/api'
 import { getStorageUrl } from '../lib/media'
+import { useAuth } from '../context/AuthContext'
 import VideoStoryCarousel, { type CarouselVideo } from '../components/VideoStoryCarousel'
 import FineTunePanel from '../components/FineTunePanel'
 
@@ -50,6 +51,7 @@ interface TacticData {
   is_verified: boolean
   created_at: string
   updated_at: string
+  total_platform_videos: number
   videos: TacticVideo[]
   format_distribution: FormatDist[]
   pagination?: Pagination
@@ -119,7 +121,10 @@ function getThumbnailSrc(video: TacticVideo): string | null {
 
 export default function TacticDetail() {
   const { id } = useParams()
+  const { profile } = useAuth()
   const [tactic, setTactic] = useState<TacticData | null>(null)
+  const [retraining, setRetraining] = useState(false)
+  const [retrainError, setRetrainError] = useState<string | null>(null)
   const [videos, setVideos] = useState<TacticVideo[]>([])
   const [pagination, setPagination] = useState<Pagination | null>(null)
   const [loading, setLoading] = useState(true)
@@ -192,14 +197,7 @@ export default function TacticDetail() {
   const score = Number(tactic.avg_execution_score) || 0
   const avgViews = Number(tactic.avg_views_when_present) || 0
 
-  // Score distribution from loaded videos
-  const scoreRanges = { high: 0, mid: 0, low: 0 }
-  videos.forEach((v) => {
-    const s = Number(v.execution_score) || 0
-    if (s >= 70) scoreRanges.high++
-    else if (s >= 40) scoreRanges.mid++
-    else scoreRanges.low++
-  })
+
 
   return (
     <>
@@ -212,7 +210,38 @@ export default function TacticDetail() {
           <span className="text-slate-600 text-xs shrink-0">/</span>
           <span className="text-white text-xs font-black uppercase tracking-widest truncate">{tactic.name}</span>
         </div>
+        {profile?.user_type === 'admin' && (
+          <button
+            onClick={() => {
+              setRetraining(true)
+              setRetrainError(null)
+              authFetch(`/api/analysis/tactics/${id}/analyze`, { method: 'POST' })
+                .then(async (r) => {
+                  const data = await r.json()
+                  if (!r.ok || data.error) throw new Error(data.error || 'Retrain failed')
+                })
+                .catch((e) => setRetrainError(e.message))
+                .finally(() => setRetraining(false))
+            }}
+            disabled={retraining}
+            className="bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white text-[11px] font-black px-4 py-2 md:px-6 md:py-2.5 rounded-xl transition-all shrink-0 ml-3 flex items-center gap-1.5"
+          >
+            <i className="fas fa-sync-alt text-[9px]"></i>
+            {retraining ? 'RETRAINING...' : 'RETRAIN'}
+          </button>
+        )}
       </div>
+
+      {/* Retrain Error */}
+      {retrainError && (
+        <div className="mb-6 p-4 glass-card rounded-2xl border border-red-500/20 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <i className="fas fa-exclamation-triangle text-red-400 shrink-0"></i>
+            <p className="text-red-400 text-xs font-bold truncate">Retrain failed: {retrainError}</p>
+          </div>
+          <button onClick={() => setRetrainError(null)} className="text-slate-500 hover:text-white text-xs shrink-0"><i className="fas fa-times"></i></button>
+        </div>
+      )}
 
       {/* Tactic Hero */}
       <div className="mb-8 md:mb-12">
@@ -257,15 +286,10 @@ export default function TacticDetail() {
           <div className="text-xl md:text-2xl font-black text-white">{totalVideoCount}</div>
         </div>
         <div className="p-4 md:p-6 glass-card rounded-3xl">
-          <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Score Dist</div>
-          <div className="flex items-center gap-2 mt-1">
-            <span className="text-teal-400 text-xs font-black">{scoreRanges.high}</span>
-            <span className="text-slate-600 text-[10px]">/</span>
-            <span className="text-yellow-400 text-xs font-black">{scoreRanges.mid}</span>
-            <span className="text-slate-600 text-[10px]">/</span>
-            <span className="text-slate-400 text-xs font-black">{scoreRanges.low}</span>
+          <div className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">Usage</div>
+          <div className="text-xl md:text-2xl font-black text-pink-400">
+            {tactic.total_platform_videos > 0 ? ((totalVideoCount / tactic.total_platform_videos) * 100).toFixed(1) + '%' : '--'}
           </div>
-          <div className="text-[9px] text-slate-600 mt-1">high / mid / low</div>
         </div>
       </div>
 
