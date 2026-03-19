@@ -315,7 +315,7 @@ export default function AIModelLab() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black tracking-tight font-display">AI Model Lab</h1>
+          <h1 className="text-2xl font-black tracking-tight font-display">Cost Tracking</h1>
           <p className="text-sm text-slate-400 mt-1">Manage Gemini models, compare performance, and analyze costs</p>
         </div>
       </div>

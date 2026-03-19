@@ -48,6 +48,8 @@ interface HashtagStat {
 interface DailyStat {
   date: string
   count: number
+  analyzed?: number
+  failed?: number
 }
 
 interface ContentAnalytics {
@@ -97,6 +99,8 @@ function ChartTooltip({
 }
 
 const PINK = '#ec4899'
+const GREEN = '#22c55e'
+const RED = '#ef4444'
 const ORANGE = '#f97316'
 
 export default function ContentAnalyticsDashboard() {
@@ -147,6 +151,8 @@ export default function ContentAnalyticsDashboard() {
   const dailyVideoData = data.daily_videos.map(d => ({
     date: new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
     count: d.count,
+    analyzed: d.analyzed ?? 0,
+    failed: d.failed ?? 0,
   }))
 
   const dailyInfluencerData = data.daily_influencers.map(d => ({
@@ -213,12 +219,22 @@ export default function ContentAnalyticsDashboard() {
                     <stop offset="0%" stopColor={PINK} stopOpacity={0.3} />
                     <stop offset="100%" stopColor={PINK} stopOpacity={0} />
                   </linearGradient>
+                  <linearGradient id="greenGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={GREEN} stopOpacity={0.3} />
+                    <stop offset="100%" stopColor={GREEN} stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="redGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={RED} stopOpacity={0.3} />
+                    <stop offset="100%" stopColor={RED} stopOpacity={0} />
+                  </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
                 <XAxis dataKey="date" tick={{ fill: '#64748b', fontSize: 10 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
                 <YAxis tickFormatter={fmt} tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
                 <Tooltip content={<ChartTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.1)' }} />
-                <Area type="monotone" dataKey="count" name="Videos" stroke={PINK} fill="url(#pinkGrad)" strokeWidth={2} dot={false} />
+                <Area type="monotone" dataKey="count" name="Scraped" stroke={PINK} fill="url(#pinkGrad)" strokeWidth={2} dot={false} />
+                <Area type="monotone" dataKey="analyzed" name="Analyzed" stroke={GREEN} fill="url(#greenGrad)" strokeWidth={2} dot={false} />
+                <Area type="monotone" dataKey="failed" name="Failed" stroke={RED} fill="url(#redGrad)" strokeWidth={2} dot={false} />
               </AreaChart>
             </ResponsiveContainer>
           ) : (

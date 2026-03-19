@@ -44,7 +44,7 @@ const managementItems = [
   { to: '/dashboard/duplicate-management', icon: 'fa-code-merge', label: 'Duplicates' },
   { to: '/dashboard/onboarding-management', icon: 'fa-clipboard-check', label: 'Onboarding' },
   { to: '/dashboard/category-requests', icon: 'fa-inbox', label: 'Category Requests' },
-  { to: '/dashboard/ai-model-lab', icon: 'fa-microchip', label: 'AI Model Lab' },
+  { to: '/dashboard/ai-model-lab', icon: 'fa-microchip', label: 'Cost Tracking' },
   { to: '/dashboard/hashtags', icon: 'fa-hashtag', label: 'Hashtags' },
   { to: '/dashboard/site-analytics', icon: 'fa-chart-line', label: 'Site Analytics' },
 ]
