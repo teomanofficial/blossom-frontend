@@ -11,7 +11,7 @@ export interface AnalysisBenchmarksProps {
 
 export default function AnalysisBenchmarks({
   benchmarks,
-  virality,
+  virality: _virality,
   topFormatVideos,
   topHookVideos,
   onOpenCarousel,
