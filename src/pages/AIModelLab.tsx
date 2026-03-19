@@ -569,7 +569,7 @@ export default function AIModelLab() {
           {/* Period selector */}
           <div className="flex items-center gap-2">
             <span className="text-xs text-slate-500 font-bold">Period:</span>
-            {[7, 14, 30, 90].map(d => (
+            {[1, 7, 14, 30, 90].map(d => (
               <button
                 key={d}
                 onClick={() => setAnalyticsDays(d)}
@@ -591,12 +591,12 @@ export default function AIModelLab() {
                 <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-4">
                   <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Cost</div>
                   <div className="text-2xl font-black mt-1">{formatCost(totalCost)}</div>
-                  <div className="text-[10px] text-slate-500">last {analyticsDays} days</div>
+                  <div className="text-[10px] text-slate-500">last {analyticsDays === 1 ? '24 hours' : `${analyticsDays} days`}</div>
                 </div>
                 <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-4">
                   <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Requests</div>
                   <div className="text-2xl font-black mt-1">{formatNumber(totalRequests)}</div>
-                  <div className="text-[10px] text-slate-500">last {analyticsDays} days</div>
+                  <div className="text-[10px] text-slate-500">last {analyticsDays === 1 ? '24 hours' : `${analyticsDays} days`}</div>
                 </div>
                 <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-4">
                   <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Avg Cost/Req</div>
@@ -894,7 +894,7 @@ export default function AIModelLab() {
         <div className="space-y-4">
           <div className="flex items-center gap-2">
             <span className="text-xs text-slate-500 font-bold">Period:</span>
-            {[7, 14, 30].map(d => (
+            {[1, 7, 14, 30].map(d => (
               <button
                 key={d}
                 onClick={() => setAnalyticsDays(d)}

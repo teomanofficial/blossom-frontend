@@ -53,12 +53,6 @@ export default function AnalysisBenchmarks({
               <div className="text-lg font-black text-white">{Number(benchmarks.format_avg_engagement).toFixed(1)}%</div>
             </div>
           )}
-          {virality?.benchmark_comparison?.views_vs_format_avg && (
-            <div className="mt-4 mb-2 text-xs font-bold text-slate-400">
-              <i className="fas fa-chart-line mr-1 text-[9px]"></i>
-              {virality.benchmark_comparison.views_vs_format_avg}
-            </div>
-          )}
           {topFormatVideos && topFormatVideos.length > 0 && (
             <div className="mt-auto pt-5 border-t border-white/5" style={{ marginTop: 'auto' }}>
               <div className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-3">

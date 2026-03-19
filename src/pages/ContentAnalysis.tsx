@@ -361,7 +361,7 @@ export default function ContentAnalysis() {
   return (
     <>
       {/* Page Header */}
-      <div className="mb-6 sm:mb-12">
+      <div className={`mb-6 ${isAnalyzing ? 'sm:mb-6' : 'sm:mb-12'}`}>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2 mb-2 sm:mb-3">
@@ -406,10 +406,10 @@ export default function ContentAnalysis() {
               <div className="absolute -top-10 -left-10 w-[300px] h-[300px] rounded-full bg-purple-700/10 blur-[120px] pointer-events-none" />
               <div className="absolute -bottom-10 -right-10 w-[300px] h-[300px] rounded-full bg-pink-500/10 blur-[120px] pointer-events-none" />
 
-              <div className="w-full grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-8 lg:gap-12 items-stretch relative z-10">
+              <div className="w-full grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-8 lg:gap-12 items-center relative z-10">
                 {/* LEFT: Phone Scanner */}
                 <div className="flex justify-center">
-                  <div className="analysis-phone-frame w-full max-w-[280px] rounded-[32px] relative overflow-hidden flex items-center justify-center">
+                  <div className="analysis-phone-frame w-full max-w-[240px] max-h-[420px] rounded-[32px] relative overflow-hidden flex items-center justify-center">
                     {/* Video thumbnail background */}
                     {videoThumbnail && (
                       <img
