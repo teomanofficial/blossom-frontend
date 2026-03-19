@@ -50,6 +50,7 @@ export interface CarouselVideo {
   hook_class_name?: string | null
   final_viral_probability?: number | null
   duration_sec?: number | null
+  top_tactic_names?: string[] | null
   raw_data?: any
   local_carousel_media?: any
 }
@@ -303,7 +304,7 @@ export default function VideoStoryCarousel({ videos: initialVideos, initialIndex
   const thumb = getThumbnailSrc(video)
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-sm flex">
+    <div className="fixed inset-0 z-[100] bg-black/[0.97] backdrop-blur-sm flex">
       {/* Close button */}
       <button
         onClick={onClose}
@@ -521,114 +522,191 @@ export default function VideoStoryCarousel({ videos: initialVideos, initialIndex
 
         {/* Details panel */}
         <div className="flex-1 min-w-0 lg:max-w-lg w-full lg:h-[640px] overflow-y-auto carousel-scrollbar">
-          <div className="space-y-4">
-            {/* Creator & metrics header */}
-            <div>
-              <h3 className="text-lg font-black text-white">@{video.username}</h3>
-              <div className="flex flex-wrap items-center gap-2 mt-1">
-                {video.platform && (
-                  <span className={`text-xs px-1.5 py-0.5 rounded font-bold ${
-                    video.platform === 'tiktok' ? 'bg-pink-500/20 text-pink-300' : 'bg-orange-500/20 text-orange-300'
-                  }`}>
-                    <i className={`fab fa-${video.platform === 'tiktok' ? 'tiktok' : 'instagram'} mr-1`}></i>
-                    {video.platform}
-                  </span>
+          <div className="space-y-3">
+            {/* Creator header */}
+            <div className="flex items-start justify-between">
+              <div>
+                <div className="flex items-center gap-2.5">
+                  <h3 className="text-xl font-black text-white tracking-tight">@{video.username}</h3>
+                  {video.platform && (
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-black tracking-wider uppercase ${
+                      video.platform === 'tiktok' ? 'bg-pink-500/20 text-pink-300 border border-pink-500/20' : 'bg-gradient-to-r from-orange-500/20 to-purple-500/20 text-orange-300 border border-orange-500/20'
+                    }`}>
+                      <i className={`fab fa-${video.platform === 'tiktok' ? 'tiktok' : 'instagram'} mr-1`}></i>
+                      {video.platform}
+                    </span>
+                  )}
+                  {video.status === 'analyzed' && (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-black bg-teal-500/15 text-teal-400 border border-teal-500/20">
+                      Analyzed
+                    </span>
+                  )}
+                </div>
+                {video.published_at && (
+                  <p className="text-[11px] text-slate-500 mt-0.5 font-medium">
+                    {timeAgo(video.published_at)} &middot; {new Date(video.published_at).toLocaleDateString()}
+                  </p>
                 )}
-                {video.status && (
-                  <span className={`text-xs px-1.5 py-0.5 rounded font-bold ${
-                    video.status === 'analyzed' ? 'bg-teal-500/20 text-teal-300' :
-                    video.status === 'video_failed' ? 'bg-amber-500/20 text-amber-300' :
-                    video.status === 'error' ? 'bg-red-500/20 text-red-300' :
-                    'bg-orange-500/20 text-orange-300'
-                  }`}>
-                    {video.status === 'analyzed' ? 'Analyzed' : video.status === 'video_failed' ? 'No Video' : video.status === 'error' ? 'Error' : 'Pending'}
-                  </span>
-                )}
-                {video.final_viral_probability != null && (
-                  <span className={`text-xs font-black ${
+              </div>
+              {video.final_viral_probability != null && (
+                <div className={`text-right`}>
+                  <p className={`text-2xl font-black tabular-nums ${
                     video.final_viral_probability >= 0.7 ? 'text-teal-400' :
                     video.final_viral_probability >= 0.4 ? 'text-amber-400' :
                     'text-red-400'
                   }`}>
-                    {Math.round(video.final_viral_probability * 100)}% viral
-                  </span>
-                )}
-              </div>
+                    {Math.round(video.final_viral_probability * 100)}%
+                  </p>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Viral Score</p>
+                </div>
+              )}
             </div>
 
             {/* Error details (admin only) */}
             {isAdmin && (video.status === 'error' || video.status === 'video_failed') && (
-              <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+              <div className="bg-red-500/8 border border-red-500/15 rounded-xl p-3">
                 <div className="flex items-center gap-2 mb-1.5">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-red-400 flex-shrink-0">
-                    <circle cx="12" cy="12" r="10"/>
-                    <line x1="12" y1="8" x2="12" y2="12"/>
-                    <line x1="12" y1="16" x2="12.01" y2="16"/>
-                  </svg>
+                  <div className="w-5 h-5 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="text-red-400">
+                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                  </div>
                   <p className="text-[10px] font-black text-red-400 uppercase tracking-widest">
                     {video.status === 'video_failed' ? 'Video Download Failed' : 'Analysis Failed'}
                   </p>
                 </div>
                 {video.error_message ? (
-                  <p className="text-xs text-red-300/80 font-mono break-all whitespace-pre-wrap">{video.error_message}</p>
+                  <p className="text-xs text-red-300/70 font-mono break-all whitespace-pre-wrap leading-relaxed">{video.error_message}</p>
                 ) : (
-                  <p className="text-xs text-red-300/50 italic">No error message recorded</p>
+                  <p className="text-xs text-red-300/40 italic">No error message recorded</p>
                 )}
                 {video.updated_at && (
-                  <p className="text-[10px] text-red-400/50 mt-1.5">Failed {timeAgo(video.updated_at)} &middot; {new Date(video.updated_at).toLocaleString()}</p>
+                  <p className="text-[10px] text-red-400/40 mt-1.5">Failed {timeAgo(video.updated_at)} &middot; {new Date(video.updated_at).toLocaleString()}</p>
                 )}
               </div>
             )}
 
-            {/* Metrics row */}
-            <div className="grid grid-cols-4 gap-2">
-              <div className="bg-white/5 rounded-lg p-2 text-center">
-                <p className="text-sm font-black text-white">{formatCount(video.views)}</p>
-                <p className="text-[10px] font-bold text-slate-500">Views</p>
-              </div>
-              <div className="bg-white/5 rounded-lg p-2 text-center">
-                <p className="text-sm font-black text-white">{formatCount(video.likes)}</p>
-                <p className="text-[10px] font-bold text-slate-500">Likes</p>
-              </div>
-              <div className="bg-white/5 rounded-lg p-2 text-center">
-                <p className="text-sm font-black text-white">{formatCount(video.comments)}</p>
-                <p className="text-[10px] font-bold text-slate-500">Comments</p>
-              </div>
-              <div className="bg-white/5 rounded-lg p-2 text-center">
-                <p className="text-sm font-black text-white">{formatCount(video.shares)}</p>
-                <p className="text-[10px] font-bold text-slate-500">Shares</p>
-              </div>
+            {/* Metrics strip */}
+            <div className="flex items-center gap-1">
+              {[
+                { value: video.views, label: 'Views', icon: 'M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z' },
+                { value: video.likes, label: 'Likes', icon: 'M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z' },
+                { value: video.comments, label: 'Comments', icon: 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z' },
+                { value: video.shares, label: 'Shares', icon: 'M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z' },
+              ].map((metric) => (
+                <div key={metric.label} className="flex-1 bg-white/[0.03] hover:bg-white/[0.06] rounded-xl p-2.5 text-center transition-colors group">
+                  <svg className="w-3.5 h-3.5 mx-auto mb-1 text-slate-600 group-hover:text-slate-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d={metric.icon} />
+                  </svg>
+                  <p className="text-sm font-black text-white tabular-nums">{formatCount(metric.value)}</p>
+                  <p className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">{metric.label}</p>
+                </div>
+              ))}
             </div>
 
-            {/* Time Context */}
-            {(video.published_at || video.updated_at) && (
-              <div className="bg-white/5 rounded-lg p-3">
-                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Time Context</p>
-                <div className="grid grid-cols-2 gap-3">
+            {/* Engagement rate bar */}
+            {video.engagement_rate != null && (
+              <div className="bg-white/[0.03] rounded-xl px-3 py-2 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className={`w-2 h-2 rounded-full ${
+                    Number(video.engagement_rate) >= 3 ? 'bg-teal-400' :
+                    Number(video.engagement_rate) >= 1 ? 'bg-amber-400' :
+                    'bg-red-400'
+                  }`} />
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Engagement Rate</span>
+                </div>
+                <span className={`text-sm font-black tabular-nums ${
+                  Number(video.engagement_rate) >= 3 ? 'text-teal-400' :
+                  Number(video.engagement_rate) >= 1 ? 'text-white' :
+                  'text-red-400'
+                }`}>{Number(video.engagement_rate).toFixed(2)}%</span>
+              </div>
+            )}
+
+            {/* Analysis: Format & Hook */}
+            {video.status === 'analyzed' && (video.format_class_name || video.hook_class_name) && (
+              <div className="grid grid-cols-2 gap-2">
+                {video.format_class_name && (
+                  <div className="bg-gradient-to-br from-pink-500/10 to-pink-500/5 border border-pink-500/15 rounded-xl p-3">
+                    <div className="flex items-center gap-1.5 mb-1.5">
+                      <svg className="w-3.5 h-3.5 text-pink-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/><line x1="17" y1="17" x2="22" y2="17"/>
+                      </svg>
+                      <span className="text-[9px] font-black text-pink-400/70 uppercase tracking-widest">Format</span>
+                    </div>
+                    <p className="text-[13px] font-bold text-pink-200 leading-tight">{video.format_class_name}</p>
+                  </div>
+                )}
+                {video.hook_class_name && (
+                  <div className="bg-gradient-to-br from-purple-500/10 to-purple-500/5 border border-purple-500/15 rounded-xl p-3">
+                    <div className="flex items-center gap-1.5 mb-1.5">
+                      <svg className="w-3.5 h-3.5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/>
+                      </svg>
+                      <span className="text-[9px] font-black text-purple-400/70 uppercase tracking-widest">Hook</span>
+                    </div>
+                    <p className="text-[13px] font-bold text-purple-200 leading-tight">{video.hook_class_name}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Analysis: Tactics */}
+            {video.status === 'analyzed' && video.top_tactic_names && video.top_tactic_names.length > 0 && (
+              <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-3">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <svg className="w-3.5 h-3.5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                  </svg>
+                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Top Tactics</span>
+                  <span className="text-[9px] font-bold text-slate-600 ml-auto">{video.top_tactic_names.length}</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {video.top_tactic_names.map((tactic, i) => (
+                    <span
+                      key={i}
+                      className="text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-300/90 border border-amber-500/15 hover:bg-amber-500/15 transition-colors"
+                    >
+                      {tactic}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Time context */}
+            {(video.published_at || (video.status === 'analyzed' && video.updated_at)) && (
+              <div className="bg-white/[0.03] rounded-xl p-3">
+                <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-2">Time Context</p>
+                <div className="flex items-center gap-4">
                   {video.published_at && (
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-500">Uploaded</p>
-                      <p className="text-sm font-bold text-white">{timeAgo(video.published_at)}</p>
-                      <p className="text-[10px] text-slate-600">{new Date(video.published_at).toLocaleDateString()}</p>
+                    <div className="flex items-center gap-2">
+                      <div className="w-1 h-8 rounded-full bg-blue-500/30" />
+                      <div>
+                        <p className="text-[10px] font-bold text-slate-500">Uploaded</p>
+                        <p className="text-sm font-bold text-white">{timeAgo(video.published_at)}</p>
+                      </div>
                     </div>
                   )}
                   {video.status === 'analyzed' && video.updated_at && (
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-500">Analyzed</p>
-                      <p className="text-sm font-bold text-white">{timeAgo(video.updated_at)}</p>
-                      <p className="text-[10px] text-slate-600">{new Date(video.updated_at).toLocaleDateString()}</p>
+                    <div className="flex items-center gap-2">
+                      <div className="w-1 h-8 rounded-full bg-teal-500/30" />
+                      <div>
+                        <p className="text-[10px] font-bold text-slate-500">Analyzed</p>
+                        <p className="text-sm font-bold text-white">{timeAgo(video.updated_at)}</p>
+                      </div>
                     </div>
                   )}
                 </div>
                 {video.published_at && (
-                  <p className="text-[10px] text-amber-400/70 mt-2 font-medium">
+                  <p className="text-[10px] text-amber-400/60 mt-2 font-medium">
                     {(() => {
                       const days = Math.floor((Date.now() - new Date(video.published_at).getTime()) / (1000 * 60 * 60 * 24))
-                      if (days < 1) return 'Published today — metrics may still be accumulating'
-                      if (days < 3) return 'Published recently — viral potential still developing'
-                      if (days < 7) return 'Less than a week old — still gaining traction'
-                      if (days < 30) return `${days} days old — metrics are stabilizing`
-                      return `${Math.floor(days / 30)} months old — metrics are settled`
+                      if (days < 1) return 'Published today — metrics still accumulating'
+                      if (days < 3) return 'Recently published — viral potential developing'
+                      if (days < 7) return 'Less than a week — still gaining traction'
+                      if (days < 30) return `${days} days old — metrics stabilizing`
+                      return `${Math.floor(days / 30)} months old — metrics settled`
                     })()}
                   </p>
                 )}
@@ -637,50 +715,24 @@ export default function VideoStoryCarousel({ videos: initialVideos, initialIndex
 
             {/* Caption */}
             {video.caption && (
-              <div className="bg-white/5 rounded-lg p-3">
-                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Caption</p>
-                <p className="text-sm text-white/90 whitespace-pre-wrap">{video.caption}</p>
-              </div>
-            )}
-
-            {/* Format / Hook classes */}
-            {(video.format_class_name || video.hook_class_name) && (
-              <div className="flex flex-wrap gap-2">
-                {video.format_class_name && (
-                  <span className="text-xs px-2 py-1 rounded-lg bg-pink-500/20 text-pink-300 border border-pink-500/30 font-bold">
-                    Format: {video.format_class_name}
-                  </span>
-                )}
-                {video.hook_class_name && (
-                  <span className="text-xs px-2 py-1 rounded-lg bg-purple-500/20 text-purple-300 border border-purple-500/30 font-bold">
-                    Hook: {video.hook_class_name}
-                  </span>
-                )}
-              </div>
-            )}
-
-            {/* Engagement rate */}
-            {video.engagement_rate != null && (
-              <div className="bg-white/5 rounded-lg p-3">
-                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Engagement Rate</p>
-                <p className="text-lg font-black text-white">{Number(video.engagement_rate).toFixed(2)}%</p>
+              <div className="bg-white/[0.03] rounded-xl p-3">
+                <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-1.5">Caption</p>
+                <p className="text-[13px] text-white/80 whitespace-pre-wrap leading-relaxed">{video.caption}</p>
               </div>
             )}
 
             {/* Custom metadata */}
             {renderMeta && renderMeta(video, currentIndex)}
 
-            {/* Actions row */}
-            <div className="flex flex-wrap items-center gap-3">
+            {/* Actions */}
+            <div className="flex flex-wrap items-center gap-2 pt-1">
               {videoUrl && !videoError && (
                 <button
                   onClick={handleSaveVideo}
-                  className="inline-flex items-center gap-1.5 text-sm text-teal-400 hover:text-teal-300 transition-colors font-bold"
+                  className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-teal-500/10 text-teal-400 hover:bg-teal-500/20 border border-teal-500/15 transition-colors font-bold"
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                    <polyline points="7 10 12 15 17 10"/>
-                    <line x1="12" y1="15" x2="12" y2="3"/>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
                   </svg>
                   Save Video
                 </button>
@@ -693,11 +745,10 @@ export default function VideoStoryCarousel({ videos: initialVideos, initialIndex
                     setJsonCopied(true)
                     setTimeout(() => setJsonCopied(false), 2000)
                   }}
-                  className="inline-flex items-center gap-1.5 text-sm text-amber-400 hover:text-amber-300 transition-colors font-bold"
+                  className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 border border-amber-500/15 transition-colors font-bold"
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
                   </svg>
                   {jsonCopied ? 'Copied!' : 'Copy JSON'}
                 </button>
@@ -707,10 +758,10 @@ export default function VideoStoryCarousel({ videos: initialVideos, initialIndex
                   href={video.content_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-sm text-pink-400 hover:text-pink-300 transition-colors font-bold"
+                  className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-white/5 text-white/70 hover:bg-white/10 border border-white/10 transition-colors font-bold"
                 >
                   Open on {video.platform === 'tiktok' ? 'TikTok' : 'Instagram'}
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5.5 2.5H3C2.72386 2.5 2.5 2.72386 2.5 3V11C2.5 11.2761 2.72386 11.5 3 11.5H11C11.2761 11.5 11.5 11.2761 11.5 11V8.5M8.5 2.5H11.5V5.5M6.5 7.5L11.5 2.5" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  <svg width="10" height="10" viewBox="0 0 14 14" fill="none"><path d="M5.5 2.5H3C2.72386 2.5 2.5 2.72386 2.5 3V11C2.5 11.2761 2.72386 11.5 3 11.5H11C11.2761 11.5 11.5 11.2761 11.5 11V8.5M8.5 2.5H11.5V5.5M6.5 7.5L11.5 2.5" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 </a>
               )}
             </div>

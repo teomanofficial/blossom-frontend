@@ -131,6 +131,7 @@ export default function TacticDetail() {
   const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [carouselData, setCarouselData] = useState<{ videos: CarouselVideo[]; initialIndex: number } | null>(null)
+  const [showAllFormats, setShowAllFormats] = useState(false)
   const loaderRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -330,7 +331,7 @@ export default function TacticDetail() {
             <i className="fas fa-shapes text-slate-500"></i> Most Used In Formats
           </h2>
           <div className="flex flex-wrap gap-3">
-            {tactic.format_distribution.map((fd) => (
+            {(showAllFormats ? tactic.format_distribution : tactic.format_distribution.slice(0, 5)).map((fd) => (
               <Link
                 key={fd.id}
                 to={`/dashboard/formats/${fd.id}`}
@@ -342,6 +343,24 @@ export default function TacticDetail() {
                 <span className="text-[10px] text-slate-500 font-bold ml-2">{fd.usage_count} videos</span>
               </Link>
             ))}
+            {tactic.format_distribution.length > 5 && !showAllFormats && (
+              <button
+                onClick={() => setShowAllFormats(true)}
+                className="px-4 py-2.5 rounded-xl border border-dashed border-slate-700 hover:border-slate-500 transition-colors"
+              >
+                <span className="text-xs font-bold text-slate-500 hover:text-slate-300">
+                  +{tactic.format_distribution.length - 5} more
+                </span>
+              </button>
+            )}
+            {showAllFormats && tactic.format_distribution.length > 5 && (
+              <button
+                onClick={() => setShowAllFormats(false)}
+                className="px-4 py-2.5 rounded-xl border border-dashed border-slate-700 hover:border-slate-500 transition-colors"
+              >
+                <span className="text-xs font-bold text-slate-500 hover:text-slate-300">Show less</span>
+              </button>
+            )}
           </div>
         </div>
       )}

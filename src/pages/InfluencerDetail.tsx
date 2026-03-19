@@ -27,6 +27,8 @@ interface InfluencerVideo {
   content_type: string | null
   final_viral_probability: number | null
   format_class_name: string | null
+  hook_class_name: string | null
+  top_tactic_names: string[] | null
 }
 
 interface DeepScanData {
