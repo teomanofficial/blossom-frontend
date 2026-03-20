@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { authFetch } from '../lib/api'
@@ -79,6 +79,28 @@ export default function Influencers() {
   const categoryRef = useRef<HTMLDivElement>(null)
   const limit = 30
 
+  // Advanced filters
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
+  const [followersMin, setFollowersMin] = useState('')
+  const [followersMax, setFollowersMax] = useState('')
+  const [engagementMin, setEngagementMin] = useState('')
+  const [engagementMax, setEngagementMax] = useState('')
+  const [avgViewsMin, setAvgViewsMin] = useState('')
+  const [avgViewsMax, setAvgViewsMax] = useState('')
+  const [viralMin, setViralMin] = useState('')
+  const [viralMax, setViralMax] = useState('')
+
+  // Applied advanced filter state (so we only refetch on Apply)
+  const [appliedAdvanced, setAppliedAdvanced] = useState<Record<string, string>>({})
+
+  // Multi-select
+  const [selectMode, setSelectMode] = useState(false)
+  const [selected, setSelected] = useState<Set<number>>(new Set())
+  const [bulkPostCount, setBulkPostCount] = useState(30)
+  const [bulkAnalyzing, setBulkAnalyzing] = useState(false)
+
+  const activeAdvancedCount = Object.values(appliedAdvanced).filter(Boolean).length
+
   const tierOptions = [
     { value: '', label: 'All Tiers' },
     { value: 'mega', label: 'Mega', color: 'text-pink-400' },
@@ -119,6 +141,16 @@ export default function Influencers() {
     if (tierFilter) params.set('tier', tierFilter)
     if (categoryFilter) params.set('category', categoryFilter)
 
+    // Advanced filters
+    if (appliedAdvanced.followers_min) params.set('followers_min', appliedAdvanced.followers_min)
+    if (appliedAdvanced.followers_max) params.set('followers_max', appliedAdvanced.followers_max)
+    if (appliedAdvanced.engagement_min) params.set('engagement_min', appliedAdvanced.engagement_min)
+    if (appliedAdvanced.engagement_max) params.set('engagement_max', appliedAdvanced.engagement_max)
+    if (appliedAdvanced.avg_views_min) params.set('avg_views_min', appliedAdvanced.avg_views_min)
+    if (appliedAdvanced.avg_views_max) params.set('avg_views_max', appliedAdvanced.avg_views_max)
+    if (appliedAdvanced.viral_min) params.set('viral_min', appliedAdvanced.viral_min)
+    if (appliedAdvanced.viral_max) params.set('viral_max', appliedAdvanced.viral_max)
+
     authFetch(`/api/analysis/influencers?${params}`)
       .then((r) => r.json())
       .then((data) => {
@@ -127,7 +159,7 @@ export default function Influencers() {
       })
       .catch(() => toast.error('Failed to load influencers'))
       .finally(() => setLoading(false))
-  }, [sorts, search, platformFilter, tierFilter, categoryFilter, page])
+  }, [sorts, search, platformFilter, tierFilter, categoryFilter, page, appliedAdvanced])
 
   const toggleSort = (field: SortField, e: React.MouseEvent) => {
     setSorts((prev) => {
@@ -202,6 +234,74 @@ export default function Influencers() {
     }
   }
 
+  const applyAdvancedFilters = () => {
+    setAppliedAdvanced({
+      followers_min: followersMin,
+      followers_max: followersMax,
+      engagement_min: engagementMin,
+      engagement_max: engagementMax,
+      avg_views_min: avgViewsMin,
+      avg_views_max: avgViewsMax,
+      viral_min: viralMin,
+      viral_max: viralMax,
+    })
+    setPage(0)
+  }
+
+  const clearAdvancedFilters = () => {
+    setFollowersMin(''); setFollowersMax('')
+    setEngagementMin(''); setEngagementMax('')
+    setAvgViewsMin(''); setAvgViewsMax('')
+    setViralMin(''); setViralMax('')
+    setAppliedAdvanced({})
+    setPage(0)
+  }
+
+  // Selection helpers
+  const toggleSelect = useCallback((id: number) => {
+    setSelected(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
+
+  const selectAllOnPage = useCallback(() => {
+    setSelected(prev => {
+      const next = new Set(prev)
+      influencers.forEach(inf => next.add(inf.id))
+      return next
+    })
+  }, [influencers])
+
+  const deselectAll = useCallback(() => setSelected(new Set()), [])
+
+  const handleBulkAnalyze = async () => {
+    if (selected.size === 0) return
+    setBulkAnalyzing(true)
+    try {
+      const res = await authFetch('/api/analysis/influencers/bulk-full-analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ influencerIds: Array.from(selected), amount: bulkPostCount }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data.error || 'Failed to start bulk analysis')
+      } else {
+        toast.success(data.message || 'Bulk analysis started')
+        setPollNow(Date.now())
+        setSelectMode(false)
+        setSelected(new Set())
+      }
+    } catch {
+      toast.error('Failed to start bulk analysis')
+    } finally {
+      setBulkAnalyzing(false)
+    }
+  }
+
   const totalPages = Math.ceil(total / limit)
 
   const columns: { field: SortField; label: string; short: string }[] = [
@@ -219,6 +319,8 @@ export default function Influencers() {
     ? engArr.reduce((sum, i) => sum + (i.avg_engagement_rate || 0), 0) / engArr.length
     : 0
 
+  const gridCols = selectMode ? '40px 2.5fr repeat(6, 1fr)' : '2.5fr repeat(6, 1fr)'
+
   return (
     <div className="max-w-[1400px] mx-auto">
       {/* Header */}
@@ -233,20 +335,35 @@ export default function Influencers() {
             <span className="hidden sm:inline"><span className="text-teal-400 font-semibold">{avgEngagement > 0 ? (avgEngagement * 100).toFixed(1) + '%' : '--'}</span> avg eng</span>
           </div>
         </div>
-        {userType === 'admin' && (
-          <button
-            onClick={handleRefetchProfiles}
-            disabled={refetching}
-            className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-40 self-start sm:self-auto"
-          >
-            <i className={`fas fa-${refetching ? 'spinner fa-spin' : 'sync-alt'} mr-1.5 text-[10px]`}></i>
-            {refetching ? 'Refetching...' : 'Refetch Profiles'}
-          </button>
-        )}
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          {userType === 'admin' && (
+            <>
+              <button
+                onClick={() => { setSelectMode(!selectMode); if (selectMode) deselectAll() }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                  selectMode
+                    ? 'bg-pink-500/10 border-pink-500/20 text-pink-400'
+                    : 'bg-white/5 border-white/10 text-slate-400 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                <i className={`fas fa-${selectMode ? 'times' : 'check-square'} mr-1.5 text-[10px]`}></i>
+                {selectMode ? 'Cancel' : 'Select'}
+              </button>
+              <button
+                onClick={handleRefetchProfiles}
+                disabled={refetching}
+                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-40"
+              >
+                <i className={`fas fa-${refetching ? 'spinner fa-spin' : 'sync-alt'} mr-1.5 text-[10px]`}></i>
+                {refetching ? 'Refetching...' : 'Refetch Profiles'}
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-2 mb-4">
+      <div className="flex flex-wrap items-center gap-2 mb-2">
         <form onSubmit={handleSearch} className="flex items-center glass-input px-3 py-1.5 w-full sm:w-56">
           <i className="fas fa-search text-slate-600 text-[10px] mr-2"></i>
           <input
@@ -377,7 +494,30 @@ export default function Influencers() {
           </div>
         )}
 
+        {/* Advanced Filters Toggle */}
+        <button
+          onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+          className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium rounded-lg border transition-colors ${
+            activeAdvancedCount > 0
+              ? 'bg-teal-500/10 border-teal-500/20 text-teal-400'
+              : 'bg-white/5 border-white/10 text-slate-500 hover:text-slate-300'
+          }`}
+        >
+          <i className="fas fa-sliders-h text-[9px]"></i>
+          Filters
+          {activeAdvancedCount > 0 && (
+            <span className="bg-teal-500/20 text-teal-400 text-[9px] font-bold px-1.5 py-px rounded-full">{activeAdvancedCount}</span>
+          )}
+          <i className={`fas fa-chevron-down text-[8px] ml-0.5 transition-transform ${showAdvancedFilters ? 'rotate-180' : ''}`}></i>
+        </button>
+
         <div className="flex-1" />
+
+        {selectMode && selected.size > 0 && (
+          <span className="text-xs font-semibold text-pink-400">
+            {selected.size} selected
+          </span>
+        )}
 
         {totalPages > 1 && (
           <div className="flex items-center gap-1 text-xs text-slate-500">
@@ -399,6 +539,133 @@ export default function Influencers() {
           </div>
         )}
       </div>
+
+      {/* Advanced Filters Panel */}
+      {showAdvancedFilters && (
+        <div className="glass-card rounded-xl p-4 mb-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {/* Followers Range */}
+            <div>
+              <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5 block">Followers</label>
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="number"
+                  value={followersMin}
+                  onChange={(e) => setFollowersMin(e.target.value)}
+                  placeholder="Min"
+                  className="glass-input px-2.5 py-1.5 text-xs w-full placeholder:text-slate-600"
+                />
+                <span className="text-slate-600 text-[10px]">-</span>
+                <input
+                  type="number"
+                  value={followersMax}
+                  onChange={(e) => setFollowersMax(e.target.value)}
+                  placeholder="Max"
+                  className="glass-input px-2.5 py-1.5 text-xs w-full placeholder:text-slate-600"
+                />
+              </div>
+            </div>
+
+            {/* Engagement Rate Range */}
+            <div>
+              <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5 block">Engagement %</label>
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="number"
+                  step="0.1"
+                  value={engagementMin}
+                  onChange={(e) => setEngagementMin(e.target.value)}
+                  placeholder="Min"
+                  className="glass-input px-2.5 py-1.5 text-xs w-full placeholder:text-slate-600"
+                />
+                <span className="text-slate-600 text-[10px]">-</span>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={engagementMax}
+                  onChange={(e) => setEngagementMax(e.target.value)}
+                  placeholder="Max"
+                  className="glass-input px-2.5 py-1.5 text-xs w-full placeholder:text-slate-600"
+                />
+              </div>
+            </div>
+
+            {/* Avg Views Range */}
+            <div>
+              <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5 block">Avg Views</label>
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="number"
+                  value={avgViewsMin}
+                  onChange={(e) => setAvgViewsMin(e.target.value)}
+                  placeholder="Min"
+                  className="glass-input px-2.5 py-1.5 text-xs w-full placeholder:text-slate-600"
+                />
+                <span className="text-slate-600 text-[10px]">-</span>
+                <input
+                  type="number"
+                  value={avgViewsMax}
+                  onChange={(e) => setAvgViewsMax(e.target.value)}
+                  placeholder="Max"
+                  className="glass-input px-2.5 py-1.5 text-xs w-full placeholder:text-slate-600"
+                />
+              </div>
+            </div>
+
+            {/* Viral Videos Range */}
+            <div>
+              <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5 block">Viral Videos</label>
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="number"
+                  value={viralMin}
+                  onChange={(e) => setViralMin(e.target.value)}
+                  placeholder="Min"
+                  className="glass-input px-2.5 py-1.5 text-xs w-full placeholder:text-slate-600"
+                />
+                <span className="text-slate-600 text-[10px]">-</span>
+                <input
+                  type="number"
+                  value={viralMax}
+                  onChange={(e) => setViralMax(e.target.value)}
+                  placeholder="Max"
+                  className="glass-input px-2.5 py-1.5 text-xs w-full placeholder:text-slate-600"
+                />
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 mt-3">
+            <button
+              onClick={applyAdvancedFilters}
+              className="px-4 py-1.5 rounded-lg text-xs font-semibold bg-teal-500/10 border border-teal-500/20 text-teal-400 hover:bg-teal-500/20 transition-colors"
+            >
+              <i className="fas fa-check mr-1.5 text-[10px]"></i>Apply Filters
+            </button>
+            {activeAdvancedCount > 0 && (
+              <button
+                onClick={clearAdvancedFilters}
+                className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-500 hover:text-white transition-colors"
+              >
+                <i className="fas fa-times mr-1 text-[10px]"></i>Clear
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Select All / Deselect All bar */}
+      {selectMode && (
+        <div className="flex items-center gap-2 mb-2">
+          <button onClick={selectAllOnPage} className="text-[11px] font-medium text-slate-400 hover:text-white transition-colors">
+            <i className="fas fa-check-double mr-1 text-[9px]"></i>Select All on Page
+          </button>
+          {selected.size > 0 && (
+            <button onClick={deselectAll} className="text-[11px] font-medium text-slate-500 hover:text-white transition-colors">
+              <i className="fas fa-times mr-1 text-[9px]"></i>Deselect All ({selected.size})
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Influencer Analyze Progress */}
       {userType === 'admin' && (
@@ -426,8 +693,9 @@ export default function Influencers() {
           <div className="hidden lg:block glass-card rounded-2xl overflow-hidden">
             {/* Table Header */}
             <div className="grid items-center gap-3 px-4 py-2.5 bg-white/[0.02] border-b border-white/[0.06] text-[10px] font-semibold text-slate-500 uppercase tracking-wider"
-              style={{ gridTemplateColumns: '2.5fr repeat(6, 1fr)' }}
+              style={{ gridTemplateColumns: gridCols }}
             >
+              {selectMode && <div></div>}
               <div>Creator</div>
               {columns.map((col) => {
                 const sortIdx = sorts.findIndex((s) => s.field === col.field)
@@ -457,15 +725,18 @@ export default function Influencers() {
             {/* Rows */}
             {influencers.map((inf, idx) => {
               const avatar = getAvatarSrc(inf)
-              return (
-                <Link
-                  key={inf.id}
-                  to={`/dashboard/influencers/${inf.id}`}
-                  className={`grid items-center gap-3 px-4 py-3 transition-colors hover:bg-white/[0.03] group ${
-                    idx !== influencers.length - 1 ? 'border-b border-white/[0.04]' : ''
-                  }`}
-                  style={{ gridTemplateColumns: '2.5fr repeat(6, 1fr)' }}
-                >
+              const isSelected = selected.has(inf.id)
+              const rowContent = (
+                <>
+                  {selectMode && (
+                    <div className="flex items-center justify-center" onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleSelect(inf.id) }}>
+                      <div className={`w-4 h-4 rounded border-2 flex items-center justify-center cursor-pointer transition-colors ${
+                        isSelected ? 'bg-pink-500 border-pink-500' : 'border-slate-600 hover:border-slate-400'
+                      }`}>
+                        {isSelected && <i className="fas fa-check text-[8px] text-white"></i>}
+                      </div>
+                    </div>
+                  )}
                   {/* Creator Info */}
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="relative flex-shrink-0">
@@ -500,7 +771,7 @@ export default function Influencers() {
                       </div>
                       <div className="text-[11px] text-slate-500 truncate">@{inf.username}</div>
                     </div>
-                    {userType === 'admin' && inf.platform === 'instagram' && (
+                    {userType === 'admin' && inf.platform === 'instagram' && !selectMode && (
                       <button
                         onClick={(e) => handleAnalyzeInfluencer(e, inf.id, inf.username)}
                         disabled={analyzingId === inf.id}
@@ -532,6 +803,30 @@ export default function Influencers() {
                   <div className="text-right text-sm font-medium text-slate-400">
                     {inf.total_videos_fetched ?? <span className="text-slate-600">--</span>}
                   </div>
+                </>
+              )
+
+              return selectMode ? (
+                <div
+                  key={inf.id}
+                  onClick={() => toggleSelect(inf.id)}
+                  className={`grid items-center gap-3 px-4 py-3 transition-colors hover:bg-white/[0.03] group cursor-pointer ${
+                    idx !== influencers.length - 1 ? 'border-b border-white/[0.04]' : ''
+                  } ${isSelected ? 'bg-pink-500/[0.04]' : ''}`}
+                  style={{ gridTemplateColumns: gridCols }}
+                >
+                  {rowContent}
+                </div>
+              ) : (
+                <Link
+                  key={inf.id}
+                  to={`/dashboard/influencers/${inf.id}`}
+                  className={`grid items-center gap-3 px-4 py-3 transition-colors hover:bg-white/[0.03] group ${
+                    idx !== influencers.length - 1 ? 'border-b border-white/[0.04]' : ''
+                  }`}
+                  style={{ gridTemplateColumns: gridCols }}
+                >
+                  {rowContent}
                 </Link>
               )
             })}
@@ -541,14 +836,21 @@ export default function Influencers() {
           <div className="lg:hidden flex flex-col gap-2.5">
             {influencers.map((inf) => {
               const avatar = getAvatarSrc(inf)
-              return (
-                <Link
-                  key={inf.id}
-                  to={`/dashboard/influencers/${inf.id}`}
-                  className="block glass-card rounded-2xl p-3.5 active:bg-white/[0.06] transition-colors"
-                >
+              const isSelected = selected.has(inf.id)
+              const cardInner = (
+                <>
                   {/* Top: Avatar + Name + Followers */}
                   <div className="flex items-center gap-3 mb-3">
+                    {selectMode && (
+                      <div
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleSelect(inf.id) }}
+                        className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 cursor-pointer transition-colors ${
+                          isSelected ? 'bg-pink-500 border-pink-500' : 'border-slate-600'
+                        }`}
+                      >
+                        {isSelected && <i className="fas fa-check text-[9px] text-white"></i>}
+                      </div>
+                    )}
                     <div className="relative flex-shrink-0">
                       {avatar ? (
                         <img
@@ -616,7 +918,7 @@ export default function Influencers() {
                       </div>
                     </div>
                   </div>
-                  {userType === 'admin' && inf.platform === 'instagram' && (
+                  {userType === 'admin' && inf.platform === 'instagram' && !selectMode && (
                     <button
                       onClick={(e) => handleAnalyzeInfluencer(e, inf.id, inf.username)}
                       disabled={analyzingId === inf.id}
@@ -626,6 +928,24 @@ export default function Influencers() {
                       {analyzingId === inf.id ? 'STARTING...' : 'ANALYZE INFLUENCER'}
                     </button>
                   )}
+                </>
+              )
+
+              return selectMode ? (
+                <div
+                  key={inf.id}
+                  onClick={() => toggleSelect(inf.id)}
+                  className={`block glass-card rounded-2xl p-3.5 active:bg-white/[0.06] transition-colors cursor-pointer ${isSelected ? 'ring-1 ring-pink-500/30' : ''}`}
+                >
+                  {cardInner}
+                </div>
+              ) : (
+                <Link
+                  key={inf.id}
+                  to={`/dashboard/influencers/${inf.id}`}
+                  className="block glass-card rounded-2xl p-3.5 active:bg-white/[0.06] transition-colors"
+                >
+                  {cardInner}
                 </Link>
               )
             })}
@@ -635,7 +955,7 @@ export default function Influencers() {
 
       {/* Bottom Pagination */}
       {!loading && totalPages > 1 && (
-        <div className="flex items-center justify-between mt-4 text-xs text-slate-500">
+        <div className={`flex items-center justify-between mt-4 text-xs text-slate-500 ${selectMode && selected.size > 0 ? 'mb-20' : ''}`}>
           <span>Showing {page * limit + 1}-{Math.min((page + 1) * limit, total)} of {total}</span>
           <div className="flex items-center gap-1">
             <button
@@ -652,6 +972,43 @@ export default function Influencers() {
             >
               Next
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Action Bar */}
+      {selectMode && selected.size > 0 && userType === 'admin' && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-lg border-t border-white/10 px-4 py-3">
+          <div className="max-w-[1400px] mx-auto flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-semibold text-white">
+                {selected.size} creator{selected.size !== 1 ? 's' : ''} selected
+              </span>
+              <button onClick={deselectAll} className="text-[11px] text-slate-400 hover:text-white transition-colors">
+                <i className="fas fa-times mr-1"></i>Clear
+              </button>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <label className="text-[11px] text-slate-400 font-medium whitespace-nowrap">Posts per creator:</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={bulkPostCount}
+                  onChange={(e) => setBulkPostCount(Math.max(1, Math.min(100, Number(e.target.value) || 1)))}
+                  className="glass-input px-2.5 py-1.5 text-xs w-16 text-center"
+                />
+              </div>
+              <button
+                onClick={handleBulkAnalyze}
+                disabled={bulkAnalyzing}
+                className="px-4 py-2 rounded-lg text-xs font-bold bg-pink-500 hover:bg-pink-600 text-white transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
+                <i className={`fas ${bulkAnalyzing ? 'fa-spinner fa-spin' : 'fa-microscope'}`}></i>
+                {bulkAnalyzing ? 'Starting...' : 'Analyze Latest Videos'}
+              </button>
+            </div>
           </div>
         </div>
       )}

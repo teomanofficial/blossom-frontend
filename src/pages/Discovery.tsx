@@ -43,6 +43,8 @@ interface Scheduler {
   category_id: number | null
   category_title: string | null
   max_videos_per_hashtag: number | null
+  max_videos_per_hashtag_instagram: number | null
+  max_videos_per_hashtag_tiktok: number | null
   hashtag_count: number
   last_run_id: number | null
   last_run_status: string | null
@@ -409,6 +411,8 @@ export default function Discovery() {
     hashtag_ids: [] as number[],
     is_generic: false,
     max_videos_per_hashtag: null as number | null,
+    max_videos_per_hashtag_instagram: null as number | null,
+    max_videos_per_hashtag_tiktok: null as number | null,
   })
 
   // Run detail expansion
@@ -585,6 +589,8 @@ export default function Discovery() {
         hashtag_ids: [],
         is_generic: scheduler.is_generic || false,
         max_videos_per_hashtag: scheduler.max_videos_per_hashtag || null,
+        max_videos_per_hashtag_instagram: scheduler.max_videos_per_hashtag_instagram || null,
+        max_videos_per_hashtag_tiktok: scheduler.max_videos_per_hashtag_tiktok || null,
       })
       // Load the scheduler's hashtags
       authFetch(`/api/analysis/trending/schedulers/${scheduler.id}`)
@@ -608,6 +614,8 @@ export default function Discovery() {
         hashtag_ids: [],
         is_generic: false,
         max_videos_per_hashtag: null,
+        max_videos_per_hashtag_instagram: null,
+        max_videos_per_hashtag_tiktok: null,
       })
     }
     setShowSchedulerForm(true)
@@ -628,6 +636,8 @@ export default function Discovery() {
             category_id: schedulerForm.category_id,
             is_generic: schedulerForm.is_generic,
             max_videos_per_hashtag: schedulerForm.max_videos_per_hashtag,
+            max_videos_per_hashtag_instagram: schedulerForm.max_videos_per_hashtag_instagram,
+            max_videos_per_hashtag_tiktok: schedulerForm.max_videos_per_hashtag_tiktok,
           }),
         })
         // Sync hashtags: get current, remove missing, add new
