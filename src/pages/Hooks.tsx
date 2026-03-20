@@ -56,7 +56,6 @@ export default function Hooks() {
   const { userType, planSlug } = useAuth()
   const canFineTune = userType === 'admin' || planSlug === 'premium' || planSlug === 'platin'
   const isPro = planSlug === 'pro' && userType !== 'admin'
-  const PRO_LIMIT = 6
   const [activeTab, setActiveTab] = useState<'all' | 'fine-tuned'>('all')
   const [hooks, setHooks] = useState<HookClass[]>([])
   const [loading, setLoading] = useState(true)
@@ -219,7 +218,7 @@ export default function Hooks() {
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
-            {(isPro ? hooks.slice(0, PRO_LIMIT) : hooks).map((hook, index) => (
+            {hooks.map((hook, index) => (
               <Link
                 key={hook.id}
                 to={`/dashboard/hooks/${hook.id}`}
@@ -278,18 +277,13 @@ export default function Hooks() {
               </Link>
             ))}
 
-            {/* Upgrade banner for pro users */}
-            {isPro && hooks.length > PRO_LIMIT && (
-              <UpgradePremiumBanner
-                totalCount={total}
-                visibleCount={PRO_LIMIT}
-                itemLabel="hooks"
-                accentColor="pink"
-              />
-            )}
-
             {/* Loading more skeletons */}
-            {!isPro && loadingMore && <SkeletonGrid count={3} type="format-hook" />}
+            {loadingMore && <SkeletonGrid count={3} type="format-hook" />}
+
+            {/* Upgrade banner for pro users */}
+            {isPro && !hasMore && (
+              <UpgradePremiumBanner itemLabel="hooks" accentColor="pink" />
+            )}
 
             {/* Discover More Card - only show when all loaded */}
             {!isPro && !hasMore && (

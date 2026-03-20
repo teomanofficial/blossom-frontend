@@ -84,7 +84,6 @@ export default function Tactics() {
   const { userType, planSlug } = useAuth()
   const canFineTune = userType === 'admin' || planSlug === 'premium' || planSlug === 'platin'
   const isPro = planSlug === 'pro' && userType !== 'admin'
-  const PRO_LIMIT = 6
   const [activeTab, setActiveTab] = useState<'all' | 'fine-tuned'>('all')
   const [tactics, setTactics] = useState<Tactic[]>([])
   const [loading, setLoading] = useState(true)
@@ -335,7 +334,7 @@ export default function Tactics() {
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
-            {(isPro ? tactics.slice(0, PRO_LIMIT) : tactics).map((tactic, index) => {
+            {tactics.map((tactic, index) => {
               const score = Number(tactic.avg_execution_score) || 0
               return (
                 <Link
@@ -407,18 +406,13 @@ export default function Tactics() {
               )
             })}
 
-            {/* Upgrade banner for pro users */}
-            {isPro && tactics.length > PRO_LIMIT && (
-              <UpgradePremiumBanner
-                totalCount={total}
-                visibleCount={PRO_LIMIT}
-                itemLabel="tactics"
-                accentColor="amber"
-              />
-            )}
-
             {/* Loading more skeletons */}
-            {!isPro && loadingMore && <SkeletonGrid count={3} type="tactic" />}
+            {loadingMore && <SkeletonGrid count={3} type="tactic" />}
+
+            {/* Upgrade banner for pro users */}
+            {isPro && !hasMore && (
+              <UpgradePremiumBanner itemLabel="tactics" accentColor="amber" />
+            )}
 
             {/* Discover More Card - only show when all loaded */}
             {!isPro && !hasMore && (

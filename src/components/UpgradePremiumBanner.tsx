@@ -1,14 +1,11 @@
 import { Link } from 'react-router-dom'
 
 interface UpgradePremiumBannerProps {
-  totalCount: number
-  visibleCount: number
   itemLabel: string // e.g. "hooks", "formats", "tactics"
   accentColor?: string // e.g. "pink", "amber"
 }
 
-export default function UpgradePremiumBanner({ totalCount, visibleCount, itemLabel, accentColor = 'pink' }: UpgradePremiumBannerProps) {
-  const hiddenCount = totalCount - visibleCount
+export default function UpgradePremiumBanner({ itemLabel, accentColor = 'pink' }: UpgradePremiumBannerProps) {
   const colors: Record<string, { gradient: string; text: string; border: string; button: string }> = {
     pink: {
       gradient: 'from-pink-500/20 via-purple-500/10 to-transparent',
@@ -32,14 +29,14 @@ export default function UpgradePremiumBanner({ totalCount, visibleCount, itemLab
 
       <div className="relative z-10">
         <div className="w-14 h-14 mx-auto mb-5 bg-white/5 rounded-2xl flex items-center justify-center">
-          <i className={`fas fa-lock ${c.text} text-xl`}></i>
+          <i className={`fas fa-crown ${c.text} text-xl`}></i>
         </div>
 
         <h3 className="text-xl md:text-2xl font-black tracking-tight mb-2">
-          Unlock All {totalCount} {itemLabel}
+          Get Full Access to All {itemLabel.charAt(0).toUpperCase() + itemLabel.slice(1)}
         </h3>
         <p className="text-sm text-slate-400 font-medium mb-6 max-w-md mx-auto">
-          You're viewing {visibleCount} of {totalCount} {itemLabel}. Upgrade to Premium to access {hiddenCount}+ more {itemLabel}, fine-tuning, and advanced analytics.
+          Upgrade to Premium to unlock all {itemLabel} across every category, fine-tuning, and advanced analytics.
         </p>
 
         <Link
@@ -51,7 +48,7 @@ export default function UpgradePremiumBanner({ totalCount, visibleCount, itemLab
         </Link>
 
         <p className="text-[10px] text-slate-500 font-bold mt-4 uppercase tracking-widest">
-          Full access to all {itemLabel}, fine-tuning & more
+          All categories, fine-tuning & advanced analytics
         </p>
       </div>
     </div>

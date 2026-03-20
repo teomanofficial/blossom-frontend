@@ -64,7 +64,6 @@ export default function Formats() {
   const isAdmin = userType === 'admin'
   const canFineTune = isAdmin || planSlug === 'premium' || planSlug === 'platin'
   const isPro = planSlug === 'pro' && !isAdmin
-  const PRO_LIMIT = 6
   const [activeTab, setActiveTab] = useState<'all' | 'fine-tuned'>('all')
 
   const [formats, setFormats] = useState<FormatClass[]>([])
@@ -329,7 +328,7 @@ export default function Formats() {
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
-            {(isPro ? formats.slice(0, PRO_LIMIT) : formats).map((format, index) => (
+            {formats.map((format, index) => (
               <Link
                 key={format.id}
                 to={`/dashboard/formats/${format.id}`}
@@ -388,18 +387,13 @@ export default function Formats() {
               </Link>
             ))}
 
-            {/* Upgrade banner for pro users */}
-            {isPro && formats.length > PRO_LIMIT && (
-              <UpgradePremiumBanner
-                totalCount={total}
-                visibleCount={PRO_LIMIT}
-                itemLabel="formats"
-                accentColor="pink"
-              />
-            )}
-
             {/* Loading more skeletons */}
-            {!isPro && loadingMore && <SkeletonGrid count={3} type="format-hook" />}
+            {loadingMore && <SkeletonGrid count={3} type="format-hook" />}
+
+            {/* Upgrade banner for pro users */}
+            {isPro && !hasMore && (
+              <UpgradePremiumBanner itemLabel="formats" accentColor="pink" />
+            )}
 
             {/* Discover More Card - only show when all loaded */}
             {!isPro && !hasMore && (
