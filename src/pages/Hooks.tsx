@@ -5,6 +5,7 @@ import { authFetch } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import FineTunedList from '../components/FineTunedList'
 import { SkeletonGrid } from '../components/CardSkeleton'
+import UpgradePremiumBanner from '../components/UpgradePremiumBanner'
 
 interface HookClass {
   id: number
@@ -54,6 +55,8 @@ function getHookEmoji(name: string): string {
 export default function Hooks() {
   const { userType, planSlug } = useAuth()
   const canFineTune = userType === 'admin' || planSlug === 'premium' || planSlug === 'platin'
+  const isPro = planSlug === 'pro' && userType !== 'admin'
+  const PRO_LIMIT = 6
   const [activeTab, setActiveTab] = useState<'all' | 'fine-tuned'>('all')
   const [hooks, setHooks] = useState<HookClass[]>([])
   const [loading, setLoading] = useState(true)
@@ -216,7 +219,7 @@ export default function Hooks() {
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
-            {hooks.map((hook, index) => (
+            {(isPro ? hooks.slice(0, PRO_LIMIT) : hooks).map((hook, index) => (
               <Link
                 key={hook.id}
                 to={`/dashboard/hooks/${hook.id}`}
@@ -275,11 +278,21 @@ export default function Hooks() {
               </Link>
             ))}
 
+            {/* Upgrade banner for pro users */}
+            {isPro && hooks.length > PRO_LIMIT && (
+              <UpgradePremiumBanner
+                totalCount={total}
+                visibleCount={PRO_LIMIT}
+                itemLabel="hooks"
+                accentColor="pink"
+              />
+            )}
+
             {/* Loading more skeletons */}
-            {loadingMore && <SkeletonGrid count={3} type="format-hook" />}
+            {!isPro && loadingMore && <SkeletonGrid count={3} type="format-hook" />}
 
             {/* Discover More Card - only show when all loaded */}
-            {!hasMore && (
+            {!isPro && !hasMore && (
               <div className="border-2 border-dashed border-white/10 rounded-[1.5rem] p-8 flex flex-col items-center justify-center text-center opacity-50 hover:opacity-100 transition-opacity">
                 <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mb-4">
                   <i className="fas fa-plus text-slate-500"></i>

@@ -107,7 +107,7 @@ export default function Suggestions() {
   const [suggestionsTotal, setSuggestionsTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
-  const [tab, setTab] = useState<'for_you' | 'all' | 'saved' | 'approved'>(isAdmin ? 'all' : 'for_you')
+  const [tab, setTab] = useState<'for_you' | 'all' | 'saved' | 'approved'>('all')
   const [sortBy, setSortBy] = useState('newest')
   const [keywordFilter, setKeywordFilter] = useState('')
   const [formatFilter, setFormatFilter] = useState('')
