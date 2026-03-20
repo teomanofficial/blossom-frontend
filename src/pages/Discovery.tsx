@@ -668,6 +668,8 @@ export default function Discovery() {
             hashtag_ids: schedulerForm.hashtag_ids,
             is_generic: schedulerForm.is_generic,
             max_videos_per_hashtag: schedulerForm.max_videos_per_hashtag,
+            max_videos_per_hashtag_instagram: schedulerForm.max_videos_per_hashtag_instagram,
+            max_videos_per_hashtag_tiktok: schedulerForm.max_videos_per_hashtag_tiktok,
           }),
         })
       }
@@ -989,7 +991,9 @@ export default function Discovery() {
                       category_id: null,
                       hashtag_ids: matchingIds,
                       is_generic: true,
-                      max_videos_per_hashtag: 250,
+                      max_videos_per_hashtag: null,
+                      max_videos_per_hashtag_instagram: 250,
+                      max_videos_per_hashtag_tiktok: 100,
                     })
                   }}
                   className="ml-auto bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 text-amber-400 px-3 py-1 rounded-lg text-[10px] font-bold hover:border-amber-500/50 transition-colors"
@@ -1079,19 +1083,40 @@ export default function Discovery() {
               </div>
             )}
 
-            {/* Max Videos Per Hashtag (visible when generic or when user wants override) */}
+            {/* Per-Platform Videos Per Hashtag */}
             {schedulerForm.is_generic && (
               <div className="mb-4">
-                <label className="text-[10px] font-bold text-slate-500 block mb-1.5">Videos Per Hashtag</label>
-                <input
-                  type="number"
-                  min={1}
-                  max={500}
-                  value={schedulerForm.max_videos_per_hashtag ?? ''}
-                  onChange={(e) => setSchedulerForm({ ...schedulerForm, max_videos_per_hashtag: e.target.value ? parseInt(e.target.value) : null })}
-                  placeholder="250"
-                  className="glass-input rounded-lg px-3 py-2 text-xs font-bold text-white w-32 focus:outline-none focus:border-violet-500/50 placeholder-slate-600 transition-colors"
-                />
+                <label className="text-[10px] font-bold text-slate-500 block mb-2">Videos Per Hashtag (per platform)</label>
+                <div className="flex flex-wrap gap-4">
+                  <div>
+                    <label className="text-[9px] font-black text-orange-400 uppercase tracking-widest block mb-1">
+                      <i className="fab fa-instagram text-[8px] mr-1"></i>Instagram
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={500}
+                      value={schedulerForm.max_videos_per_hashtag_instagram ?? ''}
+                      onChange={(e) => setSchedulerForm({ ...schedulerForm, max_videos_per_hashtag_instagram: e.target.value ? parseInt(e.target.value) : null })}
+                      placeholder="250"
+                      className="glass-input rounded-lg px-3 py-2 text-xs font-bold text-white w-28 focus:outline-none focus:border-orange-500/50 placeholder-slate-600 transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-black text-pink-400 uppercase tracking-widest block mb-1">
+                      <i className="fab fa-tiktok text-[8px] mr-1"></i>TikTok
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={500}
+                      value={schedulerForm.max_videos_per_hashtag_tiktok ?? ''}
+                      onChange={(e) => setSchedulerForm({ ...schedulerForm, max_videos_per_hashtag_tiktok: e.target.value ? parseInt(e.target.value) : null })}
+                      placeholder="100"
+                      className="glass-input rounded-lg px-3 py-2 text-xs font-bold text-white w-28 focus:outline-none focus:border-pink-500/50 placeholder-slate-600 transition-colors"
+                    />
+                  </div>
+                </div>
               </div>
             )}
 
@@ -1181,11 +1206,24 @@ export default function Discovery() {
                         <i className="fas fa-globe text-[8px] mr-1"></i>Generic
                       </span>
                     )}
-                    {s.max_videos_per_hashtag && (
+                    {(s.max_videos_per_hashtag_instagram || s.max_videos_per_hashtag_tiktok) ? (
+                      <>
+                        {s.max_videos_per_hashtag_instagram && (
+                          <span className="text-[10px] font-bold text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded">
+                            IG {s.max_videos_per_hashtag_instagram}/tag
+                          </span>
+                        )}
+                        {s.max_videos_per_hashtag_tiktok && (
+                          <span className="text-[10px] font-bold text-pink-400 bg-pink-500/10 px-2 py-0.5 rounded">
+                            TT {s.max_videos_per_hashtag_tiktok}/tag
+                          </span>
+                        )}
+                      </>
+                    ) : s.max_videos_per_hashtag ? (
                       <span className="text-[10px] font-bold text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded">
                         {s.max_videos_per_hashtag}/tag
                       </span>
-                    )}
+                    ) : null}
                     {s.category_title && (
                       <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">
                         {s.category_title}

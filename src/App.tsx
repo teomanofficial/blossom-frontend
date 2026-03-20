@@ -60,6 +60,7 @@ import TrendingFormats from './pages/TrendingFormats'
 import TrendingHooks from './pages/TrendingHooks'
 import TrendingContents from './pages/TrendingContents'
 import TrendingSongs from './pages/TrendingSongs'
+import Songs from './pages/Songs'
 import TrendingTopicDetail from './pages/TrendingTopicDetail'
 import ContentAnalyticsDashboard from './pages/ContentAnalyticsDashboard'
 import SiteAnalytics from './pages/SiteAnalytics'
@@ -179,6 +180,7 @@ function App() {
         <Route path="onboarding-management" element={<AdminGate><OnboardingManagement /></AdminGate>} />
         <Route path="category-requests" element={<AdminGate><CategoryRequestManagement /></AdminGate>} />
         <Route path="ai-model-lab" element={<AdminGate><AIModelLab /></AdminGate>} />
+        <Route path="songs" element={<AdminGate><Songs /></AdminGate>} />
         <Route path="hashtags" element={<AdminGate><Hashtags /></AdminGate>} />
         <Route path="site-analytics" element={<AdminGate><SiteAnalytics /></AdminGate>} />
       </Route>

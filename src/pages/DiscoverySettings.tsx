@@ -4,6 +4,8 @@ import { authFetch } from '../lib/api'
 
 interface DiscoveryConfig {
   max_videos_per_hashtag: number
+  max_videos_per_hashtag_instagram: number | null
+  max_videos_per_hashtag_tiktok: number | null
   discover_influencers: boolean
   influencer_posts_to_fetch: number
 }
@@ -12,6 +14,8 @@ export default function DiscoverySettings() {
   const navigate = useNavigate()
   const [config, setConfig] = useState<DiscoveryConfig>({
     max_videos_per_hashtag: 30,
+    max_videos_per_hashtag_instagram: null,
+    max_videos_per_hashtag_tiktok: null,
     discover_influencers: false,
     influencer_posts_to_fetch: 10,
   })
@@ -71,11 +75,11 @@ export default function DiscoverySettings() {
 
       {/* Settings */}
       <div className="space-y-4">
-        {/* Max Videos Per Hashtag */}
+        {/* Max Videos Per Hashtag (default) */}
         <div className="flex items-center justify-between py-4 border-b border-white/5">
           <div>
-            <div className="text-xs font-black text-white mb-1">Max Videos Per Hashtag</div>
-            <div className="text-[10px] font-bold text-slate-600">Number of videos to fetch per hashtag during each discovery run</div>
+            <div className="text-xs font-black text-white mb-1">Default Videos Per Hashtag</div>
+            <div className="text-[10px] font-bold text-slate-600">Fallback limit when no platform-specific override is set</div>
           </div>
           <input
             type="number"
@@ -84,6 +88,46 @@ export default function DiscoverySettings() {
             value={config.max_videos_per_hashtag}
             onChange={(e) => setConfig({ ...config, max_videos_per_hashtag: parseInt(e.target.value) || 30 })}
             className="bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-sm font-black text-white w-24 text-center focus:outline-none focus:border-violet-500/50 transition-colors"
+          />
+        </div>
+
+        {/* Instagram Videos Per Hashtag */}
+        <div className="flex items-center justify-between py-4 border-b border-white/5">
+          <div>
+            <div className="text-xs font-black text-white mb-1 flex items-center gap-2">
+              <i className="fab fa-instagram text-orange-400 text-[10px]"></i>
+              Instagram Videos Per Hashtag
+            </div>
+            <div className="text-[10px] font-bold text-slate-600">Override for Instagram hashtags (leave empty to use default)</div>
+          </div>
+          <input
+            type="number"
+            min={1}
+            max={500}
+            value={config.max_videos_per_hashtag_instagram ?? ''}
+            onChange={(e) => setConfig({ ...config, max_videos_per_hashtag_instagram: e.target.value ? parseInt(e.target.value) : null })}
+            placeholder={String(config.max_videos_per_hashtag)}
+            className="bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-sm font-black text-white w-24 text-center focus:outline-none focus:border-orange-500/50 transition-colors placeholder-slate-600"
+          />
+        </div>
+
+        {/* TikTok Videos Per Hashtag */}
+        <div className="flex items-center justify-between py-4 border-b border-white/5">
+          <div>
+            <div className="text-xs font-black text-white mb-1 flex items-center gap-2">
+              <i className="fab fa-tiktok text-pink-400 text-[10px]"></i>
+              TikTok Videos Per Hashtag
+            </div>
+            <div className="text-[10px] font-bold text-slate-600">Override for TikTok hashtags (leave empty to use default)</div>
+          </div>
+          <input
+            type="number"
+            min={1}
+            max={500}
+            value={config.max_videos_per_hashtag_tiktok ?? ''}
+            onChange={(e) => setConfig({ ...config, max_videos_per_hashtag_tiktok: e.target.value ? parseInt(e.target.value) : null })}
+            placeholder={String(config.max_videos_per_hashtag)}
+            className="bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-sm font-black text-white w-24 text-center focus:outline-none focus:border-pink-500/50 transition-colors placeholder-slate-600"
           />
         </div>
 

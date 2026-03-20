@@ -96,7 +96,7 @@ export default function Influencers() {
   // Multi-select
   const [selectMode, setSelectMode] = useState(false)
   const [selected, setSelected] = useState<Set<number>>(new Set())
-  const [bulkPostCount, setBulkPostCount] = useState(30)
+  const [bulkPostCount, setBulkPostCount] = useState<number | ''>(30)
   const [bulkAnalyzing, setBulkAnalyzing] = useState(false)
 
   const activeAdvancedCount = Object.values(appliedAdvanced).filter(Boolean).length
@@ -284,7 +284,7 @@ export default function Influencers() {
       const res = await authFetch('/api/analysis/influencers/bulk-full-analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ influencerIds: Array.from(selected), amount: bulkPostCount }),
+        body: JSON.stringify({ influencerIds: Array.from(selected), amount: bulkPostCount || 30 }),
       })
       const data = await res.json()
       if (!res.ok) {
@@ -996,7 +996,11 @@ export default function Influencers() {
                   min={1}
                   max={100}
                   value={bulkPostCount}
-                  onChange={(e) => setBulkPostCount(Math.max(1, Math.min(100, Number(e.target.value) || 1)))}
+                  onChange={(e) => {
+                    const val = e.target.value
+                    if (val === '') { setBulkPostCount(''); return }
+                    setBulkPostCount(Math.max(1, Math.min(100, Number(val) || 1)))
+                  }}
                   className="glass-input px-2.5 py-1.5 text-xs w-16 text-center"
                 />
               </div>
