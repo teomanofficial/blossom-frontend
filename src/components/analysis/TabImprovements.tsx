@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ExampleVideoRow } from './ExampleVideos'
+import { ExampleVideoRow, VideoCarousel } from './ExampleVideos'
 import { scoreColor, effortColor, getCategoryColor, fmtTime } from './helpers'
 
 export interface TabImprovementsProps {
@@ -107,47 +107,68 @@ export default function TabImprovements({ improv, exampleVideos, onOpenCarousel 
                 <i className="fas fa-magic text-purple-400 text-xs"></i>Alternative Hooks
               </h3>
               <div className="space-y-4">
-                {improv.alternative_hooks.map((alt: any, idx: number) => (
-                  <div key={idx} className="bg-white/[0.03] rounded-xl border border-white/5 overflow-hidden">
-                    <button
-                      onClick={() => {
-                        setExpandedHooks((prev: Set<number>) => {
-                          const next = new Set(prev);
-                          if (next.has(idx)) next.delete(idx);
-                          else next.add(idx);
-                          return next;
-                        });
-                      }}
-                      className="w-full flex items-center justify-between p-4 hover:bg-white/[0.02] transition-colors text-left"
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="px-3 py-1 rounded-full text-[10px] font-black bg-purple-500/15 text-purple-400 capitalize">
-                          {alt.type}
-                        </span>
-                        {alt.estimated_scroll_stop_improvement && (
-                          <span className="text-[10px] font-bold text-teal-400">
-                            <i className="fas fa-arrow-up mr-0.5 text-[8px]"></i>{alt.estimated_scroll_stop_improvement}
+                {improv.alternative_hooks.map((alt: any, idx: number) => {
+                  const hookExamples = exampleVideos?.alternative_hooks?.[idx]?.examples || []
+                  const hookClassId = exampleVideos?.alternative_hooks?.[idx]?.improvement?.hook_class_id
+                  return (
+                    <div key={idx} className="bg-white/[0.03] rounded-xl border border-white/5 overflow-hidden">
+                      <button
+                        onClick={() => {
+                          setExpandedHooks((prev: Set<number>) => {
+                            const next = new Set(prev);
+                            if (next.has(idx)) next.delete(idx);
+                            else next.add(idx);
+                            return next;
+                          });
+                        }}
+                        className="w-full flex items-center justify-between p-4 hover:bg-white/[0.02] transition-colors text-left"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="px-3 py-1 rounded-full text-[10px] font-black bg-purple-500/15 text-purple-400 capitalize">
+                            {alt.type}
                           </span>
-                        )}
-                      </div>
-                      <i className={`fas fa-chevron-${expandedHooks.has(idx) ? 'up' : 'down'} text-slate-500 text-xs`}></i>
-                    </button>
-                    {expandedHooks.has(idx) && (
-                      <div className="px-4 pb-4 space-y-3 border-t border-white/5 pt-3">
-                        <div>
-                          <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Script</div>
-                          <p className="text-sm text-white bg-white/[0.03] rounded-lg p-3 border border-white/5 leading-relaxed">{alt.script}</p>
+                          {alt.estimated_scroll_stop_improvement && (
+                            <span className="text-[10px] font-bold text-teal-400">
+                              <i className="fas fa-arrow-up mr-0.5 text-[8px]"></i>{alt.estimated_scroll_stop_improvement}
+                            </span>
+                          )}
                         </div>
-                        <div>
-                          <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Why It's Better</div>
-                          <p className="text-sm text-slate-400">{alt.why_better}</p>
+                        <i className={`fas fa-chevron-${expandedHooks.has(idx) ? 'up' : 'down'} text-slate-500 text-xs`}></i>
+                      </button>
+                      {expandedHooks.has(idx) && (
+                        <div className="px-4 pb-4 space-y-3 border-t border-white/5 pt-3">
+                          <div>
+                            <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Script</div>
+                            <p className="text-sm text-white bg-white/[0.03] rounded-lg p-3 border border-white/5 leading-relaxed">{alt.script}</p>
+                          </div>
+                          <div>
+                            <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Why It's Better</div>
+                            <p className="text-sm text-slate-400">{alt.why_better}</p>
+                          </div>
+                          {hookClassId && (
+                            <a
+                              href={`/dashboard/hooks/${hookClassId}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 text-[10px] font-black text-purple-400 hover:text-purple-300 transition-colors uppercase tracking-widest"
+                            >
+                              <i className="fas fa-external-link-alt text-[8px]"></i>View Hook Details
+                            </a>
+                          )}
+                          {hookExamples.length > 0 && (
+                            <div className="mt-2 pt-3 border-t border-white/5">
+                              <div className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-3">
+                                <i className="fas fa-play-circle mr-1.5 text-purple-400/50"></i>Example videos using this hook
+                              </div>
+                              <VideoCarousel videos={hookExamples} onOpenCarousel={onOpenCarousel} />
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
+                      )}
+                    </div>
+                  )
+                })}
               </div>
-              <ExampleVideoRow videos={exampleVideos?.alternative_hooks?.flatMap((p: any) => p.examples)} label="Example videos with strong hooks" onOpenCarousel={onOpenCarousel} />
             </div>
           )}
 

@@ -127,6 +127,13 @@ export default function ContentAnalysis() {
     fetchHistory(historyOffset)
   }, [fetchHistory, historyOffset])
 
+  // Hide scrollbar on this page
+  useEffect(() => {
+    const scrollParent = document.querySelector('.dashboard-scrollbar') as HTMLElement | null
+    if (scrollParent) scrollParent.classList.add('scrollbar-hide')
+    return () => { if (scrollParent) scrollParent.classList.remove('scrollbar-hide') }
+  }, [])
+
   // Auto-refresh when there are processing items
   useEffect(() => {
     const hasProcessing = history.some(h => h.status === 'analyzing' || h.status === 'pending')
@@ -402,14 +409,10 @@ export default function ContentAnalysis() {
           {isAnalyzing ? (
             /* === PROGRESS STEPPER — Content Deconstruction === */
             <div className="relative">
-              {/* Ambient glow spheres */}
-              <div className="absolute -top-10 -left-10 w-[300px] h-[300px] rounded-full bg-purple-700/10 blur-[120px] pointer-events-none" />
-              <div className="absolute -bottom-10 -right-10 w-[300px] h-[300px] rounded-full bg-pink-500/10 blur-[120px] pointer-events-none" />
-
-              <div className="w-full grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-8 lg:gap-12 items-center relative z-10">
+              <div className="w-full grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-8 lg:gap-12 items-center relative z-10">
                 {/* LEFT: Phone Scanner */}
                 <div className="flex justify-center">
-                  <div className="analysis-phone-frame w-full max-w-[240px] max-h-[420px] rounded-[32px] relative overflow-hidden flex items-center justify-center">
+                  <div className="analysis-phone-frame w-full max-w-[320px] max-h-[560px] rounded-[32px] relative overflow-hidden flex items-center justify-center">
                     {/* Video thumbnail background */}
                     {videoThumbnail && (
                       <img
