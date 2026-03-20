@@ -147,7 +147,7 @@ export default function TabImprovements({ improv, exampleVideos, onOpenCarousel 
                   </div>
                 ))}
               </div>
-              <ExampleVideoRow videos={exampleVideos?.alternative_hooks?.flatMap((p: any) => p.examples)} label="Videos with scroll-stopping hooks" onOpenCarousel={onOpenCarousel} />
+              <ExampleVideoRow videos={exampleVideos?.alternative_hooks?.flatMap((p: any) => p.examples)} label="Example videos with strong hooks" onOpenCarousel={onOpenCarousel} />
             </div>
           )}
 
