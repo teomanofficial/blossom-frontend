@@ -64,6 +64,7 @@ import Songs from './pages/Songs'
 import TrendingTopicDetail from './pages/TrendingTopicDetail'
 import ContentAnalyticsDashboard from './pages/ContentAnalyticsDashboard'
 import SiteAnalytics from './pages/SiteAnalytics'
+import CarouselPosts from './pages/CarouselPosts'
 import Onboarding from './pages/Onboarding'
 import AuthCallback from './pages/AuthCallback'
 import Platforms from './pages/Platforms'
@@ -183,6 +184,7 @@ function App() {
         <Route path="songs" element={<AdminGate><Songs /></AdminGate>} />
         <Route path="hashtags" element={<AdminGate><Hashtags /></AdminGate>} />
         <Route path="site-analytics" element={<AdminGate><SiteAnalytics /></AdminGate>} />
+        <Route path="carousel-posts" element={<AdminGate><CarouselPosts /></AdminGate>} />
       </Route>
     </Routes>
   )

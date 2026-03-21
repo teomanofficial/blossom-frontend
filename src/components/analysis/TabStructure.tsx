@@ -97,6 +97,7 @@ export default function TabStructure({ full, improv }: TabStructureProps) {
                   const hookDelta = (rec.hook_seconds || 0) - (sb.hook_seconds || 0);
                   const setupDelta = (rec.setup_seconds || 0) - (sb.setup_seconds || 0);
                   const payoffDelta = (rec.payoff_seconds || 0) - (sb.payoff_seconds || 0);
+                  const totalDelta = (rec.total_seconds || 0) - (sb.total_seconds || 0);
 
                   const formatDelta = (d: number) => {
                     if (d === 0) return null;
@@ -172,7 +173,14 @@ export default function TabStructure({ full, improv }: TabStructureProps) {
                             )}
                           </span>
                         </div>
-                        <span className="text-xs font-bold text-slate-500 ml-auto">Total: {rec.total_seconds ?? 0}s</span>
+                        <span className="text-xs font-bold text-slate-500 ml-auto">
+                          Total: {rec.total_seconds ?? 0}s
+                          {formatDelta(totalDelta) && (
+                            <span className={`ml-1 ${totalDelta > 0 ? 'text-amber-400' : 'text-teal-400'}`}>
+                              ({formatDelta(totalDelta)})
+                            </span>
+                          )}
+                        </span>
                       </div>
 
                       {/* Reasoning */}

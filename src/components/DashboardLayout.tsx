@@ -48,6 +48,7 @@ const managementItems = [
   { to: '/dashboard/songs', icon: 'fa-music', label: 'Songs' },
   { to: '/dashboard/hashtags', icon: 'fa-hashtag', label: 'Hashtags' },
   { to: '/dashboard/site-analytics', icon: 'fa-chart-line', label: 'Site Analytics' },
+  { to: '/dashboard/carousel-posts', icon: 'fa-images', label: 'Carousel Posts' },
 ]
 
 /* Bottom tab items for mobile */
@@ -89,6 +90,7 @@ const drawerRoutes = [
   '/dashboard/ai-model-lab',
   '/dashboard/hashtags',
   '/dashboard/site-analytics',
+  '/dashboard/carousel-posts',
 ]
 
 /* ── Nav Rail Link Component ── */
