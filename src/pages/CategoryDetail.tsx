@@ -42,6 +42,9 @@ interface CategoryVideo {
   content_url: string | null
   format_name: string | null
   hook_name: string | null
+  format_class_name: string | null
+  hook_class_name: string | null
+  top_tactic_names: string[] | null
   final_viral_probability: number | null
 }
 
@@ -446,7 +449,13 @@ export default function CategoryDetail() {
                   key={video.id}
                   className="relative group cursor-pointer active:scale-[0.98] transition-transform"
                   onClick={() => {
-                    setCarouselData({ videos: videos as unknown as CarouselVideo[], initialIndex: idx })
+                    const mapped = videos.map(v => ({
+                      ...v,
+                      format_class_name: v.format_class_name || v.format_name || null,
+                      hook_class_name: v.hook_class_name || v.hook_name || null,
+                      top_tactic_names: v.top_tactic_names || null,
+                    })) as unknown as CarouselVideo[]
+                    setCarouselData({ videos: mapped, initialIndex: idx })
                   }}
                 >
                   <div className="aspect-[9/16] bg-slate-900 rounded-2xl md:rounded-[2rem] overflow-hidden border border-white/5 group-hover:border-pink-500/30 transition-all">

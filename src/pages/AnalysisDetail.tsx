@@ -87,6 +87,9 @@ export default function AnalysisDetail() {
       local_video_path: v.local_video_path || null,
       views: v.views,
       engagement_rate: v.engagement_rate,
+      format_class_name: v.format_class_name || null,
+      hook_class_name: v.hook_class_name || null,
+      top_tactic_names: v.top_tactic_names || null,
     }))
     setCarouselVideos(mapped)
     setCarouselIndex(index)

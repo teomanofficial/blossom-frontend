@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { authFetch } from '../lib/api'
@@ -113,6 +113,21 @@ function PostCard({ video, onClick }: { video: TrendingVideo; onClick: () => voi
   )
 }
 
+/* ── Skeleton Card ── */
+function PostCardSkeleton() {
+  return (
+    <div>
+      <div className="aspect-[9/16] bg-slate-900 rounded-2xl overflow-hidden border border-white/5 animate-pulse">
+        <div className="w-full h-full bg-white/5" />
+      </div>
+      <div className="mt-1.5 px-1 animate-pulse">
+        <div className="h-2 bg-white/5 rounded w-16 mb-1.5" />
+        <div className="h-2 bg-white/5 rounded w-24" />
+      </div>
+    </div>
+  )
+}
+
 /* ── Main Page ── */
 const PAGE_SIZE = 30
 
@@ -120,17 +135,23 @@ export default function TrendingPosts() {
   const [videos, setVideos] = useState<TrendingVideo[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [platform, setPlatform] = useState<string>('')
   const [page, setPage] = useState(0)
   const [days, setDays] = useState(1)
   const [carouselData, setCarouselData] = useState<{ videos: CarouselVideo[]; initialIndex: number } | null>(null)
+  const sentinelRef = useRef<HTMLDivElement>(null)
 
-  const fetchVideos = useCallback(async () => {
-    setLoading(true)
+  const fetchVideos = useCallback(async (pageNum: number, append: boolean) => {
+    if (append) {
+      setLoadingMore(true)
+    } else {
+      setLoading(true)
+    }
     try {
       const params = new URLSearchParams({
         limit: String(PAGE_SIZE),
-        offset: String(page * PAGE_SIZE),
+        offset: String(pageNum * PAGE_SIZE),
         days: String(days),
         sort: 'views',
       })
@@ -140,25 +161,46 @@ export default function TrendingPosts() {
       if (!res.ok) throw new Error(`API returned ${res.status}`)
       const data = await res.json()
       if (data.error) throw new Error(data.error)
-      setVideos(data.videos || [])
+      const newVideos = data.videos || []
+      setVideos(prev => append ? [...prev, ...newVideos] : newVideos)
       setTotal(data.total || 0)
     } catch {
       toast.error('Failed to load trending posts')
     } finally {
       setLoading(false)
+      setLoadingMore(false)
     }
-  }, [platform, page, days])
-
-  useEffect(() => {
-    fetchVideos()
-  }, [fetchVideos])
-
-  // Reset page on filter change
-  useEffect(() => {
-    setPage(0)
   }, [platform, days])
 
-  const totalPages = Math.ceil(total / PAGE_SIZE)
+  // Initial load
+  useEffect(() => {
+    setPage(0)
+    fetchVideos(0, false)
+  }, [fetchVideos])
+
+  // Infinite scroll observer
+  const hasMore = videos.length < total
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current
+    if (!sentinel) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loading && !loadingMore) {
+          setPage(prev => {
+            const next = prev + 1
+            fetchVideos(next, true)
+            return next
+          })
+        }
+      },
+      { rootMargin: '400px' }
+    )
+
+    observer.observe(sentinel)
+    return () => observer.disconnect()
+  }, [hasMore, loading, loadingMore, fetchVideos])
 
   return (
     <>
@@ -227,9 +269,11 @@ export default function TrendingPosts() {
       </div>
 
       {/* Content */}
-      {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <div className="w-8 h-8 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
+      {loading && videos.length === 0 ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+          {Array.from({ length: 12 }, (_, i) => (
+            <PostCardSkeleton key={`skeleton-${i}`} />
+          ))}
         </div>
       ) : videos.length === 0 ? (
         <div className="glass-card rounded-3xl p-12 text-center">
@@ -252,54 +296,13 @@ export default function TrendingPosts() {
                 onClick={() => setCarouselData({ videos, initialIndex: idx })}
               />
             ))}
+            {loadingMore && Array.from({ length: 6 }, (_, i) => (
+              <PostCardSkeleton key={`skeleton-more-${i}`} />
+            ))}
           </div>
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 mt-8">
-              <button
-                onClick={() => setPage((p) => Math.max(0, p - 1))}
-                disabled={page === 0}
-                className="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-              >
-                <i className="fas fa-chevron-left text-[10px] text-slate-400" />
-              </button>
-              <div className="flex items-center gap-1">
-                {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
-                  let pageNum: number
-                  if (totalPages <= 7) {
-                    pageNum = i
-                  } else if (page < 3) {
-                    pageNum = i
-                  } else if (page > totalPages - 4) {
-                    pageNum = totalPages - 7 + i
-                  } else {
-                    pageNum = page - 3 + i
-                  }
-                  return (
-                    <button
-                      key={pageNum}
-                      onClick={() => setPage(pageNum)}
-                      className={`w-9 h-9 rounded-xl text-xs font-bold transition-all ${
-                        page === pageNum
-                          ? 'bg-pink-500/20 text-pink-400'
-                          : 'bg-white/5 text-slate-500 hover:bg-white/10 hover:text-white'
-                      }`}
-                    >
-                      {pageNum + 1}
-                    </button>
-                  )
-                })}
-              </div>
-              <button
-                onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-                disabled={page >= totalPages - 1}
-                className="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-              >
-                <i className="fas fa-chevron-right text-[10px] text-slate-400" />
-              </button>
-            </div>
-          )}
+          {/* Infinite scroll sentinel */}
+          <div ref={sentinelRef} className="h-1" />
         </>
       )}
 

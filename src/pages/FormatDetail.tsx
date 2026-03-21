@@ -51,6 +51,8 @@ interface FormatVideo {
   content_url: string | null
   confidence: number
   final_viral_probability: number | null
+  hook_class_name: string | null
+  top_tactic_names: string[] | null
 }
 
 interface TacticItem {

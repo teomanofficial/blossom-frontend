@@ -26,6 +26,8 @@ interface HookVideo {
   hook_effectiveness: number | null
   final_viral_probability: number | null
   analysis_json: any | null
+  format_class_name: string | null
+  top_tactic_names: string[] | null
 }
 
 interface TacticItem {

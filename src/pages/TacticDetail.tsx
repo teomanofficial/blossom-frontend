@@ -21,6 +21,9 @@ interface TacticVideo {
   timestamp_end: number | null
   specific_observation: string | null
   viewer_effect_note: string | null
+  format_class_name: string | null
+  hook_class_name: string | null
+  top_tactic_names: string[] | null
 }
 
 interface FormatDist {
@@ -389,6 +392,9 @@ export default function TacticDetail() {
                     const vids = videos.map(v => ({
                       ...v,
                       id: v.video_id,
+                      format_class_name: v.format_class_name,
+                      hook_class_name: v.hook_class_name,
+                      top_tactic_names: v.top_tactic_names,
                     })) as CarouselVideo[]
                     setCarouselData({ videos: vids, initialIndex: idx })
                   }}

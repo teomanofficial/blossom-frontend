@@ -386,22 +386,26 @@ export default function InfluencerDetail() {
             <i className={`fas fa-sync-alt mr-1.5 text-[9px] ${refreshing ? 'animate-spin' : ''}`}></i>
             {refreshing ? 'REFRESHING...' : 'REFRESH'}
           </button>
-          <button
-            onClick={handleFetchContent}
-            disabled={fetching}
-            className="bg-white/5 hover:bg-white/10 disabled:opacity-50 text-white text-[11px] font-black px-3 py-2 md:px-4 md:py-2.5 rounded-xl transition-all border border-white/5 shrink-0"
-          >
-            <i className={`fas fa-download mr-1.5 text-[9px]`}></i>
-            {fetching ? 'FETCHING...' : 'FETCH VIDEOS'}
-          </button>
-          <button
-            onClick={handleDeepScan}
-            disabled={scanning || (influencer.videos?.length || 0) < 3}
-            className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-[11px] font-black px-3 py-2 md:px-4 md:py-2.5 rounded-xl transition-all shrink-0"
-          >
-            <i className="fas fa-brain mr-1.5 text-[9px]"></i>
-            {scanning ? 'SCANNING...' : 'DEEP SCAN'}
-          </button>
+          {userType === 'admin' && (
+            <button
+              onClick={handleFetchContent}
+              disabled={fetching}
+              className="bg-white/5 hover:bg-white/10 disabled:opacity-50 text-white text-[11px] font-black px-3 py-2 md:px-4 md:py-2.5 rounded-xl transition-all border border-white/5 shrink-0"
+            >
+              <i className={`fas fa-download mr-1.5 text-[9px]`}></i>
+              {fetching ? 'FETCHING...' : 'FETCH VIDEOS'}
+            </button>
+          )}
+          {userType === 'admin' && (
+            <button
+              onClick={handleDeepScan}
+              disabled={scanning || (influencer.videos?.length || 0) < 3}
+              className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-[11px] font-black px-3 py-2 md:px-4 md:py-2.5 rounded-xl transition-all shrink-0"
+            >
+              <i className="fas fa-brain mr-1.5 text-[9px]"></i>
+              {scanning ? 'SCANNING...' : 'DEEP SCAN'}
+            </button>
+          )}
           {userType === 'admin' && influencer.platform === 'instagram' && (
             <button
               onClick={handleFullAnalyze}
@@ -741,7 +745,7 @@ export default function InfluencerDetail() {
           )}
 
           {/* Compute DISC button when no profile exists */}
-          {!discProfile && influencer.total_videos_fetched && influencer.total_videos_fetched >= 3 && (
+          {!discProfile && userType === 'admin' && influencer.total_videos_fetched && influencer.total_videos_fetched >= 3 && (
             <div className="glass-card rounded-3xl p-6 mb-8 md:mb-10 text-center">
               <div className="w-12 h-12 mx-auto mb-3 bg-violet-400/10 rounded-full flex items-center justify-center">
                 <i className="fas fa-fingerprint text-violet-400"></i>
@@ -829,7 +833,7 @@ export default function InfluencerDetail() {
       )}
 
       {/* No deep scan prompt */}
-      {!ds && (
+      {!ds && userType === 'admin' && (
         <div className="glass-card rounded-3xl p-6 md:p-10 mb-8 md:mb-10 text-center">
           <div className="w-16 h-16 mx-auto mb-4 bg-white/5 rounded-full flex items-center justify-center">
             <i className="fas fa-brain text-slate-500 text-xl"></i>

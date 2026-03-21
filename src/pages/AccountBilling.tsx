@@ -121,7 +121,7 @@ function ConfirmModal({
 }
 
 export default function AccountBilling() {
-  const { userType, planSlug, vipCredits, proCredits, signOut, organization, isOrgOwner } = useAuth()
+  const { userType, planSlug, vipCredits, proCredits, signOut, organization, isOrgOwner, refreshProfile } = useAuth()
   const [subscription, setSubscription] = useState<Subscription | null>(null)
   const [subStatus, setSubStatus] = useState<string>('none')
   const [loading, setLoading] = useState(true)
@@ -244,7 +244,10 @@ export default function AccountBilling() {
       const data = await res.json()
       if (res.ok) {
         setShowChangePlan(false)
-        setTimeout(() => refreshSubscription(), 2000)
+        setTimeout(async () => {
+          await refreshSubscription()
+          await refreshProfile()
+        }, 2000)
         toast.success('Plan change initiated! Your subscription will update shortly.')
       } else {
         toast.error(data.error || 'Failed to change plan')

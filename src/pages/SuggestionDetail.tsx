@@ -17,6 +17,9 @@ interface SourceVideo {
   local_thumbnail_path: string | null
   content_url: string | null
   relevance_score: number | null
+  format_class_name: string | null
+  hook_class_name: string | null
+  top_tactic_names: string[] | null
 }
 
 interface Suggestion {

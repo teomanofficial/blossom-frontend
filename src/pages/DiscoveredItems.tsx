@@ -21,6 +21,8 @@ interface DiscoveredVideo {
   local_video_path: string | null
   status: string
   class_name: string | null
+  hook_class_name: string | null
+  top_tactic_names: string[] | null
   final_viral_probability: number | null
   published_at: string | null
   created_at: string
@@ -216,6 +218,8 @@ export default function DiscoveredItems() {
       published_at: v.published_at,
       status: v.status,
       format_class_name: v.class_name,
+      hook_class_name: v.hook_class_name,
+      top_tactic_names: v.top_tactic_names,
       final_viral_probability: v.final_viral_probability,
     }))
     setCarouselData({ videos: carouselVideos, initialIndex: index })

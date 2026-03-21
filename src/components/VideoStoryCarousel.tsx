@@ -536,7 +536,7 @@ export default function VideoStoryCarousel({ videos: initialVideos, initialIndex
                       {video.platform}
                     </span>
                   )}
-                  {video.status === 'analyzed' && (
+                  {isAdmin && video.status === 'analyzed' && (
                     <span className="text-[10px] px-2 py-0.5 rounded-full font-black bg-teal-500/15 text-teal-400 border border-teal-500/20">
                       Analyzed
                     </span>
@@ -675,7 +675,7 @@ export default function VideoStoryCarousel({ videos: initialVideos, initialIndex
             )}
 
             {/* Time context */}
-            {(video.published_at || (video.status === 'analyzed' && video.updated_at)) && (
+            {(video.published_at || (isAdmin && video.status === 'analyzed' && video.updated_at)) && (
               <div className="bg-white/[0.03] rounded-xl p-3">
                 <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-2">Time Context</p>
                 <div className="flex items-center gap-4">
@@ -688,7 +688,7 @@ export default function VideoStoryCarousel({ videos: initialVideos, initialIndex
                       </div>
                     </div>
                   )}
-                  {video.status === 'analyzed' && video.updated_at && (
+                  {isAdmin && video.status === 'analyzed' && video.updated_at && (
                     <div className="flex items-center gap-2">
                       <div className="w-1 h-8 rounded-full bg-teal-500/30" />
                       <div>
