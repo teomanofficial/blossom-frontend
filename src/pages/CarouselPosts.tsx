@@ -185,7 +185,7 @@ function CoverSlide({ type }: { type: CarouselType }) {
 function HooksItemsSlide({ items }: { items: TrendingHook[] }) {
   return (
     <div style={darkBg}>
-      <SlideHeader title="Top Hooks" emoji="🧲" />
+      <SlideHeader title="Top Hooks" />
       <div style={{ padding: '0 60px' }}>
         {items.slice(0, 5).map((h, i) => (
           <ItemRow key={h.id} rank={i + 1}>
@@ -214,7 +214,7 @@ function HooksItemsSlide({ items }: { items: TrendingHook[] }) {
             </div>
             <StatsColumn stats={[
               { value: fmt(h.recent_avg_views), label: 'avg views' },
-              { value: (h.avg_engagement_rate * 100).toFixed(1) + '%', label: 'eng. rate' },
+              { value: h.avg_engagement_rate.toFixed(1) + '%', label: 'eng. rate' },
             ]} />
           </ItemRow>
         ))}
@@ -228,7 +228,7 @@ function HooksItemsSlide({ items }: { items: TrendingHook[] }) {
 function FormatsItemsSlide({ items }: { items: TrendingFormat[] }) {
   return (
     <div style={darkBg}>
-      <SlideHeader title="Top Formats" emoji="🎯" />
+      <SlideHeader title="Top Formats" />
       <div style={{ padding: '0 60px' }}>
         {items.slice(0, 5).map((f, i) => (
           <ItemRow key={f.id} rank={i + 1}>
@@ -248,7 +248,7 @@ function FormatsItemsSlide({ items }: { items: TrendingFormat[] }) {
             </div>
             <StatsColumn stats={[
               { value: fmt(f.recent_avg_views), label: 'avg views' },
-              { value: (f.avg_engagement_rate * 100).toFixed(1) + '%', label: 'eng. rate' },
+              { value: f.avg_engagement_rate.toFixed(1) + '%', label: 'eng. rate' },
             ]} />
           </ItemRow>
         ))}
@@ -262,7 +262,7 @@ function FormatsItemsSlide({ items }: { items: TrendingFormat[] }) {
 function SongsItemsSlide({ items }: { items: TrendingSong[] }) {
   return (
     <div style={darkBg}>
-      <SlideHeader title="Trending Songs" emoji="🎵" />
+      <SlideHeader title="Trending Songs" />
       <div style={{ padding: '0 60px' }}>
         {items.slice(0, 5).map((s, i) => {
           const cover = getSongCover(s)
@@ -313,7 +313,7 @@ function SongsItemsSlide({ items }: { items: TrendingSong[] }) {
 function ContentItemsSlide({ items }: { items: TrendingContent[] }) {
   return (
     <div style={darkBg}>
-      <SlideHeader title="Popular Content" emoji="🔥" />
+      <SlideHeader title="Popular Content" />
       <div style={{ padding: '0 60px' }}>
         {items.slice(0, 5).map((t, i) => {
           const thumb = getTopicThumbnail(t.sample_thumbnails, 0)
@@ -336,7 +336,7 @@ function ContentItemsSlide({ items }: { items: TrendingContent[] }) {
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: 36, flexShrink: 0,
                 }}>
-                  {t.icon || '📌'}
+                  <img src="/logo-light.png" alt="" style={{ width: 36, height: 36, opacity: 0.4 }} />
                 </div>
               )}
               <div style={{ flex: 1, marginLeft: 20, minWidth: 0 }}>
@@ -355,7 +355,7 @@ function ContentItemsSlide({ items }: { items: TrendingContent[] }) {
               </div>
               <StatsColumn stats={[
                 { value: fmt(t.recent_avg_views), label: 'avg views' },
-                { value: (t.recent_avg_engagement * 100).toFixed(1) + '%', label: 'eng. rate' },
+                { value: t.recent_avg_engagement.toFixed(1) + '%', label: 'eng. rate' },
               ]} />
             </ItemRow>
           )
@@ -429,12 +429,12 @@ function CTASlide() {
 }
 
 /* ── Shared Sub-components for Item Slides ── */
-function SlideHeader({ title, emoji }: { title: string; emoji: string }) {
+function SlideHeader({ title }: { title: string }) {
   return (
     <div style={{
       padding: '60px 60px 40px', display: 'flex', alignItems: 'center', gap: 16,
     }}>
-      <span style={{ fontSize: 40 }}>{emoji}</span>
+      <img src="/logo-light.png" alt="" style={{ width: 36, height: 36, opacity: 0.6 }} />
       <div style={{ fontSize: 38, fontWeight: 800, color: '#fff', letterSpacing: 1 }}>
         {title}
       </div>
@@ -507,18 +507,22 @@ function SlidePreview({
   label,
   children,
   onDownload,
+  onExpand,
   exporting,
 }: {
   slideRef: React.RefObject<HTMLDivElement | null>
   label: string
   children: React.ReactNode
   onDownload: () => void
+  onExpand: () => void
   exporting: boolean
 }) {
   return (
     <div className="flex flex-col items-center gap-3">
       <div className="text-xs font-semibold text-slate-500 uppercase tracking-widest">{label}</div>
       <div
+        className="cursor-pointer group relative"
+        onClick={onExpand}
         style={{
           width: SLIDE_W * PREVIEW_SCALE,
           height: SLIDE_H * PREVIEW_SCALE,
@@ -529,6 +533,10 @@ function SlidePreview({
       >
         <div style={{ transform: `scale(${PREVIEW_SCALE})`, transformOrigin: 'top left' }}>
           <div ref={slideRef}>{children}</div>
+        </div>
+        {/* Expand overlay on hover */}
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+          <i className="fas fa-expand text-white/0 group-hover:text-white/80 text-lg transition-colors" />
         </div>
       </div>
       <button
@@ -542,6 +550,45 @@ function SlidePreview({
   )
 }
 
+/* ── Expanded Slide Modal ── */
+function ExpandedSlideModal({
+  children,
+  onClose,
+}: {
+  children: React.ReactNode
+  onClose: () => void
+}) {
+  const MODAL_SCALE = 0.45
+  return (
+    <div
+      className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div onClick={e => e.stopPropagation()} className="relative">
+        <button
+          onClick={onClose}
+          className="absolute -top-10 right-0 text-white/60 hover:text-white text-sm font-bold"
+        >
+          <i className="fas fa-times mr-1" /> Close
+        </button>
+        <div
+          style={{
+            width: SLIDE_W * MODAL_SCALE,
+            height: SLIDE_H * MODAL_SCALE,
+            overflow: 'hidden',
+            borderRadius: 16,
+            border: '1px solid rgba(255,255,255,0.1)',
+          }}
+        >
+          <div style={{ transform: `scale(${MODAL_SCALE})`, transformOrigin: 'top left' }}>
+            {children}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /* ══════════════════════════════════════════════════════════════
    Main Page
    ══════════════════════════════════════════════════════════════ */
@@ -551,6 +598,7 @@ export default function CarouselPosts() {
   const [activeType, setActiveType] = useState<CarouselType>('hooks')
   const [exporting, setExporting] = useState(false)
   const [days, setDays] = useState(1)
+  const [expandedSlide, setExpandedSlide] = useState<'cover' | 'items' | 'cta' | null>(null)
 
   const coverRef = useRef<HTMLDivElement | null>(null)
   const itemsRef = useRef<HTMLDivElement | null>(null)
@@ -735,6 +783,7 @@ export default function CarouselPosts() {
             slideRef={coverRef}
             label="Cover"
             onDownload={() => downloadSingle(coverRef, 'cover')}
+            onExpand={() => setExpandedSlide('cover')}
             exporting={exporting}
           >
             <CoverSlide type={activeType} />
@@ -744,6 +793,7 @@ export default function CarouselPosts() {
             slideRef={itemsRef}
             label="Top Items"
             onDownload={() => downloadSingle(itemsRef, 'items')}
+            onExpand={() => setExpandedSlide('items')}
             exporting={exporting}
           >
             {getItemsSlide()}
@@ -753,11 +803,21 @@ export default function CarouselPosts() {
             slideRef={ctaRef}
             label="Call to Action"
             onDownload={() => downloadSingle(ctaRef, 'cta')}
+            onExpand={() => setExpandedSlide('cta')}
             exporting={exporting}
           >
             <CTASlide />
           </SlidePreview>
         </div>
+      )}
+
+      {/* Expanded slide modal (not part of export) */}
+      {expandedSlide && data && (
+        <ExpandedSlideModal onClose={() => setExpandedSlide(null)}>
+          {expandedSlide === 'cover' && <CoverSlide type={activeType} />}
+          {expandedSlide === 'items' && getItemsSlide()}
+          {expandedSlide === 'cta' && <CTASlide />}
+        </ExpandedSlideModal>
       )}
 
       {/* No data state */}
@@ -780,7 +840,7 @@ function EmptyItemsSlide({ type }: { type: string }) {
         display: 'flex', flexDirection: 'column', alignItems: 'center',
         justifyContent: 'center', height: '100%', padding: 80,
       }}>
-        <div style={{ fontSize: 64, marginBottom: 30 }}>📭</div>
+        <img src="/logo-light.png" alt="" style={{ width: 64, height: 64, opacity: 0.2, marginBottom: 30 }} />
         <div style={{ fontSize: 36, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textAlign: 'center' }}>
           No trending {type} today
         </div>
