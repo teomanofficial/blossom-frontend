@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
+import { useAuth } from '../context/AuthContext'
 import { authFetch } from '../lib/api'
 import { getStorageUrl } from '../lib/media'
 import VideoStoryCarousel, { type CarouselVideo } from '../components/VideoStoryCarousel'
@@ -132,6 +133,8 @@ function PostCardSkeleton() {
 const PAGE_SIZE = 30
 
 export default function TrendingPosts() {
+  const { userType } = useAuth()
+  const isAdmin = userType === 'admin'
   const [videos, setVideos] = useState<TrendingVideo[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -313,6 +316,7 @@ export default function TrendingPosts() {
           initialIndex={carouselData.initialIndex}
           onClose={() => setCarouselData(null)}
           renderMeta={(video) => {
+            if (!isAdmin) return null
             const tv = video as TrendingVideo
             return tv.analyzed_at ? (
               <div className="bg-white/5 rounded-lg p-3">
