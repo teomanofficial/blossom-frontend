@@ -454,8 +454,8 @@ function SlideHeader({ title }: { title: string }) {
     <div style={{
       padding: '60px 60px 40px', display: 'flex', alignItems: 'center', gap: 16,
     }}>
-      <img src="/logo-light.png" alt="" style={{ width: 36, height: 36, opacity: 0.6 }} />
-      <div style={{ fontSize: 38, fontWeight: 800, color: '#fff', letterSpacing: 1 }}>
+      <img src="/logo-light.png" alt="" style={{ width: 36, height: 36, opacity: 0.6, display: 'block' }} />
+      <div style={{ fontSize: 38, fontWeight: 800, color: '#fff', letterSpacing: 1, lineHeight: 1 }}>
         {title}
       </div>
       <div style={{ flex: 1 }} />
