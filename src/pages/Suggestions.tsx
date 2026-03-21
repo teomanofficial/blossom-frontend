@@ -2,6 +2,7 @@ import { type MouseEvent, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { authFetch } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
+import SearchableSelect from '../components/SearchableSelect'
 
 interface SuggestionStats {
   today_count: number
@@ -422,36 +423,39 @@ export default function Suggestions() {
 
         {tab !== 'for_you' && (
           <div className="flex gap-2 flex-wrap">
-            <select
+            <SearchableSelect
               value={keywordFilter}
-              onChange={(e) => setKeywordFilter(e.target.value)}
-              className="glass-input px-3 py-1.5 text-[10px] font-bold text-white"
-            >
-              <option value="">All Topics</option>
-              {filterKeywords.map(k => (
-                <option key={k.id} value={k.id}>{k.name}</option>
-              ))}
-            </select>
-            <select
+              onChange={setKeywordFilter}
+              placeholder="All Topics"
+              options={[
+                { value: '', label: 'All Topics' },
+                ...filterKeywords.map(k => ({ value: String(k.id), label: k.name })),
+              ]}
+              className="w-48"
+            />
+            <SearchableSelect
               value={formatFilter}
-              onChange={(e) => setFormatFilter(e.target.value)}
-              className="glass-input px-3 py-1.5 text-[10px] font-bold text-white"
-            >
-              <option value="">All Formats</option>
-              {filterFormats.map(f => (
-                <option key={f.id} value={f.id}>{f.name}</option>
-              ))}
-            </select>
-            <select
+              onChange={setFormatFilter}
+              placeholder="All Formats"
+              options={[
+                { value: '', label: 'All Formats' },
+                ...filterFormats.map(f => ({ value: String(f.id), label: f.name })),
+              ]}
+              className="w-48"
+            />
+            <SearchableSelect
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="glass-input px-3 py-1.5 text-[10px] font-bold text-white"
-            >
-              <option value="trend_strength">Trending</option>
-              <option value="upvotes">Most Upvoted</option>
-              <option value="approved">Most Approved</option>
-              <option value="newest">Newest</option>
-            </select>
+              onChange={setSortBy}
+              placeholder="Newest"
+              isSearchable={false}
+              options={[
+                { value: 'trend_strength', label: 'Trending' },
+                { value: 'upvotes', label: 'Most Upvoted' },
+                { value: 'approved', label: 'Most Approved' },
+                { value: 'newest', label: 'Newest' },
+              ]}
+              className="w-40"
+            />
           </div>
         )}
       </div>

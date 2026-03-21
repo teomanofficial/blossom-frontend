@@ -7,7 +7,6 @@ interface FineTune {
   item_type: string
   item_id: number
   item_name: string | null
-  platform: 'tiktok' | 'instagram' | 'generic'
   status: string
   video_count: number
   example_video_count: number
@@ -129,12 +128,6 @@ export default function FineTunedList({ itemType, detailBasePath }: FineTunedLis
                   <i className="fas fa-video mr-1"></i>
                   {ft.example_video_count} video{ft.example_video_count !== 1 ? 's' : ''}
                 </span>
-                {ft.platform && ft.platform !== 'generic' && (
-                  <span>
-                    <i className={`fab fa-${ft.platform} mr-1`}></i>
-                    {ft.platform === 'instagram' ? 'Instagram' : 'TikTok'}
-                  </span>
-                )}
                 <span>
                   <i className="fas fa-calendar mr-1"></i>
                   {formatDate(ft.updated_at)}

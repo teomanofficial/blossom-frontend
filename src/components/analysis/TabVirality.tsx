@@ -104,12 +104,31 @@ export default function TabVirality({ virality, upload }: TabViralityProps) {
                   <div className="text-[10px] font-black text-amber-400 uppercase tracking-widest mb-3">
                     <i className="fas fa-trophy mr-1"></i>Missing Gold-Standard Tactics
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    {virality.benchmark_comparison.missing_gold_standard_tactics.map((t: string, i: number) => (
-                      <span key={i} className="px-3 py-1.5 rounded-full text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                        <i className="fas fa-plus mr-1 text-[8px]"></i>{t}
-                      </span>
-                    ))}
+                  <div className="flex flex-col gap-2">
+                    {virality.benchmark_comparison.missing_gold_standard_tactics.map((t: any, i: number) => {
+                      const isObject = typeof t === 'object' && t !== null
+                      const name = isObject ? t.tactic : t
+                      const topFreq = isObject ? t.top_freq : null
+                      const bottomFreq = isObject ? t.bottom_freq : null
+                      const reason = isObject ? t.reason : null
+                      return (
+                        <div key={i} className="bg-amber-500/[0.06] rounded-xl p-3 border border-amber-500/15">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/15 text-amber-400 border border-amber-500/20">
+                              <i className="fas fa-plus mr-1 text-[8px]"></i>{name}
+                            </span>
+                            {topFreq != null && bottomFreq != null && (
+                              <span className="text-[11px] text-slate-400">
+                                used by <span className="text-amber-400 font-bold">{topFreq}%</span> of top performers vs <span className="text-slate-500 font-bold">{bottomFreq}%</span> of underperformers
+                              </span>
+                            )}
+                          </div>
+                          {reason && (
+                            <p className="text-[11px] text-slate-400 mt-1.5 leading-relaxed">{reason}</p>
+                          )}
+                        </div>
+                      )
+                    })}
                   </div>
                 </div>
               )}
@@ -118,12 +137,31 @@ export default function TabVirality({ virality, upload }: TabViralityProps) {
                   <div className="text-[10px] font-black text-red-400 uppercase tracking-widest mb-3">
                     <i className="fas fa-exclamation-triangle mr-1"></i>Overrated Tactics Used
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    {virality.benchmark_comparison.overrated_tactics_present.map((t: string, i: number) => (
-                      <span key={i} className="px-3 py-1.5 rounded-full text-xs font-bold bg-red-500/10 text-red-400 border border-red-500/20">
-                        <i className="fas fa-minus mr-1 text-[8px]"></i>{t}
-                      </span>
-                    ))}
+                  <div className="flex flex-col gap-2">
+                    {virality.benchmark_comparison.overrated_tactics_present.map((t: any, i: number) => {
+                      const isObject = typeof t === 'object' && t !== null
+                      const name = isObject ? t.tactic : t
+                      const topFreq = isObject ? t.top_freq : null
+                      const bottomFreq = isObject ? t.bottom_freq : null
+                      const reason = isObject ? t.reason : null
+                      return (
+                        <div key={i} className="bg-red-500/[0.06] rounded-xl p-3 border border-red-500/15">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-red-500/15 text-red-400 border border-red-500/20">
+                              <i className="fas fa-minus mr-1 text-[8px]"></i>{name}
+                            </span>
+                            {topFreq != null && bottomFreq != null && (
+                              <span className="text-[11px] text-slate-400">
+                                used by <span className="text-red-400 font-bold">{bottomFreq}%</span> of underperformers vs <span className="text-slate-500 font-bold">{topFreq}%</span> of top performers
+                              </span>
+                            )}
+                          </div>
+                          {reason && (
+                            <p className="text-[11px] text-slate-400 mt-1.5 leading-relaxed">{reason}</p>
+                          )}
+                        </div>
+                      )
+                    })}
                   </div>
                 </div>
               )}

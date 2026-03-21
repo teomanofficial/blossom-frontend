@@ -61,7 +61,7 @@ export default function Influencers() {
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [sorts, setSorts] = useState<{ field: SortField; order: 'desc' | 'asc' }[]>([
-    { field: 'follower_count', order: 'desc' },
+    { field: 'viral_video_count', order: 'desc' },
   ])
   const [search, setSearch] = useState('')
   const [searchInput, setSearchInput] = useState('')

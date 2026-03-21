@@ -19,7 +19,6 @@ interface FineTuneData {
   id: number
   item_type: string
   item_id: number
-  platform: 'tiktok' | 'instagram' | 'generic'
   status: string
   video_count: number
   example_video_count: number
@@ -57,7 +56,6 @@ export default function FineTunePanel({ itemType, itemId, itemName }: FineTunePa
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [urls, setUrls] = useState<string[]>([''])
-  const [platform, setPlatform] = useState<'tiktok' | 'instagram' | 'generic'>('generic')
   const [submitting, setSubmitting] = useState(false)
   const [regenerating, setRegenerating] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -109,15 +107,24 @@ export default function FineTunePanel({ itemType, itemId, itemName }: FineTunePa
   const count = counts[itemType] || 0
   const atLimit = limit !== null && limit !== undefined && count >= limit
 
-  const isValidUrl = (url: string) => {
+  const isSupportedUrl = (url: string) => {
     const trimmed = url.trim()
-    if (platform === 'instagram') return trimmed.includes('instagram.com')
-    if (platform === 'tiktok') return trimmed.includes('tiktok.com')
     return trimmed.includes('instagram.com') || trimmed.includes('tiktok.com')
   }
 
+  const isUnsupportedUrl = (url: string) => {
+    const trimmed = url.trim()
+    if (!trimmed) return false
+    try {
+      const u = new URL(trimmed.startsWith('http') ? trimmed : `https://${trimmed}`)
+      return !u.hostname.includes('instagram.com') && !u.hostname.includes('tiktok.com')
+    } catch {
+      return trimmed.includes('.') && !trimmed.includes('instagram.com') && !trimmed.includes('tiktok.com')
+    }
+  }
+
   const handleCreate = async () => {
-    const validUrls = urls.map(u => u.trim()).filter(isValidUrl)
+    const validUrls = urls.map(u => u.trim()).filter(isSupportedUrl)
     if (validUrls.length === 0) {
       toast.error('Add at least one Instagram or TikTok URL')
       return
@@ -127,7 +134,7 @@ export default function FineTunePanel({ itemType, itemId, itemName }: FineTunePa
       const res = await authFetch('/api/analysis/fine-tunes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ item_type: itemType, item_id: itemId, urls: validUrls, platform }),
+        body: JSON.stringify({ item_type: itemType, item_id: itemId, urls: validUrls }),
       })
       const data = await res.json()
       if (!res.ok) {
@@ -147,7 +154,7 @@ export default function FineTunePanel({ itemType, itemId, itemName }: FineTunePa
 
   const handleAddVideos = async () => {
     if (!fineTune) return
-    const validUrls = newUrls.map(u => u.trim()).filter(isValidUrl)
+    const validUrls = newUrls.map(u => u.trim()).filter(isSupportedUrl)
     if (validUrls.length === 0) {
       toast.error('Add at least one Instagram or TikTok URL')
       return
@@ -254,25 +261,29 @@ export default function FineTunePanel({ itemType, itemId, itemName }: FineTunePa
   ) => (
     <div className="space-y-3">
       {urlList.map((url, i) => (
-        <div key={i} className="flex items-center gap-2">
-          <input
-            type="text"
-            value={url}
-            onChange={(e) => updateUrl(urlList, setUrlList, i, e.target.value)}
-            placeholder={
-              platform === 'instagram' ? 'https://instagram.com/reel/...' :
-              platform === 'tiktok' ? 'https://tiktok.com/@...' :
-              'https://instagram.com/reel/... or https://tiktok.com/@...'
-            }
-            className="flex-1 glass-input px-4 py-2.5 text-sm font-medium placeholder:text-slate-600"
-          />
-          {urlList.length > 1 && (
-            <button
-              onClick={() => removeUrlField(urlList, setUrlList, i)}
-              className="text-slate-500 hover:text-red-400 transition-colors p-2"
-            >
-              <i className="fas fa-times text-xs"></i>
-            </button>
+        <div key={i}>
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={url}
+              onChange={(e) => updateUrl(urlList, setUrlList, i, e.target.value)}
+              placeholder="https://instagram.com/reel/... or https://tiktok.com/@..."
+              className="flex-1 glass-input px-4 py-2.5 text-sm font-medium placeholder:text-slate-600"
+            />
+            {urlList.length > 1 && (
+              <button
+                onClick={() => removeUrlField(urlList, setUrlList, i)}
+                className="text-slate-500 hover:text-red-400 transition-colors p-2"
+              >
+                <i className="fas fa-times text-xs"></i>
+              </button>
+            )}
+          </div>
+          {isUnsupportedUrl(url) && (
+            <p className="text-amber-400 text-[10px] font-bold mt-1 ml-1">
+              <i className="fas fa-triangle-exclamation mr-1"></i>
+              Unsupported platform — only Instagram and TikTok URLs are supported
+            </p>
           )}
         </div>
       ))}
@@ -290,7 +301,7 @@ export default function FineTunePanel({ itemType, itemId, itemName }: FineTunePa
       <div className="flex items-center gap-3 pt-2">
         <button
           onClick={onSubmit}
-          disabled={isSubmitting || urlList.every(u => !isValidUrl(u))}
+          disabled={isSubmitting || urlList.every(u => !isSupportedUrl(u))}
           className="px-5 py-2.5 bg-pink-600 hover:bg-pink-500 disabled:opacity-50 text-white text-[11px] font-black rounded-xl transition-all"
         >
           {isSubmitting ? (
@@ -326,27 +337,7 @@ export default function FineTunePanel({ itemType, itemId, itemName }: FineTunePa
               </p>
             </div>
           </div>
-          {/* Platform selector */}
-          <div className="flex items-center gap-2 mb-4">
-            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Platform</span>
-            <div className="flex gap-1.5">
-              {([['generic', 'All Platforms', 'fa-globe'], ['instagram', 'Instagram', 'fa-instagram'], ['tiktok', 'TikTok', 'fa-tiktok']] as const).map(([value, label, icon]) => (
-                <button
-                  key={value}
-                  onClick={() => setPlatform(value as 'tiktok' | 'instagram' | 'generic')}
-                  className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all border ${
-                    platform === value
-                      ? 'bg-pink-500/20 text-pink-400 border-pink-500/30'
-                      : 'bg-white/[0.02] text-slate-500 border-white/5 hover:text-white hover:border-white/10'
-                  }`}
-                >
-                  <i className={`fab ${icon} mr-1`}></i>
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
-          {renderUrlForm(urls, setUrls, handleCreate, submitting, 'Start Fine-tune', () => { setShowForm(false); setUrls(['']); setPlatform('generic') })}
+          {renderUrlForm(urls, setUrls, handleCreate, submitting, 'Start Fine-tune', () => { setShowForm(false); setUrls(['']) })}
         </div>
       )
     }
@@ -391,14 +382,8 @@ export default function FineTunePanel({ itemType, itemId, itemName }: FineTunePa
                 {status.label}
               </span>
             </h3>
-            <p className="text-[10px] text-slate-500 font-bold flex items-center gap-2">
+            <p className="text-[10px] text-slate-500 font-bold">
               {fineTune.example_video_count || fineTune.video_count} example video{(fineTune.example_video_count || fineTune.video_count) !== 1 ? 's' : ''}
-              {fineTune.platform && fineTune.platform !== 'generic' && (
-                <span className="px-1.5 py-0.5 rounded bg-white/5 text-slate-400 text-[9px] font-black">
-                  <i className={`fab fa-${fineTune.platform} mr-0.5`}></i>
-                  {fineTune.platform === 'instagram' ? 'Instagram' : 'TikTok'}
-                </span>
-              )}
             </p>
           </div>
         </div>

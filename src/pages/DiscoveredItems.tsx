@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { authFetch } from '../lib/api'
 import { getStorageUrl } from '../lib/media'
 import VideoStoryCarousel, { type CarouselVideo } from '../components/VideoStoryCarousel'
+import SearchableSelect from '../components/SearchableSelect'
 
 interface DiscoveredVideo {
   id: number
@@ -294,62 +295,67 @@ export default function DiscoveredItems() {
       <div className="glass-card rounded-[1.5rem] border-white/5 p-6 mb-8">
         <div className="flex flex-wrap gap-3 items-end">
           {/* Platform */}
-          <div>
+          <div className="w-40">
             <label className="text-[10px] font-bold text-slate-500 block mb-1.5">Platform</label>
-            <select
+            <SearchableSelect
               value={filters.platform}
-              onChange={(e) => updateFilter('platform', e.target.value)}
-              className="glass-input rounded-lg px-3 py-2 text-[10px] font-bold text-white focus:outline-none focus:border-pink-500/50 transition-colors"
-            >
-              <option value="">All Platforms</option>
-              <option value="tiktok">TikTok</option>
-              <option value="instagram">Instagram</option>
-            </select>
+              onChange={(v) => updateFilter('platform', v)}
+              placeholder="All Platforms"
+              isSearchable={false}
+              options={[
+                { value: '', label: 'All Platforms' },
+                { value: 'tiktok', label: 'TikTok' },
+                { value: 'instagram', label: 'Instagram' },
+              ]}
+            />
           </div>
 
           {/* Hashtag */}
-          <div>
+          <div className="w-52">
             <label className="text-[10px] font-bold text-slate-500 block mb-1.5">Hashtag</label>
-            <select
+            <SearchableSelect
               value={filters.hashtag}
-              onChange={(e) => updateFilter('hashtag', e.target.value)}
-              className="glass-input rounded-lg px-3 py-2 text-[10px] font-bold text-white focus:outline-none focus:border-pink-500/50 transition-colors"
-            >
-              <option value="">All Hashtags</option>
-              {hashtags.map(h => (
-                <option key={h.id} value={h.hashtag}>#{h.hashtag} ({h.platform})</option>
-              ))}
-            </select>
+              onChange={(v) => updateFilter('hashtag', v)}
+              placeholder="All Hashtags"
+              options={[
+                { value: '', label: 'All Hashtags' },
+                ...hashtags.map(h => ({ value: h.hashtag, label: `#${h.hashtag} (${h.platform})` })),
+              ]}
+            />
           </div>
 
           {/* Status */}
-          <div>
+          <div className="w-40">
             <label className="text-[10px] font-bold text-slate-500 block mb-1.5">Status</label>
-            <select
+            <SearchableSelect
               value={filters.status}
-              onChange={(e) => updateFilter('status', e.target.value)}
-              className="glass-input rounded-lg px-3 py-2 text-[10px] font-bold text-white focus:outline-none focus:border-pink-500/50 transition-colors"
-            >
-              <option value="">All Statuses</option>
-              <option value="fetched">Fetched</option>
-              <option value="analyzed">Analyzed</option>
-              <option value="error">Error</option>
-            </select>
+              onChange={(v) => updateFilter('status', v)}
+              placeholder="All Statuses"
+              isSearchable={false}
+              options={[
+                { value: '', label: 'All Statuses' },
+                { value: 'fetched', label: 'Fetched' },
+                { value: 'analyzed', label: 'Analyzed' },
+                { value: 'error', label: 'Error' },
+              ]}
+            />
           </div>
 
           {/* Sort */}
-          <div>
+          <div className="w-40">
             <label className="text-[10px] font-bold text-slate-500 block mb-1.5">Sort By</label>
-            <select
+            <SearchableSelect
               value={filters.sort_by}
-              onChange={(e) => updateFilter('sort_by', e.target.value)}
-              className="glass-input rounded-lg px-3 py-2 text-[10px] font-bold text-white focus:outline-none focus:border-pink-500/50 transition-colors"
-            >
-              <option value="newest">Newest</option>
-              <option value="views">Most Views</option>
-              <option value="likes">Most Likes</option>
-              <option value="engagement">Engagement</option>
-            </select>
+              onChange={(v) => updateFilter('sort_by', v)}
+              placeholder="Newest"
+              isSearchable={false}
+              options={[
+                { value: 'newest', label: 'Newest' },
+                { value: 'views', label: 'Most Views' },
+                { value: 'likes', label: 'Most Likes' },
+                { value: 'engagement', label: 'Engagement' },
+              ]}
+            />
           </div>
 
           {/* Date From */}
