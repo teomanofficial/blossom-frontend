@@ -60,11 +60,16 @@ interface OverviewData {
 }
 
 /* ── Helpers ── */
-function fmt(n: number): string {
-  if (!n) return '0'
-  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M'
-  if (n >= 1_000) return (n / 1_000).toFixed(1).replace(/\.0$/, '') + 'k'
-  return String(Math.round(n))
+function num(v: unknown): number {
+  return Number(v) || 0
+}
+
+function fmt(n: number | string | null | undefined): string {
+  const v = num(n)
+  if (!v) return '0'
+  if (v >= 1_000_000) return (v / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M'
+  if (v >= 1_000) return (v / 1_000).toFixed(1).replace(/\.0$/, '') + 'k'
+  return String(Math.round(v))
 }
 
 function todayFormatted(): string {
@@ -214,7 +219,7 @@ function HooksItemsSlide({ items }: { items: TrendingHook[] }) {
             </div>
             <StatsColumn stats={[
               { value: fmt(h.recent_avg_views), label: 'avg views' },
-              { value: h.avg_engagement_rate.toFixed(1) + '%', label: 'eng. rate' },
+              { value: num(h.avg_engagement_rate).toFixed(1) + '%', label: 'eng. rate' },
             ]} />
           </ItemRow>
         ))}
@@ -248,7 +253,7 @@ function FormatsItemsSlide({ items }: { items: TrendingFormat[] }) {
             </div>
             <StatsColumn stats={[
               { value: fmt(f.recent_avg_views), label: 'avg views' },
-              { value: f.avg_engagement_rate.toFixed(1) + '%', label: 'eng. rate' },
+              { value: num(f.avg_engagement_rate).toFixed(1) + '%', label: 'eng. rate' },
             ]} />
           </ItemRow>
         ))}
@@ -355,7 +360,7 @@ function ContentItemsSlide({ items }: { items: TrendingContent[] }) {
               </div>
               <StatsColumn stats={[
                 { value: fmt(t.recent_avg_views), label: 'avg views' },
-                { value: t.recent_avg_engagement.toFixed(1) + '%', label: 'eng. rate' },
+                { value: num(t.recent_avg_engagement).toFixed(1) + '%', label: 'eng. rate' },
               ]} />
             </ItemRow>
           )
