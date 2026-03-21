@@ -101,7 +101,7 @@ function subtitleForType(type: CarouselType): string {
 function brief(text: string | null, max = 80): string | null {
   if (!text) return null
   // Take first sentence or truncate
-  const firstSentence = text.split(/[.!?]/)[0]
+  const firstSentence = text.split(/[.!?]/)[0] ?? text
   const s = firstSentence.length <= max ? firstSentence : firstSentence.slice(0, max)
   return s.trim() + (s.length < text.length ? '...' : '')
 }
