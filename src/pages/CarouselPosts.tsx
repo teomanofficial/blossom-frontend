@@ -13,8 +13,7 @@ const CAROUSEL_TYPES = [
   { key: 'hooks', label: 'Hooks', icon: 'fa-comment-dots' },
   { key: 'formats', label: 'Formats', icon: 'fa-shapes' },
   { key: 'songs', label: 'Songs', icon: 'fa-music' },
-  { key: 'keywords', label: 'Keywords', icon: 'fa-hashtag' },
-  { key: 'topics', label: 'Topics', icon: 'fa-fire' },
+  { key: 'content', label: 'Content', icon: 'fa-layer-group' },
 ] as const
 
 type CarouselType = (typeof CAROUSEL_TYPES)[number]['key']
@@ -77,8 +76,7 @@ function titleForType(type: CarouselType): string {
     case 'hooks': return "Today's Top Hooks"
     case 'formats': return "Today's Top Formats"
     case 'songs': return 'Trending Songs'
-    case 'keywords': return 'Trending Keywords'
-    case 'topics': return 'Popular Topics'
+    case 'content': return 'Popular Content'
   }
 }
 
@@ -87,8 +85,7 @@ function subtitleForType(type: CarouselType): string {
     case 'hooks': return 'The hooks driving virality right now'
     case 'formats': return 'Content formats blowing up today'
     case 'songs': return 'Sounds taking over the FYP'
-    case 'keywords': return 'The keywords everyone is searching'
-    case 'topics': return 'What the internet is talking about'
+    case 'content': return 'What the internet is talking about'
   }
 }
 
@@ -139,15 +136,12 @@ function CoverSlide({ type }: { type: CarouselType }) {
         justifyContent: 'center', height: '100%', padding: 80, textAlign: 'center',
         position: 'relative', zIndex: 1,
       }}>
-        {/* Logo placeholder */}
-        <div style={{
-          width: 120, height: 120, borderRadius: 30,
-          background: 'linear-gradient(135deg, #ec4899, #f97316)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          marginBottom: 60, boxShadow: '0 20px 60px rgba(236,72,153,0.3)',
-        }}>
-          <span style={{ fontSize: 56, color: '#fff', fontWeight: 900 }}>B</span>
-        </div>
+        {/* Logo */}
+        <img
+          src="/logo-light.png"
+          alt="Blossom"
+          style={{ width: 120, height: 120, marginBottom: 60, objectFit: 'contain' }}
+        />
 
         <div style={{
           fontSize: 36, fontWeight: 600, color: 'rgba(255,255,255,0.5)',
@@ -195,21 +189,33 @@ function HooksItemsSlide({ items }: { items: TrendingHook[] }) {
       <div style={{ padding: '0 60px' }}>
         {items.slice(0, 5).map((h, i) => (
           <ItemRow key={h.id} rank={i + 1}>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 32, fontWeight: 700, color: '#fff', marginBottom: 8, lineHeight: 1.3 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 30, fontWeight: 700, color: '#fff', marginBottom: 6, lineHeight: 1.3 }}>
                 {h.name}
               </div>
+              {h.description && (
+                <div style={{
+                  fontSize: 20, color: 'rgba(255,255,255,0.4)', lineHeight: 1.4,
+                  marginBottom: 10, overflow: 'hidden',
+                  display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                }}>
+                  {h.description}
+                </div>
+              )}
               {h.hook_technique && (
                 <div style={{
-                  display: 'inline-block', padding: '6px 16px', borderRadius: 20,
+                  display: 'inline-block', padding: '4px 14px', borderRadius: 20,
                   background: 'rgba(236,72,153,0.15)', color: '#f472b6',
-                  fontSize: 22, fontWeight: 600,
+                  fontSize: 18, fontWeight: 600,
                 }}>
                   {h.hook_technique}
                 </div>
               )}
             </div>
-            <StatBadge value={fmt(h.recent_video_count)} label="videos" />
+            <StatsColumn stats={[
+              { value: fmt(h.recent_avg_views), label: 'avg views' },
+              { value: (h.avg_engagement_rate * 100).toFixed(1) + '%', label: 'eng. rate' },
+            ]} />
           </ItemRow>
         ))}
       </div>
@@ -226,15 +232,24 @@ function FormatsItemsSlide({ items }: { items: TrendingFormat[] }) {
       <div style={{ padding: '0 60px' }}>
         {items.slice(0, 5).map((f, i) => (
           <ItemRow key={f.id} rank={i + 1}>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 32, fontWeight: 700, color: '#fff', marginBottom: 8, lineHeight: 1.3 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 30, fontWeight: 700, color: '#fff', marginBottom: 6, lineHeight: 1.3 }}>
                 {f.name}
               </div>
-              <div style={{ fontSize: 22, color: 'rgba(255,255,255,0.5)' }}>
-                avg {fmt(f.recent_avg_views)} views
-              </div>
+              {f.description && (
+                <div style={{
+                  fontSize: 20, color: 'rgba(255,255,255,0.4)', lineHeight: 1.4,
+                  overflow: 'hidden',
+                  display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                }}>
+                  {f.description}
+                </div>
+              )}
             </div>
-            <StatBadge value={fmt(f.recent_video_count)} label="videos" />
+            <StatsColumn stats={[
+              { value: fmt(f.recent_avg_views), label: 'avg views' },
+              { value: (f.avg_engagement_rate * 100).toFixed(1) + '%', label: 'eng. rate' },
+            ]} />
           </ItemRow>
         ))}
       </div>
@@ -281,7 +296,10 @@ function SongsItemsSlide({ items }: { items: TrendingSong[] }) {
                   {s.artist || 'Unknown Artist'}
                 </div>
               </div>
-              <StatBadge value={fmt(s.recent_video_count)} label="uses" />
+              <StatsColumn stats={[
+                { value: fmt(s.recent_avg_views), label: 'avg views' },
+                { value: fmt(s.recent_video_count), label: 'uses' },
+              ]} />
             </ItemRow>
           )
         })}
@@ -291,41 +309,11 @@ function SongsItemsSlide({ items }: { items: TrendingSong[] }) {
   )
 }
 
-/* ── Items Slide — Keywords ── */
-function KeywordsItemsSlide({ items }: { items: TrendingContent[] }) {
+/* ── Items Slide — Content (Domains) ── */
+function ContentItemsSlide({ items }: { items: TrendingContent[] }) {
   return (
     <div style={darkBg}>
-      <SlideHeader title="Trending Keywords" emoji="🔑" />
-      <div style={{ padding: '0 60px' }}>
-        {items.slice(0, 5).map((k, i) => (
-          <ItemRow key={k.id} rank={i + 1}>
-            <div style={{
-              width: 70, height: 70, borderRadius: 18,
-              background: 'rgba(255,255,255,0.06)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 34, flexShrink: 0,
-            }}>
-              {k.icon || '#'}
-            </div>
-            <div style={{ flex: 1, marginLeft: 20 }}>
-              <div style={{ fontSize: 32, fontWeight: 700, color: '#fff', lineHeight: 1.3 }}>
-                {k.name}
-              </div>
-            </div>
-            <StatBadge value={fmt(k.recent_video_count)} label="videos" />
-          </ItemRow>
-        ))}
-      </div>
-      <SlideWatermark />
-    </div>
-  )
-}
-
-/* ── Items Slide — Topics ── */
-function TopicsItemsSlide({ items }: { items: TrendingContent[] }) {
-  return (
-    <div style={darkBg}>
-      <SlideHeader title="Popular Topics" emoji="🔥" />
+      <SlideHeader title="Popular Content" emoji="🔥" />
       <div style={{ padding: '0 60px' }}>
         {items.slice(0, 5).map((t, i) => {
           const thumb = getTopicThumbnail(t.sample_thumbnails, 0)
@@ -351,15 +339,24 @@ function TopicsItemsSlide({ items }: { items: TrendingContent[] }) {
                   {t.icon || '📌'}
                 </div>
               )}
-              <div style={{ flex: 1, marginLeft: 20 }}>
+              <div style={{ flex: 1, marginLeft: 20, minWidth: 0 }}>
                 <div style={{ fontSize: 30, fontWeight: 700, color: '#fff', marginBottom: 6, lineHeight: 1.3 }}>
                   {t.name}
                 </div>
-                <div style={{ fontSize: 22, color: 'rgba(255,255,255,0.5)' }}>
-                  avg {fmt(t.recent_avg_views)} views
-                </div>
+                {t.description && (
+                  <div style={{
+                    fontSize: 20, color: 'rgba(255,255,255,0.4)', lineHeight: 1.4,
+                    overflow: 'hidden',
+                    display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                  }}>
+                    {t.description}
+                  </div>
+                )}
               </div>
-              <StatBadge value={fmt(t.recent_video_count)} label="videos" />
+              <StatsColumn stats={[
+                { value: fmt(t.recent_avg_views), label: 'avg views' },
+                { value: (t.recent_avg_engagement * 100).toFixed(1) + '%', label: 'eng. rate' },
+              ]} />
             </ItemRow>
           )
         })}
@@ -419,11 +416,12 @@ function CTASlide() {
           marginBottom: 50,
         }} />
 
+        <img src="/logo-light.png" alt="Blossom" style={{ width: 60, height: 60, opacity: 0.6, marginBottom: 20, objectFit: 'contain' }} />
         <div style={{ fontSize: 30, color: 'rgba(255,255,255,0.7)', fontWeight: 700, marginBottom: 16 }}>
-          tryblossom.com
+          www.blossai.com
         </div>
         <div style={{ fontSize: 26, color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>
-          @tryblossom
+          @bloss.ai
         </div>
       </div>
     </div>
@@ -476,11 +474,15 @@ function ItemRow({ rank, children }: { rank: number; children: React.ReactNode }
   )
 }
 
-function StatBadge({ value, label }: { value: string; label: string }) {
+function StatsColumn({ stats }: { stats: { value: string; label: string }[] }) {
   return (
-    <div style={{ textAlign: 'right', flexShrink: 0 }}>
-      <div style={{ fontSize: 28, fontWeight: 800, color: '#f472b6' }}>{value}</div>
-      <div style={{ fontSize: 18, color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>{label}</div>
+    <div style={{ display: 'flex', gap: 24, flexShrink: 0 }}>
+      {stats.map((s, i) => (
+        <div key={i} style={{ textAlign: 'center', minWidth: 70 }}>
+          <div style={{ fontSize: 24, fontWeight: 800, color: '#f472b6' }}>{s.value}</div>
+          <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>{s.label}</div>
+        </div>
+      ))}
     </div>
   )
 }
@@ -489,10 +491,12 @@ function SlideWatermark() {
   return (
     <div style={{
       position: 'absolute', bottom: 40, left: 0, right: 0,
-      textAlign: 'center', fontSize: 20, color: 'rgba(255,255,255,0.2)',
-      fontWeight: 600, letterSpacing: 3, textTransform: 'uppercase',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
     }}>
-      blossom
+      <img src="/logo-light.png" alt="" style={{ width: 24, height: 24, opacity: 0.25 }} />
+      <span style={{ fontSize: 20, color: 'rgba(255,255,255,0.2)', fontWeight: 600, letterSpacing: 3, textTransform: 'uppercase' }}>
+        blossom
+      </span>
     </div>
   )
 }
@@ -572,19 +576,39 @@ export default function CarouselPosts() {
   /* ── Export helpers ── */
   async function downloadSlide(ref: React.RefObject<HTMLDivElement | null>, filename: string) {
     if (!ref.current) return
-    await document.fonts.ready
-    const canvas = await html2canvas(ref.current, {
-      width: SLIDE_W,
-      height: SLIDE_H,
-      scale: 1,
-      useCORS: true,
-      backgroundColor: null,
-      logging: false,
-    })
-    const link = document.createElement('a')
-    link.download = filename
-    link.href = canvas.toDataURL('image/png')
-    link.click()
+
+    // Clone the slide at full size into an off-screen container so html2canvas
+    // captures it at 1080x1920 instead of the scaled-down preview size.
+    const clone = ref.current.cloneNode(true) as HTMLDivElement
+    clone.style.position = 'fixed'
+    clone.style.left = '-9999px'
+    clone.style.top = '0'
+    clone.style.width = `${SLIDE_W}px`
+    clone.style.height = `${SLIDE_H}px`
+    clone.style.transform = 'none'
+    clone.style.zIndex = '-1'
+    document.body.appendChild(clone)
+
+    try {
+      await document.fonts.ready
+      // Wait a tick for images to settle in cloned DOM
+      await new Promise(r => setTimeout(r, 100))
+
+      const canvas = await html2canvas(clone, {
+        width: SLIDE_W,
+        height: SLIDE_H,
+        scale: 1,
+        useCORS: true,
+        backgroundColor: null,
+        logging: false,
+      })
+      const link = document.createElement('a')
+      link.download = filename
+      link.href = canvas.toDataURL('image/png')
+      link.click()
+    } finally {
+      document.body.removeChild(clone)
+    }
   }
 
   async function downloadAll() {
@@ -622,13 +646,9 @@ export default function CarouselPosts() {
       case 'hooks': return <HooksItemsSlide items={data.hooks.items} />
       case 'formats': return <FormatsItemsSlide items={data.formats.items} />
       case 'songs': return <SongsItemsSlide items={data.songs.items} />
-      case 'keywords': {
-        const kw = data.contents.items.filter(c => c.category === 'trend')
-        return kw.length ? <KeywordsItemsSlide items={kw} /> : <EmptyItemsSlide type="keywords" />
-      }
-      case 'topics': {
-        const tp = data.contents.items.filter(c => c.category === 'topic')
-        return tp.length ? <TopicsItemsSlide items={tp} /> : <EmptyItemsSlide type="topics" />
+      case 'content': {
+        const items = data.contents.items
+        return items.length ? <ContentItemsSlide items={items} /> : <EmptyItemsSlide type="content" />
       }
     }
   }
@@ -639,8 +659,7 @@ export default function CarouselPosts() {
       case 'hooks': return data.hooks.items.length > 0
       case 'formats': return data.formats.items.length > 0
       case 'songs': return data.songs.items.length > 0
-      case 'keywords': return data.contents.items.filter(c => c.category === 'trend').length > 0
-      case 'topics': return data.contents.items.filter(c => c.category === 'topic').length > 0
+      case 'content': return data.contents.items.length > 0
     }
   }
 
