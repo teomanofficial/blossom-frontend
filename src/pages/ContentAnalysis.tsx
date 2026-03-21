@@ -756,20 +756,20 @@ export default function ContentAnalysis() {
               {/* ═══════════════════════════════════════════════════════════ */}
 
               {/* Stats Bar */}
-              <div className="grid grid-cols-3 gap-4">
-                <div className="glass-card rounded-3xl p-5">
-                  <div className="text-slate-500 text-xs font-bold uppercase tracking-widest mb-1">Total Checks</div>
-                  <div className="text-2xl font-black text-white">{historyTotal}</div>
+              <div className="grid grid-cols-3 gap-2 sm:gap-4">
+                <div className="glass-card rounded-2xl sm:rounded-3xl px-3 py-2.5 sm:p-5 text-center sm:text-left">
+                  <div className="text-slate-500 text-[10px] sm:text-xs font-bold uppercase tracking-widest mb-0.5 sm:mb-1">Checks</div>
+                  <div className="text-xl sm:text-2xl font-black text-white">{historyTotal}</div>
                 </div>
-                <div className="glass-card rounded-3xl p-5">
-                  <div className="text-slate-500 text-xs font-bold uppercase tracking-widest mb-1">Completed</div>
-                  <div className="text-2xl font-black text-green-400">
+                <div className="glass-card rounded-2xl sm:rounded-3xl px-3 py-2.5 sm:p-5 text-center sm:text-left">
+                  <div className="text-slate-500 text-[10px] sm:text-xs font-bold uppercase tracking-widest mb-0.5 sm:mb-1">Done</div>
+                  <div className="text-xl sm:text-2xl font-black text-green-400">
                     {history.filter(h => h.status === 'completed').length}
                   </div>
                 </div>
-                <div className="glass-card rounded-3xl p-5">
-                  <div className="text-slate-500 text-xs font-bold uppercase tracking-widest mb-1">Avg Score</div>
-                  <div className="text-2xl font-black text-pink-400">
+                <div className="glass-card rounded-2xl sm:rounded-3xl px-3 py-2.5 sm:p-5 text-center sm:text-left">
+                  <div className="text-slate-500 text-[10px] sm:text-xs font-bold uppercase tracking-widest mb-0.5 sm:mb-1">Avg Score</div>
+                  <div className="text-xl sm:text-2xl font-black text-pink-400">
                     {(() => {
                       const scored = history.filter(h => h.optimization_score != null)
                       if (scored.length === 0) return '—'
@@ -807,23 +807,23 @@ export default function ContentAnalysis() {
                       role="button"
                       tabIndex={0}
                       onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && item.status === 'completed') { e.preventDefault(); navigate(`/dashboard/analyze/${item.id}`); } }}
-                      className={`w-full text-left glass-card rounded-3xl p-5 transition-all group border border-transparent ${
+                      className={`w-full text-left glass-card rounded-2xl sm:rounded-3xl p-3 sm:p-5 transition-all group border border-transparent ${
                         item.status === 'completed'
                           ? 'hover:bg-white/[0.06] hover:border-white/10 cursor-pointer'
                           : ''
                       }`}
                     >
-                      <div className="flex items-center gap-5">
+                      <div className="flex items-center gap-3 sm:gap-5">
                         {/* Thumbnail */}
-                        <div className="w-20 h-28 rounded-xl bg-white/5 flex-shrink-0 flex items-center justify-center overflow-hidden">
+                        <div className="w-14 h-20 sm:w-20 sm:h-28 rounded-lg sm:rounded-xl bg-white/5 flex-shrink-0 flex items-center justify-center overflow-hidden">
                           {item.thumbnail_path ? (
                             <img
                               src={item.thumbnail_path.startsWith('http') ? item.thumbnail_path : `/media/${item.thumbnail_path.split('/').pop()}`}
                               alt=""
-                              className="w-full h-full object-cover rounded-xl"
+                              className="w-full h-full object-cover rounded-lg sm:rounded-xl"
                             />
                           ) : (
-                            <i className={`fab fa-${item.platform === 'tiktok' ? 'tiktok' : item.platform === 'instagram' ? 'instagram' : 'video'} text-xl ${
+                            <i className={`fab fa-${item.platform === 'tiktok' ? 'tiktok' : item.platform === 'instagram' ? 'instagram' : 'video'} text-lg sm:text-xl ${
                               item.platform === 'tiktok' ? 'text-white' : item.platform === 'instagram' ? 'text-pink-400' : 'text-slate-500'
                             }`}></i>
                           )}
@@ -831,8 +831,8 @@ export default function ContentAnalysis() {
 
                         {/* Content */}
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1.5">
-                            <span className={`px-2 py-0.5 text-[10px] font-black uppercase tracking-widest rounded ${
+                          <div className="flex items-center gap-1.5 sm:gap-2 mb-1">
+                            <span className={`px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-black uppercase tracking-widest rounded ${
                               item.platform === 'tiktok'
                                 ? 'bg-white/10 text-white'
                                 : item.platform === 'instagram'
@@ -842,28 +842,31 @@ export default function ContentAnalysis() {
                               {item.platform || 'upload'}
                             </span>
                             {item.username && (
-                              <span className="text-xs text-slate-500">@{item.username}</span>
+                              <span className="text-[10px] sm:text-xs text-slate-500 truncate max-w-[60px] sm:max-w-none">@{item.username}</span>
                             )}
                             {item.version_number != null && item.version_number > 1 && (
-                              <span className="px-1.5 py-0.5 text-[9px] font-black rounded-md bg-purple-500/15 text-purple-400 border border-purple-500/20">
+                              <span className="px-1 sm:px-1.5 py-0.5 text-[8px] sm:text-[9px] font-black rounded-md bg-purple-500/15 text-purple-400 border border-purple-500/20">
                                 v{item.version_number}
                               </span>
                             )}
-                            <span className="text-[10px] text-slate-600 ml-auto">{formatDate(item.created_at)}</span>
+                            <span className="text-[9px] sm:text-[10px] text-slate-600 ml-auto hidden sm:inline">{formatDate(item.created_at)}</span>
                           </div>
 
                           {/* Title (primary) — fallback to caption, then filename hint */}
-                          <p className="text-sm font-bold text-white truncate mb-1">
+                          <p className="text-xs sm:text-sm font-bold text-white truncate mb-0.5 sm:mb-1">
                             {item.title || item.caption || 'Untitled'}
                           </p>
 
                           {/* Caption (secondary, if different from title) */}
                           {item.caption && item.title && item.caption !== item.title && (
-                            <p className="text-xs text-slate-500 truncate mb-1.5">{item.caption}</p>
+                            <p className="text-[10px] sm:text-xs text-slate-500 truncate mb-1 hidden sm:block">{item.caption}</p>
                           )}
 
+                          {/* Date on mobile (moved below title) */}
+                          <span className="text-[9px] text-slate-600 sm:hidden">{formatDate(item.created_at)}</span>
+
                           {/* Stats row */}
-                          <div className="flex items-center gap-4 text-xs text-slate-500">
+                          <div className="hidden sm:flex items-center gap-4 text-xs text-slate-500">
                             {item.views > 0 && (
                               <span><i className="fas fa-eye mr-1"></i>{formatNumber(item.views)}</span>
                             )}
@@ -880,16 +883,16 @@ export default function ContentAnalysis() {
                         </div>
 
                         {/* Score + Status */}
-                        <div className="flex items-center gap-3 flex-shrink-0">
+                        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                           {item.optimization_score != null && (
-                            <div className={`text-center px-3 py-2 rounded-xl ${
+                            <div className={`text-center px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl ${
                               item.optimization_score >= 80
                                 ? 'bg-green-500/10'
                                 : item.optimization_score >= 50
                                 ? 'bg-yellow-500/10'
                                 : 'bg-red-500/10'
                             }`}>
-                              <div className={`text-lg font-black ${
+                              <div className={`text-base sm:text-lg font-black ${
                                 item.optimization_score >= 80
                                   ? 'text-green-400'
                                   : item.optimization_score >= 50
@@ -898,7 +901,7 @@ export default function ContentAnalysis() {
                               }`}>
                                 {item.optimization_score}
                               </div>
-                              <div className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Score</div>
+                              <div className="text-[8px] sm:text-[9px] text-slate-500 font-bold uppercase tracking-widest">Score</div>
                             </div>
                           )}
 
@@ -906,31 +909,31 @@ export default function ContentAnalysis() {
                             <button
                               onClick={(e) => handleRetry(e, item.id)}
                               disabled={retryingIds.has(item.id)}
-                              className="px-3 py-1.5 text-xs font-bold rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
+                              className="px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-bold rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
                               title={item.error_message || 'Analysis failed'}
                             >
                               {retryingIds.has(item.id) ? (
-                                <><i className="fas fa-spinner fa-spin mr-1.5"></i>Retrying...</>
+                                <><i className="fas fa-spinner fa-spin mr-1"></i>Retry</>
                               ) : (
-                                <><i className="fas fa-rotate-right mr-1.5"></i>Retry</>
+                                <><i className="fas fa-rotate-right mr-1"></i>Retry</>
                               )}
                             </button>
                           ) : (
-                            <span className={`px-3 py-1.5 text-xs font-bold rounded-lg ${
+                            <span className={`px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-bold rounded-lg ${
                               item.status === 'completed'
                                 ? 'bg-green-500/10 text-green-500'
                                 : 'bg-yellow-500/10 text-yellow-400'
                             }`}>
                               {item.status === 'completed' ? (
-                                <><i className="fas fa-check mr-1.5"></i>Done</>
+                                <><i className="fas fa-check sm:mr-1.5"></i><span className="hidden sm:inline"> Done</span></>
                               ) : (
-                                <><i className="fas fa-spinner fa-spin mr-1.5"></i>Processing</>
+                                <><i className="fas fa-spinner fa-spin sm:mr-1.5"></i><span className="hidden sm:inline"> Processing</span></>
                               )}
                             </span>
                           )}
 
                           {item.status === 'completed' && (
-                            <i className="fas fa-chevron-right text-slate-700 group-hover:text-slate-400 transition-colors"></i>
+                            <i className="fas fa-chevron-right text-slate-700 group-hover:text-slate-400 transition-colors text-xs sm:text-sm"></i>
                           )}
                         </div>
                       </div>

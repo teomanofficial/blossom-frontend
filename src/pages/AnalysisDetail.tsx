@@ -280,7 +280,7 @@ export default function AnalysisDetail() {
               )}
 
               {activeTab === 'structure' && (
-                <TabStructure full={full} upload={upload} />
+                <TabStructure full={full} upload={upload} improv={improv} />
               )}
 
               {activeTab === 'tactics' && (

@@ -3,9 +3,12 @@ import { scoreColor } from './helpers'
 interface TabStructureProps {
   full: any
   upload: any
+  improv?: any
 }
 
-export default function TabStructure({ full }: TabStructureProps) {
+export default function TabStructure({ full, improv }: TabStructureProps) {
+  const rec = improv?.recommended_timeline
+
   return (
     <div className="space-y-6">
       {/* Format Class */}
@@ -35,6 +38,10 @@ export default function TabStructure({ full }: TabStructureProps) {
 
             return (
               <div className="space-y-4">
+                {/* Current label */}
+                {rec && (
+                  <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Current</div>
+                )}
                 {/* Bar */}
                 <div className="w-full h-10 rounded-xl overflow-hidden flex">
                   {hookPct > 0 && (
@@ -79,6 +86,102 @@ export default function TabStructure({ full }: TabStructureProps) {
                   </div>
                   <span className="text-xs font-bold text-slate-500 ml-auto">Total: {sb.total_seconds ?? 0}s</span>
                 </div>
+
+                {/* Recommended Timeline */}
+                {rec && (() => {
+                  const recTotal = rec.total_seconds || 1;
+                  const recHookPct = ((rec.hook_seconds || 0) / recTotal) * 100;
+                  const recSetupPct = ((rec.setup_seconds || 0) / recTotal) * 100;
+                  const recPayoffPct = ((rec.payoff_seconds || 0) / recTotal) * 100;
+
+                  const hookDelta = (rec.hook_seconds || 0) - (sb.hook_seconds || 0);
+                  const setupDelta = (rec.setup_seconds || 0) - (sb.setup_seconds || 0);
+                  const payoffDelta = (rec.payoff_seconds || 0) - (sb.payoff_seconds || 0);
+
+                  const formatDelta = (d: number) => {
+                    if (d === 0) return null;
+                    return d > 0 ? `+${d}s` : `${d}s`;
+                  };
+
+                  return (
+                    <div className="space-y-3 pt-3 mt-3 border-t border-white/5">
+                      <div className="text-[10px] font-black text-amber-400/80 uppercase tracking-widest">
+                        <i className="fas fa-wand-magic-sparkles mr-1"></i>Recommended
+                      </div>
+
+                      {/* Recommended Bar */}
+                      <div className="w-full h-10 rounded-xl overflow-hidden flex ring-1 ring-amber-500/20">
+                        {recHookPct > 0 && (
+                          <div
+                            className="h-full bg-gradient-to-r from-pink-500/80 to-orange-400/80 flex items-center justify-center"
+                            style={{ width: `${Math.max(recHookPct, 5)}%` }}
+                          >
+                            <span className="text-[9px] font-black text-white/90 uppercase">Hook</span>
+                          </div>
+                        )}
+                        {recSetupPct > 0 && (
+                          <div
+                            className="h-full bg-gradient-to-r from-blue-600/80 to-indigo-500/80 flex items-center justify-center"
+                            style={{ width: `${Math.max(recSetupPct, 5)}%` }}
+                          >
+                            <span className="text-[9px] font-black text-white/90 uppercase">Setup</span>
+                          </div>
+                        )}
+                        {recPayoffPct > 0 && (
+                          <div
+                            className="h-full bg-gradient-to-r from-teal-500/80 to-emerald-400/80 flex items-center justify-center"
+                            style={{ width: `${Math.max(recPayoffPct, 5)}%` }}
+                          >
+                            <span className="text-[9px] font-black text-white/90 uppercase">Payoff</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Recommended Duration Labels with Deltas */}
+                      <div className="flex gap-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded bg-gradient-to-r from-pink-500/80 to-orange-400/80"></div>
+                          <span className="text-xs font-bold text-slate-400">
+                            Hook: {rec.hook_seconds ?? 0}s
+                            {formatDelta(hookDelta) && (
+                              <span className={`ml-1 ${hookDelta > 0 ? 'text-amber-400' : 'text-teal-400'}`}>
+                                ({formatDelta(hookDelta)})
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded bg-gradient-to-r from-blue-600/80 to-indigo-500/80"></div>
+                          <span className="text-xs font-bold text-slate-400">
+                            Setup: {rec.setup_seconds ?? 0}s
+                            {formatDelta(setupDelta) && (
+                              <span className={`ml-1 ${setupDelta > 0 ? 'text-amber-400' : 'text-teal-400'}`}>
+                                ({formatDelta(setupDelta)})
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded bg-gradient-to-r from-teal-500/80 to-emerald-400/80"></div>
+                          <span className="text-xs font-bold text-slate-400">
+                            Payoff: {rec.payoff_seconds ?? 0}s
+                            {formatDelta(payoffDelta) && (
+                              <span className={`ml-1 ${payoffDelta > 0 ? 'text-amber-400' : 'text-teal-400'}`}>
+                                ({formatDelta(payoffDelta)})
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                        <span className="text-xs font-bold text-slate-500 ml-auto">Total: {rec.total_seconds ?? 0}s</span>
+                      </div>
+
+                      {/* Reasoning */}
+                      {rec.reasoning && (
+                        <p className="text-xs text-slate-400 leading-relaxed mt-1">{rec.reasoning}</p>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             );
           })()}

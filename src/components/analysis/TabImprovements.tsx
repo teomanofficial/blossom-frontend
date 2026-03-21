@@ -302,11 +302,11 @@ export default function TabImprovements({ improv, exampleVideos, onOpenCarousel 
             </div>
           )}
 
-          {/* Engagement Amplifiers */}
+          {/* Engagement Boosters */}
           {improv?.engagement_amplifiers && (
             <div>
               <h3 className="text-sm font-black text-white mb-4 flex items-center gap-2">
-                <i className="fas fa-bullhorn text-yellow-400 text-xs"></i>Engagement Amplifiers
+                <i className="fas fa-bullhorn text-yellow-400 text-xs"></i>Engagement Boosters
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5">

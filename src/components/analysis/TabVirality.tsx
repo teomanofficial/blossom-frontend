@@ -167,28 +167,77 @@ export default function TabVirality({ virality, upload }: TabViralityProps) {
         </div>
       )}
 
-      {/* Shareability Details */}
+      {/* Shareability Breakdown */}
       {virality.shareability && (
         <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
-          <h3 className="text-lg font-bold text-white mb-4">
-            <i className="fas fa-share-alt mr-2 text-orange-400 text-sm"></i>Shareability
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold text-white">
+              <i className="fas fa-share-alt mr-2 text-orange-400 text-sm"></i>Shareability Breakdown
+            </h3>
+            <div className={`text-2xl font-black ${scoreColor(virality.shareability.score || 0)}`}>
+              {virality.shareability.score ?? '--'}<span className="text-sm text-slate-500 font-normal">/100</span>
+            </div>
+          </div>
+
+          {/* Score Reasoning */}
+          {virality.shareability.score_reasoning && (
+            <div className="bg-orange-500/[0.04] rounded-xl p-4 border border-orange-500/10 mb-4">
+              <div className="text-[10px] font-black text-orange-400 uppercase tracking-widest mb-2">
+                <i className="fas fa-brain mr-1"></i>Why This Score
+              </div>
+              <p className="text-sm text-slate-300 leading-relaxed">{virality.shareability.score_reasoning}</p>
+            </div>
+          )}
+
+          {/* Sub-scores row */}
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5 text-center">
+              <div className={`text-2xl font-black mb-1 ${scoreColor(virality.shareability.score || 0)}`}>
+                {virality.shareability.score ?? '--'}
+              </div>
+              <div className="text-[9px] font-black text-slate-500 uppercase tracking-wider">
+                <i className="fas fa-share-alt mr-1 text-[8px]"></i>Share Score
+              </div>
+            </div>
+            <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5 text-center">
+              <div className={`text-2xl font-black mb-1 ${scoreColor(virality.shareability.dm_send_likelihood || 0)}`}>
+                {virality.shareability.dm_send_likelihood ?? '--'}
+              </div>
+              <div className="text-[9px] font-black text-slate-500 uppercase tracking-wider">
+                <i className="fas fa-paper-plane mr-1 text-[8px]"></i>DM Send Likelihood
+              </div>
+            </div>
+          </div>
+
+          {/* Detail cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {virality.shareability.share_motivation && (
+              <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5">
+                <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Share Motivation</div>
+                <span className="inline-block px-2.5 py-1 rounded-full text-xs font-black bg-orange-500/10 text-orange-400 capitalize">
+                  {virality.shareability.share_motivation.replace(/_/g, ' ')}
+                </span>
+              </div>
+            )}
             {virality.shareability.social_currency_type && (
               <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5">
                 <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Social Currency</div>
                 <p className="text-sm text-slate-300">{virality.shareability.social_currency_type}</p>
               </div>
             )}
-            {virality.shareability.share_motivation && (
-              <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5">
-                <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Share Motivation</div>
-                <p className="text-sm text-slate-300">{virality.shareability.share_motivation}</p>
+            {virality.shareability.share_context && (
+              <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5 md:col-span-2">
+                <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">
+                  <i className="fas fa-comment-dots mr-1 text-blue-400"></i>Share Scenario
+                </div>
+                <p className="text-sm text-slate-300 leading-relaxed italic">"{virality.shareability.share_context}"</p>
               </div>
             )}
             {virality.shareability.share_friction && (
-              <div className="bg-white/[0.03] rounded-xl p-4 border border-white/5 md:col-span-2">
-                <div className="text-[10px] font-black text-red-400 uppercase tracking-widest mb-2">Share Friction</div>
+              <div className="bg-red-500/[0.04] rounded-xl p-4 border border-red-500/10 md:col-span-2">
+                <div className="text-[10px] font-black text-red-400 uppercase tracking-widest mb-2">
+                  <i className="fas fa-exclamation-triangle mr-1"></i>Share Friction
+                </div>
                 <p className="text-sm text-red-300/70">{virality.shareability.share_friction}</p>
               </div>
             )}
