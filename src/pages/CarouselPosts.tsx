@@ -5,9 +5,13 @@ import { authFetch } from '../lib/api'
 import { getStorageUrl } from '../lib/media'
 
 /* ── Constants ── */
-const SLIDE_W = 1080
-const SLIDE_H = 1920
-const PREVIEW_SCALE = 0.25
+const ASPECT_RATIOS = [
+  { key: '9:16', label: '9:16', w: 1080, h: 1920 },
+  { key: '4:5', label: '4:5', w: 1080, h: 1350 },
+  { key: '1:1', label: '1:1', w: 1080, h: 1080 },
+] as const
+
+type AspectKey = (typeof ASPECT_RATIOS)[number]['key']
 
 const CAROUSEL_TYPES = [
   { key: 'hooks', label: 'Hooks', icon: 'fa-comment-dots' },
@@ -94,6 +98,14 @@ function subtitleForType(type: CarouselType): string {
   }
 }
 
+function brief(text: string | null, max = 80): string | null {
+  if (!text) return null
+  // Take first sentence or truncate
+  const firstSentence = text.split(/[.!?]/)[0]
+  const s = firstSentence.length <= max ? firstSentence : firstSentence.slice(0, max)
+  return s.trim() + (s.length < text.length ? '...' : '')
+}
+
 function getSongCover(song: TrendingSong): string | null {
   return getStorageUrl(song.local_cover_path) || song.cover_url
 }
@@ -104,28 +116,36 @@ function getTopicThumbnail(thumbs: string[] | null, idx: number): string | null 
 }
 
 /* ── Shared Slide Styles ── */
-const slideBase: React.CSSProperties = {
-  width: SLIDE_W,
-  height: SLIDE_H,
-  position: 'relative',
-  overflow: 'hidden',
-  fontFamily: "'Plus Jakarta Sans', sans-serif",
+function slideBase(w: number, h: number): React.CSSProperties {
+  return {
+    width: w,
+    height: h,
+    position: 'relative',
+    overflow: 'hidden',
+    fontFamily: "'Plus Jakarta Sans', sans-serif",
+  }
 }
 
-const gradientBg: React.CSSProperties = {
-  ...slideBase,
-  background: 'linear-gradient(145deg, #1a0a2e 0%, #16213e 30%, #0a0a0f 60%, #1a0520 100%)',
+function gradientBg(w: number, h: number): React.CSSProperties {
+  return {
+    ...slideBase(w, h),
+    background: 'linear-gradient(145deg, #1a0a2e 0%, #16213e 30%, #0a0a0f 60%, #1a0520 100%)',
+  }
 }
 
-const darkBg: React.CSSProperties = {
-  ...slideBase,
-  background: '#0a0a0f',
+function darkBg(w: number, h: number): React.CSSProperties {
+  return {
+    ...slideBase(w, h),
+    background: '#0a0a0f',
+  }
 }
+
+interface SlideDims { w: number; h: number }
 
 /* ── Cover Slide ── */
-function CoverSlide({ type }: { type: CarouselType }) {
+function CoverSlide({ type, size }: { type: CarouselType; size: SlideDims }) {
   return (
-    <div style={gradientBg}>
+    <div style={gradientBg(size.w, size.h)}>
       {/* Decorative gradient orbs */}
       <div style={{
         position: 'absolute', top: -200, right: -200, width: 600, height: 600,
@@ -187,9 +207,9 @@ function CoverSlide({ type }: { type: CarouselType }) {
 }
 
 /* ── Items Slide — Hooks ── */
-function HooksItemsSlide({ items }: { items: TrendingHook[] }) {
+function HooksItemsSlide({ items, size }: { items: TrendingHook[]; size: SlideDims }) {
   return (
-    <div style={darkBg}>
+    <div style={darkBg(size.w, size.h)}>
       <SlideHeader title="Top Hooks" />
       <div style={{ padding: '0 60px' }}>
         {items.slice(0, 5).map((h, i) => (
@@ -198,13 +218,12 @@ function HooksItemsSlide({ items }: { items: TrendingHook[] }) {
               <div style={{ fontSize: 30, fontWeight: 700, color: '#fff', marginBottom: 6, lineHeight: 1.3 }}>
                 {h.name}
               </div>
-              {h.description && (
+              {brief(h.description) && (
                 <div style={{
-                  fontSize: 20, color: 'rgba(255,255,255,0.4)', lineHeight: 1.4,
-                  marginBottom: 10, overflow: 'hidden',
-                  display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                  fontSize: 20, color: 'rgba(255,255,255,0.4)', lineHeight: 1.3,
+                  marginBottom: 8,
                 }}>
-                  {h.description}
+                  {brief(h.description)}
                 </div>
               )}
               {h.hook_technique && (
@@ -230,9 +249,9 @@ function HooksItemsSlide({ items }: { items: TrendingHook[] }) {
 }
 
 /* ── Items Slide — Formats ── */
-function FormatsItemsSlide({ items }: { items: TrendingFormat[] }) {
+function FormatsItemsSlide({ items, size }: { items: TrendingFormat[]; size: SlideDims }) {
   return (
-    <div style={darkBg}>
+    <div style={darkBg(size.w, size.h)}>
       <SlideHeader title="Top Formats" />
       <div style={{ padding: '0 60px' }}>
         {items.slice(0, 5).map((f, i) => (
@@ -241,13 +260,11 @@ function FormatsItemsSlide({ items }: { items: TrendingFormat[] }) {
               <div style={{ fontSize: 30, fontWeight: 700, color: '#fff', marginBottom: 6, lineHeight: 1.3 }}>
                 {f.name}
               </div>
-              {f.description && (
+              {brief(f.description) && (
                 <div style={{
-                  fontSize: 20, color: 'rgba(255,255,255,0.4)', lineHeight: 1.4,
-                  overflow: 'hidden',
-                  display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                  fontSize: 20, color: 'rgba(255,255,255,0.4)', lineHeight: 1.3,
                 }}>
-                  {f.description}
+                  {brief(f.description)}
                 </div>
               )}
             </div>
@@ -264,9 +281,9 @@ function FormatsItemsSlide({ items }: { items: TrendingFormat[] }) {
 }
 
 /* ── Items Slide — Songs ── */
-function SongsItemsSlide({ items }: { items: TrendingSong[] }) {
+function SongsItemsSlide({ items, size }: { items: TrendingSong[]; size: SlideDims }) {
   return (
-    <div style={darkBg}>
+    <div style={darkBg(size.w, size.h)}>
       <SlideHeader title="Trending Songs" />
       <div style={{ padding: '0 60px' }}>
         {items.slice(0, 5).map((s, i) => {
@@ -315,9 +332,9 @@ function SongsItemsSlide({ items }: { items: TrendingSong[] }) {
 }
 
 /* ── Items Slide — Content (Domains) ── */
-function ContentItemsSlide({ items }: { items: TrendingContent[] }) {
+function ContentItemsSlide({ items, size }: { items: TrendingContent[]; size: SlideDims }) {
   return (
-    <div style={darkBg}>
+    <div style={darkBg(size.w, size.h)}>
       <SlideHeader title="Popular Content" />
       <div style={{ padding: '0 60px' }}>
         {items.slice(0, 5).map((t, i) => {
@@ -348,13 +365,11 @@ function ContentItemsSlide({ items }: { items: TrendingContent[] }) {
                 <div style={{ fontSize: 30, fontWeight: 700, color: '#fff', marginBottom: 6, lineHeight: 1.3 }}>
                   {t.name}
                 </div>
-                {t.description && (
+                {brief(t.description) && (
                   <div style={{
-                    fontSize: 20, color: 'rgba(255,255,255,0.4)', lineHeight: 1.4,
-                    overflow: 'hidden',
-                    display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                    fontSize: 20, color: 'rgba(255,255,255,0.4)', lineHeight: 1.3,
                   }}>
-                    {t.description}
+                    {brief(t.description)}
                   </div>
                 )}
               </div>
@@ -372,9 +387,9 @@ function ContentItemsSlide({ items }: { items: TrendingContent[] }) {
 }
 
 /* ── CTA Slide ── */
-function CTASlide() {
+function CTASlide({ size }: { size: SlideDims }) {
   return (
-    <div style={gradientBg}>
+    <div style={gradientBg(size.w, size.h)}>
       {/* Decorative orbs */}
       <div style={{
         position: 'absolute', top: 200, left: -100, width: 400, height: 400,
@@ -464,9 +479,7 @@ function ItemRow({ rank, children }: { rank: number; children: React.ReactNode }
     }}>
       <div style={{
         width: 56, height: 56, borderRadius: 16,
-        background: rank <= 3
-          ? 'linear-gradient(135deg, rgba(236,72,153,0.2), rgba(249,115,22,0.2))'
-          : 'rgba(255,255,255,0.06)',
+        background: rank <= 3 ? 'rgba(236,72,153,0.18)' : 'rgba(255,255,255,0.06)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         fontSize: 28, fontWeight: 800,
         color: rank <= 3 ? '#f472b6' : 'rgba(255,255,255,0.4)',
@@ -514,6 +527,9 @@ function SlidePreview({
   onDownload,
   onExpand,
   exporting,
+  slideW,
+  slideH,
+  previewScale,
 }: {
   slideRef: React.RefObject<HTMLDivElement | null>
   label: string
@@ -521,6 +537,9 @@ function SlidePreview({
   onDownload: () => void
   onExpand: () => void
   exporting: boolean
+  slideW: number
+  slideH: number
+  previewScale: number
 }) {
   return (
     <div className="flex flex-col items-center gap-3">
@@ -529,14 +548,14 @@ function SlidePreview({
         className="cursor-pointer group relative"
         onClick={onExpand}
         style={{
-          width: SLIDE_W * PREVIEW_SCALE,
-          height: SLIDE_H * PREVIEW_SCALE,
+          width: slideW * previewScale,
+          height: slideH * previewScale,
           overflow: 'hidden',
           borderRadius: 12,
           border: '1px solid rgba(255,255,255,0.08)',
         }}
       >
-        <div style={{ transform: `scale(${PREVIEW_SCALE})`, transformOrigin: 'top left' }}>
+        <div style={{ transform: `scale(${previewScale})`, transformOrigin: 'top left' }}>
           <div ref={slideRef}>{children}</div>
         </div>
         {/* Expand overlay on hover */}
@@ -559,11 +578,15 @@ function SlidePreview({
 function ExpandedSlideModal({
   children,
   onClose,
+  slideW,
+  slideH,
 }: {
   children: React.ReactNode
   onClose: () => void
+  slideW: number
+  slideH: number
 }) {
-  const MODAL_SCALE = 0.45
+  const MODAL_SCALE = Math.min(0.5, window.innerHeight * 0.8 / slideH)
   return (
     <div
       className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
@@ -578,8 +601,8 @@ function ExpandedSlideModal({
         </button>
         <div
           style={{
-            width: SLIDE_W * MODAL_SCALE,
-            height: SLIDE_H * MODAL_SCALE,
+            width: slideW * MODAL_SCALE,
+            height: slideH * MODAL_SCALE,
             overflow: 'hidden',
             borderRadius: 16,
             border: '1px solid rgba(255,255,255,0.1)',
@@ -604,6 +627,12 @@ export default function CarouselPosts() {
   const [exporting, setExporting] = useState(false)
   const [days, setDays] = useState(1)
   const [expandedSlide, setExpandedSlide] = useState<'cover' | 'items' | 'cta' | null>(null)
+  const [aspect, setAspect] = useState<AspectKey>('9:16')
+
+  const ar = ASPECT_RATIOS.find(a => a.key === aspect)!
+  const SLIDE_W = ar.w
+  const SLIDE_H = ar.h
+  const PREVIEW_SCALE = aspect === '9:16' ? 0.25 : aspect === '4:5' ? 0.28 : 0.32
 
   const coverRef = useRef<HTMLDivElement | null>(null)
   const itemsRef = useRef<HTMLDivElement | null>(null)
@@ -692,16 +721,18 @@ export default function CarouselPosts() {
     }
   }
 
+  const size = { w: SLIDE_W, h: SLIDE_H }
+
   /* ── Get items for active type ── */
   function getItemsSlide() {
     if (!data) return null
     switch (activeType) {
-      case 'hooks': return <HooksItemsSlide items={data.hooks.items} />
-      case 'formats': return <FormatsItemsSlide items={data.formats.items} />
-      case 'songs': return <SongsItemsSlide items={data.songs.items} />
+      case 'hooks': return <HooksItemsSlide items={data.hooks.items} size={size} />
+      case 'formats': return <FormatsItemsSlide items={data.formats.items} size={size} />
+      case 'songs': return <SongsItemsSlide items={data.songs.items} size={size} />
       case 'content': {
         const items = data.contents.items
-        return items.length ? <ContentItemsSlide items={items} /> : <EmptyItemsSlide type="content" />
+        return items.length ? <ContentItemsSlide items={items} size={size} /> : <EmptyItemsSlide type="content" size={size} />
       }
     }
   }
@@ -763,22 +794,38 @@ export default function CarouselPosts() {
         </div>
       </div>
 
-      {/* Type Selector */}
-      <div className="flex flex-wrap gap-2">
-        {CAROUSEL_TYPES.map(ct => (
-          <button
-            key={ct.key}
-            onClick={() => setActiveType(ct.key)}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
-              activeType === ct.key
-                ? 'bg-pink-500/20 text-pink-400 ring-1 ring-pink-500/30'
-                : 'bg-white/5 text-slate-500 hover:text-slate-300 hover:bg-white/8'
-            }`}
-          >
-            <i className={`fas ${ct.icon} text-[10px]`} />
-            {ct.label}
-          </button>
-        ))}
+      {/* Type Selector + Aspect Ratio */}
+      <div className="flex flex-wrap items-center gap-4">
+        <div className="flex flex-wrap gap-2">
+          {CAROUSEL_TYPES.map(ct => (
+            <button
+              key={ct.key}
+              onClick={() => setActiveType(ct.key)}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+                activeType === ct.key
+                  ? 'bg-pink-500/20 text-pink-400 ring-1 ring-pink-500/30'
+                  : 'bg-white/5 text-slate-500 hover:text-slate-300 hover:bg-white/8'
+              }`}
+            >
+              <i className={`fas ${ct.icon} text-[10px]`} />
+              {ct.label}
+            </button>
+          ))}
+        </div>
+        <div className="h-6 w-px bg-white/10 hidden sm:block" />
+        <div className="flex items-center gap-2 bg-white/5 rounded-xl p-1">
+          {ASPECT_RATIOS.map(a => (
+            <button
+              key={a.key}
+              onClick={() => setAspect(a.key)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+                aspect === a.key ? 'bg-pink-500/20 text-pink-400' : 'text-slate-500 hover:text-slate-300'
+              }`}
+            >
+              {a.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Slide Previews */}
@@ -790,8 +837,11 @@ export default function CarouselPosts() {
             onDownload={() => downloadSingle(coverRef, 'cover')}
             onExpand={() => setExpandedSlide('cover')}
             exporting={exporting}
+            slideW={SLIDE_W}
+            slideH={SLIDE_H}
+            previewScale={PREVIEW_SCALE}
           >
-            <CoverSlide type={activeType} />
+            <CoverSlide type={activeType} size={size} />
           </SlidePreview>
 
           <SlidePreview
@@ -800,6 +850,9 @@ export default function CarouselPosts() {
             onDownload={() => downloadSingle(itemsRef, 'items')}
             onExpand={() => setExpandedSlide('items')}
             exporting={exporting}
+            slideW={SLIDE_W}
+            slideH={SLIDE_H}
+            previewScale={PREVIEW_SCALE}
           >
             {getItemsSlide()}
           </SlidePreview>
@@ -810,18 +863,21 @@ export default function CarouselPosts() {
             onDownload={() => downloadSingle(ctaRef, 'cta')}
             onExpand={() => setExpandedSlide('cta')}
             exporting={exporting}
+            slideW={SLIDE_W}
+            slideH={SLIDE_H}
+            previewScale={PREVIEW_SCALE}
           >
-            <CTASlide />
+            <CTASlide size={size} />
           </SlidePreview>
         </div>
       )}
 
       {/* Expanded slide modal (not part of export) */}
       {expandedSlide && data && (
-        <ExpandedSlideModal onClose={() => setExpandedSlide(null)}>
-          {expandedSlide === 'cover' && <CoverSlide type={activeType} />}
+        <ExpandedSlideModal onClose={() => setExpandedSlide(null)} slideW={SLIDE_W} slideH={SLIDE_H}>
+          {expandedSlide === 'cover' && <CoverSlide type={activeType} size={size} />}
           {expandedSlide === 'items' && getItemsSlide()}
-          {expandedSlide === 'cta' && <CTASlide />}
+          {expandedSlide === 'cta' && <CTASlide size={size} />}
         </ExpandedSlideModal>
       )}
 
@@ -838,9 +894,9 @@ export default function CarouselPosts() {
 }
 
 /* ── Empty Items Slide ── */
-function EmptyItemsSlide({ type }: { type: string }) {
+function EmptyItemsSlide({ type, size }: { type: string; size: SlideDims }) {
   return (
-    <div style={darkBg}>
+    <div style={darkBg(size.w, size.h)}>
       <div style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center',
         justifyContent: 'center', height: '100%', padding: 80,
