@@ -422,10 +422,12 @@ function CTASlide({ size }: { size: SlideDims }) {
 
         {/* CTA button */}
         <div style={{
-          padding: '24px 64px', borderRadius: 60,
+          width: 420, height: 80, borderRadius: 60,
           background: 'linear-gradient(135deg, #ec4899, #f97316)',
           fontSize: 32, fontWeight: 800, color: '#fff',
           marginBottom: 60, boxShadow: '0 15px 40px rgba(236,72,153,0.35)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          textAlign: 'center', lineHeight: 1,
         }}>
           Try Blossom Free
         </div>
