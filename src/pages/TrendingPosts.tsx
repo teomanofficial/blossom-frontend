@@ -137,7 +137,7 @@ export default function TrendingPosts() {
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [platform, setPlatform] = useState<string>('')
-  const [page, setPage] = useState(0)
+  const [, setPage] = useState(0)
   const [days, setDays] = useState(1)
   const [carouselData, setCarouselData] = useState<{ videos: CarouselVideo[]; initialIndex: number } | null>(null)
   const sentinelRef = useRef<HTMLDivElement>(null)
@@ -187,7 +187,7 @@ export default function TrendingPosts() {
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loading && !loadingMore) {
+        if (entries[0]?.isIntersecting && hasMore && !loading && !loadingMore) {
           setPage(prev => {
             const next = prev + 1
             fetchVideos(next, true)
