@@ -472,6 +472,13 @@ function Step2Mockup({ active, exampleVideos }: { active: boolean; exampleVideos
               </div>
             </div>
           </div>
+          {/* See more improvements CTA */}
+          <button className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-pink-500/10 to-violet-500/10 border border-pink-500/20 hover:border-pink-500/30 transition-colors cursor-default">
+            <span className="text-[10px] font-bold text-pink-300/80">🚀 See 8+ more improvements in the app</span>
+            <svg className="w-3 h-3 text-pink-400/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            </svg>
+          </button>
         </div>
       </div>
 
