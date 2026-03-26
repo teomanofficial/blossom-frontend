@@ -30,7 +30,6 @@ function formatDate(dateStr: string): string {
 // === Analysis Steps for Progress Stepper ===
 
 const ANALYSIS_STEPS = [
-  { key: 'upload', label: 'Upload Complete', subtitle: 'Uploading your content...' },
   { key: 'full_analysis', label: 'Format Analysis', subtitle: 'Analyzing viral format...' },
   { key: 'hook_analysis', label: 'Hook Analysis', subtitle: 'Analyzing first 3.05 seconds...' },
   { key: 'virality_scores', label: 'Virality Scoring', subtitle: 'Calculating engagement metrics...' },
@@ -348,7 +347,7 @@ export default function ContentAnalysis() {
   // === Progress Step Status ===
 
   const getStepStatus = (stepIndex: number): 'done' | 'running' | 'pending' | 'error' => {
-    if (!analysisStatus?.steps) return stepIndex === 0 ? 'done' : 'pending'
+    if (!analysisStatus?.steps) return stepIndex === 0 ? 'running' : 'pending'
     const stepKey = ANALYSIS_STEPS[stepIndex]?.key
     if (!stepKey) return 'pending'
     const stepState = analysisStatus.steps[stepKey]
@@ -548,7 +547,7 @@ export default function ContentAnalysis() {
                                 headers: { Authorization: `Bearer ${session.access_token}` },
                               })
                               if (resp.ok) {
-                                setAnalysisStatus({ status: 'analyzing', steps: { upload: 'done', full_analysis: 'pending', hook_analysis: 'pending', virality_scores: 'pending', improvement: 'pending' } })
+                                setAnalysisStatus({ status: 'analyzing', steps: { full_analysis: 'pending', hook_analysis: 'pending', virality_scores: 'pending', improvement: 'pending' } })
                                 startPolling(uploadId)
                               }
                             } catch (err) {
@@ -648,7 +647,7 @@ export default function ContentAnalysis() {
                       {uploading ? (
                         <>
                           <i className="fas fa-spinner fa-spin mr-2"></i>
-                          Analyzing...
+                          Uploading...
                         </>
                       ) : (
                         <>
