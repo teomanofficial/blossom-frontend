@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { apiFetch } from '../lib/api'
+import { authFetch } from '../lib/api'
 
 interface VersionEntry {
   uploadId: number
@@ -57,7 +57,7 @@ export default function VersionTimeline({ uploadId, versionInfo, onVersionSelect
       return
     }
 
-    apiFetch(`/api/content-analysis/${uploadId}/versions`)
+    authFetch(`/api/content-analysis/${uploadId}/versions`)
       .then(res => res.json())
       .then(data => {
         setVersions(data.versions || [])

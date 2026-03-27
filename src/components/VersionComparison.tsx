@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { apiFetch } from '../lib/api'
+import { authFetch } from '../lib/api'
 
 interface ScoreDelta {
   hook_power: number | null
@@ -83,7 +83,7 @@ export default function VersionComparison({ uploadId, versionInfo }: VersionComp
       return
     }
 
-    apiFetch(`/api/content-analysis/${uploadId}/comparison`)
+    authFetch(`/api/content-analysis/${uploadId}/comparison`)
       .then(res => res.json())
       .then(data => {
         setComparison(data.comparison)
