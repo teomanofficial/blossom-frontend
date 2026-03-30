@@ -67,6 +67,7 @@ import SiteAnalytics from './pages/SiteAnalytics'
 import CarouselPosts from './pages/CarouselPosts'
 import Onboarding from './pages/Onboarding'
 import AuthCallback from './pages/AuthCallback'
+import SharedAnalysis from './pages/SharedAnalysis'
 import Platforms from './pages/Platforms'
 import PlatformPosts from './pages/PlatformPosts'
 import PlatformPostDetail from './pages/PlatformPostDetail'
@@ -111,6 +112,7 @@ function App() {
       <Route path="/onboarding" element={<Onboarding />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
       <Route path="/invite/:token" element={<InviteAccept />} />
+      <Route path="/share/:token" element={<SharedAnalysis />} />
       <Route path="/terms" element={<Terms />} />
       <Route path="/privacy" element={<Privacy />} />
       <Route

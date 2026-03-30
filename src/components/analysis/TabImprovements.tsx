@@ -6,9 +6,10 @@ export interface TabImprovementsProps {
   improv: any
   exampleVideos: any
   onOpenCarousel: (videos: any[], index: number) => void
+  disableLinks?: boolean
 }
 
-export default function TabImprovements({ improv, exampleVideos, onOpenCarousel }: TabImprovementsProps) {
+export default function TabImprovements({ improv, exampleVideos, onOpenCarousel, disableLinks }: TabImprovementsProps) {
   const [expandedHooks, setExpandedHooks] = useState<Set<number>>(new Set())
 
   return (
@@ -145,7 +146,7 @@ export default function TabImprovements({ improv, exampleVideos, onOpenCarousel 
                             <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Why It's Better</div>
                             <p className="text-sm text-slate-400">{alt.why_better}</p>
                           </div>
-                          {hookClassId && (
+                          {hookClassId && !disableLinks && (
                             <a
                               href={`/dashboard/hooks/${hookClassId}`}
                               target="_blank"

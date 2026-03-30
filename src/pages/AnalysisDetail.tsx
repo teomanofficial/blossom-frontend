@@ -16,6 +16,7 @@ import TabEmotions from '../components/analysis/TabEmotions'
 import TabVirality from '../components/analysis/TabVirality'
 import TabWeaknesses from '../components/analysis/TabWeaknesses'
 import TabComments from '../components/analysis/TabComments'
+import ShareModal from '../components/ShareModal'
 
 export default function AnalysisDetail() {
   const { id } = useParams<{ id: string }>()
@@ -31,6 +32,7 @@ export default function AnalysisDetail() {
   const [carouselVideos, setCarouselVideos] = useState<CarouselVideo[] | null>(null)
   const [carouselIndex, setCarouselIndex] = useState(0)
   const [showRecheck, setShowRecheck] = useState(false)
+  const [showShareModal, setShowShareModal] = useState(false)
 
   // === Data Fetching ===
 
@@ -162,6 +164,13 @@ export default function AnalysisDetail() {
             </h1>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowShareModal(true)}
+              className="px-3 sm:px-4 py-2 bg-gradient-to-r from-pink-500/20 to-orange-500/20 border border-pink-500/30 rounded-xl text-pink-300 hover:text-white hover:from-pink-500/30 hover:to-orange-500/30 transition-all text-xs sm:text-sm font-bold"
+            >
+              <i className="fas fa-share-alt sm:mr-2"></i>
+              <span className="hidden sm:inline">Share</span>
+            </button>
             <button
               onClick={() => setShowRecheck(!showRecheck)}
               className="px-3 sm:px-4 py-2 bg-gradient-to-r from-purple-500/20 to-teal-500/20 border border-purple-500/30 rounded-xl text-purple-300 hover:text-white hover:from-purple-500/30 hover:to-teal-500/30 transition-all text-xs sm:text-sm font-bold"
@@ -317,6 +326,15 @@ export default function AnalysisDetail() {
           videos={carouselVideos}
           initialIndex={carouselIndex}
           onClose={() => setCarouselVideos(null)}
+        />
+      )}
+
+      {/* Share Modal */}
+      {showShareModal && uploadId && session?.access_token && (
+        <ShareModal
+          uploadId={uploadId}
+          sessionToken={session.access_token}
+          onClose={() => setShowShareModal(false)}
         />
       )}
     </>

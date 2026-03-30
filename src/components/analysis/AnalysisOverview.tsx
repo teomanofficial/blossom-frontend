@@ -8,9 +8,10 @@ export interface AnalysisOverviewProps {
   hook: any
   virality: any
   improv: any
-  uploadId: number
-  sessionToken: string
-  onTitleUpdate: (newTitle: string) => void
+  uploadId?: number
+  sessionToken?: string
+  onTitleUpdate?: (newTitle: string) => void
+  readOnly?: boolean
 }
 
 export default function AnalysisOverview({
@@ -22,6 +23,7 @@ export default function AnalysisOverview({
   uploadId,
   sessionToken,
   onTitleUpdate,
+  readOnly,
 }: AnalysisOverviewProps) {
   const [editingTitle, setEditingTitle] = useState(false)
   const [titleDraft, setTitleDraft] = useState('')
@@ -30,7 +32,7 @@ export default function AnalysisOverview({
   const scoreBreakdown = improv?.score_breakdown
 
   const saveTitle = async () => {
-    if (!uploadId || !sessionToken || !titleDraft.trim()) {
+    if (!uploadId || !sessionToken || !onTitleUpdate || !titleDraft.trim()) {
       setEditingTitle(false)
       return
     }
@@ -46,7 +48,7 @@ export default function AnalysisOverview({
       })
       if (resp.ok) {
         const data = await resp.json()
-        onTitleUpdate(data.title)
+        onTitleUpdate?.(data.title)
       }
     } catch (err) {
       console.error('Failed to save title:', err)
@@ -95,7 +97,7 @@ export default function AnalysisOverview({
 
             {/* Editable Title */}
             <div className="group/title">
-              {editingTitle ? (
+              {!readOnly && editingTitle ? (
                 <div>
                   <input
                     autoFocus
@@ -122,12 +124,12 @@ export default function AnalysisOverview({
                 </div>
               ) : (
                 <h2
-                  onClick={() => { setEditingTitle(true); setTitleDraft(upload?.title || upload?.caption || '') }}
-                  className="text-base sm:text-lg font-black text-white cursor-pointer hover:text-pink-400 transition-colors"
-                  title="Click to edit title"
+                  onClick={readOnly ? undefined : () => { setEditingTitle(true); setTitleDraft(upload?.title || upload?.caption || '') }}
+                  className={`text-base sm:text-lg font-black text-white ${readOnly ? '' : 'cursor-pointer hover:text-pink-400'} transition-colors`}
+                  title={readOnly ? undefined : 'Click to edit title'}
                 >
                   {upload?.title || upload?.caption || 'Untitled'}
-                  <i className="fas fa-pencil-alt ml-2 text-xs text-slate-600 opacity-0 group-hover/title:opacity-100 transition-opacity"></i>
+                  {!readOnly && <i className="fas fa-pencil-alt ml-2 text-xs text-slate-600 opacity-0 group-hover/title:opacity-100 transition-opacity"></i>}
                 </h2>
               )}
             </div>
