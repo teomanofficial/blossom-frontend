@@ -1,11 +1,21 @@
-import { useEffect, useState, useMemo, useRef } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import toast from 'react-hot-toast'
 import { useAuth } from '../context/AuthContext'
-import { authFetch } from '../lib/api'
 import { getStorageUrl } from '../lib/media'
 import { useAudioPlayer, getAudioUrl } from '../lib/useAudioPlayer'
+import { useDashboardSection } from '../lib/useDashboardSection'
 import VideoStoryCarousel, { type CarouselVideo } from '../components/VideoStoryCarousel'
+import {
+  FeaturedSuggestionSkeleton,
+  TopVideosSkeleton,
+  FormatsListSkeleton,
+  HooksListSkeleton,
+  TrendingSoundsSkeleton,
+  TacticsSkeleton,
+  KeywordCloudSkeleton,
+  AccountsSkeleton,
+  HashtagsSkeleton,
+} from '../components/DashboardSkeletons'
 
 /* ── Types ── */
 interface Format { id: number; name: string; video_count: number; avg_views: number; avg_engagement_rate: number }
@@ -31,15 +41,6 @@ interface TrendingKeyword {
   avg_views: number; avg_engagement: number
 }
 interface ConnectedAccounts { total: number; active: number; total_followers: number }
-
-interface Stats {
-  platform_breakdown: Record<string, number>
-  top_formats: Format[]; top_hooks: Hook[]
-  top_viral_videos: CarouselVideo[]; trending_music: MusicTrack[]
-  top_tactics: Tactic[]; featured_suggestion: Suggestion | null
-  trending_hashtags: TrendingHashtag[]; trending_keywords: TrendingKeyword[]
-  connected_accounts: ConnectedAccounts
-}
 
 /* ── Helpers ── */
 function fmt(n: number): string {
@@ -104,6 +105,19 @@ const quickActions = [
     iconBg: 'bg-blue-500/20', iconColor: 'text-blue-400',
   },
 ]
+
+/* ── Section Error ── */
+function SectionError({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div className="flex items-center gap-3 py-8 px-4 text-slate-600">
+      <i className="fas fa-exclamation-triangle text-lg text-red-400/60" />
+      <span className="text-sm font-bold">Failed to load</span>
+      <button onClick={onRetry} className="text-[10px] font-black text-pink-400 uppercase tracking-widest hover:text-pink-300 transition-colors ml-2">
+        Retry
+      </button>
+    </div>
+  )
+}
 
 /* ── Keyword Cloud Component ── */
 function KeywordCloud({ keywords }: { keywords: TrendingKeyword[] }) {
@@ -212,25 +226,20 @@ function PostCard({
 export default function Dashboard() {
   const { user } = useAuth()
   const displayName = user?.user_metadata?.full_name ?? user?.email?.split('@')[0] ?? 'Creator'
-  const [stats, setStats] = useState<Stats | null>(null)
-  const [loading, setLoading] = useState(true)
   const [carouselData, setCarouselData] = useState<{ videos: CarouselVideo[]; initialIndex: number } | null>(null)
   const audio = useAudioPlayer()
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    authFetch('/api/analysis/stats')
-      .then((r) => {
-        if (!r.ok) throw new Error(`Stats API returned ${r.status}`)
-        return r.json()
-      })
-      .then((data) => {
-        if (data.error) throw new Error(data.error)
-        setStats(data)
-      })
-      .catch(() => toast.error('Failed to load dashboard data'))
-      .finally(() => setLoading(false))
-  }, [])
+  // Independent per-section hooks
+  const topFormats = useDashboardSection<Format[]>('top-formats')
+  const topHooks = useDashboardSection<Hook[]>('top-hooks')
+  const topVideos = useDashboardSection<CarouselVideo[]>('top-viral-videos')
+  const trendingMusic = useDashboardSection<MusicTrack[]>('trending-music')
+  const topTactics = useDashboardSection<Tactic[]>('top-tactics')
+  const featuredSuggestion = useDashboardSection<Suggestion | null>('featured-suggestion')
+  const trendingHashtags = useDashboardSection<TrendingHashtag[]>('trending-hashtags')
+  const trendingKeywords = useDashboardSection<TrendingKeyword[]>('trending-keywords')
+  const connectedAccounts = useDashboardSection<ConnectedAccounts>('connected-accounts')
 
   const scrollCarousel = (dir: 'left' | 'right') => {
     if (!scrollRef.current) return
@@ -250,140 +259,150 @@ export default function Dashboard() {
         </p>
       </div>
 
-      {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <div className="w-8 h-8 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
+      {/* ── Quick Actions Grid (static — no fetch) ── */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-8 lg:mb-12">
+        {quickActions.map((a) => (
+          <Link
+            key={a.to}
+            to={a.to}
+            className="glass-card-lift p-4 sm:p-6 group cursor-pointer overflow-hidden relative"
+          >
+            <div className={`absolute -right-4 -top-4 w-24 h-24 ${a.glow} rounded-full blur-2xl ${a.glowHover} transition-colors`} />
+            <div className="relative">
+              <div className={`w-10 h-10 sm:w-12 sm:h-12 ${a.iconBg} rounded-2xl flex items-center justify-center mb-3 sm:mb-4 ${a.iconColor}`}>
+                <i className={`fas ${a.icon} text-base sm:text-lg`} />
+              </div>
+              <h3 className="text-sm sm:text-lg font-semibold mb-0.5 sm:mb-1">{a.label}</h3>
+              <p className="text-slate-400 text-[10px] sm:text-xs hidden sm:block">{a.desc}</p>
+            </div>
+          </Link>
+        ))}
+      </div>
+
+      {/* ── Featured Content Idea (Editorial Hero) ── */}
+      {featuredSuggestion.loading ? (
+        <FeaturedSuggestionSkeleton />
+      ) : featuredSuggestion.error ? (
+        <div className="glass-card p-5 sm:p-8 mb-8 lg:mb-12">
+          <SectionError onRetry={featuredSuggestion.retry} />
         </div>
-      ) : stats ? (
-        <>
-          {/* ── Quick Actions Grid ── */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-8 lg:mb-12">
-            {quickActions.map((a) => (
-              <Link
-                key={a.to}
-                to={a.to}
-                className="glass-card-lift p-4 sm:p-6 group cursor-pointer overflow-hidden relative"
-              >
-                <div className={`absolute -right-4 -top-4 w-24 h-24 ${a.glow} rounded-full blur-2xl ${a.glowHover} transition-colors`} />
-                <div className="relative">
-                  <div className={`w-10 h-10 sm:w-12 sm:h-12 ${a.iconBg} rounded-2xl flex items-center justify-center mb-3 sm:mb-4 ${a.iconColor}`}>
-                    <i className={`fas ${a.icon} text-base sm:text-lg`} />
-                  </div>
-                  <h3 className="text-sm sm:text-lg font-semibold mb-0.5 sm:mb-1">{a.label}</h3>
-                  <p className="text-slate-400 text-[10px] sm:text-xs hidden sm:block">{a.desc}</p>
-                </div>
+      ) : featuredSuggestion.data ? (
+        <div className="glass-card p-5 sm:p-8 lg:p-10 mb-8 lg:mb-12 relative overflow-hidden group">
+          <div className="absolute -top-40 -right-40 w-96 h-96 bg-pink-500/10 rounded-full blur-[120px] group-hover:bg-pink-500/20 transition-all duration-700 pointer-events-none" />
+          <div className="relative z-10">
+            <div className="flex items-center gap-3 mb-4 sm:mb-6">
+              <span className="text-[10px] sm:text-xs font-bold text-pink-400 tracking-widest uppercase">
+                Today's Top Script
+              </span>
+              <div className="h-px flex-1 bg-gradient-to-r from-pink-500/30 to-transparent" />
+            </div>
+
+            <Link to={`/dashboard/suggestions/${featuredSuggestion.data.id}`} className="block">
+              <h2 className="text-xl sm:text-3xl lg:text-4xl font-extrabold mb-3 sm:mb-4 leading-tight font-display group-hover:text-pink-100 transition-colors">
+                {featuredSuggestion.data.title}
+              </h2>
+            </Link>
+
+            <p className="text-slate-300 text-sm sm:text-base mb-5 sm:mb-8 leading-relaxed max-w-3xl line-clamp-3">
+              {featuredSuggestion.data.description}
+            </p>
+
+            <div className="flex flex-wrap gap-2 sm:gap-3 mb-6 sm:mb-8">
+              {featuredSuggestion.data.difficulty && (
+                <span className={`badge-glass ${difficultyColor(featuredSuggestion.data.difficulty)} font-bold`}>
+                  {featuredSuggestion.data.difficulty}
+                </span>
+              )}
+              {featuredSuggestion.data.format_name && (
+                <span className="badge-glass text-blue-400 border-blue-500/20 font-bold capitalize">
+                  <i className="fas fa-shapes mr-1.5" />{featuredSuggestion.data.format_name}
+                </span>
+              )}
+              {featuredSuggestion.data.platform_hint && (
+                <span className="badge-glass text-purple-400 border-purple-500/20 font-bold">
+                  <i className={`${platformIcon(featuredSuggestion.data.platform_hint)} mr-1.5`} />
+                  {featuredSuggestion.data.platform_hint}
+                </span>
+              )}
+              {featuredSuggestion.data.trend_strength > 0 && (
+                <span className="badge-glass text-orange-400 border-orange-500/20 font-bold">
+                  <i className="fas fa-arrow-trend-up mr-1.5" />
+                  {Math.round(featuredSuggestion.data.trend_strength * 100)}% Trend
+                </span>
+              )}
+            </div>
+
+            <Link
+              to={`/dashboard/suggestions/${featuredSuggestion.data.id}`}
+              className="inline-flex items-center gap-2 px-6 sm:px-8 py-3 sm:py-4 bg-white text-black font-bold rounded-2xl transition-transform hover:scale-105 active:scale-95"
+            >
+              VIEW BLUEPRINT
+              <i className="fas fa-arrow-right text-sm" />
+            </Link>
+          </div>
+        </div>
+      ) : null}
+
+      {/* ── Top Performing Content (Horizontal Carousel) ── */}
+      {topVideos.loading ? (
+        <TopVideosSkeleton />
+      ) : topVideos.error ? (
+        <div className="glass-card p-5 sm:p-7 mb-8 lg:mb-12">
+          <SectionError onRetry={topVideos.retry} />
+        </div>
+      ) : topVideos.data && topVideos.data.length > 0 ? (
+        <div className="glass-card p-5 sm:p-7 mb-8 lg:mb-12">
+          <div className="flex items-center justify-between mb-5 sm:mb-6">
+            <div className="flex items-center gap-3">
+              <i className="fas fa-star text-yellow-500 text-sm" />
+              <h2 className="text-lg sm:text-xl font-bold font-display uppercase tracking-wide">Top Viral Content</h2>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="hidden sm:flex gap-2">
+                <button
+                  onClick={() => scrollCarousel('left')}
+                  className="w-8 h-8 glass-card rounded-full flex items-center justify-center hover:bg-white/10 transition-colors"
+                >
+                  <i className="fas fa-chevron-left text-[10px] text-slate-400" />
+                </button>
+                <button
+                  onClick={() => scrollCarousel('right')}
+                  className="w-8 h-8 glass-card rounded-full flex items-center justify-center hover:bg-white/10 transition-colors"
+                >
+                  <i className="fas fa-chevron-right text-[10px] text-slate-400" />
+                </button>
+              </div>
+              <Link to="/dashboard/trends/posts" className="text-[10px] font-black text-slate-500 uppercase tracking-widest hover:text-white transition-colors">
+                View All
               </Link>
+            </div>
+          </div>
+          <div
+            ref={scrollRef}
+            className="flex gap-3 sm:gap-4 overflow-x-auto pb-2 scrollbar-hide -mx-5 px-5 sm:-mx-7 sm:px-7"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
+            {topVideos.data.map((v, idx) => (
+              <PostCard
+                key={v.id}
+                video={v}
+                onClick={() => setCarouselData({ videos: topVideos.data!, initialIndex: idx })}
+              />
             ))}
           </div>
+        </div>
+      ) : null}
 
-          {/* ── Featured Content Idea (Editorial Hero) ── */}
-          {stats.featured_suggestion && (
-            <div className="glass-card p-5 sm:p-8 lg:p-10 mb-8 lg:mb-12 relative overflow-hidden group">
-              {/* Background Glow */}
-              <div className="absolute -top-40 -right-40 w-96 h-96 bg-pink-500/10 rounded-full blur-[120px] group-hover:bg-pink-500/20 transition-all duration-700 pointer-events-none" />
-
-              <div className="relative z-10">
-                <div className="flex items-center gap-3 mb-4 sm:mb-6">
-                  <span className="text-[10px] sm:text-xs font-bold text-pink-400 tracking-widest uppercase">
-                    Today's Top Script
-                  </span>
-                  <div className="h-px flex-1 bg-gradient-to-r from-pink-500/30 to-transparent" />
-                </div>
-
-                <Link to={`/dashboard/suggestions/${stats.featured_suggestion.id}`} className="block">
-                  <h2 className="text-xl sm:text-3xl lg:text-4xl font-extrabold mb-3 sm:mb-4 leading-tight font-display group-hover:text-pink-100 transition-colors">
-                    {stats.featured_suggestion.title}
-                  </h2>
-                </Link>
-
-                <p className="text-slate-300 text-sm sm:text-base mb-5 sm:mb-8 leading-relaxed max-w-3xl line-clamp-3">
-                  {stats.featured_suggestion.description}
-                </p>
-
-                <div className="flex flex-wrap gap-2 sm:gap-3 mb-6 sm:mb-8">
-                  {stats.featured_suggestion.difficulty && (
-                    <span className={`badge-glass ${difficultyColor(stats.featured_suggestion.difficulty)} font-bold`}>
-                      {stats.featured_suggestion.difficulty}
-                    </span>
-                  )}
-                  {stats.featured_suggestion.format_name && (
-                    <span className="badge-glass text-blue-400 border-blue-500/20 font-bold capitalize">
-                      <i className="fas fa-shapes mr-1.5" />{stats.featured_suggestion.format_name}
-                    </span>
-                  )}
-                  {stats.featured_suggestion.platform_hint && (
-                    <span className="badge-glass text-purple-400 border-purple-500/20 font-bold">
-                      <i className={`${platformIcon(stats.featured_suggestion.platform_hint)} mr-1.5`} />
-                      {stats.featured_suggestion.platform_hint}
-                    </span>
-                  )}
-                  {stats.featured_suggestion.trend_strength > 0 && (
-                    <span className="badge-glass text-orange-400 border-orange-500/20 font-bold">
-                      <i className="fas fa-arrow-trend-up mr-1.5" />
-                      {Math.round(stats.featured_suggestion.trend_strength * 100)}% Trend
-                    </span>
-                  )}
-                </div>
-
-                <Link
-                  to={`/dashboard/suggestions/${stats.featured_suggestion.id}`}
-                  className="inline-flex items-center gap-2 px-6 sm:px-8 py-3 sm:py-4 bg-white text-black font-bold rounded-2xl transition-transform hover:scale-105 active:scale-95"
-                >
-                  VIEW BLUEPRINT
-                  <i className="fas fa-arrow-right text-sm" />
-                </Link>
-              </div>
-            </div>
-          )}
-
-          {/* ── Top Performing Content (Horizontal Carousel) ── */}
-          {stats.top_viral_videos.length > 0 && (
-            <div className="glass-card p-5 sm:p-7 mb-8 lg:mb-12">
-              <div className="flex items-center justify-between mb-5 sm:mb-6">
-                <div className="flex items-center gap-3">
-                  <i className="fas fa-star text-yellow-500 text-sm" />
-                  <h2 className="text-lg sm:text-xl font-bold font-display uppercase tracking-wide">Top Viral Content</h2>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="hidden sm:flex gap-2">
-                    <button
-                      onClick={() => scrollCarousel('left')}
-                      className="w-8 h-8 glass-card rounded-full flex items-center justify-center hover:bg-white/10 transition-colors"
-                    >
-                      <i className="fas fa-chevron-left text-[10px] text-slate-400" />
-                    </button>
-                    <button
-                      onClick={() => scrollCarousel('right')}
-                      className="w-8 h-8 glass-card rounded-full flex items-center justify-center hover:bg-white/10 transition-colors"
-                    >
-                      <i className="fas fa-chevron-right text-[10px] text-slate-400" />
-                    </button>
-                  </div>
-                  <Link to="/dashboard/trends/posts" className="text-[10px] font-black text-slate-500 uppercase tracking-widest hover:text-white transition-colors">
-                    View All
-                  </Link>
-                </div>
-              </div>
-              <div
-                ref={scrollRef}
-                className="flex gap-3 sm:gap-4 overflow-x-auto pb-2 scrollbar-hide -mx-5 px-5 sm:-mx-7 sm:px-7"
-                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-              >
-                {stats.top_viral_videos.map((v, idx) => (
-                  <PostCard
-                    key={v.id}
-                    video={v}
-                    onClick={() => setCarouselData({ videos: stats.top_viral_videos, initialIndex: idx })}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* ── Formats + Winning Hooks ── */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-8 lg:mb-12">
-            {/* Formats */}
-            <div className="glass-card rounded-3xl p-5 sm:p-7">
+      {/* ── Formats + Winning Hooks ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-8 lg:mb-12">
+        {/* Formats */}
+        <div className="glass-card rounded-3xl p-5 sm:p-7">
+          {topFormats.loading ? (
+            <FormatsListSkeleton />
+          ) : topFormats.error ? (
+            <SectionError onRetry={topFormats.retry} />
+          ) : (
+            <>
               <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 bg-orange-500/20 rounded-xl flex items-center justify-center">
@@ -396,7 +415,7 @@ export default function Dashboard() {
                 </Link>
               </div>
               <div className="space-y-1">
-                {stats.top_formats.length > 0 ? stats.top_formats.map((f, i) => (
+                {topFormats.data && topFormats.data.length > 0 ? topFormats.data.map((f, i) => (
                   <Link
                     key={f.id}
                     to="/dashboard/formats"
@@ -415,10 +434,18 @@ export default function Dashboard() {
                   <p className="text-xs text-slate-600 text-center py-6">Analyze videos to discover viral formats</p>
                 )}
               </div>
-            </div>
+            </>
+          )}
+        </div>
 
-            {/* Winning Hooks */}
-            <div className="glass-card rounded-3xl p-5 sm:p-7">
+        {/* Winning Hooks */}
+        <div className="glass-card rounded-3xl p-5 sm:p-7">
+          {topHooks.loading ? (
+            <HooksListSkeleton />
+          ) : topHooks.error ? (
+            <SectionError onRetry={topHooks.retry} />
+          ) : (
+            <>
               <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 bg-purple-500/20 rounded-xl flex items-center justify-center">
@@ -431,7 +458,7 @@ export default function Dashboard() {
                 </Link>
               </div>
               <div className="space-y-1">
-                {stats.top_hooks.length > 0 ? stats.top_hooks.map((h, i) => (
+                {topHooks.data && topHooks.data.length > 0 ? topHooks.data.map((h, i) => (
                   <div
                     key={h.id}
                     className="flex items-center justify-between py-3 px-3 rounded-xl hover:bg-white/[0.04] transition-colors group"
@@ -449,13 +476,21 @@ export default function Dashboard() {
                   <p className="text-xs text-slate-600 text-center py-6">Analyze videos to discover winning hooks</p>
                 )}
               </div>
-            </div>
-          </div>
+            </>
+          )}
+        </div>
+      </div>
 
-          {/* ── Trending Sounds + Top Tactics ── */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-8 lg:mb-12">
-            {/* Trending Sounds */}
-            <div className="glass-card rounded-3xl p-5 sm:p-7">
+      {/* ── Trending Sounds + Top Tactics ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-8 lg:mb-12">
+        {/* Trending Sounds */}
+        <div className="glass-card rounded-3xl p-5 sm:p-7">
+          {trendingMusic.loading ? (
+            <TrendingSoundsSkeleton />
+          ) : trendingMusic.error ? (
+            <SectionError onRetry={trendingMusic.retry} />
+          ) : (
+            <>
               <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 bg-cyan-500/20 rounded-xl flex items-center justify-center">
@@ -465,7 +500,7 @@ export default function Dashboard() {
                 </div>
               </div>
               <div className="space-y-1">
-                {stats.trending_music.length > 0 ? stats.trending_music.map((m) => {
+                {trendingMusic.data && trendingMusic.data.length > 0 ? trendingMusic.data.map((m) => {
                   const hasAudio = !!getAudioUrl(m)
                   const isPlaying = audio.playingId === m.id
                   const isLoading = audio.loadingId === m.id
@@ -524,10 +559,18 @@ export default function Dashboard() {
                   <p className="text-xs text-slate-600 text-center py-6">Sounds will appear after video analysis</p>
                 )}
               </div>
-            </div>
+            </>
+          )}
+        </div>
 
-            {/* Top Tactics */}
-            <div className="glass-card rounded-3xl p-5 sm:p-7">
+        {/* Top Tactics */}
+        <div className="glass-card rounded-3xl p-5 sm:p-7">
+          {topTactics.loading ? (
+            <TacticsSkeleton />
+          ) : topTactics.error ? (
+            <SectionError onRetry={topTactics.retry} />
+          ) : (
+            <>
               <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 bg-amber-500/20 rounded-xl flex items-center justify-center">
@@ -540,7 +583,7 @@ export default function Dashboard() {
                 </Link>
               </div>
               <div className="space-y-1">
-                {stats.top_tactics.length > 0 ? stats.top_tactics.map((t) => (
+                {topTactics.data && topTactics.data.length > 0 ? topTactics.data.map((t) => (
                   <Link
                     key={t.id}
                     to="/dashboard/tactics"
@@ -559,13 +602,21 @@ export default function Dashboard() {
                   <p className="text-xs text-slate-600 text-center py-6">Tactics appear after video analysis</p>
                 )}
               </div>
-            </div>
-          </div>
+            </>
+          )}
+        </div>
+      </div>
 
-          {/* ── Trending Keywords Cloud + Your Accounts ── */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-8 lg:mb-12">
-            {/* Trending Keywords Cloud */}
-            <div className="glass-card rounded-3xl p-5 sm:p-7">
+      {/* ── Trending Keywords Cloud + Your Accounts ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-8 lg:mb-12">
+        {/* Trending Keywords Cloud */}
+        <div className="glass-card rounded-3xl p-5 sm:p-7">
+          {trendingKeywords.loading ? (
+            <KeywordCloudSkeleton />
+          ) : trendingKeywords.error ? (
+            <SectionError onRetry={trendingKeywords.retry} />
+          ) : (
+            <>
               <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 bg-violet-500/20 rounded-xl flex items-center justify-center">
@@ -577,11 +628,11 @@ export default function Dashboard() {
                   View All
                 </Link>
               </div>
-              <KeywordCloud keywords={stats.trending_keywords} />
-              {stats.trending_keywords.length > 0 && (
+              <KeywordCloud keywords={trendingKeywords.data || []} />
+              {trendingKeywords.data && trendingKeywords.data.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mt-4 pt-3 border-t border-white/5 justify-center">
                   {Object.entries(CATEGORY_COLORS).map(([cat, color]) => {
-                    const hasAny = stats.trending_keywords.some(k => k.category === cat)
+                    const hasAny = trendingKeywords.data!.some(k => k.category === cat)
                     if (!hasAny) return null
                     return (
                       <span key={cat} className={`text-[9px] font-bold ${color} opacity-60 capitalize`}>
@@ -591,26 +642,34 @@ export default function Dashboard() {
                   })}
                 </div>
               )}
-            </div>
+            </>
+          )}
+        </div>
 
-            {/* Your Accounts */}
-            <div className="glass-card rounded-3xl p-5 sm:p-7">
+        {/* Your Accounts */}
+        <div className="glass-card rounded-3xl p-5 sm:p-7">
+          {connectedAccounts.loading ? (
+            <AccountsSkeleton />
+          ) : connectedAccounts.error ? (
+            <SectionError onRetry={connectedAccounts.retry} />
+          ) : connectedAccounts.data ? (
+            <>
               <div className="flex items-center gap-2.5 mb-5">
                 <div className="w-8 h-8 bg-pink-500/20 rounded-xl flex items-center justify-center">
                   <i className="fas fa-chart-line text-pink-400 text-xs" />
                 </div>
                 <h2 className="text-sm sm:text-base font-bold">Your Accounts</h2>
               </div>
-              {stats.connected_accounts.active > 0 ? (
+              {connectedAccounts.data.active > 0 ? (
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-3 sm:gap-4">
                     <div className="bg-white/[0.04] rounded-2xl p-4">
                       <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Connected</div>
-                      <div className="text-2xl font-black">{stats.connected_accounts.active}</div>
+                      <div className="text-2xl font-black">{connectedAccounts.data.active}</div>
                     </div>
                     <div className="bg-white/[0.04] rounded-2xl p-4">
                       <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Followers</div>
-                      <div className="text-2xl font-black">{fmt(stats.connected_accounts.total_followers)}</div>
+                      <div className="text-2xl font-black">{fmt(connectedAccounts.data.total_followers)}</div>
                     </div>
                   </div>
                   <Link
@@ -635,39 +694,41 @@ export default function Dashboard() {
                   </Link>
                 </div>
               )}
-            </div>
-          </div>
-
-          {/* ── Trending Hashtags (Full Width) ── */}
-          {stats.trending_hashtags.length > 0 && (
-            <div className="glass-card rounded-3xl p-5 sm:p-7">
-              <div className="flex items-center gap-2.5 mb-5">
-                <div className="w-8 h-8 bg-blue-500/20 rounded-xl flex items-center justify-center">
-                  <i className="fas fa-hashtag text-blue-400 text-xs" />
-                </div>
-                <h2 className="text-sm sm:text-base font-bold">Top Hashtags</h2>
-              </div>
-              <div className="flex flex-wrap gap-2 sm:gap-2.5">
-                {stats.trending_hashtags.map((h) => (
-                  <div
-                    key={h.tag}
-                    className="bg-white/[0.04] hover:bg-white/[0.08] rounded-xl px-3 py-2 transition-colors cursor-default"
-                  >
-                    <div className="text-xs sm:text-sm font-bold text-blue-400">#{h.tag}</div>
-                    <div className="text-[9px] sm:text-[10px] text-slate-500 font-bold mt-0.5">
-                      {fmt(h.avg_views)} avg &middot; {h.video_count} vids
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </>
-      ) : (
-        <div className="glass-card rounded-3xl p-8 sm:p-12 text-center">
-          <p className="text-slate-500 text-sm">Failed to load stats. Make sure the backend is running.</p>
+            </>
+          ) : null}
         </div>
-      )}
+      </div>
+
+      {/* ── Trending Hashtags (Full Width) ── */}
+      {trendingHashtags.loading ? (
+        <HashtagsSkeleton />
+      ) : trendingHashtags.error ? (
+        <div className="glass-card rounded-3xl p-5 sm:p-7">
+          <SectionError onRetry={trendingHashtags.retry} />
+        </div>
+      ) : trendingHashtags.data && trendingHashtags.data.length > 0 ? (
+        <div className="glass-card rounded-3xl p-5 sm:p-7">
+          <div className="flex items-center gap-2.5 mb-5">
+            <div className="w-8 h-8 bg-blue-500/20 rounded-xl flex items-center justify-center">
+              <i className="fas fa-hashtag text-blue-400 text-xs" />
+            </div>
+            <h2 className="text-sm sm:text-base font-bold">Top Hashtags</h2>
+          </div>
+          <div className="flex flex-wrap gap-2 sm:gap-2.5">
+            {trendingHashtags.data.map((h) => (
+              <div
+                key={h.tag}
+                className="bg-white/[0.04] hover:bg-white/[0.08] rounded-xl px-3 py-2 transition-colors cursor-default"
+              >
+                <div className="text-xs sm:text-sm font-bold text-blue-400">#{h.tag}</div>
+                <div className="text-[9px] sm:text-[10px] text-slate-500 font-bold mt-0.5">
+                  {fmt(h.avg_views)} avg &middot; {h.video_count} vids
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       {/* ── Video Story Carousel (Full-screen viewer) ── */}
       {carouselData && (
