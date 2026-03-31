@@ -1,10 +1,17 @@
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import toast from 'react-hot-toast'
-import { authFetch } from '../lib/api'
 import { getStorageUrl } from '../lib/media'
 import { useAudioPlayer, getAudioUrl } from '../lib/useAudioPlayer'
+import { useTrendsSection } from '../lib/useTrendsSection'
 import VideoStoryCarousel, { type CarouselVideo } from '../components/VideoStoryCarousel'
+import {
+  PostCardSkeleton,
+  FormatCardSkeleton,
+  HookCardSkeleton,
+  ContentCardSkeleton,
+  SongCardSkeleton,
+  SkeletonCarousel,
+} from '../components/TrendsSkeletons'
 
 /* ── Helpers ── */
 function fmt(n: number): string {
@@ -135,13 +142,20 @@ interface TrendingSong {
   velocity: number
 }
 
-interface OverviewData {
-  posts: { items: TrendingPost[]; total: number }
-  formats: { items: TrendingFormat[]; total: number }
-  hooks: { items: TrendingHook[]; total: number }
-  contents: { items: TrendingContent[]; total: number }
-  songs: { items: TrendingSong[]; total: number }
-  days: number
+/* ── Section Error ── */
+function SectionError({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div className="flex items-center gap-3 py-8 px-4 text-slate-600">
+      <i className="fas fa-exclamation-triangle text-lg text-red-400/60" />
+      <span className="text-sm font-bold">Failed to load</span>
+      <button
+        onClick={onRetry}
+        className="text-[10px] font-black text-pink-400 uppercase tracking-widest hover:text-pink-300 transition-colors ml-2"
+      >
+        Retry
+      </button>
+    </div>
+  )
 }
 
 /* ── Scroll Hook ── */
@@ -440,11 +454,15 @@ function EmptySection({ icon, label }: { icon: string; label: string }) {
    Main Page
    ══════════════════════════════════════════════════════════════ */
 export default function Trends() {
-  const [data, setData] = useState<OverviewData | null>(null)
-  const [loading, setLoading] = useState(true)
   const [days, setDays] = useState(30)
   const [carouselData, setCarouselData] = useState<{ videos: CarouselVideo[]; initialIndex: number } | null>(null)
   const audio = useAudioPlayer()
+
+  const posts = useTrendsSection<TrendingPost>('posts', days)
+  const formats = useTrendsSection<TrendingFormat>('formats', days)
+  const hooks = useTrendsSection<TrendingHook>('hooks', days)
+  const contents = useTrendsSection<TrendingContent>('contents', days)
+  const songs = useTrendsSection<TrendingSong>('songs', days)
 
   const postsScroll = useHorizontalScroll()
   const formatsScroll = useHorizontalScroll()
@@ -452,47 +470,9 @@ export default function Trends() {
   const contentsScroll = useHorizontalScroll()
   const songsScroll = useHorizontalScroll()
 
-  const fetchData = useCallback(async () => {
-    setLoading(true)
-    try {
-      const res = await authFetch(`/api/trends/overview?days=${days}`)
-      if (!res.ok) throw new Error(`API returned ${res.status}`)
-      const json = await res.json()
-      if (json.error) throw new Error(json.error)
-      setData(json)
-    } catch {
-      toast.error('Failed to load trends data')
-    } finally {
-      setLoading(false)
-    }
-  }, [days])
-
   useEffect(() => {
     audio.stop()
-    fetchData()
-  }, [fetchData])
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="w-8 h-8 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    )
-  }
-
-  if (!data) {
-    return (
-      <div className="glass-card rounded-3xl p-12 text-center">
-        <div className="w-16 h-16 rounded-2xl bg-pink-500/10 flex items-center justify-center mx-auto mb-4">
-          <i className="fas fa-arrow-trend-up text-pink-400 text-xl" />
-        </div>
-        <h3 className="text-lg font-black mb-2">No Trends Data</h3>
-        <p className="text-sm text-slate-500 max-w-md mx-auto">
-          Analyze some videos first to see trends appear here.
-        </p>
-      </div>
-    )
-  }
+  }, [days])
 
   return (
     <>
@@ -539,17 +519,21 @@ export default function Trends() {
           onScrollLeft={() => postsScroll.scroll('left')}
           onScrollRight={() => postsScroll.scroll('right')}
         />
-        {data.posts.items.length > 0 ? (
+        {posts.loading ? (
+          <SkeletonCarousel count={6} Skeleton={PostCardSkeleton} />
+        ) : posts.error ? (
+          <SectionError onRetry={posts.retry} />
+        ) : posts.data && posts.data.length > 0 ? (
           <div
             ref={postsScroll.ref}
             className="flex gap-2.5 sm:gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
-            {data.posts.items.map((v, idx) => (
+            {posts.data.map((v, idx) => (
               <PostCard
                 key={v.id}
                 video={v}
-                onClick={() => setCarouselData({ videos: data.posts.items, initialIndex: idx })}
+                onClick={() => setCarouselData({ videos: posts.data!, initialIndex: idx })}
               />
             ))}
           </div>
@@ -568,13 +552,17 @@ export default function Trends() {
           onScrollLeft={() => formatsScroll.scroll('left')}
           onScrollRight={() => formatsScroll.scroll('right')}
         />
-        {data.formats.items.length > 0 ? (
+        {formats.loading ? (
+          <SkeletonCarousel count={5} Skeleton={FormatCardSkeleton} />
+        ) : formats.error ? (
+          <SectionError onRetry={formats.retry} />
+        ) : formats.data && formats.data.length > 0 ? (
           <div
             ref={formatsScroll.ref}
             className="flex gap-2.5 sm:gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
-            {data.formats.items.map((f) => (
+            {formats.data.map((f) => (
               <FormatCard key={f.id} format={f} />
             ))}
           </div>
@@ -593,13 +581,17 @@ export default function Trends() {
           onScrollLeft={() => hooksScroll.scroll('left')}
           onScrollRight={() => hooksScroll.scroll('right')}
         />
-        {data.hooks.items.length > 0 ? (
+        {hooks.loading ? (
+          <SkeletonCarousel count={5} Skeleton={HookCardSkeleton} />
+        ) : hooks.error ? (
+          <SectionError onRetry={hooks.retry} />
+        ) : hooks.data && hooks.data.length > 0 ? (
           <div
             ref={hooksScroll.ref}
             className="flex gap-2.5 sm:gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
-            {data.hooks.items.map((h) => (
+            {hooks.data.map((h) => (
               <HookCard key={h.id} hook={h} />
             ))}
           </div>
@@ -618,13 +610,17 @@ export default function Trends() {
           onScrollLeft={() => contentsScroll.scroll('left')}
           onScrollRight={() => contentsScroll.scroll('right')}
         />
-        {data.contents.items.length > 0 ? (
+        {contents.loading ? (
+          <SkeletonCarousel count={5} Skeleton={ContentCardSkeleton} />
+        ) : contents.error ? (
+          <SectionError onRetry={contents.retry} />
+        ) : contents.data && contents.data.length > 0 ? (
           <div
             ref={contentsScroll.ref}
             className="flex gap-2.5 sm:gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
-            {data.contents.items.map((c) => (
+            {contents.data.map((c) => (
               <ContentCard key={c.id} content={c} />
             ))}
           </div>
@@ -643,13 +639,17 @@ export default function Trends() {
           onScrollLeft={() => songsScroll.scroll('left')}
           onScrollRight={() => songsScroll.scroll('right')}
         />
-        {data.songs.items.length > 0 ? (
+        {songs.loading ? (
+          <SkeletonCarousel count={5} Skeleton={SongCardSkeleton} />
+        ) : songs.error ? (
+          <SectionError onRetry={songs.retry} />
+        ) : songs.data && songs.data.length > 0 ? (
           <div
             ref={songsScroll.ref}
             className="flex gap-2.5 sm:gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
-            {data.songs.items.map((s) => (
+            {songs.data.map((s) => (
               <SongCard
                 key={s.id}
                 song={s}
