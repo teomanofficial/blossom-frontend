@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import { authFetch } from '../lib/api'
 import { getStorageUrl } from '../lib/media'
 
@@ -45,6 +46,8 @@ const PLATFORMS = [
 
 export default function AccountIntegrations() {
   const [searchParams, setSearchParams] = useSearchParams()
+  const { userType } = useAuth()
+  const isAdmin = userType === 'admin'
   const [accounts, setAccounts] = useState<SocialAccount[]>([])
   const [loading, setLoading] = useState(true)
   const [connecting, setConnecting] = useState<string | null>(null)
@@ -168,8 +171,8 @@ export default function AccountIntegrations() {
     }
   }
 
-  const getAccountForPlatform = (platform: string) =>
-    accounts.find((a) => a.platform === platform && a.status === 'active')
+  const getAccountsForPlatform = (platform: string) =>
+    accounts.filter((a) => a.platform === platform && a.status !== 'disconnected')
 
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return 'Never'
@@ -200,6 +203,12 @@ export default function AccountIntegrations() {
         <p className="text-slate-500 text-sm mt-1">
           Connect your social media accounts to sync content and track performance.
         </p>
+        {isAdmin && (
+          <p className="text-purple-400/80 text-xs mt-1 flex items-center gap-1.5">
+            <i className="fas fa-shield-halved text-[10px]"></i>
+            Admin — unlimited accounts per platform
+          </p>
+        )}
       </div>
 
       {oauthMessage && (
@@ -225,9 +234,11 @@ export default function AccountIntegrations() {
       ) : (
         <div className="space-y-4">
           {PLATFORMS.map((platform) => {
-            const account = getAccountForPlatform(platform.key)
+            const platformAccounts = getAccountsForPlatform(platform.key)
+            const hasAccounts = platformAccounts.length > 0
             const isConnecting = connecting === platform.key
-            const isDisconnecting = account ? disconnecting === account.id : false
+            // Admins can always add more accounts. Non-admins see connect only when no account exists.
+            const canAddMore = isAdmin || !hasAccounts
 
             return (
               <div
@@ -241,14 +252,21 @@ export default function AccountIntegrations() {
                       <i className={`${platform.iconBrand ? 'fab' : 'fas'} ${platform.icon} ${platform.color} text-lg`}></i>
                     </div>
                     <div className="min-w-0">
-                      <h3 className="text-sm font-bold text-white">{platform.label}</h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-sm font-bold text-white">{platform.label}</h3>
+                        {hasAccounts && (
+                          <span className="px-1.5 py-0.5 bg-white/5 text-slate-400 text-[10px] font-bold rounded-md">
+                            {platformAccounts.length} {platformAccounts.length === 1 ? 'account' : 'accounts'}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs text-slate-500 mt-0.5 hidden sm:block max-w-md">
                         {platform.description}
                       </p>
                     </div>
                   </div>
 
-                  {!account ? (
+                  {canAddMore && (
                     <button
                       onClick={() => handleConnect(platform.key)}
                       disabled={isConnecting}
@@ -262,83 +280,94 @@ export default function AccountIntegrations() {
                       ) : (
                         <>
                           <i className="fas fa-plug text-xs"></i>
-                          Connect
-                        </>
-                      )}
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => handleDisconnect(account)}
-                      disabled={isDisconnecting}
-                      className="px-4 py-2 border border-red-500/30 text-red-400 hover:bg-red-500/10 rounded-xl text-sm font-semibold transition-all disabled:opacity-50 flex items-center gap-2"
-                    >
-                      {isDisconnecting ? (
-                        <>
-                          <i className="fas fa-spinner fa-spin text-xs"></i>
-                          Disconnecting...
-                        </>
-                      ) : (
-                        <>
-                          <i className="fas fa-unlink text-xs"></i>
-                          Disconnect
+                          {hasAccounts ? 'Add Account' : 'Connect'}
                         </>
                       )}
                     </button>
                   )}
                 </div>
 
-                {/* Connected account details */}
-                {account && (
-                  <div className="border-t border-white/[0.06] px-4 sm:px-5 py-4 bg-white/[0.01]">
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-                      {/* Avatar */}
-                      <div className="w-10 h-10 rounded-full overflow-hidden bg-white/5 flex-shrink-0">
-                        {account.avatar_url ? (
-                          <img src={getStorageUrl(account.avatar_url) || ''} alt={account.username} className="w-full h-full object-cover" />
-                        ) : (
-                          <div className={`w-full h-full bg-gradient-to-br ${platform.gradient} flex items-center justify-center text-sm font-bold text-white`}>
-                            {account.username.charAt(0).toUpperCase()}
+                {/* Connected accounts list */}
+                {hasAccounts && (
+                  <div className="border-t border-white/[0.06]">
+                    {platformAccounts.map((account, idx) => (
+                      <div
+                        key={account.id}
+                        className={`px-4 sm:px-5 py-4 bg-white/[0.01] ${
+                          idx < platformAccounts.length - 1 ? 'border-b border-white/[0.04]' : ''
+                        }`}
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                          {/* Avatar */}
+                          <div className="w-10 h-10 rounded-full overflow-hidden bg-white/5 flex-shrink-0">
+                            {account.avatar_url ? (
+                              <img src={getStorageUrl(account.avatar_url) || ''} alt={account.username} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className={`w-full h-full bg-gradient-to-br ${platform.gradient} flex items-center justify-center text-sm font-bold text-white`}>
+                                {account.username.charAt(0).toUpperCase()}
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
 
-                      {/* Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-bold text-white truncate">
-                            @{account.username}
-                          </span>
-                          {account.token_valid ? (
-                            <span className="px-1.5 py-0.5 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded-md uppercase tracking-wider">
-                              Active
-                            </span>
-                          ) : (
-                            <span className="px-1.5 py-0.5 bg-amber-500/10 text-amber-400 text-[10px] font-bold rounded-md uppercase tracking-wider">
-                              Token Expired
-                            </span>
-                          )}
-                        </div>
-                        {account.display_name && (
-                          <p className="text-xs text-slate-500 truncate">{account.display_name}</p>
-                        )}
-                      </div>
+                          {/* Info */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-bold text-white truncate">
+                                @{account.username}
+                              </span>
+                              {account.has_oauth ? (
+                                account.token_valid ? (
+                                  <span className="px-1.5 py-0.5 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded-md uppercase tracking-wider">
+                                    Active
+                                  </span>
+                                ) : (
+                                  <span className="px-1.5 py-0.5 bg-amber-500/10 text-amber-400 text-[10px] font-bold rounded-md uppercase tracking-wider">
+                                    Token Expired
+                                  </span>
+                                )
+                              ) : (
+                                <span className="px-1.5 py-0.5 bg-slate-500/10 text-slate-400 text-[10px] font-bold rounded-md uppercase tracking-wider">
+                                  Read-only
+                                </span>
+                              )}
+                            </div>
+                            {account.display_name && (
+                              <p className="text-xs text-slate-500 truncate">{account.display_name}</p>
+                            )}
+                          </div>
 
-                      {/* Stats */}
-                      <div className="flex items-center gap-4 sm:gap-5 text-center sm:ml-auto">
-                        <div>
-                          <div className="text-sm font-bold text-white">{formatNumber(account.follower_count)}</div>
-                          <div className="text-[10px] text-slate-500 uppercase tracking-wider">Followers</div>
-                        </div>
-                        <div>
-                          <div className="text-sm font-bold text-white">{formatNumber(account.post_count)}</div>
-                          <div className="text-[10px] text-slate-500 uppercase tracking-wider">Posts</div>
-                        </div>
-                        <div>
-                          <div className="text-xs text-slate-400">{formatDate(account.last_synced_at)}</div>
-                          <div className="text-[10px] text-slate-500 uppercase tracking-wider">Last Sync</div>
+                          {/* Stats */}
+                          <div className="flex items-center gap-4 sm:gap-5 text-center">
+                            <div>
+                              <div className="text-sm font-bold text-white">{formatNumber(account.follower_count)}</div>
+                              <div className="text-[10px] text-slate-500 uppercase tracking-wider">Followers</div>
+                            </div>
+                            <div>
+                              <div className="text-sm font-bold text-white">{formatNumber(account.post_count)}</div>
+                              <div className="text-[10px] text-slate-500 uppercase tracking-wider">Posts</div>
+                            </div>
+                            <div>
+                              <div className="text-xs text-slate-400">{formatDate(account.last_synced_at)}</div>
+                              <div className="text-[10px] text-slate-500 uppercase tracking-wider">Last Sync</div>
+                            </div>
+                          </div>
+
+                          {/* Disconnect button */}
+                          <button
+                            onClick={() => handleDisconnect(account)}
+                            disabled={disconnecting === account.id}
+                            className="px-3 py-1.5 border border-red-500/20 text-red-400 hover:bg-red-500/10 rounded-lg text-xs font-semibold transition-all disabled:opacity-50 flex items-center gap-1.5 sm:ml-2 self-start sm:self-center"
+                          >
+                            {disconnecting === account.id ? (
+                              <i className="fas fa-spinner fa-spin text-[10px]"></i>
+                            ) : (
+                              <i className="fas fa-unlink text-[10px]"></i>
+                            )}
+                            Disconnect
+                          </button>
                         </div>
                       </div>
-                    </div>
+                    ))}
                   </div>
                 )}
               </div>
