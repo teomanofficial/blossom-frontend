@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useRef, type ReactNode } from 'react'
-import { authFetch } from '../lib/api'
 import { getStorageUrl } from '../lib/media'
 import { useAuth } from '../context/AuthContext'
 
@@ -125,6 +124,9 @@ function CarouselItemsViewer({ items, fallbackThumb }: { items: CarouselMediaIte
         <video src={current.videoUrl} className="w-full h-full object-cover" controls playsInline />
       ) : current?.imageUrl ? (
         <img src={current.imageUrl} alt="" className="w-full h-full object-contain bg-black" />
+      ) : current?.mediaType === 'video' && fallbackThumb ? (
+        // Carousel video item with no hosted file — show post thumbnail; viewer redirects to source
+        <img src={fallbackThumb} alt="" className="w-full h-full object-cover" />
       ) : fallbackThumb ? (
         <img src={fallbackThumb} alt="" className="w-full h-full object-cover" />
       ) : (
@@ -177,39 +179,24 @@ function CarouselItemsViewer({ items, fallbackThumb }: { items: CarouselMediaIte
 export default function VideoStoryCarousel({ videos: initialVideos, initialIndex = 0, onClose, renderMeta, isAdmin: isAdminProp }: VideoStoryCarouselProps) {
   const { userType } = useAuth()
   const isAdmin = isAdminProp || userType === 'admin'
-  const [videos, setVideos] = useState(initialVideos)
+  const [videos] = useState(initialVideos)
   const [currentIndex, setCurrentIndex] = useState(initialIndex)
   const [isPlaying, setIsPlaying] = useState(false)
   const [videoError, setVideoError] = useState(false)
-  const [downloading, setDownloading] = useState(false)
   const [isMuted, setIsMuted] = useState(true)
   const [jsonCopied, setJsonCopied] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
 
   const video = videos[currentIndex]
   const videoUrl = video ? getVideoUrl(video) : null
+  const platformLabel = video?.platform === 'tiktok' ? 'TikTok' : 'Instagram'
+  const isExternalOnly = !!video && !videoUrl && !!video.content_url
 
-  async function handleDownloadAndPlay() {
-    if (!video?.id || downloading) return
-    setDownloading(true)
-    try {
-      const res = await authFetch(`/api/analysis/videos/${video.id}/download`, { method: 'POST' })
-      const result = await res.json()
-      if (result.local_video_path) {
-        setVideos(prev => prev.map((v, i) =>
-          i === currentIndex ? { ...v, local_video_path: result.local_video_path } : v
-        ))
-      } else if (result.error) {
-        setVideoError(true)
-      }
-    } catch {
-      setVideoError(true)
-    } finally {
-      setDownloading(false)
-    }
+  function openExternal() {
+    if (video?.content_url) window.open(video.content_url, '_blank', 'noopener,noreferrer')
   }
 
-  // Auto-play after download completes
+  // Auto-play when a hosted video is available
   useEffect(() => {
     if (videoUrl && videoRef.current && !videoError) {
       videoRef.current.play().then(() => setIsPlaying(true)).catch(() => {})
@@ -228,7 +215,6 @@ export default function VideoStoryCarousel({ videos: initialVideos, initialIndex
   useEffect(() => {
     setIsPlaying(false)
     setVideoError(false)
-    setDownloading(false)
     setJsonCopied(false)
     if (videoRef.current) {
       videoRef.current.pause()
@@ -249,15 +235,15 @@ export default function VideoStoryCarousel({ videos: initialVideos, initialIndex
         e.preventDefault()
         if (videoUrl && !videoError) {
           togglePlay()
-        } else if (!videoUrl && !videoError && !downloading) {
-          handleDownloadAndPlay()
+        } else if (isExternalOnly) {
+          openExternal()
         }
       }
     }
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onClose, goNext, goPrev, videoUrl, videoError, downloading])
+  }, [onClose, goNext, goPrev, videoUrl, videoError, isExternalOnly])
 
   // Lock body scroll
   useEffect(() => {
@@ -281,8 +267,8 @@ export default function VideoStoryCarousel({ videos: initialVideos, initialIndex
     e.stopPropagation()
     if (videoUrl && !videoError) {
       togglePlay()
-    } else if (!videoUrl && !videoError && !downloading) {
-      handleDownloadAndPlay()
+    } else if (isExternalOnly) {
+      openExternal()
     }
   }
 
@@ -387,6 +373,7 @@ export default function VideoStoryCarousel({ videos: initialVideos, initialIndex
           <div
             className="relative w-full h-full rounded-2xl overflow-hidden bg-slate-900 border border-white/10 shadow-2xl cursor-pointer"
             onClick={video.content_type !== 'carousel' ? handleVideoClick : undefined}
+            title={isExternalOnly ? `Open on ${platformLabel}` : undefined}
           >
             {/* Carousel viewer */}
             {video.content_type === 'carousel' ? (
@@ -426,30 +413,25 @@ export default function VideoStoryCarousel({ videos: initialVideos, initialIndex
                   </div>
                 )}
                 <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                  {downloading ? (
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                        <svg className="animate-spin" width="28" height="28" viewBox="0 0 24 24" fill="none">
-                          <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2" opacity="0.3"/>
-                          <path d="M12 2a10 10 0 0 1 10 10" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                  {isExternalOnly ? (
+                    <div className="flex flex-col items-center gap-2 pointer-events-none">
+                      <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="white">
+                          <path d="M8 5v14l11-7z"/>
                         </svg>
                       </div>
-                      <span className="text-white/70 text-xs font-bold">Downloading...</span>
+                      <span className="text-white text-xs font-bold tracking-wide">
+                        Open on {platformLabel}
+                      </span>
                     </div>
-                  ) : videoError ? (
+                  ) : (
                     <div className="flex flex-col items-center gap-2">
                       <div className="w-14 h-14 rounded-full bg-red-500/20 backdrop-blur-sm flex items-center justify-center">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                           <path d="M18 6L6 18M6 6l12 12" stroke="white" strokeWidth="2" strokeLinecap="round"/>
                         </svg>
                       </div>
-                      <span className="text-white/70 text-xs font-bold">Download failed</span>
-                    </div>
-                  ) : (
-                    <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-colors">
-                      <svg width="28" height="28" viewBox="0 0 24 24" fill="white">
-                        <path d="M8 5v14l11-7z"/>
-                      </svg>
+                      <span className="text-white/70 text-xs font-bold">Video unavailable</span>
                     </div>
                   )}
                 </div>
@@ -563,7 +545,7 @@ export default function VideoStoryCarousel({ videos: initialVideos, initialIndex
             </div>
 
             {/* Error details (admin only) */}
-            {isAdmin && (video.status === 'error' || video.status === 'video_failed') && (
+            {isAdmin && video.status === 'error' && (
               <div className="bg-red-500/8 border border-red-500/15 rounded-xl p-3">
                 <div className="flex items-center gap-2 mb-1.5">
                   <div className="w-5 h-5 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
@@ -572,7 +554,7 @@ export default function VideoStoryCarousel({ videos: initialVideos, initialIndex
                     </svg>
                   </div>
                   <p className="text-[10px] font-black text-red-400 uppercase tracking-widest">
-                    {video.status === 'video_failed' ? 'Video Download Failed' : 'Analysis Failed'}
+                    Analysis Failed
                   </p>
                 </div>
                 {video.error_message ? (

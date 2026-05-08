@@ -93,8 +93,9 @@ export default function ChooseCategory() {
         toast.error(data.error || 'Failed to select category')
         return
       }
-      await refreshProfile()
-      navigate(isVip ? '/onboarding' : '/choose-plan')
+      const freshUserType = await refreshProfile()
+      const isVipNow = freshUserType === 'vip'
+      navigate(isVipNow ? '/onboarding' : '/choose-plan')
     } catch {
       toast.error('Something went wrong')
     } finally {

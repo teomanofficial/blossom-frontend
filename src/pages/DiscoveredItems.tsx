@@ -19,7 +19,6 @@ interface DiscoveredVideo {
   engagement_rate: number
   thumbnail_url: string | null
   local_thumbnail_path: string | null
-  local_video_path: string | null
   status: string
   class_name: string | null
   hook_class_name: string | null
@@ -77,8 +76,6 @@ export default function DiscoveredItems() {
   const [hashtags, setHashtags] = useState<TrackedHashtag[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
-  const [bulkLoading, setBulkLoading] = useState(false)
-  const [bulkStatus, setBulkStatus] = useState<{ total: number; completed: number; status: string } | null>(null)
   const [carouselData, setCarouselData] = useState<{ videos: CarouselVideo[]; initialIndex: number } | null>(null)
   const [page, setPage] = useState(0)
   const [filters, setFilters] = useState({
@@ -136,51 +133,6 @@ export default function DiscoveredItems() {
     }
   }
 
-  async function handleBulkAnalyze() {
-    if (selectedIds.size === 0) return
-    setBulkLoading(true)
-    try {
-      await authFetch('/api/analysis/videos/bulk-analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ video_ids: Array.from(selectedIds), analysis_types: ['full', 'hook'] }),
-      })
-      // Poll status
-      const poll = setInterval(async () => {
-        const data = await authFetch('/api/analysis/videos/bulk-analyze-status').then(r => r.json())
-        setBulkStatus({ total: data.total || 0, completed: data.completed || 0, status: data.status || 'processing' })
-        if (data.status === 'idle' || data.status === 'completed' || !data.status) {
-          clearInterval(poll)
-          setBulkLoading(false)
-          setBulkStatus(null)
-          setSelectedIds(new Set())
-          loadVideos()
-        }
-      }, 2000)
-    } catch (error) {
-      console.error('Bulk analyze failed:', error)
-      setBulkLoading(false)
-    }
-  }
-
-  async function handleBulkDownload() {
-    if (selectedIds.size === 0) return
-    setBulkLoading(true)
-    try {
-      await authFetch('/api/analysis/videos/backfill-downloads', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ video_ids: Array.from(selectedIds) }),
-      })
-      setBulkLoading(false)
-      setSelectedIds(new Set())
-      setTimeout(loadVideos, 3000) // Refresh after some downloads complete
-    } catch (error) {
-      console.error('Bulk download failed:', error)
-      setBulkLoading(false)
-    }
-  }
-
   function toggleSelect(id: number) {
     setSelectedIds(prev => {
       const next = new Set(prev)
@@ -209,7 +161,6 @@ export default function DiscoveredItems() {
       content_url: v.content_url,
       thumbnail_url: v.thumbnail_url,
       local_thumbnail_path: v.local_thumbnail_path,
-      local_video_path: v.local_video_path,
       caption: v.caption,
       views: v.views,
       likes: v.likes,
@@ -266,25 +217,6 @@ export default function DiscoveredItems() {
       {selectedIds.size > 0 && (
         <div className="flex items-center gap-3 mb-6 p-4 bg-violet-500/5 border border-violet-500/20 rounded-xl">
           <span className="text-xs font-black text-violet-400">{selectedIds.size} selected</span>
-          <button
-            onClick={handleBulkAnalyze}
-            disabled={bulkLoading}
-            className="px-4 py-2 bg-gradient-to-r from-pink-500 to-orange-400 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:opacity-90 disabled:opacity-50"
-          >
-            {bulkLoading ? 'Processing...' : 'Analyze Selected'}
-          </button>
-          <button
-            onClick={handleBulkDownload}
-            disabled={bulkLoading}
-            className="px-4 py-2 bg-white/5 border border-white/10 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-white/10 disabled:opacity-50"
-          >
-            Download Videos
-          </button>
-          {bulkStatus && (
-            <span className="text-[10px] font-bold text-amber-400">
-              {bulkStatus.completed}/{bulkStatus.total} processed
-            </span>
-          )}
           <button onClick={() => setSelectedIds(new Set())} className="text-[10px] font-bold text-slate-500 hover:text-white ml-auto">
             Deselect All
           </button>
@@ -455,10 +387,6 @@ export default function DiscoveredItems() {
                       </span>
                       {/* Username */}
                       <span className="text-xs font-bold text-white truncate">@{video.username}</span>
-                      {/* Download indicator */}
-                      {video.local_video_path && (
-                        <i className="fas fa-download text-[10px] text-teal-400/60" title="Video downloaded"></i>
-                      )}
                     </div>
 
                     {/* Caption */}

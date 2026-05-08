@@ -54,36 +54,16 @@ interface BulkStatus {
   videos: Record<string, VideoStatus>
 }
 
-interface DownloadItem {
-  id: number
-  platform: string
-  username: string
-  thumbnail_url: string | null
-  status: 'downloading' | 'done' | 'failed'
-  error?: string
-}
-
-interface DownloadStatus {
-  active: boolean
-  total: number
-  completed: number
-  failed: number
-  startedAt: string | null
-  batchId: string | null
-  videos: Record<string, DownloadItem>
-}
-
 interface VideoStats {
   total: number
   pending: number
   analyzed: number
   analyzing: number
   error: number
-  video_failed: number
 }
 
 type SortField = 'views' | 'likes' | 'engagement_rate' | 'published_at' | 'created_at'
-type StatusFilter = '' | 'fetched' | 'analyzed' | 'error' | 'video_failed'
+type StatusFilter = '' | 'fetched' | 'analyzed' | 'error'
 type PlatformFilter = '' | 'instagram' | 'tiktok'
 
 function formatNumber(n: number): string {
@@ -162,20 +142,11 @@ export default function Videos() {
   // Carousel state
   const [carouselData, setCarouselData] = useState<{ videos: CarouselVideo[]; initialIndex: number } | null>(null)
 
-  // Bulk analysis state
+  // Bulk analysis state (legacy display only — bulk-analyze trigger is removed)
   const [bulkStatus, setBulkStatus] = useState<BulkStatus | null>(null)
-  const [analysisTypes, setAnalysisTypes] = useState<string[]>(['full', 'hook'])
   const [showVideoDetail, setShowVideoDetail] = useState(false)
-  const [retryingVideoId, setRetryingVideoId] = useState<number | null>(null)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const wasRunningRef = useRef(false)
-
-  // Download progress state
-  const [dlStatus, setDlStatus] = useState<DownloadStatus | null>(null)
-  const [showDlDetail, setShowDlDetail] = useState(false)
-  const [expandDlDownloading, setExpandDlDownloading] = useState(false)
-  const [expandDlDone, setExpandDlDone] = useState(false)
-  const dlPollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   // Video stats from DB
   const [stats, setStats] = useState<VideoStats | null>(null)
@@ -245,134 +216,6 @@ export default function Videos() {
       .finally(() => setFetching(false))
   }
 
-  // ── Bulk analyze ──
-  const handleBulkAnalyze = () => {
-    const ids = Array.from(selected)
-    if (ids.length === 0) return
-
-    authFetch('/api/analysis/videos/bulk-analyze', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        video_ids: ids,
-        analysis_types: analysisTypes,
-      }),
-    })
-      .then((r) => r.json())
-      .then(() => {
-        setShowVideoDetail(true)
-        startPolling()
-      })
-      .catch(() => toast.error('Failed to start bulk analysis'))
-  }
-
-  const handleAnalyzeAll = () => {
-    const unanalyzed = videos.filter((v) => v.status === 'fetched' && !downloadingVideoIds.has(v.id)).map((v) => v.id)
-    if (unanalyzed.length === 0) return
-    setSelected(new Set(unanalyzed))
-
-    authFetch('/api/analysis/videos/bulk-analyze', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        video_ids: unanalyzed,
-        analysis_types: analysisTypes,
-      }),
-    })
-      .then((r) => r.json())
-      .then(() => {
-        setShowVideoDetail(true)
-        startPolling()
-      })
-      .catch(() => toast.error('Failed to start analysis'))
-  }
-
-  const handleCancelBulk = () => {
-    authFetch('/api/analysis/videos/bulk-analyze-cancel', { method: 'POST' })
-      .then((r) => r.json())
-      .catch(() => toast.error('Failed to cancel analysis'))
-  }
-
-  const handleRetryDownload = async (videoId: number) => {
-    setRetryingVideoId(videoId)
-    try {
-      const r = await authFetch(`/api/analysis/videos/${videoId}/retry-download`, { method: 'POST' })
-      const data = await r.json()
-      if (data.success) {
-        // Refresh video list to show updated status
-        fetchVideos()
-        // Also refresh download status
-        checkDownloadStatus()
-      } else {
-        toast.error(data.error || 'Download failed')
-      }
-    } catch (err: any) {
-      toast.error(err.message || 'Download failed')
-    } finally {
-      setRetryingVideoId(null)
-    }
-  }
-
-  // ── Poll download progress ──
-  const checkDownloadStatus = useCallback(() => {
-    authFetch('/api/analysis/videos/download-status')
-      .then((r) => r.json())
-      .then((data: DownloadStatus) => {
-        if (data.total === 0) {
-          setDlStatus(null)
-          return
-        }
-        setDlStatus(data)
-
-        if (data.active) {
-          if (!dlPollRef.current) {
-            dlPollRef.current = setInterval(() => {
-              authFetch('/api/analysis/videos/download-status')
-                .then((r) => r.json())
-                .then((d: DownloadStatus) => {
-                  setDlStatus(d)
-                  if (!d.active && dlPollRef.current) {
-                    clearInterval(dlPollRef.current)
-                    dlPollRef.current = null
-                    fetchVideos()
-                    fetchStats()
-                  }
-                })
-                .catch(() => toast.error('Failed to check download status'))
-            }, 2000)
-          }
-        } else if (dlPollRef.current) {
-          clearInterval(dlPollRef.current)
-          dlPollRef.current = null
-        }
-      })
-      .catch(() => toast.error('Failed to check download status'))
-  }, [fetchVideos, fetchStats])
-
-  const handleDismissDownloads = () => {
-    authFetch('/api/analysis/videos/download-dismiss', { method: 'POST' })
-      .then((r) => r.json())
-      .then(() => setDlStatus(null))
-      .catch(() => toast.error('Failed to dismiss downloads'))
-  }
-
-  // Start download polling after fetch
-  useEffect(() => {
-    if (fetchResult) {
-      // A scan just completed — start polling downloads
-      checkDownloadStatus()
-    }
-  }, [fetchResult, checkDownloadStatus])
-
-  // Check download status on mount
-  useEffect(() => {
-    checkDownloadStatus()
-    return () => {
-      if (dlPollRef.current) clearInterval(dlPollRef.current)
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
   // ── Poll bulk status — always running on mount ──
   const checkBulkStatus = useCallback(() => {
     authFetch('/api/analysis/videos/bulk-analyze-status')
@@ -417,28 +260,6 @@ export default function Videos() {
       .catch(() => toast.error('Failed to check analysis status'))
   }, [fetchVideos, fetchStats])
 
-  const startPolling = () => {
-    checkBulkStatus()
-    if (pollRef.current) clearInterval(pollRef.current)
-    pollRef.current = setInterval(() => {
-      authFetch('/api/analysis/videos/bulk-analyze-status')
-        .then((r) => r.json())
-        .then((data: BulkStatus) => {
-          setBulkStatus(data)
-          fetchStats()
-          if (!data.running && pollRef.current) {
-            clearInterval(pollRef.current)
-            pollRef.current = null
-            fetchVideos()
-            fetchStats()
-            setSelected(new Set())
-            setSelectMode(false)
-          }
-        })
-        .catch(() => toast.error('Failed to check analysis status'))
-    }, 1500)
-  }
-
   // On mount: check status immediately and start polling if running
   useEffect(() => {
     checkBulkStatus()
@@ -454,12 +275,6 @@ export default function Videos() {
   const doneVideos = videoStatuses.filter((v) => v.status === 'done')
   const errorVideos = videoStatuses.filter((v) => v.status === 'error')
   const pendingVideos = videoStatuses.filter((v) => v.status === 'pending')
-
-  // ── Derived download status lists ──
-  const dlVideos = dlStatus?.videos ? Object.values(dlStatus.videos) : []
-  const dlDownloading = dlVideos.filter((v) => v.status === 'downloading')
-  const dlDone = dlVideos.filter((v) => v.status === 'done')
-  const dlFailed = dlVideos.filter((v) => v.status === 'failed')
 
   // ── Selection helpers ──
   const toggleSelect = (id: number) => {
@@ -508,21 +323,14 @@ export default function Videos() {
     { value: '', label: 'All' },
     { value: 'fetched', label: 'Pending' },
     { value: 'analyzed', label: 'Analyzed' },
-    { value: 'video_failed', label: 'Video Failed' },
     { value: 'error', label: 'Error' },
   ]
 
   const totalPages = Math.ceil(total / limit)
   const currentPage = Math.floor(offset / limit) + 1
 
-  // IDs of videos currently downloading — these should be disabled for selection
-  const downloadingVideoIds = new Set(
-    dlVideos.filter((v) => v.status === 'downloading').map((v) => v.id)
-  )
-
-  const dlProgressPct = dlStatus && dlStatus.total > 0
-    ? ((dlStatus.completed + dlStatus.failed) / dlStatus.total) * 100
-    : 0
+  // Discovered videos are no longer downloaded; this set is empty by design.
+  const downloadingVideoIds = new Set<number>()
 
   const isRunning = bulkStatus?.running ?? false
   const progressPct = bulkStatus && bulkStatus.total > 0
@@ -564,10 +372,10 @@ export default function Videos() {
               <div className="text-xl font-black text-blue-400">{stats!.analyzing}</div>
             </div>
           )}
-          {((stats?.error ?? 0) + (stats?.video_failed ?? 0)) > 0 && (
+          {(stats?.error ?? 0) > 0 && (
             <div className="px-5 py-3 glass-card rounded-2xl border-white/5 text-center">
               <div className="text-[9px] font-black text-red-400/70 uppercase tracking-widest">Failed</div>
-              <div className="text-xl font-black text-red-400">{(stats?.error ?? 0) + (stats?.video_failed ?? 0)}</div>
+              <div className="text-xl font-black text-red-400">{stats!.error}</div>
             </div>
           )}
         </div>
@@ -679,213 +487,6 @@ export default function Videos() {
       </div>
 
       {/* ══════════════════════════════════════════════════════════ */}
-      {/* ── DOWNLOAD PROGRESS PANEL ── */}
-      {/* ══════════════════════════════════════════════════════════ */}
-      {dlStatus && dlStatus.total > 0 && (
-        <div className="glass-card rounded-[2rem] mb-10 overflow-hidden">
-          <div className="p-6 pb-0">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                {dlStatus.active ? (
-                  <div className="w-9 h-9 rounded-full bg-blue-500/20 flex items-center justify-center flex-shrink-0 relative">
-                    <i className="fas fa-download text-blue-400 text-sm"></i>
-                    <div className="absolute inset-0 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                  </div>
-                ) : dlStatus.failed > 0 && dlStatus.completed === 0 ? (
-                  <div className="w-9 h-9 rounded-full bg-red-400/20 flex items-center justify-center flex-shrink-0">
-                    <i className="fas fa-exclamation-triangle text-red-400 text-sm"></i>
-                  </div>
-                ) : (
-                  <div className="w-9 h-9 rounded-full bg-teal-400/20 flex items-center justify-center flex-shrink-0">
-                    <i className="fas fa-check text-teal-400 text-sm"></i>
-                  </div>
-                )}
-                <div>
-                  <div className="text-sm font-black text-white">
-                    {dlStatus.active ? 'Downloading Videos...' : 'Downloads Complete'}
-                  </div>
-                  <div className="text-[10px] font-bold text-slate-500 flex items-center gap-3">
-                    <span>
-                      <span className="text-teal-400">{dlStatus.completed}</span> done
-                    </span>
-                    {dlStatus.failed > 0 && (
-                      <span>
-                        <span className="text-red-400">{dlStatus.failed}</span> failed
-                      </span>
-                    )}
-                    {dlStatus.active && (
-                      <span>
-                        <span className="text-blue-400">{dlDownloading.length}</span> downloading
-                      </span>
-                    )}
-                    <span className="text-slate-600">
-                      {dlStatus.completed + dlStatus.failed} / {dlStatus.total}
-                    </span>
-                    {dlStatus.active && dlStatus.startedAt && (
-                      <span className="text-slate-600">
-                        <i className="fas fa-clock mr-0.5"></i> {elapsedSince(dlStatus.startedAt)}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setShowDlDetail((v) => !v)}
-                  className="px-3 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-white hover:bg-white/5 rounded-lg transition-colors"
-                >
-                  <i className={`fas fa-chevron-${showDlDetail ? 'up' : 'down'} mr-1`}></i>
-                  {showDlDetail ? 'Hide' : 'Details'}
-                </button>
-                {!dlStatus.active && (
-                  <button
-                    onClick={handleDismissDownloads}
-                    className="px-3 py-1.5 text-[10px] font-black text-slate-500 hover:text-white hover:bg-white/5 rounded-lg transition-colors uppercase tracking-widest"
-                  >
-                    Dismiss
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Progress bar */}
-            <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden mb-6">
-              <div
-                className={`h-full rounded-full transition-all duration-700 ${
-                  dlStatus.active
-                    ? 'bg-gradient-to-r from-blue-500 to-cyan-400'
-                    : dlStatus.failed > 0
-                    ? 'bg-gradient-to-r from-teal-500 to-orange-400'
-                    : 'bg-gradient-to-r from-teal-500 to-teal-400'
-                }`}
-                style={{ width: `${dlProgressPct}%` }}
-              ></div>
-            </div>
-          </div>
-
-          {/* Detailed download grid */}
-          {showDlDetail && dlVideos.length > 0 && (
-            <div className="px-6 pb-6">
-              {/* Currently Downloading */}
-              {dlDownloading.length > 0 && (
-                <div className="mb-5">
-                  <div className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
-                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
-                    Downloading ({dlDownloading.length})
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {(expandDlDownloading ? dlDownloading : dlDownloading.slice(0, 8)).map((v) => (
-                      <div key={v.id} className="flex items-center gap-2 px-2.5 py-1.5 bg-blue-400/5 border border-blue-400/20 rounded-lg">
-                        {getStorageUrl(v.thumbnail_url) ? (
-                          <img src={getStorageUrl(v.thumbnail_url)!} alt="" className="w-6 h-6 rounded object-cover" />
-                        ) : (
-                          <div className="w-6 h-6 rounded bg-white/5 flex items-center justify-center">
-                            <i className="fas fa-film text-slate-600 text-[7px]"></i>
-                          </div>
-                        )}
-                        <span className="text-[9px] font-black text-blue-400">@{v.username}</span>
-                        <div className="w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
-                      </div>
-                    ))}
-                    {dlDownloading.length > 8 && (
-                      <button
-                        onClick={() => setExpandDlDownloading((v) => !v)}
-                        className="flex items-center px-3 py-1.5 text-[9px] font-black text-blue-400/60 hover:text-blue-400 hover:bg-blue-400/5 border border-blue-400/10 rounded-lg transition-colors"
-                      >
-                        {expandDlDownloading ? (
-                          <><i className="fas fa-chevron-up mr-1 text-[7px]"></i>Show less</>
-                        ) : (
-                          <>+{dlDownloading.length - 8} more</>
-                        )}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Downloaded */}
-              {dlDone.length > 0 && (
-                <div className="mb-5">
-                  <div className="text-[10px] font-black text-teal-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
-                    <i className="fas fa-check-circle text-[8px]"></i>
-                    Downloaded ({dlDone.length})
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {(expandDlDone ? dlDone : dlDone.slice(0, 8)).map((v) => (
-                      <div key={v.id} className="flex items-center gap-2 px-2.5 py-1.5 bg-teal-400/5 border border-teal-400/10 rounded-lg">
-                        {getStorageUrl(v.thumbnail_url) ? (
-                          <img src={getStorageUrl(v.thumbnail_url)!} alt="" className="w-6 h-6 rounded object-cover" />
-                        ) : (
-                          <div className="w-6 h-6 rounded bg-white/5 flex items-center justify-center">
-                            <i className="fas fa-film text-slate-600 text-[7px]"></i>
-                          </div>
-                        )}
-                        <span className="text-[9px] font-black text-teal-400">@{v.username}</span>
-                        <i className="fas fa-check text-teal-400 text-[7px]"></i>
-                      </div>
-                    ))}
-                    {dlDone.length > 8 && (
-                      <button
-                        onClick={() => setExpandDlDone((v) => !v)}
-                        className="flex items-center px-3 py-1.5 text-[9px] font-black text-teal-400/60 hover:text-teal-400 hover:bg-teal-400/5 border border-teal-400/10 rounded-lg transition-colors"
-                      >
-                        {expandDlDone ? (
-                          <><i className="fas fa-chevron-up mr-1 text-[7px]"></i>Show less</>
-                        ) : (
-                          <>+{dlDone.length - 8} more</>
-                        )}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Failed with retry buttons */}
-              {dlFailed.length > 0 && (
-                <div className="mb-5">
-                  <div className="text-[10px] font-black text-red-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
-                    <i className="fas fa-exclamation-triangle text-[8px]"></i>
-                    Failed ({dlFailed.length})
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {dlFailed.map((v) => (
-                      <div key={v.id} className="flex items-center gap-2 px-2.5 py-1.5 bg-red-400/5 border border-red-400/10 rounded-lg group relative">
-                        {getStorageUrl(v.thumbnail_url) ? (
-                          <img src={getStorageUrl(v.thumbnail_url)!} alt="" className="w-6 h-6 rounded object-cover opacity-60" />
-                        ) : (
-                          <div className="w-6 h-6 rounded bg-white/5 flex items-center justify-center">
-                            <i className="fas fa-film text-slate-600 text-[7px]"></i>
-                          </div>
-                        )}
-                        <span className="text-[9px] font-black text-red-400">@{v.username}</span>
-                        <button
-                          onClick={() => handleRetryDownload(v.id)}
-                          disabled={retryingVideoId === v.id}
-                          className="ml-1 px-2 py-0.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 text-[8px] font-black rounded transition-colors disabled:opacity-50"
-                        >
-                          {retryingVideoId === v.id ? (
-                            <i className="fas fa-spinner fa-spin"></i>
-                          ) : (
-                            <><i className="fas fa-redo text-[7px] mr-0.5"></i>Retry</>
-                          )}
-                        </button>
-                        {v.error && (
-                          <div className="absolute bottom-full left-0 mb-1 px-2 py-1 bg-slate-800 border border-white/10 rounded text-[8px] text-red-300 font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-20 pointer-events-none max-w-xs truncate">
-                            {v.error.slice(0, 100)}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ══════════════════════════════════════════════════════════ */}
       {/* ── PERSISTENT BULK ANALYSIS PANEL ── */}
       {/* Shows whenever running OR when just finished with results */}
       {/* ══════════════════════════════════════════════════════════ */}
@@ -940,14 +541,6 @@ export default function Videos() {
                   <i className={`fas fa-chevron-${showVideoDetail ? 'up' : 'down'} mr-1`}></i>
                   {showVideoDetail ? 'Hide' : 'Details'}
                 </button>
-                {isRunning && (
-                  <button
-                    onClick={handleCancelBulk}
-                    className="px-4 py-1.5 bg-red-500/10 text-red-400 text-[10px] font-black rounded-lg hover:bg-red-500/20 transition-colors uppercase tracking-widest"
-                  >
-                    Cancel
-                  </button>
-                )}
                 {!isRunning && (
                   <button
                     onClick={() => setBulkStatus(null)}
@@ -1177,59 +770,11 @@ export default function Videos() {
                 <button onClick={clearSelection} className="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold text-slate-500 hover:text-white hover:bg-white/5 transition-all">
                   Clear
                 </button>
-                {selected.size > 0 && (
-                  <button
-                    onClick={handleBulkAnalyze}
-                    disabled={isRunning}
-                    className="ml-1 px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white text-[10px] font-bold rounded-lg transition-colors uppercase tracking-wide"
-                  >
-                    <i className="fas fa-brain mr-1.5"></i> Analyze {selected.size}
-                  </button>
-                )}
               </>
-            )}
-            {!selectMode && videos.some((v) => v.status === 'fetched') && !isRunning && (
-              <button
-                onClick={handleAnalyzeAll}
-                className="ml-1 px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold rounded-lg transition-colors uppercase tracking-wide"
-              >
-                <i className="fas fa-brain mr-1.5"></i> Analyze Pending
-              </button>
             )}
           </div>
         </div>
       </div>
-
-      {/* ── Analysis Type Toggle ── */}
-      {(selectMode || isRunning) && (
-        <div className="flex items-center gap-3 mb-6">
-          <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Analysis</span>
-          {[
-            { value: 'full', label: 'Full', icon: 'fa-film' },
-            { value: 'hook', label: 'Hook', icon: 'fa-magnet' },
-          ].map((t) => (
-            <button
-              key={t.value}
-              onClick={() => {
-                setAnalysisTypes((prev) =>
-                  prev.includes(t.value)
-                    ? prev.filter((x) => x !== t.value).length > 0
-                      ? prev.filter((x) => x !== t.value)
-                      : prev
-                    : [...prev, t.value]
-                )
-              }}
-              className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-colors flex items-center gap-1.5 ${
-                analysisTypes.includes(t.value)
-                  ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30'
-                  : 'text-slate-500 hover:text-slate-300 hover:bg-white/5 border border-white/5'
-              }`}
-            >
-              <i className={`fas ${t.icon} text-[9px]`}></i> {t.label}
-            </button>
-          ))}
-        </div>
-      )}
 
       {/* ── Videos Grid ── */}
       {loading ? (
@@ -1252,7 +797,6 @@ export default function Videos() {
               const isSelected = selected.has(video.id)
               const isAnalyzed = video.status === 'analyzed'
               const isError = video.status === 'error'
-              const isVideoFailed = video.status === 'video_failed'
               const isDownloading = downloadingVideoIds.has(video.id)
 
               return (
@@ -1295,22 +839,13 @@ export default function Videos() {
                       <div className="flex items-center justify-between">
                         {/* Status badge */}
                         <div className={`px-2 py-0.5 rounded-md text-[8px] font-black uppercase ${
-                          isDownloading
-                            ? 'bg-blue-400/20 text-blue-400'
-                            : isAnalyzed
+                          isAnalyzed
                             ? 'bg-teal-400/20 text-teal-400'
-                            : isVideoFailed
-                            ? 'bg-amber-400/20 text-amber-400'
                             : isError
                             ? 'bg-red-400/20 text-red-400'
                             : 'bg-orange-400/20 text-orange-400'
                         }`}>
-                          {isDownloading ? (
-                            <span className="flex items-center gap-1">
-                              <div className="w-2 h-2 border border-blue-400 border-t-transparent rounded-full animate-spin"></div>
-                              Downloading
-                            </span>
-                          ) : isAnalyzed ? 'Analyzed' : isVideoFailed ? 'No Video' : isError ? 'Error' : 'Pending'}
+                          {isAnalyzed ? 'Analyzed' : isError ? 'Error' : 'Pending'}
                         </div>
 
                         {/* Content type badge */}
@@ -1369,24 +904,6 @@ export default function Videos() {
                               </span>
                             )}
                           </div>
-                        )}
-
-                        {/* Retry download button for video_failed */}
-                        {isVideoFailed && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleRetryDownload(video.id)
-                            }}
-                            disabled={retryingVideoId === video.id}
-                            className="mt-1.5 w-full px-2 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 text-[8px] font-black rounded uppercase transition-colors disabled:opacity-50"
-                          >
-                            {retryingVideoId === video.id ? (
-                              <><i className="fas fa-spinner fa-spin mr-1"></i>Downloading...</>
-                            ) : (
-                              <><i className="fas fa-download mr-1"></i>Retry Download</>
-                            )}
-                          </button>
                         )}
                       </div>
                     </div>

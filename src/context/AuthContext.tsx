@@ -47,7 +47,7 @@ interface AuthContextType {
   isOrgAdmin: boolean
   loading: boolean
   signOut: () => Promise<void>
-  refreshProfile: () => Promise<void>
+  refreshProfile: () => Promise<string | null>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -66,14 +66,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [organization, setOrganization] = useState<Organization | null>(null)
   const [loading, setLoading] = useState(true)
   const initialLoadDone = useRef(false)
+  const fetchSeq = useRef(0)
 
-  const fetchProfile = async (_accessToken?: string) => {
+  const fetchProfile = async (_accessToken?: string): Promise<string | null> => {
+    const seq = ++fetchSeq.current
     try {
       const res = await authFetch('/api/auth/me')
-      if (!res.ok) return
+      if (!res.ok) return null
       const data = await res.json()
+      const fetchedUserType = data.profile?.user_type || 'user'
+
+      // Discard stale response if a newer fetchProfile was started
+      if (seq !== fetchSeq.current) return fetchedUserType
+
       setProfile(data.profile)
-      setUserType(data.profile?.user_type || 'user')
+      setUserType(fetchedUserType)
       setPlanSlug(data.planSlug || null)
       setCategoryStatus(data.profile?.category_status || null)
       setVipCredits(data.vipCredits || null)
@@ -89,17 +96,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const obRes = await authFetch('/api/onboarding/status')
           if (obRes.ok) {
             const obData = await obRes.json()
-            setOnboardingCompleted(obData.isCompleted)
-            setCategoryIds(obData.data?.categoryIds || [])
+            // Check again in case a newer fetch started during the onboarding status request
+            if (seq === fetchSeq.current) {
+              setOnboardingCompleted(obData.isCompleted)
+              setCategoryIds(obData.data?.categoryIds || [])
+            }
           } else {
-            setOnboardingCompleted(true) // fail open
+            if (seq === fetchSeq.current) setOnboardingCompleted(true) // fail open
           }
         } catch {
-          setOnboardingCompleted(true) // fail open
+          if (seq === fetchSeq.current) setOnboardingCompleted(true) // fail open
         }
       }
+
+      return fetchedUserType
     } catch (e) {
       console.error('Failed to fetch profile:', e)
+      return null
     }
   }
 
@@ -165,11 +178,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut()
   }
 
-  const refreshProfile = async () => {
+  const refreshProfile = async (): Promise<string | null> => {
     const { data: { session: s } } = await supabase.auth.getSession()
     if (s?.access_token) {
-      await fetchProfile(s.access_token)
+      return await fetchProfile(s.access_token)
     }
+    return null
   }
 
   const isOrgOwner = organization?.role === 'owner'

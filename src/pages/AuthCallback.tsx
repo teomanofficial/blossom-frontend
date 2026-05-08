@@ -25,6 +25,12 @@ export default function AuthCallback() {
         || data.session.user?.user_metadata?.invite_token
 
       if (inviteToken) {
+        // For Google OAuth users, persist invite_token in user metadata so backend
+        // auto-claim can pick it up even if this frontend claim fails
+        if (!data.session.user?.user_metadata?.invite_token) {
+          supabase.auth.updateUser({ data: { invite_token: inviteToken } }).catch(() => {})
+        }
+
         try {
           const res = await fetch(`${API_URL}/api/auth/invites/${inviteToken}/claim`, {
             method: 'POST',

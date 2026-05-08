@@ -81,6 +81,10 @@ export default function CategoryRequestManagement() {
       if (statusFilter !== 'all') params.set('status', statusFilter)
       if (search) params.set('search', search)
       const res = await authFetch(`/api/onboarding/admin/category-requests?${params}`)
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error || 'Failed to load category requests')
+      }
       const data = await res.json()
       setRequests(data.requests || [])
       setStats(data.stats || null)
