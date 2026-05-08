@@ -190,7 +190,8 @@ export default function VideoStoryCarousel({ videos: initialVideos, initialIndex
   const video = videos[currentIndex]
   const videoUrl = video ? getVideoUrl(video) : null
   const platformLabel = video?.platform === 'tiktok' ? 'TikTok' : 'Instagram'
-  const isExternalOnly = !!video && !videoUrl && !!video.content_url
+  const canPlayLocal = !!videoUrl && !videoError
+  const isExternalOnly = !!video && !canPlayLocal && !!video.content_url
 
   function openExternal() {
     if (video?.content_url) window.open(video.content_url, '_blank', 'noopener,noreferrer')
@@ -412,29 +413,35 @@ export default function VideoStoryCarousel({ videos: initialVideos, initialIndex
                     <i className="fas fa-film text-slate-700 text-3xl"></i>
                   </div>
                 )}
-                <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                  {isExternalOnly ? (
-                    <div className="flex flex-col items-center gap-2 pointer-events-none">
-                      <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="white">
-                          <path d="M8 5v14l11-7z"/>
-                        </svg>
-                      </div>
-                      <span className="text-white text-xs font-bold tracking-wide">
-                        Open on {platformLabel}
-                      </span>
+                {/* Subtle dark gradient at the bottom to improve button contrast */}
+                <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none" />
+                {/* Centered play affordance — purely decorative, click anywhere opens source */}
+                {isExternalOnly && (
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="w-16 h-16 rounded-full bg-white/15 backdrop-blur-sm flex items-center justify-center">
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="white">
+                        <path d="M8 5v14l11-7z" />
+                      </svg>
                     </div>
-                  ) : (
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="w-14 h-14 rounded-full bg-red-500/20 backdrop-blur-sm flex items-center justify-center">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                          <path d="M18 6L6 18M6 6l12 12" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-                        </svg>
-                      </div>
-                      <span className="text-white/70 text-xs font-bold">Video unavailable</span>
-                    </div>
-                  )}
-                </div>
+                  </div>
+                )}
+                {/* Prominent CTA button — opaque, anchored to the bottom of the video frame */}
+                {isExternalOnly && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); openExternal() }}
+                    className={`absolute bottom-4 left-4 right-4 z-10 flex items-center justify-center gap-2.5 py-3.5 rounded-xl font-black text-sm tracking-wide shadow-2xl transition-transform hover:scale-[1.02] active:scale-[0.98] ${
+                      video.platform === 'tiktok'
+                        ? 'bg-white text-black hover:bg-white/95'
+                        : 'bg-white text-black hover:bg-white/95'
+                    }`}
+                  >
+                    <i className={`fab fa-${video.platform === 'tiktok' ? 'tiktok' : 'instagram'} text-base`}></i>
+                    <span>Open on {platformLabel}</span>
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <path d="M5.5 2.5H3C2.72386 2.5 2.5 2.72386 2.5 3V11C2.5 11.2761 2.72386 11.5 3 11.5H11C11.2761 11.5 11.5 11.2761 11.5 11V8.5M8.5 2.5H11.5V5.5M6.5 7.5L11.5 2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
+                )}
               </>
             )}
 
