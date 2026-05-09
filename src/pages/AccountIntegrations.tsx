@@ -155,7 +155,8 @@ export default function AccountIntegrations() {
   }
 
   const handleDisconnect = async (account: SocialAccount) => {
-    if (!confirm(`Disconnect @${account.username} from ${account.platform === 'instagram' ? 'Instagram' : 'TikTok'}? You can reconnect anytime.`)) {
+    const platformName = account.platform === 'instagram' ? 'Instagram' : 'TikTok'
+    if (!confirm(`Disconnect @${account.username} from ${platformName}? All synced posts and metrics for this account will be permanently deleted. You can reconnect later to start fresh.`)) {
       return
     }
     setDisconnecting(account.id)
