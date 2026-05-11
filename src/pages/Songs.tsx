@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import toast from 'react-hot-toast'
 import { authFetch } from '../lib/api'
 import { getStorageUrl } from '../lib/media'
-import { useAudioPlayer, getAudioUrl } from '../lib/useAudioPlayer'
+import { useAudioPlayer } from '../lib/useAudioPlayer'
 
 /* ── Helpers ── */
 function fmt(n: number | null | undefined): string {
@@ -103,7 +103,35 @@ export default function Songs() {
   const [isOriginal, setIsOriginal] = useState('')
   const [hasAudio, setHasAudio] = useState('')
   const [merging, setMerging] = useState(false)
-  const audio = useAudioPlayer()
+  const [downloadingId, setDownloadingId] = useState<number | null>(null)
+  const audio = useAudioPlayer({
+    authenticatedStreamUrl: (song) => `/api/analysis/music/${song.id}/stream`,
+  })
+
+  const handleDownload = useCallback(async (song: SongRow) => {
+    setDownloadingId(song.id)
+    try {
+      const res = await authFetch(`/api/analysis/music/${song.id}/stream?download=1`)
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || `Download failed (${res.status})`)
+      }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const safeName = (song.title || 'audio').replace(/[^a-zA-Z0-9 _-]/g, '').trim().replace(/\s+/g, '_') || 'audio'
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${safeName}.mp3`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to download audio')
+    } finally {
+      setDownloadingId(null)
+    }
+  }, [])
 
   // Fetch admin stats
   const fetchStats = useCallback(async () => {
@@ -336,14 +364,18 @@ export default function Songs() {
                         <th className="text-right py-3 px-4">Recent 7d</th>
                         <th className="text-center py-3 px-4">Audio</th>
                         <th className="text-center py-3 px-4">Type</th>
+                        <th className="text-center py-3 px-4"></th>
                       </tr>
                     </thead>
                     <tbody>
                       {songs.map(song => {
                         const coverSrc = getStorageUrl(song.local_cover_path)
-                        const hasAudioFile = !!getAudioUrl(song)
+                        // The backend stream endpoint can fetch a fresh play_url on demand,
+                        // so any non-original track with a platform_music_id is streamable.
+                        const hasAudioFile = !song.is_original && (!!song.local_audio_path || !!song.play_url || !!song.platform_music_id)
                         const isPlaying = audio.playingId === song.id
                         const isAudioLoading = audio.loadingId === song.id
+                        const isDownloading = downloadingId === song.id
 
                         return (
                           <tr
@@ -474,6 +506,26 @@ export default function Songs() {
                                 <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-400">
                                   Music
                                 </span>
+                              )}
+                            </td>
+
+                            {/* Download */}
+                            <td className="py-2.5 px-4 text-center">
+                              {hasAudioFile ? (
+                                <button
+                                  onClick={() => handleDownload(song)}
+                                  disabled={isDownloading}
+                                  title="Download MP3"
+                                  className="w-7 h-7 rounded-lg bg-white/5 hover:bg-cyan-500/20 flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed mx-auto"
+                                >
+                                  {isDownloading ? (
+                                    <div className="w-3 h-3 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
+                                  ) : (
+                                    <i className="fas fa-download text-[10px] text-slate-400 hover:text-cyan-400" />
+                                  )}
+                                </button>
+                              ) : (
+                                <span className="text-slate-700 text-xs">-</span>
                               )}
                             </td>
                           </tr>
