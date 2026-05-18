@@ -538,7 +538,7 @@ export default function Discovery() {
 
   async function loadVideosTotal() {
     try {
-      const data = await authFetch('/api/analysis/trending/videos?limit=1&offset=0').then(r => r.json())
+      const data = await authFetch('/api/analysis/trending/videos?count_only=1').then(r => r.json())
       setVideosTotal(data.total || 0)
     } catch (error) {
       console.error('Failed to load discovery videos count:', error)
