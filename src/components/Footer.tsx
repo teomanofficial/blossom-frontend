@@ -10,6 +10,7 @@ export default function Footer() {
         </Link>
         <div className="font-medium">Turning content into culture.</div>
         <div className="flex gap-8 font-bold uppercase tracking-widest text-[11px]">
+          <Link to="/faq" className="hover:text-white transition-colors">FAQ</Link>
           <Link to="/terms" className="hover:text-white transition-colors">Terms</Link>
           <Link to="/privacy" className="hover:text-white transition-colors">Privacy</Link>
           <Link to="/signup" className="hover:text-white transition-colors">Join the Elite</Link>

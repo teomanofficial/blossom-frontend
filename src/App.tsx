@@ -8,6 +8,7 @@ import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
 import Terms from './pages/Terms'
 import Privacy from './pages/Privacy'
+import FAQ from './pages/FAQ'
 import Dashboard from './pages/Dashboard'
 import Formats from './pages/Formats'
 import FormatDetail from './pages/FormatDetail'
@@ -115,6 +116,7 @@ function App() {
       <Route path="/share/:token" element={<SharedAnalysis />} />
       <Route path="/terms" element={<Terms />} />
       <Route path="/privacy" element={<Privacy />} />
+      <Route path="/faq" element={<FAQ />} />
       <Route
         path="/dashboard"
         element={
