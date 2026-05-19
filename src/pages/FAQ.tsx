@@ -1352,7 +1352,7 @@ export default function FAQ() {
 
   const expandAll = useCallback(() => {
     const all = new Set<string>()
-    visibleCategories.forEach((cat, ci) =>
+    visibleCategories.forEach((cat) =>
       cat.items.forEach((_, ii) => all.add(`${cat.id}-${ii}`))
     )
     setOpenItems(all)
