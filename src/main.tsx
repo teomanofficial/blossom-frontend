@@ -6,7 +6,15 @@ import App from './App'
 import { AuthProvider } from './context/AuthContext'
 import { ImpersonationProvider } from './context/ImpersonationContext'
 import AnalyticsProvider from './components/AnalyticsProvider'
+import { trackAiReferrerOnce } from './lib/analytics'
 import './index.css'
+
+// Fire the GA4 `ai_referrer` event once per session if the visitor arrived
+// from a known AI surface (ChatGPT, Perplexity, Claude, Gemini, etc.). Runs
+// synchronously before render — referrer detection just reads
+// `document.referrer`, which is available immediately. The marketing site
+// (Astro) mirrors this in `marketing/src/layouts/BaseLayout.astro`.
+trackAiReferrerOnce()
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

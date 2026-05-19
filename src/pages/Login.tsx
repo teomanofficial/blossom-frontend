@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { Seo } from '../lib/seo'
 
 export default function Login() {
   const navigate = useNavigate()
@@ -39,6 +40,11 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 bg-[#050508] relative">
+      <Seo
+        title="Log in — Blossom"
+        description="Log in to your Blossom account."
+        noindex
+      />
       <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-pink-600/10 rounded-full blur-[128px] pointer-events-none" />
 
       <div className="relative w-full max-w-md">

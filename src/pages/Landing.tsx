@@ -4,6 +4,7 @@ import { apiFetch } from '../lib/api'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import HowItWorksCarousel from '../components/HowItWorksCarousel'
+import { Seo } from '../lib/seo'
 
 interface Plan {
   id: number
@@ -140,6 +141,12 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-[#050508] overflow-x-hidden">
+      <Seo
+        title="Blossom — Analyze Viral TikTok & Instagram Content"
+        description="Discover what makes content go viral. Blossom uses AI to analyze hooks, formats, and tactics from thousands of viral TikTok and Instagram videos. Try free."
+        ogType="website"
+      />
+
       {/* Background mesh */}
       <div
         className="fixed inset-0 pointer-events-none z-0"

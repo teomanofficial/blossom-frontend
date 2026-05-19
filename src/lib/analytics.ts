@@ -4,12 +4,29 @@
  * Lightweight client-side tracker for anonymous user behavior analysis.
  * Manages sessions, page views, scroll depth, events, and pricing interactions.
  * All data is sent to /api/sa/* endpoints.
+ *
+ * Also hosts the AI-referrer detection helpers (see bottom of file). The
+ * marketing Astro site mirrors that logic in
+ * `marketing/src/layouts/BaseLayout.astro` — keep both lists of AI hostnames
+ * in sync when adding/removing sources.
  */
 
 import { API_URL, authFetch } from './api'
 
 const SESSION_KEY = 'blsm_analytics_session'
 const SESSION_TIMEOUT_MS = 30 * 60 * 1000 // 30 minutes
+
+// ── GA4 gtag typing ──────────────────────────────────────────────
+// Loose typing for the global gtag() function injected by the GA4 snippet
+// in `frontend/index.html`. The SDK passes arbitrary positional args, so we
+// model it as a variadic any-tuple function. The optional chaining at the
+// call site protects us when gtag hasn't loaded yet (ad blockers, slow
+// network, server-side render).
+declare global {
+  interface Window {
+    gtag?: (...args: unknown[]) => void
+  }
+}
 
 interface SessionInfo {
   sessionToken: string
@@ -418,4 +435,114 @@ export function getSessionToken(): string | null {
 
 export function isAnalyticsEnabled(): boolean {
   return initialized && !isLocalDev
+}
+
+// ── AI Referrer Detection (GA4 `ai_referrer` event) ──────────────
+//
+// Detects when a visitor lands on Blossom from an AI search/answer surface
+// (ChatGPT, Perplexity, Claude, Gemini, etc.) and fires a GA4 custom event
+// `ai_referrer` with `{ ai_source, page_path }` so we can measure how much
+// traffic LLM citations drive. We dedupe per session (sessionStorage key
+// `blossai_ai_ref_fired`) so client-side route changes don't re-fire.
+//
+// IMPORTANT: This hostname list is mirrored in
+// `marketing/src/layouts/BaseLayout.astro`. Update both when changing.
+// We use exact-host or strict suffix matching (host === domain OR host
+// ends with `.${domain}`) — conservative on purpose, since misattributing
+// organic search traffic to AI surfaces would corrupt the metric.
+
+const AI_REFERRER_DOMAINS: ReadonlyArray<{ source: string; host: string }> = [
+  { source: 'chatgpt', host: 'chatgpt.com' },
+  { source: 'perplexity', host: 'perplexity.ai' },
+  { source: 'claude', host: 'claude.ai' },
+  { source: 'gemini', host: 'gemini.google.com' },
+  { source: 'you', host: 'you.com' },
+  { source: 'phind', host: 'phind.com' },
+  { source: 'duckassist', host: 'chat.duckduckgo.com' },
+  { source: 'copilot', host: 'copilot.microsoft.com' },
+]
+
+const AI_REFERRER_SESSION_KEY = 'blossai_ai_ref_fired'
+
+// In-memory fallback: when sessionStorage is unavailable (private browsing
+// with strict tracking protection, blocked cookies, ITP edge cases), reads
+// and writes throw. Without this fallback, `trackAiReferrerOnce()` would
+// re-fire the GA4 event on every call within the same page-load. Keeping
+// a module-scoped cache makes the dedupe correct across route changes even
+// when storage is off.
+let _aiReferrerFiredInMemory: string | null = null
+
+/**
+ * Inspect `document.referrer` and return the AI source slug if the referrer
+ * host matches one of the known AI surfaces. Returns `null` for direct
+ * traffic, unknown referrers, malformed URLs, or non-browser environments.
+ *
+ * Matching is strict: the referrer host must equal the AI domain exactly
+ * or be a subdomain of it (e.g. `gemini.google.com` matches, but
+ * `google.com` alone does not — Google web search is not AI traffic).
+ */
+export function detectAiReferrer(): string | null {
+  if (typeof document === 'undefined' || typeof window === 'undefined') return null
+  const referrer = document.referrer
+  if (!referrer) return null
+
+  let host: string
+  try {
+    host = new URL(referrer).hostname.toLowerCase()
+  } catch {
+    return null
+  }
+  if (!host) return null
+
+  for (const entry of AI_REFERRER_DOMAINS) {
+    if (host === entry.host || host.endsWith(`.${entry.host}`)) {
+      return entry.source
+    }
+  }
+  return null
+}
+
+/**
+ * Fire the GA4 `ai_referrer` custom event. No-ops if gtag hasn't loaded
+ * (ad blockers, slow CDN, SSR). The `ai_source` parameter must be
+ * registered as a custom dimension in GA4 admin for it to appear in
+ * reports — see TODO in the Phase 4 status block of the SEO plan.
+ */
+export function fireAiReferrerEvent(source: string): void {
+  if (typeof window === 'undefined') return
+  window.gtag?.('event', 'ai_referrer', {
+    ai_source: source,
+    page_path: window.location.pathname,
+  })
+}
+
+/**
+ * Detect and fire-once-per-session. Idempotent: subsequent calls within
+ * the same browser session (or with the same detected source) are no-ops.
+ * Safe to invoke on every route change.
+ */
+export function trackAiReferrerOnce(): void {
+  if (typeof window === 'undefined') return
+  const source = detectAiReferrer()
+  if (!source) return
+
+  // Seed the dedupe check from the in-memory cache first so callers that
+  // invoke this on every route change don't re-fire when storage is blocked.
+  let alreadyFired: string | null = _aiReferrerFiredInMemory
+  try {
+    const stored = window.sessionStorage.getItem(AI_REFERRER_SESSION_KEY)
+    if (stored) alreadyFired = stored
+  } catch {
+    // sessionStorage may be unavailable (privacy mode, disabled cookies).
+    // Continue with the in-memory cache value.
+  }
+  if (alreadyFired === source) return
+
+  fireAiReferrerEvent(source)
+  _aiReferrerFiredInMemory = source
+  try {
+    window.sessionStorage.setItem(AI_REFERRER_SESSION_KEY, source)
+  } catch {
+    // Swallow — the in-memory cache above prevents duplicate fires this session.
+  }
 }

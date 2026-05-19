@@ -11,6 +11,7 @@ import TabTactics from '../components/analysis/TabTactics'
 import TabEmotions from '../components/analysis/TabEmotions'
 import TabVirality from '../components/analysis/TabVirality'
 import TabWeaknesses from '../components/analysis/TabWeaknesses'
+import { Seo } from '../lib/seo'
 
 export default function SharedAnalysis() {
   const { token } = useParams<{ token: string }>()
@@ -122,6 +123,15 @@ export default function SharedAnalysis() {
 
   const shell = (children: React.ReactNode) => (
     <div className="min-h-screen bg-[#050508] text-white">
+      {/*
+        Default to noindex — per the SEO plan §6.2, shared analyses become
+        indexable only once the sharing user explicitly opts in.
+      */}
+      <Seo
+        title="Shared analysis — Blossom"
+        description="A shared content analysis from Blossom."
+        noindex
+      />
       {/* Header */}
       <header className="border-b border-white/5 bg-[#050508]/80 backdrop-blur-xl sticky top-0 z-40">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">

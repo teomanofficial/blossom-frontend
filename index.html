@@ -12,20 +12,7 @@
     </script>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/logo-dark.png" />
-    <meta name="viewport" content="width=device-width, initial-sc>ale=1.0, viewport-fit=cover" />
-    <title>Blossom | The Science of Influence</title>
-    <meta name="description" content="Learn how to influence people in just 10 seconds. Discover how tiny, subtle changes turn hundreds of views into millions of fans." />
-
-    <!-- Open Graph -->
-    <meta property="og:type" content="website" />
-    <meta property="og:title" content="Blossom | The Science of Influence" />
-    <meta property="og:description" content="Learn how to influence people in just 10 seconds. Discover how tiny, subtle changes turn hundreds of views into millions of fans." />
-    <meta property="og:site_name" content="Blossom" />
-
-    <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Blossom | The Science of Influence" />
-    <meta name="twitter:description" content="Learn how to influence people in just 10 seconds. Discover how tiny, subtle changes turn hundreds of views into millions of fans." />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
     <meta name="theme-color" content="#050508" />
 
@@ -33,6 +20,50 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet" />
+
+    <!--
+      Sitewide JSON-LD @graph. Page-level <title>, <meta>, <link rel="canonical">,
+      OG/Twitter tags, and per-page JSON-LD are emitted from React 19 via the
+      <Seo> component in `src/lib/seo/`. Do not duplicate them here.
+
+      Per-page JSON-LD refers back to the Organization/WebSite @id IRIs below so
+      crawlers de-duplicate to a single canonical entity.
+    -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://blossai.com/#organization",
+          "name": "Blossom",
+          "url": "https://blossai.com/",
+          "logo": "https://blossai.com/logo-dark.png",
+          "sameAs": ["https://www.instagram.com/bloss.ai/"]
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://blossai.com/#website",
+          "url": "https://blossai.com/",
+          "name": "Blossom",
+          "publisher": { "@id": "https://blossai.com/#organization" }
+        },
+        {
+          "@type": "SoftwareApplication",
+          "name": "Blossom",
+          "operatingSystem": "Web",
+          "applicationCategory": "BusinessApplication",
+          "url": "https://blossai.com/",
+          "publisher": { "@id": "https://blossai.com/#organization" },
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+          }
+        }
+      ]
+    }
+    </script>
   </head>
   <body class="bg-[#050508] text-white">
     <div id="root"></div>

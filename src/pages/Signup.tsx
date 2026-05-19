@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { apiFetch } from '../lib/api'
 import { trackEvent, trackConversion } from '../lib/analytics'
+import { Seo } from '../lib/seo'
 
 export default function Signup() {
   const navigate = useNavigate()
@@ -86,6 +87,10 @@ export default function Signup() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 bg-[#050508] relative">
+      <Seo
+        title="Sign up — Blossom"
+        description="Create a free Blossom account to start analyzing viral TikTok and Instagram content with AI."
+      />
       <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-pink-600/10 rounded-full blur-[128px] pointer-events-none" />
 
       <div className="relative w-full max-w-md">

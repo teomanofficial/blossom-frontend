@@ -1,0 +1,230 @@
+# Blossom — Full Reference
+
+> Blossom is a SaaS platform for analyzing viral social media content. It fetches videos from Instagram and TikTok, runs multi-stage AI analysis using Google Gemini, classifies hooks/formats/tactics, surfaces trends and improvement suggestions, and supports analysis versioning to track content improvements across iterations.
+
+This file is a single-fetch reference intended for LLMs and AI assistants. Last updated: 2026-05-19.
+
+---
+
+## Product overview
+
+Blossom helps creators, agencies, and brands understand what makes social media content go viral. Users paste a TikTok or Instagram URL (or upload a video) and Blossom returns:
+
+- A virality score (0–100) per platform
+- The hook style (e.g. "Direct Question", "Bold Claim", "Storytime opener")
+- The format class (e.g. "Talking Head", "Tutorial", "Day in the Life")
+- The tactics used (e.g. "fast cuts", "text overlay", "audio drop sync")
+- Music and audio metadata (when applicable)
+- Specific suggestions to improve the content for higher virality
+
+---
+
+<a id="public-api"></a>
+## Public API Reference
+
+Base URL: `https://blossai.com/api/v1`
+
+### Authentication
+
+All endpoints require an API key. Send it as the `X-API-Key` header:
+
+```
+X-API-Key: blsm_<40-hex-characters>
+```
+
+API keys are managed inside Account → API Keys (requires platin or admin plan). Keys follow the format `blsm_` + 40 hex characters and are hashed (SHA-256) before storage — raw keys are shown only once at creation.
+
+API keys can be scoped to specific category IDs. A scoped key only returns data for its assigned categories.
+
+### Rate Limits
+
+| Plan  | Limit             |
+|-------|-------------------|
+| platin| 100 requests/min  |
+| admin | 600 requests/min  |
+
+Exceeding the limit returns `429 Too Many Requests`.
+
+### Endpoints
+
+#### `GET /videos`
+Returns analyzed videos from the library.
+
+Query parameters:
+- `limit` (int, default 20, max 100)
+- `offset` (int)
+- `platform` (`instagram` | `tiktok`)
+- `influencer_id` (int)
+- `min_score` (int 0–100)
+- `format_class_id` (int)
+- `hook_class_id` (int)
+
+Response (excerpt):
+```json
+{
+  "videos": [
+    {
+      "id": 123,
+      "platform": "instagram",
+      "url": "https://...",
+      "thumbnail_url": "https://...",
+      "caption": "...",
+      "like_count": 45000,
+      "view_count": 1200000,
+      "overall_score": 82,
+      "instagram_score": 79,
+      "tiktok_score": 85,
+      "format_classes": ["Talking Head", "Tutorial"],
+      "hook_classes": ["Direct Question"],
+      "tactics": ["Fast cuts", "Text overlay"],
+      "created_at": "2026-03-01T00:00:00Z"
+    }
+  ],
+  "total": 1500,
+  "limit": 20,
+  "offset": 0
+}
+```
+
+#### `GET /influencers`
+Returns influencer profiles. Query parameters: `limit`, `offset`, `platform`, `tier` (`nano|micro|mid|macro|mega`), `min_followers`.
+
+#### `GET /hooks`
+Hook classifications and patterns.
+
+#### `GET /formats`
+Format taxonomy.
+
+#### `GET /tactics`
+Tactic library.
+
+#### `GET /music`
+Music and audio metadata.
+
+#### `GET /suggestions`
+Content improvement suggestions.
+
+#### `GET /trending`
+Trending content aggregation.
+
+#### `GET /categories`
+Category filters.
+
+For up-to-date full schemas, see [public-api.md](https://github.com/) in the repository docs.
+
+---
+
+<a id="architecture"></a>
+## Architecture
+
+Blossom is a monorepo with two main workspaces.
+
+```
+blossom/
+├── backend/    Express + TypeScript API (port 3001)
+├── frontend/   React 19 + Vite 6 SPA (port 5173)
+└── docs/       Feature documentation
+```
+
+### Tech stack
+| Layer       | Technology                                |
+|-------------|-------------------------------------------|
+| Frontend    | React 19, Vite 6, TypeScript, Tailwind CSS|
+| Backend     | Express 4, TypeScript 5.7                 |
+| Database    | Supabase (PostgreSQL 15)                  |
+| Auth        | Supabase Auth (JWT)                       |
+| AI          | Google Gemini (gemini-2.5-pro)            |
+| Real-time   | Socket.IO 4                               |
+| Billing     | Paddle                                    |
+| Social data | HikerAPI (Instagram), LamaTok (TikTok)    |
+| Media       | FFmpeg, Meyda (audio analysis)            |
+
+### Backend layout (post-refactor Feb 2026)
+- `routes/analysis/` — 12 sub-routers, barrel index.ts
+- `routes/social/` — 5 sub-routers, barrel index.ts
+- `routes/public-api/` — 9 sub-routers (videos, influencers, formats, hooks, tactics, music, suggestions, trending, categories)
+- `lib/gemini/` — 6 modules, barrel index.ts
+- `services/` — 6 service files (media-helpers, progress-state, video-fetch-service, video-analysis-service, class-management-service, content-analysis-service)
+- Layered: routes → services → lib → config (strictly one-way, no circular deps)
+
+### Frontend layout
+- Entry: `src/main.tsx` wraps App in providers
+- `src/App.tsx` — react-router-dom v7 route definitions
+- `src/context/` — AuthContext, ImpersonationContext
+- `src/lib/api.ts` — fetch wrapper for `/api/*`
+- `src/lib/supabase.ts` — Supabase browser client
+- `src/lib/socket.ts` — Socket.IO client singleton
+
+---
+
+<a id="content-analysis-pipeline"></a>
+## Content Analysis Pipeline
+
+When a user submits a video, the pipeline runs in stages:
+
+1. **Fetch** — backend pulls metadata (caption, like_count, view_count, thumbnail) from HikerAPI (Instagram) or LamaTok (TikTok). Since May 2026, raw video files are NOT downloaded — `content_videos.local_video_path` stays NULL and the player redirects to the source URL on play.
+
+2. **Classify** — multi-stage Gemini calls assign:
+   - Hook class (from `viral_hook_classes`)
+   - Format class (from `viral_format_classes`)
+   - Tactics (from `viral_tactics`)
+   These flow through `classifyAndLink` and `processTacticsFromAnalysis` in `services/video-analysis-service.ts`.
+
+3. **Score** — virality scores per platform (`overall_score`, `instagram_score`, `tiktok_score`) computed from engagement metrics.
+
+4. **Audio analysis** (when applicable) — `audio-analyzer.ts` extracts beats, drops, energy curves, and section boundaries using Meyda for energy/spectral features and fluent-ffmpeg for extraction. Music metadata is joined from `content_music` via `content_video_music`.
+
+5. **Suggestions** — Gemini produces actionable improvement suggestions based on the analysis and trending patterns.
+
+6. **Persist** — results stored in `content_analysis`, linked to `content_videos` and category-scoped through `content_video_classes`.
+
+Real-time progress is broadcast via Socket.IO to the originating user.
+
+### Versioning
+The pipeline supports analysis versioning to track improvements across iterations. Users can compare two versions of an analysis side-by-side.
+
+---
+
+## Authentication & Authorization
+
+- End users authenticate via Supabase Auth (email/password or OAuth). The backend trusts the Supabase JWT in the `Authorization: Bearer <token>` header for application API calls.
+- Public API consumers (agencies, integrations) use the `X-API-Key` header — this avoids collision with the user JWT scheme.
+- Plans: `free`, `plus`, `platin`, `admin`. API key management requires platin or admin.
+
+---
+
+## Audio Analysis Feature
+
+`audio-analyzer.ts` extracts audio from video and produces:
+- Beat positions and tempo
+- Energy curve and peaks
+- Section boundaries (intro / build / drop / outro)
+- Spectral features (centroid, rolloff, spectralFlux*)
+
+(*spectralFlux is a Meyda feature but not in the MeydaFeaturesObject TypeScript type — backend code casts to Record<string, any>.)
+
+Music context for a video comes from the `content_music` table joined via `content_video_music`.
+
+---
+
+## Database tables (high level)
+
+- `content_videos` — fetched videos
+- `content_influencers` — profiles
+- `content_uploads` — user-uploaded videos
+- `content_analysis` — analysis result rows (versioned)
+- `content_music`, `content_video_music` — music metadata + join
+- `viral_format_classes`, `viral_hook_classes`, `viral_tactics` — taxonomy
+- `content_video_classes`, `video_tactics` — joins between videos and taxonomy
+- `profiles` — synced from Supabase auth
+- `social_accounts`, `social_posts`, `social_metrics_history`, `social_post_metrics` — social-integration data
+- `api_keys`, `api_key_usage`, `api_request_log` — public API plumbing (RLS enabled)
+- `content_improvements`, `bulk_analysis_results`, `ai_cost_logs` — operational
+
+---
+
+## Contact
+
+- Website: https://blossai.com
+- API documentation: https://blossai.com/llms.txt (this file's index)
+- Sign up: https://blossai.com/signup

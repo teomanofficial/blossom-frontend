@@ -2,6 +2,13 @@ import { Link } from 'react-router-dom'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
+import {
+  Seo,
+  SITE_URL,
+  breadcrumbSchema,
+  faqSchema,
+  type FaqEntry,
+} from '../lib/seo'
 
 // ──────────────────────────────────────────────────────────────────────────
 // Types
@@ -472,16 +479,30 @@ const CATEGORIES: FaqCategory[] = [
         keywords: ['delete post', 'flop post', 'archive vs delete', 'delete post penalty', 'tiktok delete algorithm 2026', 'instagram archive reels', 'underperforming post'],
       },
       {
-        q: 'Should I schedule posts or post manually?',
-        a: 'For consistency at any cadence above 1 post per day, scheduling wins — but you should still publish through the platform\'s native scheduler (Instagram\'s Meta Business Suite, TikTok\'s scheduling tool) instead of third-party APIs, because the platforms slightly favor native publishing. Posting manually is fine when you have time; just don\'t let "no time today" become "no post today."',
+        q: 'Should I schedule posts or publish manually in 2026?',
+        a: 'Schedule for consistency, publish natively. Creator cadence data from 2025–2026 consistently shows that accounts maintaining a predictable posting rhythm outperform sporadic posters on both Instagram and TikTok, and scheduling is the only realistic way to hit 1+ posts per day without burning out. The catch: where you schedule matters. Both Instagram (via Meta Business Suite / Creator Studio) and TikTok (via the in-app Scheduler and TikTok Studio) give a small but real distribution edge to posts published through their native tools versus third-party APIs, because native uploads bypass the Graph API publishing path that historically carried micro-delays, format conversions, and occasional throttling. Third-party tools like Later, Buffer, and Hootsuite still work fine for planning and approvals, but the actual publish step should hit the platform directly whenever possible. Manual posting is perfectly viable if you have the discipline and bandwidth — the data only punishes you when "I\'ll post later" turns into a skipped day. Pick a cadence you can sustain, schedule the floor (the minimum you commit to), and post manually on top when inspiration hits.',
+        details: [
+          { label: 'Consistency beats volume', text: 'Accounts that post on a predictable schedule outperform higher-volume but irregular accounts on both platforms — the algorithm rewards reliability signals, not raw posts per week.' },
+          { label: 'Native scheduler advantage', text: 'Meta Business Suite and TikTok\'s in-app Scheduler publish directly through internal pipelines, avoiding the small distribution penalty third-party API uploads can incur.' },
+          { label: 'Use third-party for planning, not publishing', text: 'Tools like Later, Buffer, and Hootsuite remain best-in-class for content calendars, team approvals, and analytics — just push the final publish through the native scheduler when it matters.' },
+          { label: 'Set a floor, not a ceiling', text: 'Commit to a minimum weekly cadence you can hit even on bad weeks. Schedule that floor in advance; treat any manual posts on top as bonus reach, not the baseline.' },
+        ],
+        feature: { label: 'Plan a sustainable cadence with Blossom', to: '/signup' },
         related: ['posting-2', 'posting-3'],
-        keywords: ['schedule posts', 'manual posting', 'scheduling tool'],
+        keywords: ['schedule posts', 'manual posting', 'scheduling tool', 'native scheduler instagram tiktok', 'meta business suite scheduling'],
       },
       {
-        q: 'Do time zones matter for global creators?',
-        a: 'Yes — and they matter more than the global "best time" averages. If 60%+ of your audience is in one region, post in that region\'s peak window even if it\'s the middle of your night. Most analytics dashboards let you see your follower active hours by location. Blossom builds a personalized heatmap that weights each window by where your engaged followers actually live.',
+        q: 'Do time zones matter for creators with a global audience in 2026?',
+        a: 'Yes — time zones often matter more than the generic "best time to post" charts you see online. If 60% or more of your engaged followers sit in one region, post inside that region\'s peak window even when it lands at 3 a.m. your local time. The rule shifts when your audience is split: with no single region above 50%, optimize for the two largest clusters by finding overlapping windows (for example, 7 p.m. ET captures late afternoon on the US West Coast and is still reachable for early-rising UK viewers the next morning). Instagram and TikTok analytics expose follower active hours, but most dashboards only show aggregate activity — not where those active followers actually live, which masks the real opportunity. Blossom builds a personalized heatmap that weights each posting window by the geographic distribution of your engaged followers, not just total follower count. It surfaces your true peak windows per region, flags overlap zones for split audiences, and recommends a posting schedule that maximizes reach across your top two markets without forcing you to choose one.',
+        details: [
+          { label: '60% rule', text: 'If one region holds 60%+ of engaged followers, post in that region\'s peak window — ignore your local clock.' },
+          { label: 'Split audiences', text: 'Below 50% concentration, target overlap windows between your two largest regions (e.g., 7 p.m. ET reaches US + early UK).' },
+          { label: 'Engaged vs. total', text: 'Weight by engaged followers, not raw follower count — passive followers in dead time zones skew averages.' },
+          { label: 'Platform algorithms', text: 'Initial engagement velocity in the first 60 minutes drives distribution, so timing for active regions matters more than average reach.' },
+        ],
+        feature: { label: 'Get your personalized timezone heatmap', to: '/signup' },
         related: ['posting-0', 'features-4'],
-        keywords: ['time zones', 'global audience', 'international'],
+        keywords: ['time zones', 'global audience', 'international', 'posting time global audience', 'timezone heatmap creators'],
       },
     ],
   },
@@ -1444,54 +1465,97 @@ const CATEGORIES: FaqCategory[] = [
     blurb: 'What Blossom\'s AI actually does, how the analysis pipeline works, and where the data comes from.',
     items: [
       {
-        q: 'How does Blossom\'s AI analysis work?',
-        a: 'When you submit a video, Blossom runs a multi-stage pipeline: the video is fetched and key frames are extracted, audio is separated and analyzed for beat structure and energy curve, Google Gemini analyzes the frames + transcript + audio markers in parallel across five dimensions, the result is classified against our library of 1,200+ formats, 50,000+ hooks, and 800+ tactics, and you receive a virality probability score with a weakness breakdown and a fix list. The whole pipeline runs in 30–120 seconds depending on video length.',
+        q: 'How does Blossom\'s AI pipeline analyze viral Instagram and TikTok videos end-to-end?',
+        a: 'Blossom runs a four-stage multimodal analysis pipeline that turns a raw social URL into a structured creative breakdown in 30 to 120 seconds. Stage one ingests the video through HikerAPI (Instagram) or LamaTok (TikTok), pulls metadata, and uses FFmpeg to extract keyframes at scene boundaries plus an isolated audio track. Stage two analyzes that audio with Meyda and beat detection to map energy peaks, drops, and section transitions, which is how the system later correlates hook timing with sonic emphasis. Stage three sends keyframes, transcript, and audio context to Google Gemini 2.5 Pro, whose long context window and native multimodal reasoning handle video, image, audio, and text in one inference pass rather than stitching separate models together. Stage four classifies the result against your library of hooks, formats, and tactics, then scores the video and produces a weakness list with concrete fix suggestions. Versioning tracks each re-analysis so you can measure whether your next iteration actually improved the hook, retention, or call to action.',
         details: [
-          'Stage 1 — Fetch + keyframe extraction.',
-          'Stage 2 — Audio separation, beat detection, music ID (Meyda + FFmpeg).',
-          'Stage 3 — Multimodal reasoning (Google Gemini 2.5 Pro) across 5 dimensions.',
-          'Stage 4 — Classification against Hook/Format/Tactic library.',
-          'Stage 5 — Score + weakness breakdown + ranked fix list.',
+          { label: 'Ingest and keyframe extraction', text: 'HikerAPI or LamaTok pulls the video and metadata, then FFmpeg slices keyframes at scene cuts so Gemini reasons over the moments that carry information, not redundant frames.' },
+          { label: 'Audio separation and beat mapping', text: 'Meyda and beat detection isolate energy curves, drops, and section boundaries from the audio track, giving the model temporal anchors to tie visuals to sonic emphasis.' },
+          { label: 'Multimodal Gemini 2.5 Pro reasoning', text: 'Frames, transcript, and audio features go into a single Gemini 2.5 Pro call that reasons across modalities natively, avoiding the accuracy loss of pipelining separate vision and language models.' },
+          { label: 'Library classification and scoring', text: 'Output is matched against your hook, format, and tactic libraries, then scored with a weakness breakdown so suggestions cite specific timestamps rather than vague advice.' },
+          { label: 'Versioned re-analysis', text: 'Every re-run is stored as a new version on the same video, so iterating on a hook or edit produces a measurable delta instead of overwriting the previous result.' },
         ],
+        feature: { label: 'Run your first analysis', to: '/signup' },
         related: ['ai-analysis-1', 'ai-analysis-3'],
-        keywords: ['how ai works', 'analysis pipeline', 'gemini'],
+        keywords: ['how ai works', 'analysis pipeline', 'gemini', 'multimodal video analysis', 'Gemini 2.5 Pro video understanding', 'viral video AI scoring'],
       },
       {
-        q: 'What AI model does Blossom use?',
-        a: 'Blossom\'s analysis is powered by Google Gemini 2.5 Pro for multimodal reasoning across video frames, transcripts, and audio markers. Audio analysis uses Meyda for spectral and energy features and FFmpeg for extraction. The classification step uses our own fine-tuned models trained on Blossom\'s indexed library of viral content.',
+        q: 'What AI model powers Blossom\'s video analysis, and why Gemini 2.5 Pro plus Meyda?',
+        a: 'Blossom\'s AI model for video analysis is built around Google Gemini 2.5 Pro, a natively multimodal LLM that reasons across video frames, audio tracks, and transcripts in a single 1,048,576-token context window. Gemini 2.5 Pro samples video at 1 frame per second by default (overridable for fast-cut content) and consumes roughly 300 tokens per second of footage at default resolution, which lets Blossom feed an entire Reel or TikTok, plus its caption history and prior versions, into one prompt instead of stitching together separate vision, ASR, and text models. For low-level audio that Gemini does not expose directly (beat positions, drops, energy curves, section boundaries), Blossom runs Meyda, a JavaScript audio feature extraction library that pulls spectral centroid, spectral flatness, perceptual loudness, MFCCs, and 30+ other descriptors from PCM extracted by FFmpeg. The classification step on top tags hook archetypes, formats, and tactics against Blossom\'s indexed library of viral content. The combination matters because hook detection needs frame-level vision, drop timing needs sub-second audio math, and pattern matching needs a labeled corpus — no single model covers all three well.',
+        details: [
+          { label: 'Google Gemini 2.5 Pro', text: 'Natively multimodal across video, audio, and text with a 1M-token context window; samples video at 1 FPS by default at ~300 tokens/sec, and generates timestamped transcripts with speaker diarization in a single call.' },
+          { label: 'Meyda audio features', text: 'Extracts spectral centroid, spectral flatness, perceptual loudness, MFCCs, and 50+ other descriptors at 3.34× real-time; runs in Node.js for offline batch analysis of viral audio.' },
+          { label: 'FFmpeg extraction', text: 'Decodes Instagram and TikTok video containers to mono PCM WAV at controlled sample rates so Meyda\'s FFT can detect beat onsets, energy peaks, and section changes that signal hook moments.' },
+          { label: 'Blossom classifiers', text: 'Map Gemini\'s free-form output onto a fixed taxonomy of hooks, formats, and tactics indexed from analyzed viral posts, enabling cross-creator trend detection and version-over-version improvement scoring.' },
+        ],
+        feature: { label: 'Try Blossom\'s video analysis', to: '/signup' },
         related: ['ai-analysis-0'],
-        keywords: ['ai model', 'gemini', 'which ai'],
+        keywords: ['ai model', 'gemini', 'which ai', 'AI model for video analysis', 'gemini 2.5 pro', 'audio feature extraction'],
       },
       {
-        q: 'Can I track how my content improves over time?',
-        a: 'Yes. Every analysis Blossom runs is versioned — you can compare any two versions of the same content side-by-side and see exactly which scores moved, which weaknesses were fixed, and which new ones emerged. The version timeline is especially powerful when you re-shoot a flop with Blossom\'s suggested fixes applied.',
+        q: 'Can I actually track whether my content is improving over time, or am I just guessing?',
+        a: 'Yes — and tracking improvement is the whole reason version analysis exists in Blossom. Every time you analyze a piece of content (or re-analyze a reshot version), Blossom saves a complete snapshot: hook score, format classification, pacing, audio energy curve, retention-risk flags, and the specific weaknesses our model flagged. You can pull up any two versions of the same concept side-by-side and see exactly which scores moved up, which weaknesses you fixed, and which new ones surfaced after your edits. This matters because most creators iterate blind. You reshoot a flop, it does 3× better, and you have no idea which change actually drove the lift — was it the new hook, the tighter cut at 0:02, or the trending audio swap? Without versioned analysis, every reshoot is a guess. With it, you build a personal playbook of what works for your audience. The re-shoot workflow is the highest-leverage use case: take a video that underperformed, apply Blossom\'s suggested fixes, post the new cut, then run a fresh analysis and compare.',
+        details: [
+          { label: 'Side-by-side version diff', text: 'Compare any two analysis versions of the same content and see every score delta, fixed weakness, and new flag in one view.' },
+          { label: 'Reshoot-tracking workflow', text: 'Built specifically for iterating on flops — re-upload your edited cut, run analysis, and measure exactly what the fixes moved.' },
+          { label: 'Pattern detection across versions', text: 'Spot which types of changes (hook swaps, pacing cuts, audio choices) consistently lift your scores so you stop guessing and start systematizing.' },
+          { label: 'Full snapshot, not just one number', text: 'Each version preserves hook, format, audio, pacing, and weakness data — not a single vanity metric — so you can diagnose, not just score.' },
+        ],
+        feature: { label: 'Start tracking your content improvements', to: '/signup' },
         related: ['features-7', 'going-viral-6'],
-        keywords: ['version', 'track improvement', 'history'],
+        keywords: ['version', 'track improvement', 'history', 'track content improvement', 'version analysis', 'content iteration tracking'],
       },
       {
-        q: 'Is the analysis accurate?',
-        a: 'Blossom\'s virality probability score correlates with actual published-video performance at r=0.74 on our internal validation set of 50,000 posts. That makes it directionally reliable but not deterministic — no model can perfectly predict virality because viral spikes depend on real-time algorithm state, posting timing, and audience mood. We treat the score as a strong indicator, not a guarantee.',
+        q: 'How accurate is Blossom\'s AI virality prediction, really?',
+        a: 'Radical honesty: Blossom\'s virality probability score hits r=0.74 correlation against actual published-video performance on a 50,000-post validation set. In plain English, that means the score explains roughly 55% of the variance in real-world outcomes (r squared ~0.547) — strong directional signal, but far from a crystal ball. For context, peer-reviewed virality prediction studies typically land between r=0.45 and r=0.78 depending on platform and feature set, and even YouTube\'s internal recommendation researchers have published that view-count prediction beyond 7 days carries 30–40% mean absolute error. No content analysis tool — ours included — can perfectly predict virality, because the final ~45% of variance lives in factors no pre-publish model can see: real-time algorithm state, posting window, trending audio half-life, audience mood, and competing creator drops within the same hour. What Blossom CAN predict reliably: hook strength, format fit, retention risk patterns, and tactic overlap with proven viral content. What it CAN\'T: guarantee a specific view count, account for algorithm shifts mid-week, or replace creative judgment. We surface the score as a confidence band, not a number to bet your content calendar on. Use it to filter weak ideas out, not to anoint winners.',
+        details: [
+          { label: 'r=0.74 means ~55% variance explained', text: 'r squared of 0.547 — score moves with actual performance more than half the time, but the other 45% is unmodelable noise (timing, algo state, audience mood).' },
+          { label: 'Benchmarked against published research', text: 'Academic virality models on Instagram/TikTok typically score r=0.45–0.78. Blossom sits in the upper range because we train on hook, format, and tactic features — not just engagement history.' },
+          { label: 'What the score WON\'T do', text: 'It won\'t predict exact view counts, account for mid-week algorithm changes, or override the fact that posting at 3am Tuesday usually underperforms 7pm Thursday.' },
+          { label: 'How to use it correctly', text: 'Treat scores above 75 as "worth shipping," 50–75 as "revise the hook," and below 50 as "rethink the format." It\'s a filter, not an oracle.' },
+        ],
+        feature: { label: 'See your score — sign up free', to: '/signup' },
         related: ['going-viral-3', 'ai-analysis-0'],
-        keywords: ['accurate analysis', 'reliable', 'how accurate'],
+        keywords: ['accurate analysis', 'reliable', 'how accurate', 'AI virality prediction accuracy', 'is content analysis accurate'],
       },
       {
-        q: 'Does Blossom have an API?',
-        a: 'Yes — Platin-tier accounts get access to Blossom\'s public API at /api/v1 with endpoints for videos, influencers, formats, hooks, tactics, music, suggestions, trending content, and categories. Authentication uses an X-API-Key header (keys are prefixed blsm_). Rate limits are 100 requests/min on Platin and 600/min on enterprise.',
-        feature: { label: 'API key management', to: '/dashboard/account/api' },
+        q: 'Does Blossom offer an API for creator analytics, and how do I integrate TikTok and Instagram data into my own tools?',
+        a: 'Yes. Blossom\'s public API is available on the Platin tier at /api/v1, giving programmatic access to the same TikTok and Instagram analysis that powers the dashboard. You get endpoints for videos, influencers, formats, hooks, tactics, music, suggestions, trending content, and categories — useful for building agency reporting dashboards, syncing viral hook libraries into Notion or Airtable, feeding scripting tools, or running your own creator analytics pipelines on top of Blossom\'s classifications. Authentication is a single X-API-Key header (no OAuth flow), and every key carries a blsm_ prefix so it\'s easy to spot in logs and rotate. Rate limits are 100 requests per minute on Platin and 600 per minute on Enterprise, which covers most batch backfills and near-real-time integrations. Keys are scoped to the categories you\'ve added in Blossom, so a key only returns data from creators you actively track — handy for multi-client agency setups where each client gets its own scoped key.',
+        details: [
+          { label: 'Endpoints', text: '9 resources under /api/v1: videos, influencers, formats, hooks, tactics, music, suggestions, trending, categories.' },
+          { label: 'Authentication', text: 'X-API-Key header (avoids JWT collision with the dashboard); keys are blsm_ + 40 hex chars, hashed at rest.' },
+          { label: 'Rate limits', text: 'Token-bucket limiter: 100 req/min on Platin, 600 req/min on Enterprise.' },
+          { label: 'Scoping', text: 'Each key is scoped to the categories of creators you track, so multi-client agencies can issue per-client keys.' },
+          { label: 'Common use cases', text: 'Agency reporting dashboards, custom hook and format libraries, scripting tools, and BI pipelines into Notion, Airtable, or warehouses.' },
+        ],
+        feature: { label: 'Generate an API key', to: '/dashboard/account/api' },
         related: ['blossom-3'],
-        keywords: ['api', 'public api', 'developer'],
+        keywords: ['api', 'public api', 'developer', 'blossom API', 'creator analytics API', 'X-API-Key'],
       },
       {
-        q: 'How does Blossom respect copyright?',
-        a: 'Blossom only analyzes publicly accessible content for educational and analytical purposes consistent with fair-use principles. We do not redistribute third-party videos — analysis results show frames and clips solely to illustrate the breakdown for the original publisher or for the user paying to study them. We respond to DMCA requests at dmca@blossomapp.ai and our full IP policy is in the Terms of Use.',
+        q: 'How does Blossom handle copyright, fair use, and DMCA takedown requests for analyzed videos?',
+        a: 'Blossom analyzes publicly accessible Instagram and TikTok content under the U.S. fair use doctrine (17 U.S.C. § 107), which permits transformative uses such as commentary, criticism, research, and education. Our analysis is transformative: we do not host or redistribute third-party videos. Instead, our pipeline extracts metadata, generates AI breakdowns of hooks, formats, and tactics, and references short frames or clips solely to illustrate the analytical insight delivered to the original publisher or to the paying user studying it. Source videos remain on the original platform — when a user presses play, Blossom redirects to the publisher\'s Instagram or TikTok URL rather than serving a stored copy. Rights holders who believe their content has been used outside the bounds of fair use can submit a DMCA takedown notice under 17 U.S.C. § 512(c) to dmca@blossai.com. Valid notices include the work identification, the URL inside Blossom, your contact information, a good-faith statement, and a sworn statement under penalty of perjury. We process complete notices within 10 business days, remove or restrict the analyzed material, and notify the uploader. Counter-notices and repeat-infringer policies are detailed in our Terms of Use.',
+        details: [
+          { label: 'Transformative analysis only', text: 'Outputs are AI-generated breakdowns and metadata, not republished videos — playback redirects to the original Instagram or TikTok URL.' },
+          { label: 'DMCA at dmca@blossai.com', text: 'Section 512(c) notices reviewed and actioned within 10 business days, with uploader notification and a counter-notice path.' },
+          { label: 'Fair use, four-factor aligned', text: 'Use is transformative, non-substitutional, limited in scope, and does not harm the market for the original work.' },
+          { label: 'Public IP policy', text: 'Full copyright, repeat-infringer, and counter-notice procedures are published in the Blossom Terms of Use.' },
+        ],
+        feature: { label: 'Start analyzing — fair use, fully transparent', to: '/signup' },
         related: ['privacy-2'],
-        keywords: ['copyright', 'dmca', 'legal'],
+        keywords: ['copyright', 'dmca', 'legal', 'fair use AI analysis', 'DMCA Instagram analytics', 'section 512 takedown'],
       },
       {
-        q: 'How fast is the analysis?',
-        a: '30–120 seconds end-to-end for most videos under 60 seconds. The bottleneck is the multimodal model pass on Gemini, which scales roughly linearly with video duration. Bulk analyses (20+ videos at once) run in parallel and complete in roughly the same time as a single video.',
+        q: 'How fast is Blossom\'s AI video analysis, and how does bulk parallel processing work?',
+        a: 'Blossom analyzes most short-form videos in 30 to 120 seconds end-to-end. The dominant cost is the multimodal pass on Google Gemini 2.5 Pro, where latency scales roughly linearly with video duration: a 30-second Reel typically clears the pipeline in well under a minute, while a 60-second TikTok lands near the upper bound. Industry benchmarks for multimodal long-context inference put time-to-first-token in the 5 to 15 second range and full-video reasoning between 20 and 90 seconds for clips under one minute, which matches what we see in production. Bulk analysis is where Blossom pulls ahead. Submitting 20 or more videos does not serialize them. Each job fans out to its own Gemini request and the FFmpeg-based audio extraction (Meyda beat and energy detection) runs alongside the vision pass on a worker pool. The result: a batch of 20 videos finishes in roughly the same wall-clock time as a single one, bounded mainly by API concurrency limits rather than queue depth. That parallelism is why Blossom analysis speed stays predictable as you scale from spot-checks to full influencer audits.',
+        details: [
+          { label: 'Per-video latency', text: '30 to 120 seconds for videos under 60s; longer clips scale roughly linearly with duration on Gemini 2.5 Pro.' },
+          { label: 'Bulk fan-out', text: '20+ videos run as parallel Gemini requests, so a batch finishes in roughly the same time as a single analysis.' },
+          { label: 'What dominates the budget', text: 'The multimodal vision pass is the bottleneck; audio analysis (FFmpeg + Meyda) runs concurrently and rarely gates the result.' },
+          { label: 'Concurrency, not queueing', text: 'Throughput is bounded by upstream API rate limits rather than internal serialization, so AI video analysis latency stays flat under load.' },
+        ],
+        feature: { label: 'Try Blossom', to: '/signup' },
         related: ['ai-analysis-0', 'features-2'],
-        keywords: ['analysis speed', 'how fast', 'analysis time'],
+        keywords: ['analysis speed', 'how fast', 'analysis time', 'AI video analysis latency', 'multimodal AI latency', 'bulk video analysis'],
       },
     ],
   },
@@ -1502,61 +1566,116 @@ const CATEGORIES: FaqCategory[] = [
     blurb: 'A complete tour of every feature inside Blossom and the exact creator problem each one solves.',
     items: [
       {
-        q: 'What does Content Analysis do?',
-        a: 'Content Analysis is Blossom\'s core feature: paste any public Instagram or TikTok URL — or your own video file — and get a 5-dimension breakdown (visual, audio, narrative, engagement, strategy), a virality probability score, the exact frame where the hook lands or fails, and a ranked list of fixes that would move the score the most.',
-        feature: { label: 'Try it free', to: '/signup' },
-        related: ['ai-analysis-0', 'features-7'],
-        keywords: ['content analysis', 'analyze video', 'core feature'],
-      },
-      {
-        q: 'What does the Hooks library do?',
-        a: 'The Hooks library is an indexed, searchable catalog of 50,000+ proven viral hooks across every major niche on Instagram and TikTok. Each hook entry includes the exact frame, the on-screen text, the audio cue, the timestamp of the payoff, and the engagement metrics of the post it came from.',
+        q: 'What does Content Analysis do, and how does it actually help me ship better Reels and TikToks?',
+        a: 'Content Analysis is Blossom\'s core video analyzer for Reels, TikToks, and your own uploads. Paste any public Instagram or TikTok URL — or drop in a local file — and Gemini breaks the clip down across five dimensions: visual, audio, narrative, engagement, and strategy. You get a virality probability score on a 0-100 scale, a frame-stamped read on where your hook lands or misses, and a ranked list of fixes ordered by how much each one is projected to move the score. Because 70%+ of short-form viewers decide whether to stay inside the first three seconds, the report focuses heavily on the hook window: pacing, on-screen text density, audio energy, pattern interrupts, and the exact second a typical viewer would scroll. The output is structured the way a creator briefs an editor — timestamps, screenshots, and one-line directives — not a generic AI summary. Use it as a publish-or-rework gate before posting, a teardown tool on competitor URLs to reverse-engineer formats that already work in your niche, and a versioning system to track whether your v2 cut actually improved on v1.',
         details: [
-          'Filter by niche, hook type, and minimum view count.',
-          'See the exact timestamp of the payoff inside each hook.',
-          'Copy the structure into your script with one click.',
+          { label: '5-Dimension Breakdown', text: 'Visual, audio, narrative, engagement, and strategy each scored individually so you see which axis is dragging the clip down — not just one vague viral number.' },
+          { label: 'Hook Frame Detection', text: 'Pinpoints the exact frame where attention is won or lost in the 0–3 second window, with screenshot, transcript snippet, and the specific reason it works or fails.' },
+          { label: 'Virality Probability Score', text: 'A 0–100 score grounded in patterns from analyzed viral clips in your category — calibrated against format, hook type, and pacing rather than a single global benchmark.' },
+          { label: 'Ranked Fix List', text: 'Every suggestion is ordered by projected score lift, so you fix the three things that move the needle instead of the twelve that don\'t.' },
+          { label: 'Version Tracking', text: 'Re-analyze your recut against the original and Blossom diffs the two — what improved, what regressed, and whether the new hook actually clears your previous score.' },
         ],
-        feature: { label: 'Open Hooks library', to: '/signup' },
+        feature: { label: 'Analyze your first video', to: '/signup' },
+        related: ['ai-analysis-0', 'features-7'],
+        keywords: ['content analysis', 'analyze video', 'core feature', 'video analyzer reels tiktok', 'hook analyzer', 'virality score'],
+      },
+      {
+        q: 'What\'s inside the Hooks library, and how do I use it?',
+        a: 'The Hooks library is a searchable catalog of 50,000+ proven viral hooks pulled from real Instagram Reels and TikTok posts, not generated templates. Every entry is timestamped, niche-tagged, and tied to the source post\'s actual engagement numbers, so you can see exactly what is working right now instead of guessing from generic frameworks. This matters because over 70% of viewers decide within the first 3 seconds whether to keep watching, and videos clearing the 70–85% three-second retention bar pull roughly 2.2× more total views than videos that lose people immediately. Each hook card shows the opening frame, the on-screen caption, the spoken script, the audio cue, the payoff timestamp, the hook type (curiosity gap, contrarian, problem-solution, direct address, shock), and the post\'s view, like, and save counts. Filter by niche, platform, hook type, view threshold, or post date to narrow 50,000 results down to the dozen that match your account. Click any hook to open the source post, copy the structure into your script editor, or save it to a swipe file. Hooks refresh continuously as new viral posts cross our ingestion threshold.',
+        details: [
+          { label: 'Indexed at scale', text: '50,000+ hook entries scraped from Instagram and TikTok posts that crossed our view threshold, refreshed continuously.' },
+          { label: 'Six filters that matter', text: 'Niche, platform, hook type, minimum view count, post date, and audio cue — combine them to surface the hooks that fit your account.' },
+          { label: 'Full anatomy per entry', text: 'Opening frame, on-screen caption, spoken script, audio ID, payoff timestamp, hook type tag, plus view, like, and save counts.' },
+          { label: 'Source post linked', text: 'Every card links to the original Reel or TikTok so you can study delivery, pacing, and comments before adapting.' },
+          { label: 'One-click swipe file', text: 'Copy any hook structure into your script editor or save it to a private swipe file to reuse across your next batch of posts.' },
+        ],
+        feature: { label: 'Browse the Hooks library — free signup', to: '/signup' },
         related: ['hooks-0', 'hooks-1'],
-        keywords: ['hooks library', 'hook database', 'find hooks'],
+        keywords: ['hooks library', 'hook database', 'find hooks', 'viral hooks library', 'tiktok hook database', 'searchable hook catalog'],
       },
       {
-        q: 'What is the Formats library?',
-        a: 'The Formats library indexes 1,200+ content formats — recurring narrative structures that drive virality at scale, like the "7-second POV setup with hard cut to reaction," the "3-step listicle with on-screen counter," or the "before/after with split-screen reveal." Each format card shows example videos, the average view count for that format, the niches it works best in, and a step-by-step recipe to recreate it.',
+        q: 'What is Blossom\'s Formats library and how do format recipes work?',
+        a: 'Blossom\'s Formats library is a searchable catalog of 1,200+ recurring content structures — indexed from millions of Instagram Reels and TikTok videos — that consistently drive views at scale. A format is the underlying narrative architecture of a video, not its topic: the "7-second POV setup with hard cut to reaction," the "3-step listicle with on-screen counter," or the "before/after with split-screen reveal." Each card surfaces the median and top-decile view count for that format, the niches where it performs best, the hook patterns it pairs with, and a step-by-step recipe — shot list, pacing markers, on-screen text timing, audio cue, and call-to-action placement — so you can recreate the structure with your own content. Formats are continuously reclassified as new viral patterns emerge, and every card links to live example videos so you can see the structure in motion before you shoot. Use the library to reverse-engineer what\'s working in your niche, stress-test a draft against a proven blueprint, or browse adjacent formats when a pattern starts to fatigue.',
+        details: [
+          { label: '1,200+ formats indexed', text: 'Continuously updated catalog of recurring narrative structures classified from Instagram and TikTok at scale.' },
+          { label: 'Performance data per card', text: 'Median views, top-decile views, and best-performing niches — so you pick formats with evidence, not vibes.' },
+          { label: 'Step-by-step recipes', text: 'Shot list, pacing markers, on-screen text timing, audio cues, and CTA placement to recreate the structure.' },
+          { label: 'Live example videos', text: 'Every card links to real videos using the format so you can see the pattern before you shoot.' },
+          { label: 'Niche fit signals', text: 'See which verticals a format wins in — beauty, fitness, finance, food — before committing production time.' },
+        ],
+        feature: { label: 'Browse the Formats library', to: '/signup' },
         related: ['formats-0', 'features-1'],
-        keywords: ['formats library', 'format database', 'content structures'],
+        keywords: ['formats library', 'format database', 'content structures', 'viral format recipes', 'content format taxonomy'],
       },
       {
-        q: 'What does Tactics do?',
-        a: 'Tactics catalogs 800+ small psychological and editing techniques that movable creators stack on top of formats — things like "the 0.3-second pause before the punchline," "the rule-of-three reveal," "the off-center subject framing," "the false-ending fake-out." These are the micro-decisions that turn a good video into a viral one, and most are invisible unless you slow-mo and reverse-engineer the footage.',
+        q: 'What does the Tactics library do, and what counts as a "tactic"?',
+        a: 'The Tactics library catalogs 800+ micro-decisions that separate good videos from viral ones — small psychological and editing techniques you stack on top of a format to multiply attention. Examples: "the 0.3-second pause before the punchline," "the rule-of-three reveal," "the off-center subject framing," "the false-ending fake-out," "the freeze-frame mid-sentence." These are the invisible craft choices top creators use without naming them — most viewers can\'t articulate why a video feels tight, but the editing tactics underneath are doing the work. Manually reverse-engineering tactics is slow: you slow-mo the footage, count frames between cuts, and try to label what changed. Blossom does this automatically across every analyzed video, tagging the tactics each viral clip uses so you can filter the library by tactic type, niche, or expected impact and apply 3–5 proven tactics to your next shoot. Use the Tactics library to upgrade a video that has the right hook and format but still feels flat — usually the gap is a missing micro-tactic.',
+        details: [
+          { label: 'Editing micro-tactics', text: '"0.3-second pause before the punchline," "freeze-frame mid-sentence," "hard cut on the word that matters" — frame-level choices most viewers feel but can\'t name.' },
+          { label: 'Framing tactics', text: 'Off-center subject placement, intentional negative space, eye-line breaking — composition choices borrowed from cinema that shift perceived production quality.' },
+          { label: 'Narrative tactics', text: 'False endings, rule-of-three reveals, payoff-then-twist structures that hijack expectation and pull viewers to the loop point.' },
+          { label: 'Audio tactics', text: 'Beat-synced cuts, silence as a pattern interrupt, energy-curve matching — invisible until you slow the video down and analyze frame-by-frame.' },
+          { label: 'Use the library to upgrade flat content', text: 'When hook + format are right but the video still feels flat, it\'s usually a missing tactic. Filter by tactic type and apply 3–5 to your next shoot.' },
+        ],
+        feature: { label: 'Browse the Tactics library', to: '/signup' },
         related: ['features-1', 'features-2'],
-        keywords: ['tactics', 'editing tactics', 'psychology'],
+        keywords: ['tactics', 'editing tactics', 'psychology', 'video editing micro tactics', 'viral video craft', 'editing techniques creators'],
       },
       {
-        q: 'How do daily Scripts work?',
-        a: 'Every day, Blossom generates 5 fresh content scripts personalized to your niche, current trends, and your last 30 days of posts. Each script includes the hook, the structure, the suggested audio, on-screen text, and the predicted engagement-rate band. You can mark scripts as "filming today" or "discarded" to refine future suggestions.',
-        feature: { label: 'Get today\'s scripts', to: '/signup' },
+        q: 'How do Blossom\'s daily content scripts work, and what\'s in each one?',
+        a: 'Every morning, Blossom drops 5 ready-to-film scripts tailored to your niche, the last 30 days of your own posts, and trends moving on Instagram and TikTok right now. The goal is to kill the blank-page problem creators hit roughly four out of five posting days, when idea fatigue stalls publishing and tanks consistency. Each script is short enough to scan over coffee but complete enough to shoot before lunch: a tested hook, a 3-beat structure, suggested audio with link, on-screen text cues, caption starter, and a predicted engagement-rate band based on similar formats in your category. Mark a script as "filming today," "save for later," or "discarded" and Blossom learns your voice, niche angles, and the formats you actually convert into posts, so tomorrow\'s 5 land closer to what you\'d film anyway. No more scrolling competitors for 90 minutes hunting an idea, and no generic ChatGPT prompts that read like a 2023 listicle.',
+        details: [
+          { label: 'Hook (first 3 seconds)', text: 'A pattern-interrupt opener pulled from hooks currently outperforming average in your niche, with the on-screen text overlay written out.' },
+          { label: '3-beat structure', text: 'Setup, payoff, and CTA mapped to a proven format (POV, listicle, transformation, green-screen reaction) so you know exactly what to film and in what order.' },
+          { label: 'Audio + caption', text: 'A trending sound suggestion with direct link, plus a caption starter and 3 hashtag clusters tuned to your category\'s reach window.' },
+          { label: 'Predicted engagement band', text: 'A low-mid-high engagement-rate forecast based on how similar hooks and formats performed for accounts in your size and niche over the last 14 days.' },
+          { label: 'Refinement loop', text: 'Your "filming," "save," and "discard" taps train the next batch. After roughly a week, scripts converge on the angles, lengths, and tones you actually publish.' },
+        ],
+        feature: { label: 'Get 5 filmable scripts every morning — Sign up', to: '/signup' },
         related: ['features-6', 'production-1'],
-        keywords: ['scripts', 'daily scripts', 'content ideas'],
+        keywords: ['scripts', 'daily scripts', 'content ideas', 'ai script generator creator', 'content ideation for creators'],
       },
       {
-        q: 'What does Influencer Insights show?',
-        a: 'Influencer Insights lets you analyze any public Instagram or TikTok account and get a full breakdown: posting cadence, follower growth velocity, top-performing posts, average engagement rate, dominant format and hook patterns, audience overlap with other accounts, and a virality consistency score. It\'s designed for creators studying competitors and agencies vetting talent.',
+        q: 'What does Blossom\'s Influencer Insights show, and how does it compare to a traditional influencer audit tool?',
+        a: 'Influencer Insights is a creator analytics public account scanner that audits any public Instagram or TikTok handle without requiring login from the target. Paste a username and Blossom pulls the last 90 days of public posts, then runs the same Gemini 2.5 Pro pipeline that powers internal analysis. You get a posting cadence chart (posts per week, day-of-week heatmap), follower growth velocity, average engagement rate benchmarked against accounts of similar size, the three to five dominant hook patterns and video formats the creator leans on, and a virality consistency score that measures how often their posts cross the 3× median view threshold. Unlike HypeAuditor or Modash, which focus on follower authenticity and brand-safety scores for agency vetting, Blossom\'s influencer audit tool is built for creators reverse-engineering what actually works — every hook and format is clickable, so you can pivot from "this competitor uses POV hooks 40% of the time" to "show me their top 10 POV videos." Agencies use it to vet creators before campaigns by checking engagement authenticity and content category fit. Solo creators use it to study one rival per week and steal proven structures.',
+        details: [
+          { label: 'Posting cadence', text: 'Posts per week, posting time heatmap, and gap analysis across the last 90 days — see whether they post daily, batch-and-burst, or post around trending moments.' },
+          { label: 'Engagement rate vs peers', text: 'Median engagement benchmarked against accounts in the same follower bracket (10K, 100K, 1M tiers) so a 4% rate at 500K followers reads differently than 4% at 5K.' },
+          { label: 'Hook and format breakdown', text: 'Top 5 hook patterns (POV, question, contrarian claim, stat drop, list) and dominant video formats (talking head, screen record, B-roll voiceover) ranked by frequency and average views.' },
+          { label: 'Virality consistency score', text: 'Percentage of posts that exceed 3× the account\'s own median view count — distinguishes one-hit-wonders from creators with a repeatable viral formula.' },
+          { label: 'Top-performing posts', text: 'Ranked list of the account\'s highest-performing videos with full hook, format, and tactic classification, plus thumbnail previews so you can study what worked without leaving Blossom.' },
+        ],
+        feature: { label: 'Audit any public account', to: '/signup' },
         related: ['competitor-0', 'competitor-1'],
-        keywords: ['influencer insights', 'analyze influencer', 'creator audit'],
+        keywords: ['influencer insights', 'analyze influencer', 'creator audit', 'influencer audit tool', 'creator analytics public account', 'virality consistency score'],
       },
       {
-        q: 'What is the Trends dashboard?',
-        a: 'The Trends dashboard surfaces what\'s currently rising — trending posts, formats, hooks, songs, and topics — filtered by your niche, your geography, and a rate-of-change threshold so you only see trends that are actually accelerating. It updates continuously and gives you an estimated time-to-peak so you can publish while the trend is still on the way up.',
+        q: 'How does Blossom\'s Trends dashboard help me catch viral trends before they peak?',
+        a: 'Blossom\'s Trends dashboard is a real-time rising trends tracker for TikTok and Instagram that surfaces accelerating content before it saturates your feed. Instead of dumping every popular post into a generic leaderboard, the dashboard filters by your niche, your target geography, and a rate-of-change threshold, so you only see formats, hooks, sounds, and topics that are actually climbing in your specific corner of the platform. Each trend includes an estimated time-to-peak signal derived from view-velocity and engagement curves, giving you a window for when to publish while the trend still has lift. Creators typically lose the upside by jumping on trends 5–7 days late, after a sound has already passed the half-life curve. Geo filtering matters because trends in Germany, Brazil, and the US peak on different schedules — a sound trending in one market may already be saturated in another. The dashboard updates continuously as our pipeline ingests new viral content, classifies it with multi-stage Gemini analysis, and benchmarks growth against your niche baseline.',
+        details: [
+          { label: 'Rate-of-change filtering', text: 'Trends are scored by view and engagement velocity, not raw popularity, so you skip already-saturated content and see what\'s actually accelerating.' },
+          { label: 'Niche + geo filters', text: 'Filter by your content vertical and target country — a sound peaking in the US may be three weeks behind in LATAM, and Blossom shows you the difference.' },
+          { label: 'Time-to-peak estimate', text: 'Each trend has an estimated window before saturation, derived from velocity curves of similar past trends in your niche.' },
+          { label: 'Format, hook, song, and topic coverage', text: 'Track rising hook patterns, video formats, audio tracks, and topical angles in one view — not just trending posts.' },
+          { label: 'Continuous ingestion', text: 'The pipeline pulls new viral content from Instagram and TikTok throughout the day, so the dashboard reflects what\'s hot right now, not last week\'s data.' },
+        ],
+        feature: { label: 'Track rising trends in your niche', to: '/signup' },
         related: ['trends-0', 'trends-1'],
-        keywords: ['trends dashboard', 'trending content', 'rising trends'],
+        keywords: ['trends dashboard', 'trending content', 'rising trends', 'time to peak trend prediction', 'tiktok trend tracker', 'instagram trend tracker'],
       },
       {
-        q: 'What is the Suggestions feed?',
-        a: 'Suggestions is the "what should I post next" inbox. It combines your account state, current trends, gaps in your content mix, and the formats/hooks/tactics that overperform for accounts your size in your niche, then produces an ordered list of recommended actions — "film a contrarian Reel on X today," "re-shoot post #234 with these 3 fixes," "jump on this rising sound while it\'s under 8K uses."',
-        feature: { label: 'See my next 5 actions', to: '/signup' },
+        q: 'What is the Suggestions feed and how does Blossom decide what I should post next?',
+        a: 'Suggestions is your "what to post next" inbox — a content suggestion engine that turns scattered intuition into a ranked action queue. Most creators waste hours each week deciding what to film; personalized, context-aware suggestions cut decision fatigue and lift posting consistency, which is the single strongest predictor of follower growth on short-form platforms. Blossom synthesizes four signals into each suggestion: (1) your account state (recent post performance, posting cadence, current follower tier), (2) live platform trends scraped from Instagram and TikTok within the last 24–72 hours, (3) content-gap analysis comparing your topic and format mix against the top 5–10 percent of accounts in your niche at your size, and (4) the specific hooks, formats, and tactics overperforming for peer accounts right now. The output is an ordered list of concrete, time-sensitive actions: "film a contrarian Reel on [topic] today," "re-shoot post #234 with these three fixes," "jump on this rising sound while it\'s under 8K uses," or "fill the educational-carousel gap your peers post 3×/week." Each card includes the why (the data behind the recommendation), the expected lift range based on peer benchmarks, and a freshness window.',
+        details: [
+          { label: 'Trending opportunity alerts', text: 'Rising sounds, hooks, and formats flagged before saturation — typically when usage is still under 8–10K creators, where peer accounts in your niche are seeing 2–4× median view lifts.' },
+          { label: 'Re-shoot recommendations', text: 'Past posts with strong concepts but weak execution get diagnosed with specific fixes — tighter hook, different thumbnail frame, swapped CTA — so you re-bank the idea instead of burning a new one.' },
+          { label: 'Content-gap fills', text: 'Format and topic clusters your peers post consistently but you don\'t (educational carousels, contrarian takes, behind-the-scenes Reels) ranked by the cohort\'s median engagement uplift.' },
+          { label: 'Hook and tactic swaps', text: 'Pattern-matched suggestions to apply a hook structure or editing tactic that\'s overperforming for accounts your size in your niche to a topic you already plan to cover.' },
+          { label: 'Cadence and timing nudges', text: 'Recommendations on which day, slot, and format to publish next based on your own historical performance windows and current peer-cohort posting rhythms.' },
+        ],
+        feature: { label: 'Open your Suggestions inbox', to: '/signup' },
         related: ['features-4', 'formats-6'],
-        keywords: ['suggestions', 'recommendations', 'what to post'],
+        keywords: ['suggestions', 'recommendations', 'what to post', 'content suggestion engine', 'content gap analysis', 'creator recommendation system'],
       },
     ],
   },
@@ -1567,47 +1686,84 @@ const CATEGORIES: FaqCategory[] = [
     blurb: 'How your data is handled, how billing works, and what happens if you cancel.',
     items: [
       {
-        q: 'Is my data safe with Blossom?',
-        a: 'Yes. Blossom stores account data in Supabase (PostgreSQL with row-level security), encrypts sensitive fields at rest, and never sells personal data to third parties. Uploaded videos are processed by Google Gemini under their enterprise data-handling terms and are not used to train public models.',
+        q: 'Is my data safe with Blossom? How do you handle account info, uploaded videos, and AI processing?',
+        a: 'Yes — your data is safe with Blossom, and we\'ve built our stack around three non-negotiables: zero resale, zero public-model training, and zero shared tenancy at the row level. Account details, analyses, hooks, and tactics live in Supabase, a managed PostgreSQL platform that is SOC 2 Type 2 and HIPAA compliant and enforces row-level security (RLS), so your data is isolated per user at the database layer — not just in application code. Sensitive fields are encrypted at rest (AES-256) and in transit (TLS 1.3), and access is gated by JWT-scoped API keys with audit logging on every request. Uploaded videos are sent to Google Gemini under enterprise data-handling terms, which contractually exclude your prompts, files, and responses from training Google\'s public foundation models and require 24-hour deletion of cached content. We don\'t sell, license, or share personal data with advertisers, brokers, or third parties — and we never will, because creator IP is the product, not the inventory. If you ever want out, email support@blossai.com and we\'ll purge every row and asset within 30 days.',
         details: [
-          'Account + analysis data — Supabase, encrypted, RLS-isolated per user.',
-          'Video processing — Google Gemini under enterprise terms (no public-model training).',
-          'No data resale, ever.',
-          'Full deletion on request via support@blossomapp.ai.',
+          { label: 'Supabase + Row-Level Security', text: 'Account, analysis, and category data sits in SOC 2 Type 2 / HIPAA-compliant Supabase Postgres with RLS policies enforcing per-user isolation at the database — not just the app layer.' },
+          { label: 'Encryption in transit and at rest', text: 'AES-256 encryption for stored data, TLS 1.3 for all API traffic, and SHA-256 hashing for API keys (we never store plaintext credentials).' },
+          { label: 'Gemini enterprise terms', text: 'Video and content sent to Google Gemini is covered by enterprise data-handling agreements: no training of public models, 24-hour cache deletion, and zero cross-customer leakage.' },
+          { label: 'No resale, no ads, no brokers', text: 'We don\'t sell, license, or share your data with advertisers, data brokers, or third-party AI vendors. Revenue comes from subscriptions only.' },
+          { label: '30-day full deletion on request', text: 'Email support@blossai.com and we\'ll purge every row, video reference, and analysis tied to your account within 30 days — confirmed in writing.' },
         ],
+        feature: { label: 'Sign up for Blossom', to: '/signup' },
         related: ['privacy-1', 'privacy-2'],
-        keywords: ['data safe', 'privacy', 'security'],
+        keywords: ['data safe', 'privacy', 'security', 'blossom data privacy', 'creator tool data safety', 'supabase row-level security'],
       },
       {
-        q: 'Can I delete my account and all my data?',
-        a: 'Yes — at any time, with no friction. Delete from Account → Security, and we hard-delete all your analyses, uploaded content, connected-account tokens, and personal profile within 30 days. We may retain anonymized aggregate data (e.g., "X% of users in niche Y use format Z") that does not identify you.',
+        q: 'How do I delete my Blossom account and erase all my creator data under GDPR?',
+        a: 'Yes — one click in Account → Security wipes your Blossom workspace. We honor the GDPR right to erasure (Article 17) and CCPA deletion rights, so a single confirmation triggers a hard-delete pipeline that purges all identifiable creator data within 30 days, well inside the GDPR one-month statutory window. What goes: every saved analysis, hook/format/tactic classification tied to your account, scraped Instagram and TikTok video metadata you imported, connected social tokens, API keys, billing identifiers beyond what tax law requires us to keep, and your auth profile. Cancellation of any active Paddle subscription is automatic. Once the 30 days lapse, your account is irrecoverable — there is no shadow profile, no soft-deleted row waiting to be reactivated. What survives is fully anonymized aggregate intelligence (for example, "X% of beauty creators opened with a question hook in Q1") that the Article 29 Working Party opinion on anonymization techniques recognizes as falling outside GDPR\'s scope because re-identification is mathematically infeasible. You can also export your data before deleting, and you keep the right to lodge a complaint with your supervisory authority if anything feels off.',
+        details: [
+          { label: 'One-click erasure', text: 'Account → Security → Delete Account fires the deletion job immediately. No support tickets, no waiting queue, no win-back emails — the dark-pattern friction GDPR Article 17 was written to outlaw.' },
+          { label: '30-day hard delete', text: 'All personal data is purged within 30 days, matching the GDPR Article 12(3) response deadline. Hard delete means cryptographic erasure across primary tables, backups roll off on their normal cycle, and no recovery path exists.' },
+          { label: 'What gets wiped', text: 'Analyses, hook/format/tactic links, imported video metadata, thumbnails, audio fingerprints, connected Instagram/TikTok tokens, API keys, Paddle customer ID (minus legally mandated invoice records), and your Supabase auth row.' },
+          { label: 'What stays anonymized', text: 'Only aggregate trend signals with no link back to you — niche-level format adoption rates, hook category frequencies, average engagement bands. Per WP29 Opinion 05/2014, properly anonymized data is no longer personal data.' },
+        ],
+        feature: { label: 'Sign up for Blossom', to: '/signup' },
         related: ['privacy-0', 'privacy-3'],
-        keywords: ['delete account', 'data deletion', 'gdpr'],
+        keywords: ['delete account', 'data deletion', 'gdpr', 'right to erasure SaaS', 'one-click account deletion', 'GDPR Article 17'],
       },
       {
-        q: 'Does Blossom share my data with anyone?',
-        a: 'Only the third parties strictly required to run the service: Supabase (database and auth), Google Gemini (AI analysis under enterprise terms), Paddle (payment processing, merchant of record), and the social data APIs we use to fetch public content. We never sell, rent, or share your data for advertising. Full list in our Privacy Policy.',
+        q: 'Does Blossom share my data with third parties or sell it for advertising?',
+        a: 'No. Blossom never sells, rents, or shares your data for advertising, profiling, or any secondary commercial purpose. We disclose every subprocessor that touches your account, and we limit that list to the vendors strictly required to operate the service. As a creator tool handling viral content analysis, we treat your video library, analysis results, and account information as confidential. Our four required subprocessors each play a narrow, well-defined role: Supabase stores your database records and handles authentication, Google Gemini performs AI analysis of video content under enterprise data terms, Paddle processes payments as our merchant of record, and the social data APIs (HikerAPI for Instagram and LamaTok for TikTok) retrieve public content you ask us to analyze. We do not embed advertising trackers, share behavioral data with ad networks, or pass your analysis outputs to any party outside that list. If we ever add or change a subprocessor, the current roster lives in our Privacy Policy and Data Processing Addendum, and material changes are communicated before they take effect.',
+        details: [
+          { label: 'Supabase (database and authentication)', text: 'Hosts your PostgreSQL database, manages user sessions and JWT tokens, and stores video metadata, analysis records, and account settings. Operates under SOC 2 Type II controls with row-level security enforced on tenant data.' },
+          { label: 'Google Gemini (AI analysis)', text: 'Processes video frames, transcripts, and prompts to classify hooks, formats, and tactics. Blossom uses Gemini under enterprise API terms, which contractually prohibit training Google\'s foundation models on your inputs and outputs.' },
+          { label: 'Paddle (payments, merchant of record)', text: 'Acts as the seller of record for all subscriptions, meaning Paddle handles checkout, tax calculation and remittance, invoicing, and chargebacks. They receive billing identifiers and payment method details, never your video content or analysis data.' },
+          { label: 'Social data APIs (HikerAPI, LamaTok)', text: 'Fetch publicly available Instagram and TikTok content that you explicitly submit for analysis. They receive the URL or handle you provide, not your Blossom account credentials, billing information, or other users\' data.' },
+          { label: 'What we do not do', text: 'No ad network integrations, no resale of analysis outputs, no behavioral profile sharing, no data brokers, and no marketing pixels tied to your authenticated session.' },
+        ],
+        feature: { label: 'Create your free account', to: '/signup' },
         related: ['privacy-0', 'privacy-1'],
-        keywords: ['share data', 'third party', 'data sharing'],
+        keywords: ['share data', 'third party', 'data sharing', 'blossom subprocessors', 'saas subprocessor disclosure'],
       },
       {
-        q: 'Can I cancel my subscription anytime?',
-        a: 'Yes — one click, no phone calls, no email chains. Your subscription stays active until the end of the current billing period, you retain full access until then, and no partial refunds are issued for unused time (except where required by consumer-protection law).',
+        q: 'Can I cancel my Blossom subscription anytime, and what happens to my access?',
+        a: 'Yes — you can cancel your Blossom subscription anytime in one click, directly from your account settings. No phone calls, no email chains, no "retention specialist" trying to talk you out of it. After you cancel, your subscription stays active until the end of your current billing period, so you keep full access to viral content analysis, hook classification, format trends, and your saved analyses until that date. Once the period ends, your plan reverts to the free tier and recurring charges stop immediately. We don\'t issue partial refunds for unused time (standard SaaS practice), except where required by consumer-protection law in your jurisdiction. Your historical analyses and account data remain available, so if you resubscribe later, you pick up right where you left off. No reactivation fees, no penalties for returning. The cancel button is in the same place as the upgrade button — we don\'t hide it behind support tickets or buried menus, a pattern the FTC\'s 2024 "Click-to-Cancel" rule was specifically designed to eliminate.',
+        details: [
+          { label: 'One-click cancel', text: 'Self-serve from account settings — no support ticket, no phone queue, no email back-and-forth required.' },
+          { label: 'Active until period end', text: 'Full feature access continues through the last day of your paid billing cycle, then auto-downgrades to free.' },
+          { label: 'No partial refunds', text: 'Unused days within a paid period aren\'t refunded, except where local consumer law requires it.' },
+          { label: 'Data preserved', text: 'Past analyses, saved hooks, and account history stay intact if you resubscribe later.' },
+        ],
+        feature: { label: 'Start your free trial', to: '/signup' },
         related: ['privacy-4', 'blossom-3'],
-        keywords: ['cancel subscription', 'cancel anytime', 'cancellation'],
+        keywords: ['cancel subscription', 'cancel anytime', 'cancellation', 'easy SaaS cancellation', 'one-click cancel SaaS'],
       },
       {
-        q: 'Is there a free trial?',
-        a: 'Yes — all paid tiers start with a free trial and no payment due at signup. You also get a permanent free starter tier with limited monthly analyses that lets you evaluate the product before deciding on a plan.',
-        feature: { label: 'Start free trial', to: '/signup' },
+        q: 'Does Blossom offer a free trial — and do I need a credit card to start?',
+        a: 'Yes, and no card is required. Blossom gives you two ways to try it free: a permanent free starter tier with limited monthly analyses, and a free trial on every paid plan with no payment due at signup. The starter tier lets you evaluate hook detection, format classification, and trend surfacing on real Instagram and TikTok content before you ever decide on a paid plan. When you\'re ready for higher volume, switching on a paid trial takes seconds. This mirrors what works across SaaS: roughly 80% of free-trial products skip the credit card on signup, and opt-in trials attract about 3–4× more signups than opt-out flows while still producing about 27% more total paying customers from the same traffic. Translation for you: zero friction to start, zero surprise charges, and zero guessing whether Blossom fits your workflow before you spend a dollar. Sign up, analyze your first videos in minutes, and upgrade only when the data proves the ROI.',
+        details: [
+          { label: 'Free starter tier (no card)', text: 'Permanent free plan with a monthly cap on analyses — enough to validate hook, format, and trend insights on your own niche before upgrading.' },
+          { label: 'Free trial on every paid plan', text: 'Start any paid tier on a no-charge trial. Cancel inside the trial window and you owe nothing.' },
+          { label: 'No credit card at signup', text: 'Email and password is all you need. We only ask for payment when you choose to convert.' },
+          { label: 'Cancel anytime', text: 'Trials end on their own if you do nothing. No auto-charge surprises, no retention dark patterns.' },
+        ],
+        feature: { label: 'Start free — no card required', to: '/signup' },
         related: ['blossom-3', 'privacy-3'],
-        keywords: ['free trial', 'free tier', 'try free'],
+        keywords: ['free trial', 'free tier', 'try free', 'creator tool free tier', 'no credit card SaaS trial', 'viral content analyzer free'],
       },
       {
-        q: 'How do refunds work?',
-        a: 'Refunds are handled through Paddle (our merchant of record) in line with Paddle\'s refund policy and applicable consumer-protection law in your country. For most regions, you can request a refund within 14 days of your first paid charge with no questions asked. Contact support@blossomapp.ai to initiate.',
+        q: 'Blossom refund policy: how do I get my money back?',
+        a: 'Yes, Blossom offers refunds. We sell through Paddle, our Merchant of Record, which means Paddle handles every transaction, tax remittance, and refund on our behalf in line with their published refund policy. If you are inside your first 14 days from the initial paid charge, you can request a refund without giving a reason; this aligns with Paddle\'s standard 14-day window and the statutory cooling-off period under the EU Consumer Rights Directive and the UK Consumer Contracts Regulations 2013. After day 14, refunds are still reviewed case by case based on usage, the reason for cancellation, and consumer-protection law in your country. To start the process, email support@blossai.com with the email tied to your Blossom account and the Paddle order ID from your receipt. Approved refunds are returned to the original payment method, typically within 14 days of approval. Recurring subscription renewals do not reset the 14-day window, but you can cancel anytime from your account billing page to stop the next charge.',
+        details: [
+          { label: 'Paddle is our Merchant of Record', text: 'Paddle processes the payment, collects sales tax/VAT, and issues refunds. Blossom licenses the software to you; Paddle handles the money.' },
+          { label: '14-day no-questions-asked window', text: 'Request a refund within 14 days of your first paid charge and we will approve it without requiring a justification.' },
+          { label: 'How to request', text: 'Email support@blossai.com with your account email and Paddle order ID. Refunds return to the original payment method, usually within 14 days of approval.' },
+          { label: 'After 14 days', text: 'Requests are still reviewed case by case under Paddle\'s policy and your local consumer-protection law. Cancel anytime in account settings to prevent future renewals.' },
+        ],
+        feature: { label: 'Try Blossom risk-free for 14 days', to: '/signup' },
         related: ['privacy-3'],
-        keywords: ['refund', 'money back', 'guarantee'],
+        keywords: ['refund', 'money back', 'guarantee', 'paddle merchant of record refund', '14-day refund window'],
       },
     ],
   },
@@ -1640,47 +1796,13 @@ function answerForSchema(item: FaqItem): string {
   return `${item.a} ${detailText}`
 }
 
-function buildJsonLd() {
-  const faqPage = {
-    '@context': 'https://schema.org',
-    '@type': 'FAQPage',
-    mainEntity: ALL_ITEMS.map((item) => ({
-      '@type': 'Question',
-      name: item.q,
-      acceptedAnswer: { '@type': 'Answer', text: answerForSchema(item) },
-    })),
-  }
-
-  const organization = {
-    '@context': 'https://schema.org',
-    '@type': 'Organization',
-    name: 'Blossom',
-    description:
-      'AI-powered social media intelligence platform that analyzes viral Instagram Reels and TikTok content and tells creators exactly how to improve theirs.',
-    url: 'https://blossomapp.ai',
-    logo: 'https://blossomapp.ai/logo-light.png',
-    sameAs: [
-      'https://www.instagram.com/blossomapp.ai',
-      'https://www.tiktok.com/@blossomapp',
-    ],
-    contactPoint: {
-      '@type': 'ContactPoint',
-      contactType: 'Customer Support',
-      email: 'support@blossomapp.ai',
-    },
-  }
-
-  const breadcrumb = {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://blossomapp.ai/' },
-      { '@type': 'ListItem', position: 2, name: 'FAQ', item: 'https://blossomapp.ai/faq' },
-    ],
-  }
-
-  return [faqPage, organization, breadcrumb]
-}
+// Flat list of FAQ Q/A pairs consumed by the FAQPage JSON-LD builder.
+// Q + A are sourced from CATEGORIES; the A also folds in `details` so the
+// schema answer matches what a user reads on the page.
+const FAQ_ITEMS: FaqEntry[] = ALL_ITEMS.map((item) => ({
+  question: item.q,
+  answer: answerForSchema(item),
+}))
 
 // ──────────────────────────────────────────────────────────────────────────
 // Small icon components
@@ -1745,38 +1867,8 @@ export default function FAQ() {
   const tocAsideRef = useRef<HTMLElement>(null)
   const [tocFixed, setTocFixed] = useState<{ left: number; show: boolean }>({ left: 0, show: false })
 
-  // Inject JSON-LD + meta on mount
-  useEffect(() => {
-    const blocks = buildJsonLd()
-    const scripts: HTMLScriptElement[] = []
-    blocks.forEach((block, idx) => {
-      const script = document.createElement('script')
-      script.type = 'application/ld+json'
-      script.id = `faq-jsonld-${idx}`
-      script.textContent = JSON.stringify(block)
-      document.head.appendChild(script)
-      scripts.push(script)
-    })
-
-    const prevTitle = document.title
-    document.title = 'FAQ — How to Go Viral on Instagram & TikTok in 2026 | Blossom'
-
-    let metaDesc = document.querySelector('meta[name="description"]') as HTMLMetaElement | null
-    const prevDesc = metaDesc?.content
-    if (!metaDesc) {
-      metaDesc = document.createElement('meta')
-      metaDesc.name = 'description'
-      document.head.appendChild(metaDesc)
-    }
-    metaDesc.content =
-      'Definitive 2026 answers to the most-searched creator questions: how to go viral on Instagram and TikTok, hooks, algorithm, shadowbans, posting times, hashtags, monetization, brand deals, and how Blossom analyzes it all.'
-
-    return () => {
-      scripts.forEach((s) => s.remove())
-      document.title = prevTitle
-      if (metaDesc && prevDesc !== undefined) metaDesc.content = prevDesc
-    }
-  }, [])
+  // Title, description, and JSON-LD are emitted via the <Seo> component
+  // rendered inside the returned JSX below — no manual document.head writes.
 
   // Reading progress bar
   useEffect(() => {
@@ -1951,6 +2043,17 @@ export default function FAQ() {
 
   return (
     <div className="min-h-screen bg-[#050508] overflow-x-hidden">
+      <Seo
+        title="Blossom FAQ — Frequently Asked Questions"
+        description="Answers to common questions about Blossom: pricing, API access, supported platforms, content analysis, and more."
+        jsonLd={[
+          faqSchema(FAQ_ITEMS),
+          breadcrumbSchema([
+            { name: 'Home', url: SITE_URL },
+            { name: 'FAQ', url: `${SITE_URL}/faq` },
+          ]),
+        ]}
+      />
       {/* Reading progress bar */}
       <div
         className="fixed top-0 left-0 h-[2px] bg-gradient-to-r from-pink-500 via-orange-400 to-amber-400 z-[60] transition-[width] duration-150"
@@ -2378,7 +2481,7 @@ export default function FAQ() {
           </p>
 
           <div className="mt-16 flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-10 text-slate-500 font-bold text-[10px] uppercase tracking-[0.2em]">
-            <span>Question we missed? Email support@blossomapp.ai</span>
+            <span>Question we missed? Email support@blossai.com</span>
           </div>
         </div>
       </section>

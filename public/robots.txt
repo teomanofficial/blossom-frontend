@@ -1,10 +1,270 @@
+# Blossom — robots.txt
+# Updated: 2026-05-19
+# Strategy: opt INTO AI search/retrieval (citation traffic), opt OUT of bulk training, block known abusive scrapers.
+# See docs/seo-improvement-plan.md for rationale.
+
+# ---- Traditional search engines ----
+User-agent: Googlebot
+Allow: /
+Disallow: /dashboard
+Disallow: /api/
+Disallow: /auth/callback
+Disallow: /verify-email
+Disallow: /reset-password
+Disallow: /forgot-password
+Disallow: /choose-plan
+Disallow: /choose-category
+Disallow: /onboarding
+Disallow: /invite/
+
+User-agent: bingbot
+Allow: /
+Disallow: /dashboard
+Disallow: /api/
+Disallow: /auth/callback
+Disallow: /verify-email
+Disallow: /reset-password
+Disallow: /forgot-password
+Disallow: /choose-plan
+Disallow: /choose-category
+Disallow: /onboarding
+Disallow: /invite/
+
+User-agent: Slurp
+Allow: /
+Disallow: /dashboard
+Disallow: /api/
+Disallow: /auth/callback
+Disallow: /verify-email
+Disallow: /reset-password
+Disallow: /forgot-password
+Disallow: /choose-plan
+Disallow: /choose-category
+Disallow: /onboarding
+Disallow: /invite/
+
+User-agent: DuckDuckBot
+Allow: /
+Disallow: /dashboard
+Disallow: /api/
+Disallow: /auth/callback
+Disallow: /verify-email
+Disallow: /reset-password
+Disallow: /forgot-password
+Disallow: /choose-plan
+Disallow: /choose-category
+Disallow: /onboarding
+Disallow: /invite/
+
+User-agent: Applebot
+Allow: /
+Disallow: /dashboard
+Disallow: /api/
+Disallow: /auth/callback
+Disallow: /verify-email
+Disallow: /reset-password
+Disallow: /forgot-password
+Disallow: /choose-plan
+Disallow: /choose-category
+Disallow: /onboarding
+Disallow: /invite/
+
+# ---- AI search / retrieval (real-time fetch + citation with link-back) — ALLOW ----
+User-agent: OAI-SearchBot
+Allow: /
+Disallow: /dashboard
+Disallow: /api/
+Disallow: /auth/callback
+Disallow: /verify-email
+Disallow: /reset-password
+Disallow: /forgot-password
+Disallow: /choose-plan
+Disallow: /choose-category
+Disallow: /onboarding
+Disallow: /invite/
+
+User-agent: ChatGPT-User
+Allow: /
+Disallow: /dashboard
+Disallow: /api/
+Disallow: /auth/callback
+Disallow: /verify-email
+Disallow: /reset-password
+Disallow: /forgot-password
+Disallow: /choose-plan
+Disallow: /choose-category
+Disallow: /onboarding
+Disallow: /invite/
+
+User-agent: Claude-SearchBot
+Allow: /
+Disallow: /dashboard
+Disallow: /api/
+Disallow: /auth/callback
+Disallow: /verify-email
+Disallow: /reset-password
+Disallow: /forgot-password
+Disallow: /choose-plan
+Disallow: /choose-category
+Disallow: /onboarding
+Disallow: /invite/
+
+User-agent: Claude-User
+Allow: /
+Disallow: /dashboard
+Disallow: /api/
+Disallow: /auth/callback
+Disallow: /verify-email
+Disallow: /reset-password
+Disallow: /forgot-password
+Disallow: /choose-plan
+Disallow: /choose-category
+Disallow: /onboarding
+Disallow: /invite/
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /dashboard
+Disallow: /api/
+Disallow: /auth/callback
+Disallow: /verify-email
+Disallow: /reset-password
+Disallow: /forgot-password
+Disallow: /choose-plan
+Disallow: /choose-category
+Disallow: /onboarding
+Disallow: /invite/
+
+User-agent: Perplexity-User
+Allow: /
+Disallow: /dashboard
+Disallow: /api/
+Disallow: /auth/callback
+Disallow: /verify-email
+Disallow: /reset-password
+Disallow: /forgot-password
+Disallow: /choose-plan
+Disallow: /choose-category
+Disallow: /onboarding
+Disallow: /invite/
+
+User-agent: DuckAssistBot
+Allow: /
+Disallow: /dashboard
+Disallow: /api/
+Disallow: /auth/callback
+Disallow: /verify-email
+Disallow: /reset-password
+Disallow: /forgot-password
+Disallow: /choose-plan
+Disallow: /choose-category
+Disallow: /onboarding
+Disallow: /invite/
+
+User-agent: MistralAI-User
+Allow: /
+Disallow: /dashboard
+Disallow: /api/
+Disallow: /auth/callback
+Disallow: /verify-email
+Disallow: /reset-password
+Disallow: /forgot-password
+Disallow: /choose-plan
+Disallow: /choose-category
+Disallow: /onboarding
+Disallow: /invite/
+
+User-agent: YouBot
+Allow: /
+Disallow: /dashboard
+Disallow: /api/
+Disallow: /auth/callback
+Disallow: /verify-email
+Disallow: /reset-password
+Disallow: /forgot-password
+Disallow: /choose-plan
+Disallow: /choose-category
+Disallow: /onboarding
+Disallow: /invite/
+
+User-agent: Google-NotebookLM
+Allow: /
+Disallow: /dashboard
+Disallow: /api/
+Disallow: /auth/callback
+Disallow: /verify-email
+Disallow: /reset-password
+Disallow: /forgot-password
+Disallow: /choose-plan
+Disallow: /choose-category
+Disallow: /onboarding
+Disallow: /invite/
+
+# ---- AI training crawlers — DISALLOW (per decision 4.2 = block training, allow retrieval) ----
+User-agent: GPTBot
+Disallow: /
+
+User-agent: ClaudeBot
+Disallow: /
+
+User-agent: anthropic-ai
+Disallow: /
+
+User-agent: Google-Extended
+Disallow: /
+
+User-agent: Applebot-Extended
+Disallow: /
+
+User-agent: Meta-ExternalAgent
+Disallow: /
+
+User-agent: FacebookBot
+Disallow: /
+
+User-agent: cohere-training-data-crawler
+Disallow: /
+
+User-agent: Amazonbot
+Disallow: /
+
+# ---- Aggressive / abusive crawlers — ALWAYS BLOCK ----
+User-agent: Bytespider
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: Diffbot
+Disallow: /
+
+User-agent: PetalBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /
+
+# ---- Catch-all for unknown crawlers ----
 User-agent: *
 Allow: /
 Disallow: /dashboard
-Disallow: /api
+Disallow: /api/
 Disallow: /auth/callback
 Disallow: /verify-email
-Disallow: /choose-plan
 Disallow: /reset-password
+Disallow: /forgot-password
+Disallow: /choose-plan
+Disallow: /choose-category
+Disallow: /onboarding
+Disallow: /invite/
 
-Sitemap: https://blossomapp.ai/sitemap.xml
+Sitemap: https://blossai.com/sitemap.xml

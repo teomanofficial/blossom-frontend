@@ -1,9 +1,14 @@
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
+import { Seo } from '../lib/seo'
 
 export default function Privacy() {
   return (
     <div className="min-h-screen bg-[#050508]">
+      <Seo
+        title="Privacy Policy — Blossom"
+        description="How Blossom collects, uses, and protects your data."
+      />
       <Navbar />
       <div className="pt-32 pb-20 px-4 sm:px-6">
         <div className="max-w-3xl mx-auto">
@@ -13,7 +18,7 @@ export default function Privacy() {
           <div className="space-y-8 text-slate-300 text-sm leading-relaxed">
             <section>
               <p className="mb-2"><strong className="text-slate-200">[REPLACE: Full legal entity name, e.g., "Blossom Technologies Inc."]</strong> ("Blossom," "we," "us," or "our") is the data controller responsible for personal information processed in connection with the Blossom platform (the "Service"). Our registered office is at <strong className="text-slate-200">[REPLACE: Full business address]</strong>.</p>
-              <p>This Privacy Policy explains how we collect, use, store, and share your personal information when you use the Service. By using the Service, you acknowledge the practices described here. For privacy questions or requests, contact us at <a href="mailto:privacy@blossomapp.ai" className="text-pink-400 hover:text-pink-300">privacy@blossomapp.ai</a>.</p>
+              <p>This Privacy Policy explains how we collect, use, store, and share your personal information when you use the Service. By using the Service, you acknowledge the practices described here. For privacy questions or requests, contact us at <a href="mailto:privacy@blossai.com" className="text-pink-400 hover:text-pink-300">privacy@blossai.com</a>.</p>
             </section>
 
             <section>
@@ -121,7 +126,7 @@ export default function Privacy() {
               <p className="mt-2">We instruct our AI providers not to use your content to train their models, in accordance with the API tier under which we operate. We do not share your uploaded content with other users.</p>
 
               <h3 className="text-sm font-bold text-slate-200 mt-4 mb-2">4.1 Automated Decision-Making</h3>
-              <p>The Service uses automated processing to generate scores, classifications, and recommendations (e.g., virality scores, hook classifications, format matches). These outputs are informational suggestions only. They do not produce legal or similarly significant effects on you within the meaning of GDPR Article 22. If you would like a human review of any automated output that materially affects your account, contact <a href="mailto:privacy@blossomapp.ai" className="text-pink-400 hover:text-pink-300">privacy@blossomapp.ai</a>.</p>
+              <p>The Service uses automated processing to generate scores, classifications, and recommendations (e.g., virality scores, hook classifications, format matches). These outputs are informational suggestions only. They do not produce legal or similarly significant effects on you within the meaning of GDPR Article 22. If you would like a human review of any automated output that materially affects your account, contact <a href="mailto:privacy@blossai.com" className="text-pink-400 hover:text-pink-300">privacy@blossai.com</a>.</p>
             </section>
 
             <section>
@@ -189,7 +194,7 @@ export default function Privacy() {
                 <li><strong className="text-slate-300">Withdrawal of consent:</strong> Withdraw your consent at any time where processing is based on consent, without affecting prior lawful processing</li>
                 <li><strong className="text-slate-300">Right not to be subject to solely automated decisions:</strong> See Section 4.1</li>
               </ul>
-              <p className="mt-2">To exercise any of these rights, contact us at <a href="mailto:privacy@blossomapp.ai" className="text-pink-400 hover:text-pink-300">privacy@blossomapp.ai</a>. We will respond within 30 days (extendable by an additional 60 days for complex requests, with notice to you).</p>
+              <p className="mt-2">To exercise any of these rights, contact us at <a href="mailto:privacy@blossai.com" className="text-pink-400 hover:text-pink-300">privacy@blossai.com</a>. We will respond within 30 days (extendable by an additional 60 days for complex requests, with notice to you).</p>
               <p className="mt-2"><strong className="text-slate-200">Right to lodge a complaint:</strong> If you are in the EEA, UK, or Switzerland and believe we have not addressed your concern adequately, you have the right to lodge a complaint with your local data protection supervisory authority. A list of EEA supervisory authorities is available at <a href="https://edpb.europa.eu/about-edpb/about-edpb/members_en" target="_blank" rel="noopener noreferrer" className="text-pink-400 hover:text-pink-300">edpb.europa.eu</a>.</p>
             </section>
 
@@ -206,7 +211,7 @@ export default function Privacy() {
               </ul>
               <p className="mt-3"><strong className="text-slate-200">Do Not Sell or Share My Personal Information:</strong> Blossom does not sell your personal information for money, and does not share your personal information for cross-context behavioral advertising as those terms are defined under the CCPA/CPRA. We do not use third-party advertising cookies or trackers.</p>
               <p className="mt-2"><strong className="text-slate-200">Categories collected in the past 12 months:</strong> Identifiers (name, email, IP); commercial information (subscription history); internet activity (usage logs, search queries); audio/visual information (uploaded videos and audio); inferences (content preferences). We do not collect Social Security numbers, government IDs, precise geolocation, biometric data, or other categories of sensitive personal information.</p>
-              <p className="mt-2"><strong className="text-slate-200">How to exercise California rights:</strong> Email <a href="mailto:privacy@blossomapp.ai" className="text-pink-400 hover:text-pink-300">privacy@blossomapp.ai</a> with the subject line "California Privacy Request." We will verify your request using information associated with your account. You may use an authorized agent — written permission and verification of your identity will be required.</p>
+              <p className="mt-2"><strong className="text-slate-200">How to exercise California rights:</strong> Email <a href="mailto:privacy@blossai.com" className="text-pink-400 hover:text-pink-300">privacy@blossai.com</a> with the subject line "California Privacy Request." We will verify your request using information associated with your account. You may use an authorized agent — written permission and verification of your identity will be required.</p>
             </section>
 
             <section>
@@ -230,12 +235,12 @@ export default function Privacy() {
                 <li><strong className="text-slate-300">Standard Contractual Clauses (SCCs)</strong> approved by the European Commission, and the UK International Data Transfer Addendum where applicable</li>
                 <li><strong className="text-slate-300">Supplementary technical and organizational measures</strong> such as encryption in transit and at rest, access controls, and pseudonymization where appropriate</li>
               </ul>
-              <p className="mt-2">You may request a copy of the transfer mechanisms used by contacting <a href="mailto:privacy@blossomapp.ai" className="text-pink-400 hover:text-pink-300">privacy@blossomapp.ai</a>.</p>
+              <p className="mt-2">You may request a copy of the transfer mechanisms used by contacting <a href="mailto:privacy@blossai.com" className="text-pink-400 hover:text-pink-300">privacy@blossai.com</a>.</p>
             </section>
 
             <section>
               <h2 className="text-lg font-bold text-white mb-3">13. Children's Privacy</h2>
-              <p>The Service is not directed to children. We do not knowingly collect personal information from children under 16 (or under 13 in the United States, as defined by the Children's Online Privacy Protection Act, "COPPA"). If we become aware that we have collected personal data from a child under the applicable age without verified parental consent, we will take steps to delete that information promptly. If you believe a child has provided us with personal information, please contact <a href="mailto:privacy@blossomapp.ai" className="text-pink-400 hover:text-pink-300">privacy@blossomapp.ai</a> immediately.</p>
+              <p>The Service is not directed to children. We do not knowingly collect personal information from children under 16 (or under 13 in the United States, as defined by the Children's Online Privacy Protection Act, "COPPA"). If we become aware that we have collected personal data from a child under the applicable age without verified parental consent, we will take steps to delete that information promptly. If you believe a child has provided us with personal information, please contact <a href="mailto:privacy@blossai.com" className="text-pink-400 hover:text-pink-300">privacy@blossai.com</a> immediately.</p>
             </section>
 
             <section>
@@ -251,7 +256,7 @@ export default function Privacy() {
             <section>
               <h2 className="text-lg font-bold text-white mb-3">16. Contact Us</h2>
               <p className="mb-2">If you have questions, concerns, or requests regarding this Privacy Policy or your personal data, please contact us at:</p>
-              <p className="mb-1">Privacy inquiries: <a href="mailto:privacy@blossomapp.ai" className="text-pink-400 hover:text-pink-300">privacy@blossomapp.ai</a></p>
+              <p className="mb-1">Privacy inquiries: <a href="mailto:privacy@blossai.com" className="text-pink-400 hover:text-pink-300">privacy@blossai.com</a></p>
               <p className="mb-1">Mailing address: <strong className="text-slate-200">[REPLACE: Full mailing address]</strong></p>
               <p className="mt-3"><strong className="text-slate-200">EU / UK Representative (where applicable):</strong> <strong className="text-slate-200">[REPLACE: Name, address, and email of your appointed Article 27 GDPR / UK GDPR representative — required if you are not established in the EU/UK but offer services to data subjects there]</strong>.</p>
               <p className="mt-3 text-slate-400">We aim to respond to all privacy-related inquiries within 30 days.</p>

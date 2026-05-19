@@ -1,9 +1,14 @@
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
+import { Seo } from '../lib/seo'
 
 export default function Terms() {
   return (
     <div className="min-h-screen bg-[#050508]">
+      <Seo
+        title="Terms of Service — Blossom"
+        description="Blossom's terms of service."
+      />
       <Navbar />
       <div className="pt-32 pb-20 px-4 sm:px-6">
         <div className="max-w-3xl mx-auto">
@@ -74,7 +79,7 @@ export default function Terms() {
                 <li>You grant Blossom a perpetual, irrevocable, royalty-free license to use de-identified, aggregated information derived from your User Content for product analytics, benchmarking, and Service improvement, provided such information does not identify you or your content</li>
                 <li>You represent and warrant that (a) you own or have all necessary rights to your User Content, (b) you have all necessary consents from any individuals depicted, and (c) your User Content does not violate any third party's rights or any applicable law</li>
                 <li>Uploaded content is processed using AI models and may be temporarily stored on our servers and transmitted to third-party AI providers (such as Google Gemini) for analysis</li>
-                <li>You may request deletion of your User Content at any time by contacting <a href="mailto:support@blossomapp.ai" className="text-pink-400 hover:text-pink-300">support@blossomapp.ai</a> or via your account settings</li>
+                <li>You may request deletion of your User Content at any time by contacting <a href="mailto:support@blossai.com" className="text-pink-400 hover:text-pink-300">support@blossai.com</a> or via your account settings</li>
               </ul>
             </section>
 
@@ -108,7 +113,7 @@ export default function Terms() {
               <h3 className="text-sm font-bold text-slate-200 mt-4 mb-2">8.2 Designated DMCA Agent</h3>
               <p className="mb-2">Send notices to:</p>
               <p className="mb-1">DMCA Agent: <strong className="text-slate-200">[REPLACE: DMCA agent name / role]</strong></p>
-              <p className="mb-1">Email: <a href="mailto:dmca@blossomapp.ai" className="text-pink-400 hover:text-pink-300">dmca@blossomapp.ai</a></p>
+              <p className="mb-1">Email: <a href="mailto:dmca@blossai.com" className="text-pink-400 hover:text-pink-300">dmca@blossai.com</a></p>
               <p className="mb-1">Mailing address: <strong className="text-slate-200">[REPLACE: Full mailing address for legal notices]</strong></p>
 
               <h3 className="text-sm font-bold text-slate-200 mt-4 mb-2">8.3 Counter-Notices</h3>
@@ -216,7 +221,7 @@ export default function Terms() {
                 <li>Required by law or regulatory authorities</li>
               </ul>
               <p className="mt-2">Upon termination, your right to use the Service ceases immediately. You may request export or deletion of your data by contacting support. We may retain certain data as required by law or for legitimate business purposes.</p>
-              <p className="mt-2">You may terminate your account at any time by cancelling your subscription and contacting <a href="mailto:support@blossomapp.ai" className="text-pink-400 hover:text-pink-300">support@blossomapp.ai</a>. We may also discontinue the Service (in whole or in part) at any time with reasonable advance notice where feasible.</p>
+              <p className="mt-2">You may terminate your account at any time by cancelling your subscription and contacting <a href="mailto:support@blossai.com" className="text-pink-400 hover:text-pink-300">support@blossai.com</a>. We may also discontinue the Service (in whole or in part) at any time with reasonable advance notice where feasible.</p>
             </section>
 
             <section>
@@ -231,7 +236,7 @@ export default function Terms() {
               <p>These Terms and any dispute arising out of or in connection with them or the Service shall be governed by and construed in accordance with the laws of <strong className="text-slate-200">[REPLACE: Governing jurisdiction, e.g., "the State of Delaware, United States, without regard to its conflict of laws principles"]</strong>. The United Nations Convention on Contracts for the International Sale of Goods does not apply.</p>
 
               <h3 className="text-sm font-bold text-slate-200 mt-4 mb-2">18.2 Informal Dispute Resolution</h3>
-              <p>Before filing a claim, you agree to first contact us at <a href="mailto:legal@blossomapp.ai" className="text-pink-400 hover:text-pink-300">legal@blossomapp.ai</a> and attempt to resolve the dispute informally. We will attempt in good faith to resolve any dispute within sixty (60) days after receiving your written notice.</p>
+              <p>Before filing a claim, you agree to first contact us at <a href="mailto:legal@blossai.com" className="text-pink-400 hover:text-pink-300">legal@blossai.com</a> and attempt to resolve the dispute informally. We will attempt in good faith to resolve any dispute within sixty (60) days after receiving your written notice.</p>
 
               <h3 className="text-sm font-bold text-slate-200 mt-4 mb-2">18.3 Binding Arbitration</h3>
               <p>If we cannot resolve a dispute informally, you and Blossom agree that any dispute, claim, or controversy arising out of or relating to these Terms or the Service shall be resolved by binding individual arbitration administered by <strong className="text-slate-200">[REPLACE: Arbitration provider, e.g., "the American Arbitration Association (AAA) under its Consumer Arbitration Rules"]</strong>, and judgment on the award may be entered in any court of competent jurisdiction. The seat of arbitration shall be <strong className="text-slate-200">[REPLACE: City, State/Country]</strong>, and the language of arbitration shall be English.</p>
@@ -240,7 +245,7 @@ export default function Terms() {
               <p>YOU AND BLOSSOM AGREE THAT EACH MAY BRING CLAIMS AGAINST THE OTHER ONLY IN AN INDIVIDUAL CAPACITY AND NOT AS A PLAINTIFF OR CLASS MEMBER IN ANY PURPORTED CLASS, COLLECTIVE, OR REPRESENTATIVE ACTION. The arbitrator may not consolidate more than one person's claims and may not preside over any form of representative or class proceeding.</p>
 
               <h3 className="text-sm font-bold text-slate-200 mt-4 mb-2">18.5 Exceptions and Opt-Out</h3>
-              <p>Notwithstanding the above, either party may bring an individual action in small-claims court, and either party may seek injunctive or equitable relief in court for infringement of intellectual property rights. You may opt out of this arbitration agreement by sending written notice to <a href="mailto:legal@blossomapp.ai" className="text-pink-400 hover:text-pink-300">legal@blossomapp.ai</a> within thirty (30) days after first accepting these Terms.</p>
+              <p>Notwithstanding the above, either party may bring an individual action in small-claims court, and either party may seek injunctive or equitable relief in court for infringement of intellectual property rights. You may opt out of this arbitration agreement by sending written notice to <a href="mailto:legal@blossai.com" className="text-pink-400 hover:text-pink-300">legal@blossai.com</a> within thirty (30) days after first accepting these Terms.</p>
 
               <h3 className="text-sm font-bold text-slate-200 mt-4 mb-2">18.6 Exclusive Venue</h3>
               <p>For any claim not subject to arbitration, you and Blossom agree to submit to the exclusive jurisdiction of the state and federal courts located in <strong className="text-slate-200">[REPLACE: County/City, State/Country, e.g., "New Castle County, Delaware"]</strong>.</p>
@@ -264,9 +269,9 @@ export default function Terms() {
             <section>
               <h2 className="text-lg font-bold text-white mb-3">22. Contact Us</h2>
               <p className="mb-2">If you have any questions about these Terms of Use, please contact us at:</p>
-              <p className="mb-1">General support: <a href="mailto:support@blossomapp.ai" className="text-pink-400 hover:text-pink-300">support@blossomapp.ai</a></p>
-              <p className="mb-1">Legal notices: <a href="mailto:legal@blossomapp.ai" className="text-pink-400 hover:text-pink-300">legal@blossomapp.ai</a></p>
-              <p className="mb-1">DMCA notices: <a href="mailto:dmca@blossomapp.ai" className="text-pink-400 hover:text-pink-300">dmca@blossomapp.ai</a></p>
+              <p className="mb-1">General support: <a href="mailto:support@blossai.com" className="text-pink-400 hover:text-pink-300">support@blossai.com</a></p>
+              <p className="mb-1">Legal notices: <a href="mailto:legal@blossai.com" className="text-pink-400 hover:text-pink-300">legal@blossai.com</a></p>
+              <p className="mb-1">DMCA notices: <a href="mailto:dmca@blossai.com" className="text-pink-400 hover:text-pink-300">dmca@blossai.com</a></p>
               <p className="mt-3 text-slate-400">Mailing address: <strong className="text-slate-200">[REPLACE: Full mailing address]</strong></p>
             </section>
           </div>

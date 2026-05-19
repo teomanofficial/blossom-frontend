@@ -1,0 +1,31 @@
+# Blossom
+
+> Blossom analyzes viral social media content from Instagram and TikTok, classifying hooks, formats, and tactics using multi-stage Gemini AI to surface trends, score virality, and produce content improvement suggestions. Built for creators, agencies, and brands who want to understand what makes content perform.
+
+## Product
+- [Homepage](https://blossai.com/): Overview, features, pricing
+- [Sign up](https://blossai.com/signup): Create a free account
+- [FAQ](https://blossai.com/faq): Common questions about pricing, plans, API access, and supported platforms
+
+## Documentation
+- [Full LLM-friendly docs dump](https://blossai.com/llms-full.txt): Concatenated reference for everything below
+- [Public API Reference](https://blossai.com/llms-full.txt#public-api): Endpoints, X-API-Key authentication, rate limits, category scoping
+- [Architecture Overview](https://blossai.com/llms-full.txt#architecture): How the system is organized
+- [Content Analysis Pipeline](https://blossai.com/llms-full.txt#content-analysis-pipeline): How videos are fetched and analyzed
+
+## Public API endpoints
+Auth: send `X-API-Key: blsm_<key>` header. Rate limits: 100/min (platin plan), 600/min (admin).
+
+- `GET /api/v1/videos` — Analyzed videos with virality scores, hooks, formats, tactics
+- `GET /api/v1/influencers` — Influencer profiles with follower tiers
+- `GET /api/v1/hooks` — Hook classifications and patterns
+- `GET /api/v1/formats` — Format taxonomy
+- `GET /api/v1/tactics` — Tactic library
+- `GET /api/v1/music` — Music and audio metadata
+- `GET /api/v1/suggestions` — Content improvement suggestions
+- `GET /api/v1/trending` — Trending content aggregation
+- `GET /api/v1/categories` — Category filters
+
+## Optional
+- [Terms of Service](https://blossai.com/terms)
+- [Privacy Policy](https://blossai.com/privacy)
