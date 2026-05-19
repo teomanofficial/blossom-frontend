@@ -1370,10 +1370,17 @@ const CATEGORIES: FaqCategory[] = [
         keywords: ['blossom vs', 'compare blossom', 'alternative tools', 'blossom vs virlo', 'blossom vs memories.ai', 'viral analyzer comparison'],
       },
       {
-        q: 'Who is Blossom for?',
-        a: 'Blossom is built for serious short-form creators on Instagram Reels and TikTok — typically creators with 1K–500K followers who post 3+ times per week and want to move past guessing. It\'s also used by social-first brands and agencies managing 5–50 creator accounts at once.',
+        q: 'Who is Blossom for, and who is it not for?',
+        a: 'Blossom is a viral analyzer for serious short-form creators on Instagram Reels and TikTok — typically accounts in the 1K–500K follower range who post 3+ times per week and want to stop guessing why one video hits and the next flops. It fits the mid-tier creator economy where 73% of brands now favor micro and mid-tier partnerships over macro deals, and where TikTok\'s algorithm has made watch time and hook strength matter more than raw follower count. If you\'re a UGC creator, faceless niche operator, social-first DTC brand, or an agency managing 5–50 creator accounts at once, Blossom is built for your workflow: hook breakdowns, format clustering, retention diagnostics, and tactic libraries that work across every account from one dashboard. Blossom is not the right tool for casual posters, creators publishing less than once a week, pure follower-growth bot users, or teams that only need scheduling and captions. It\'s also not aimed at celebrity-tier accounts with in-house data teams. If you post often, treat content like a business, and want to engineer the next viral, you\'re who Blossom was built for.',
+        details: [
+          { label: 'Solo creators (1K–500K followers)', text: 'Mid-tier and micro creators who post 3+ times a week on Reels or TikTok and need hook, format, and retention analysis to scale past plateaus.' },
+          { label: 'Agencies and creator collectives', text: 'Teams managing 5–50 client accounts who need a single dashboard for cross-account trend detection, tactic libraries, and benchmark reporting.' },
+          { label: 'Social-first brands and DTC', text: 'In-house social teams running owned creator handles or UGC programs who need to translate engagement signals into repeatable content formats.' },
+          { label: 'Not built for', text: 'Casual posters, sub-weekly creators, scheduling-only users, and celebrity-tier accounts with dedicated data teams.' },
+        ],
+        feature: { label: 'Start analyzing your content — free signup', to: '/signup' },
         related: ['blossom-0', 'monetization-6'],
-        keywords: ['who is blossom for', 'blossom audience'],
+        keywords: ['who is blossom for', 'blossom audience', 'mid-tier creator analytics tool', 'tiktok hook analyzer for agencies'],
       },
       {
         q: 'How much does Blossom cost?',
