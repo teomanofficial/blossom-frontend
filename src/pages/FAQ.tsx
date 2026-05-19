@@ -1383,11 +1383,17 @@ const CATEGORIES: FaqCategory[] = [
         keywords: ['who is blossom for', 'blossom audience', 'mid-tier creator analytics tool', 'tiktok hook analyzer for agencies'],
       },
       {
-        q: 'How much does Blossom cost?',
-        a: 'Blossom offers a free starter tier with limited monthly analyses, a Premium tier for active solo creators, and a Platin tier with influencer insights, the Trend dashboard, API access, and higher analysis limits. All paid tiers start with a free trial — you\'re not charged at signup.',
-        feature: { label: 'See current pricing', to: '/#pricing' },
+        q: 'How much does Blossom cost in 2026, and what\'s included in each plan?',
+        a: 'Blossom uses a three-tier model designed to match where you are as a creator. The Free Starter lets you sample the AI hook, format, and tactic analysis without entering a card. Premium is built for solo creators publishing weekly on Instagram and TikTok and unlocks higher monthly analysis limits plus version tracking. Platin is the agency and operator tier and is the only plan with API access (X-API-Key), the Trend dashboard, and influencer-level insights for benchmarking competitors. Both paid tiers include a free trial with no charge at signup. Compared to short-form analytics tools that start at $49 to $82 per month with no free entry point and no included API, Blossom keeps a true free tier and reserves the API for Platin so you only pay for programmatic access if you actually need it.',
+        details: [
+          { label: 'Free Starter', text: 'No credit card. Limited monthly Instagram and TikTok analyses, full AI hook and format classification on each video, and access to your personal analysis history.' },
+          { label: 'Premium', text: 'Free trial at signup. Higher monthly analysis quota, analysis versioning to compare reworked content against the original, tactic library, and audio breakdown.' },
+          { label: 'Platin (includes API)', text: 'Free trial at signup. Everything in Premium plus influencer insights, the Trend dashboard, full public API via X-API-Key header at /api/v1, and the highest analysis limits.' },
+          { label: 'Free trial details', text: 'Premium and Platin start with a trial period, you are not charged at signup, and you can cancel before the trial ends. Live pricing is on the /#pricing page.' },
+        ],
+        feature: { label: 'See current pricing and start a free trial', to: '/#pricing' },
         related: ['privacy-3', 'privacy-4'],
-        keywords: ['pricing', 'cost', 'how much'],
+        keywords: ['pricing', 'cost', 'how much', 'blossom price 2026', 'blossom pricing tiers', 'blossom platin api'],
       },
       {
         q: 'Does Blossom analyze Instagram, TikTok, or both — and what about YouTube Shorts?',

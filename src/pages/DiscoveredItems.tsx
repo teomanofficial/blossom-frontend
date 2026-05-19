@@ -385,6 +385,8 @@ export default function DiscoveredItems() {
                       }`}>
                         {video.platform}
                       </span>
+                      {/* Username */}
+                      <span className="text-xs font-bold text-white truncate">@{video.username}</span>
                     </div>
 
                     {/* Caption */}
