@@ -124,6 +124,9 @@ export default function Videos() {
   const [fetchResult, setFetchResult] = useState<string | null>(null)
   const [fetchError, setFetchError] = useState<string | null>(null)
 
+  // Bulk-analyze trigger state (separate from the polling state below)
+  const [bulkTriggering, setBulkTriggering] = useState<'pending' | 'failed' | null>(null)
+
   // Video list state
   const [videos, setVideos] = useState<Video[]>([])
   const [total, setTotal] = useState(0)
@@ -269,6 +272,35 @@ export default function Videos() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // ── Bulk-analyze trigger (pending or failed) ──
+  const triggerBulkAnalyze = (source: 'pending' | 'failed') => {
+    if (bulkStatus?.running || bulkTriggering) return
+    const count = source === 'pending' ? stats?.pending ?? 0 : stats?.error ?? 0
+    if (count === 0) {
+      toast(source === 'pending' ? 'No pending videos to analyze.' : 'No failed videos to retry.')
+      return
+    }
+    const label = source === 'pending' ? 'pending' : 'failed'
+    if (!confirm(`Queue ${count} ${label} video${count === 1 ? '' : 's'} for analysis? This processes 20 at a time and may take a while.`)) {
+      return
+    }
+    setBulkTriggering(source)
+    authFetch('/api/analysis/videos/bulk-analyze-pending', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ source }),
+    })
+      .then(async (r) => {
+        const data = await r.json()
+        if (!r.ok) throw new Error(data.error || 'Failed to start bulk analyze')
+        toast.success(data.message || `Started analyzing ${data.total} videos.`)
+        // Kick the polling immediately so the persistent panel appears without a 1.5s wait
+        checkBulkStatus()
+      })
+      .catch((e: any) => toast.error(e.message))
+      .finally(() => setBulkTriggering(null))
+  }
+
   // ── Derived video status lists ──
   const videoStatuses = bulkStatus?.videos ? Object.values(bulkStatus.videos) : []
   const analyzingNow = videoStatuses.filter((v) => v.status === 'analyzing')
@@ -380,6 +412,51 @@ export default function Videos() {
           )}
         </div>
       </div>
+
+      {/* ── Bulk-analyze actions (admin only) ── */}
+      {isAdmin && ((stats?.pending ?? 0) > 0 || (stats?.error ?? 0) > 0) && !bulkStatus?.running && (
+        <div className="flex items-center gap-3 mb-6">
+          {(stats?.pending ?? 0) > 0 && (
+            <button
+              onClick={() => triggerBulkAnalyze('pending')}
+              disabled={!!bulkTriggering}
+              className="px-5 py-2.5 glass-card border border-orange-400/30 hover:border-orange-400/60 hover:bg-orange-400/5 disabled:opacity-40 rounded-xl text-[11px] font-black text-orange-400 transition-all flex items-center gap-2"
+            >
+              {bulkTriggering === 'pending' ? (
+                <>
+                  <div className="w-3 h-3 border-2 border-orange-400 border-t-transparent rounded-full animate-spin"></div>
+                  Queuing...
+                </>
+              ) : (
+                <>
+                  <i className="fas fa-bolt"></i>
+                  Analyze {stats!.pending} Pending
+                </>
+              )}
+            </button>
+          )}
+          {(stats?.error ?? 0) > 0 && (
+            <button
+              onClick={() => triggerBulkAnalyze('failed')}
+              disabled={!!bulkTriggering}
+              className="px-5 py-2.5 glass-card border border-red-400/30 hover:border-red-400/60 hover:bg-red-400/5 disabled:opacity-40 rounded-xl text-[11px] font-black text-red-400 transition-all flex items-center gap-2"
+            >
+              {bulkTriggering === 'failed' ? (
+                <>
+                  <div className="w-3 h-3 border-2 border-red-400 border-t-transparent rounded-full animate-spin"></div>
+                  Queuing...
+                </>
+              ) : (
+                <>
+                  <i className="fas fa-rotate-right"></i>
+                  Retry {stats!.error} Failed
+                </>
+              )}
+            </button>
+          )}
+          <span className="text-[10px] font-bold text-slate-500 ml-1">Processes 20 videos in parallel.</span>
+        </div>
+      )}
 
       {/* ── Fetch Section ── */}
       <div className="glass-card rounded-[2rem] p-8 mb-10">
