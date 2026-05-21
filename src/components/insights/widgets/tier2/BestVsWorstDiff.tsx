@@ -260,6 +260,13 @@ export default function BestVsWorstDiff({ className = '' }: BestVsWorstDiffProps
       className={className}
       locked={locked}
       tier={2}
+      info={{
+        what: 'What separates your top 5 videos from your bottom 5.',
+        howToRead:
+          "We diff the structural signals across your hits and your flops. The headline delta is the variable that most consistently differs — that's your highest-leverage lever. Fix that one thing and you'll see compounding gains across future posts.",
+        computation:
+          'Your top-5 by views vs your bottom-5 by views, comparing hook_seconds, scroll_stop_power, primal_trigger, primary_emotion, and top tactics.',
+      }}
     >
       <div className="flex flex-col gap-4">
         {headline ? (

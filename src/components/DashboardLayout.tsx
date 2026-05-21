@@ -64,6 +64,7 @@ const managementItems = [
   { to: '/dashboard/hashtags', icon: 'fa-hashtag', label: 'Hashtags' },
   { to: '/dashboard/site-analytics', icon: 'fa-chart-line', label: 'Site Analytics' },
   { to: '/dashboard/carousel-posts', icon: 'fa-images', label: 'Carousel Posts' },
+  { to: '/dashboard/admin/keyword-blacklist', icon: 'fa-ban', label: 'Keyword Blacklist' },
 ]
 
 /* Bottom tab items for mobile */
@@ -114,6 +115,7 @@ const drawerRoutes = [
   '/dashboard/hashtags',
   '/dashboard/site-analytics',
   '/dashboard/carousel-posts',
+  '/dashboard/admin/keyword-blacklist',
 ]
 
 /* ── Nav Rail Link Component ── */

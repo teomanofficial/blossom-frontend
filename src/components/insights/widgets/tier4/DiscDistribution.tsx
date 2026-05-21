@@ -168,6 +168,13 @@ export default function DiscDistribution({ className = '' }: DiscDistributionPro
       emptyMessage="DISC distribution populates as more creators are profiled. None yet for this niche."
       locked={locked}
       tier={4}
+      info={{
+        what: 'The personality-style mix (D-I-S-C) across top creators in your niche.',
+        howToRead:
+          "Each segment is the share of creators with that primary DISC style: D = Driver (bold), I = Influencer (outgoing), S = Steady (calm), C = Conscientious (analytical). Your own DISC profile and the niche's dominant style together hint at which delivery register will land.",
+        computation:
+          "Counts of disc_primary across the creator_disc_profiles for your niche, divided by total profiles.",
+      }}
     >
       {sparse ? (
         <div className="mb-3 flex items-start gap-2 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20">

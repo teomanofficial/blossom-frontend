@@ -95,6 +95,13 @@ export default function EmotionDistribution({
       className={className}
       locked={locked}
       tier={3}
+      info={{
+        what: 'The dominant emotional registers your niche pays attention to.',
+        howToRead:
+          "Bars show the share of viral videos that lead with each primary emotion. Use this as a casting call for your next script — what emotion does your hook deliver? Aim for the top 2-3 emotions, not the bottom ones.",
+        computation:
+          'Counts of primary_emotion tags across the top-decile slice of your niche, divided by sample size. Sorted by share.',
+      }}
       actions={
         data && data.sample_size > 0 ? (
           <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">

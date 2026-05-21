@@ -326,6 +326,13 @@ export default function SonicDNAPanel({ className = '' }: SonicDNAPanelProps) {
       className={className}
       locked={locked}
       tier={3}
+      info={{
+        what: 'The BPM and energy archetypes of audio that goes viral in your niche.',
+        howToRead:
+          "Left panel: BPM histogram — the amber-highlighted band is the optimal tempo range. Right panel: four energy archetypes (build-and-drop, flat high, flat low, gradual rise) ranked by frequency and average views. Pick a sound that matches the top archetype to ride the wave.",
+        computation:
+          "BPM and energy signatures are extracted by our audio analyzer (Meyda + FFmpeg). Top-decile is the P90 view-count slice; all-videos is the unfiltered baseline.",
+      }}
       actions={
         <input
           type="text"

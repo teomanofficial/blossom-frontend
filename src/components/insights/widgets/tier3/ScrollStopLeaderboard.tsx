@@ -83,6 +83,13 @@ export default function ScrollStopLeaderboard({
       className={className}
       locked={locked}
       tier={3}
+      info={{
+        what: 'Hook classes in your niche ranked by their average scroll-stop power.',
+        howToRead:
+          "The gauge on each row is the 0-100 average score — how reliably that hook class freezes thumbs. The lifecycle dial shows whether the hook is still climbing or already past its peak. Borrow from the top of the leaderboard, but check lifecycle before committing.",
+        computation:
+          "Scroll-stop power is a 0-100 AI score from the first 2 seconds of each video. Per-class average across the top-decile pool.",
+      }}
       actions={
         <div className="flex items-center gap-1 rounded-full bg-white/[0.04] border border-white/10 p-0.5">
           <SortButton

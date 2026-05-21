@@ -158,6 +158,13 @@ export default function ImprovementVelocityChart({
       className={className}
       locked={locked}
       tier={2}
+      info={{
+        what: 'Your optimization score across iterations — are you actually getting better?',
+        howToRead:
+          "Each point is one uploaded revision. An up-and-to-the-right line means your iterations are landing. A flat line means you're recycling the same shape — try shaking up a different variable. Milestones at 50 and 70 are 'good' and 'great' thresholds.",
+        computation:
+          "The optimization_score is a 0-100 composite computed for each upload from its hook, structure, emotion, and tactic signals. Points are ordered by created_at ASC.",
+      }}
     >
       {summary ? (
         <div className="flex flex-col gap-4">

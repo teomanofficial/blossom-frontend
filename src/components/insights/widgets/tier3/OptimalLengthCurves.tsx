@@ -76,6 +76,13 @@ export default function OptimalLengthCurves({
       className={className}
       locked={locked}
       tier={3}
+      info={{
+        what: 'Side-by-side hook length and total video length distributions for winners vs. average.',
+        howToRead:
+          'The grey backdrop is all videos; the colored layer is the top decile. Where the two shapes diverge is where viral videos behave differently. Match the colored peak for both hook and total duration to be safely in the winners zone.',
+        computation:
+          'Hook buckets are 0.5s wide (0-10s). Duration buckets are 5s wide (0-120s). We normalize each series to share-of-bucket so shapes compare cleanly.',
+      }}
     >
       {data ? (
         <div className="space-y-5">

@@ -78,6 +78,13 @@ export default function ShareMotivationMix({ className = '' }: ShareMotivationMi
       className={className}
       locked={locked}
       tier={3}
+      info={{
+        what: 'The reasons audiences forward viral content — relate, teach, surprise, tribe-signal, and more.',
+        howToRead:
+          "Stacked bar shows the share of each motivation across viral analyses. The top 2-3 motivations are the levers a hit script tends to pull. Match your call-to-share to one of the dominant motivations rather than fighting the trend.",
+        computation:
+          "Counts of share_motivation tags from virality-level AI analysis, divided by sample size.",
+      }}
       actions={
         data && data.sample_size > 0 ? (
           <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">

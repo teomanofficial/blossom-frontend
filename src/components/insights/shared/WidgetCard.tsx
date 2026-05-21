@@ -15,6 +15,7 @@
 import type { ReactNode } from 'react'
 import type { LockedState } from '../../../lib/useInsights'
 import LockedWidget, { type LockTier } from './LockedWidget'
+import WidgetInfoTooltip, { type WidgetTooltipContent } from './WidgetInfoTooltip'
 
 interface WidgetCardProps {
   title: string
@@ -46,6 +47,12 @@ interface WidgetCardProps {
    * Required when `locked` is set; ignored otherwise.
    */
   tier?: LockTier
+  /**
+   * Optional research-grounded explainer rendered as a small ⓘ icon next
+   * to the title. Hover (desktop) / click (mobile) reveals a popover
+   * that teaches users what the widget shows and how to interpret it.
+   */
+  info?: WidgetTooltipContent
 }
 
 const SIZE_PADDING: Record<NonNullable<WidgetCardProps['size']>, string> = {
@@ -166,6 +173,7 @@ export default function WidgetCard({
   iconColor = 'text-slate-300',
   locked = null,
   tier,
+  info,
 }: WidgetCardProps) {
   // Tier-locked path — render <LockedWidget> in place of the whole
   // card. The LockedWidget owns its own glass + gradient treatment so
@@ -214,9 +222,20 @@ export default function WidgetCard({
             </div>
           ) : null}
           <div className="min-w-0">
-            <h3 className={`${titleSize} font-bold leading-tight text-slate-100 truncate`}>
-              {title}
-            </h3>
+            <div className="flex items-center gap-1.5 min-w-0">
+              <h3 className={`${titleSize} font-bold leading-tight text-slate-100 truncate`}>
+                {title}
+              </h3>
+              {info ? (
+                <WidgetInfoTooltip
+                  title={title}
+                  what={info.what}
+                  howToRead={info.howToRead}
+                  computation={info.computation}
+                  example={info.example}
+                />
+              ) : null}
+            </div>
             {subtitle ? (
               <p className="text-[11px] sm:text-xs text-slate-500 font-medium mt-0.5 leading-snug">
                 {subtitle}

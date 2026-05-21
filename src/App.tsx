@@ -88,6 +88,9 @@ const InsightsForensics = lazy(() => import('./pages/insights/Forensics'))
 const InsightsAnatomy = lazy(() => import('./pages/insights/Anatomy'))
 const InsightsCreators = lazy(() => import('./pages/insights/Creators'))
 
+/* ── Admin pages (lazy) ── */
+const KeywordBlacklistAdmin = lazy(() => import('./pages/admin/KeywordBlacklist'))
+
 function InsightsPageFallback() {
   return (
     <div className="glass-card rounded-3xl p-8 animate-pulse">
@@ -263,6 +266,14 @@ function App() {
         <Route path="hashtags" element={<AdminGate><Hashtags /></AdminGate>} />
         <Route path="site-analytics" element={<AdminGate><SiteAnalytics /></AdminGate>} />
         <Route path="carousel-posts" element={<AdminGate><CarouselPosts /></AdminGate>} />
+        <Route
+          path="admin/keyword-blacklist"
+          element={
+            <Suspense fallback={<InsightsPageFallback />}>
+              <KeywordBlacklistAdmin />
+            </Suspense>
+          }
+        />
       </Route>
     </Routes>
   )

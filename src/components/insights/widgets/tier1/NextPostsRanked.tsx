@@ -330,6 +330,13 @@ export default function NextPostsRanked({ className = '' }: NextPostsRankedProps
       className={className}
       locked={locked}
       tier={1}
+      info={{
+        what: 'Content ideas ranked specifically for you.',
+        howToRead:
+          "Each suggestion is scored on format match (30 pts), tactic-gap fit (20 pts), niche relevance (15 pts), trend strength (10 pts), and difficulty match for your tier (5 pts). Higher scores = better personalized fit. Click 'Run through Greenlight' to validate the idea end-to-end.",
+        computation:
+          'Composite score is the sum of five binary signals — each adds points if your library, DISC profile, niche, and trend window favor the suggestion. Hover the score badge to see which components contributed.',
+      }}
     >
       <div className="space-y-2.5">
         {items.map((item) => (

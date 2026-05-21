@@ -21,6 +21,7 @@
 import { useInsights } from '../../../../lib/useInsights'
 import { compactNumber } from '../../../../lib/format'
 import WidgetCard from '../../shared/WidgetCard'
+import type { WidgetTooltipContent } from '../../shared/WidgetInfoTooltip'
 
 interface KeywordRow {
   keyword: string
@@ -52,6 +53,8 @@ interface KeywordCloudCardProps {
   iconBg: string
   iconColor: string
   barTone: BarTone
+  /** Optional info-tooltip content forwarded to <WidgetCard>. */
+  info?: WidgetTooltipContent
 }
 
 export default function KeywordCloudCard({
@@ -64,6 +67,7 @@ export default function KeywordCloudCard({
   iconBg,
   iconColor,
   barTone,
+  info,
 }: KeywordCloudCardProps) {
   const fullPath = niche ? `${path}?niche=${encodeURIComponent(niche)}` : path
   const { data, loading, error, retry, locked } = useInsights<KeywordResponse>(fullPath)
@@ -105,6 +109,7 @@ export default function KeywordCloudCard({
       className={className}
       locked={locked}
       tier={3}
+      info={info}
       actions={
         data && data.sample_size > 0 ? (
           <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">

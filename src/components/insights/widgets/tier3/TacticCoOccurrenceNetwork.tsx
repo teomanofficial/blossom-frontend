@@ -67,6 +67,13 @@ export default function TacticCoOccurrenceNetwork({
       className={className}
       locked={locked}
       tier={3}
+      info={{
+        what: 'Pairs of tactics that compound when they appear together.',
+        howToRead:
+          "Each node is a tactic; thicker edges between two nodes mean those tactics combo well — videos using both get more lift than videos using either alone. Bigger nodes are tactics that pair with many others. Color encodes tactic category (hook, production, caption, etc.).",
+        computation:
+          'Edge weight = lift when tactics are used together vs. either used alone. Computed across the top-decile slice globally.',
+      }}
       actions={
         data ? (
           <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">

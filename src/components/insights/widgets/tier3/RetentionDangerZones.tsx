@@ -104,6 +104,13 @@ export default function RetentionDangerZones({
       className={className}
       locked={locked}
       tier={3}
+      info={{
+        what: 'Where viewers commonly drop off in your niche.',
+        howToRead:
+          "Each bar is a second-mark where multiple videos lose audience. If you're filming, plan a pattern interrupt, B-roll cut, or hook re-engagement at these timestamps. The row beneath shows the common cause and risk level.",
+        computation:
+          'Aggregated from AI-predicted retention curves across videos in this niche. Sparse coverage — currently best in entertainment / music / fashion / travel / comedy.',
+      }}
     >
       <div className="flex flex-wrap items-center gap-1.5 mb-4">
         <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 mr-1">

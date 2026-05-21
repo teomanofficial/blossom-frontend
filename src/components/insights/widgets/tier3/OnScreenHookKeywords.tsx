@@ -38,6 +38,13 @@ export default function OnScreenHookKeywords({
         chip: 'bg-purple-500/10 text-purple-200 border-purple-500/20',
         chipHi: 'bg-purple-500/25 text-purple-100 border-purple-400/40',
       }}
+      info={{
+        what: 'The text overlays that flash on screen in the first 2 seconds of viral videos.',
+        howToRead:
+          "Bars are the 8 most-used on-screen overlay phrases. The 'Also seen' grid is the long tail. These are the words that snap a scroller into reading mode — borrow one for your next thumbnail or text card.",
+        computation:
+          'Counts of distinct on-screen text tokens from the first 2 seconds of top-decile videos in your niche.',
+      }}
     />
   )
 }

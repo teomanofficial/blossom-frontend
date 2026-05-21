@@ -202,6 +202,13 @@ export default function LengthSweetSpotByNiche({
       className={className}
       locked={locked}
       tier={3}
+      info={{
+        what: 'The duration band where viral videos in your niche cluster.',
+        howToRead:
+          "Green bars = top-decile videos (the hits). Grey backdrop = all videos. The amber highlight is the bucket where hits concentrate most — that's your sweet spot. Aim your next post at that duration band.",
+        computation:
+          'Buckets are 5-second wide between 5s and 90s. Optimal seconds is the midpoint of the peak top-decile bucket.',
+      }}
       actions={
         <input
           type="text"

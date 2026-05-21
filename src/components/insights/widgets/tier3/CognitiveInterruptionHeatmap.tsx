@@ -98,6 +98,13 @@ export default function CognitiveInterruptionHeatmap({
       className={className}
       locked={locked}
       tier={3}
+      info={{
+        what: 'Which psychological triggers drive virality in each niche.',
+        howToRead:
+          "Cells colored green mean the trigger outperforms the baseline in that niche; red means it underperforms. Top-decile videos only. Find your niche's row to see which triggers to lean into and which to avoid.",
+        computation:
+          'Lift = (avg views with this trigger in this niche) ÷ (overall niche baseline). Computed from primal_trigger classification across the AI pipeline.',
+      }}
       actions={
         data?.baseline_avg_views ? (
           <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">

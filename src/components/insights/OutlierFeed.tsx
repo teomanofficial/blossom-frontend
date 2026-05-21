@@ -105,6 +105,15 @@ export default function OutlierFeed({ className = '' }: OutlierFeedProps) {
       className={className}
       locked={locked}
       tier={1}
+      info={{
+        what: "Videos in your niche getting 3× or more their creator's median views.",
+        howToRead:
+          "These are outliers — they punched way above their author's typical performance. The structural reasons (hooks, formats, tactics) are repeatable, even if the original creator can't reproduce them themselves.",
+        computation:
+          "Sourced from the 30-day outliers materialized view. We filter to your niche and rank by the 'multiple' factor (video views ÷ creator median views).",
+        example:
+          "A 10k-follower creator pulling 500k views is a 50× outlier — worth reverse-engineering.",
+      }}
       actions={
         <Link
           to="/dashboard/outliers"

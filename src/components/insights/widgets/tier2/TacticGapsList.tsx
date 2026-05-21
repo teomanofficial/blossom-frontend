@@ -119,6 +119,13 @@ export default function TacticGapsList({ className = '' }: TacticGapsListProps) 
       className={className}
       locked={locked}
       tier={2}
+      info={{
+        what: "Tactics that top creators in your niche use, that you don't.",
+        howToRead:
+          "Each row is a tactic from your niche's top-decile playbook that's missing from your videos. Lift % shows the average uplift creators see when they include it. Sorted by impact — start at the top.",
+        computation:
+          "Top-decile niche videos' tactics minus your video's tactics. Niche-scoped to the last 180 days.",
+      }}
     >
       <ul className="space-y-2 max-h-[480px] overflow-y-auto pr-1 -mr-1">
         {sorted.map((gap) => (

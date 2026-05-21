@@ -338,6 +338,13 @@ export default function SoundLifecycleBrowser({
       className={className}
       locked={locked}
       tier={3}
+      info={{
+        what: 'A single sound\'s adoption curve, lifecycle stage, and jump-in window — at a glance.',
+        howToRead:
+          "Pick a sound from the dropdown. The chart plots weekly video count adoption. The lifecycle dial tells you the stage; the jump-in window tells you how many days you have left before the sound peaks and gets stale. Niche fit shows how much your audience cares.",
+        computation:
+          "Adoption series is week-bucketed video counts over 90 days. Lifecycle and jump-in are derived from the slope and second derivative of the curve.",
+      }}
       actions={
         pool.length > 0 ? (
           <SoundPicker

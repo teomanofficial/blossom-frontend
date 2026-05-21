@@ -187,6 +187,13 @@ export default function PostMortemEntry({ className = '' }: PostMortemEntryProps
       className={className}
       locked={locked}
       tier={2}
+      info={{
+        what: 'A one-click forensic comparison of any flop against your hits.',
+        howToRead:
+          "Pick a video that underperformed and the autopsy returns the single variable that diverged most from your top performers — with tactic-level evidence. Use it to stop wondering 'why did this flop?' and start fixing the next one.",
+        computation:
+          "Compares your selected video's hook, structure, emotion, and tactics against your top-decile library. Surfaces the most-diverged signals ranked by impact.",
+      }}
     >
       <div className="flex flex-col gap-5">
         {/* Sample / personalised tiles */}

@@ -82,6 +82,12 @@ export default function HookMatrix({ className = '', niche }: HookMatrixProps) {
     <WidgetCard
       title="Hook Matrix"
       subtitle="Hook classes plotted by adoption × performance — find blue-ocean styles before they saturate."
+      info={{
+        what: 'Every hook class in your space, plotted by how widely adopted it is (x-axis) vs. how well it performs (y-axis).',
+        howToRead: 'Top-right is Mainstream Winners — popular AND high-performing, safe but crowded. Top-left is Blue Ocean — high views with low adoption, your unfair advantage if you can execute. Bottom-right is Saturated — overused with diminishing yield. Bottom-left is Emerging or fading. Bubble size = trend velocity; color = lifecycle stage.',
+        computation: 'Adoption from viral_hook_classes.video_count (how many videos use this hook). Performance from avg_views across those videos. Lifecycle from materialized weekly trajectories.',
+        example: 'A "Curiosity Gap" hook at 13,871 videos and 1.89M avg views sits squarely in Mainstream Winners — proven but crowded. Find one in Blue Ocean to differentiate.',
+      }}
       icon="fa-grip"
       iconBg="bg-cyan-500/15"
       iconColor="text-cyan-400"
@@ -129,19 +135,24 @@ function LifecycleLegend() {
     ['declining', 'Declining'],
   ]
   return (
-    <div className="mt-4 flex flex-wrap items-center gap-2 sm:gap-3 text-[10px] font-black uppercase tracking-widest text-slate-500">
-      <span className="text-slate-600">Lifecycle</span>
+    <div className="mt-4 flex flex-wrap items-center gap-2 sm:gap-3 text-[10px] font-black uppercase tracking-widest">
+      <span className="text-slate-400">Lifecycle</span>
       {entries.map(([stage, label]) => (
         <span key={stage} className="inline-flex items-center gap-1.5">
           <span
             className="inline-block w-2 h-2 rounded-full"
             style={{ background: LIFECYCLE_COLOR[stage] }}
           />
-          <span className="text-slate-400">{label}</span>
+          <span className="text-slate-300">{label}</span>
         </span>
       ))}
-      <span className="ml-auto text-slate-600 hidden sm:inline">
-        Bubble size = trend velocity
+      <span className="ml-auto inline-flex items-center gap-1.5 text-slate-300">
+        <span className="inline-flex items-center gap-1">
+          <span className="inline-block w-1.5 h-1.5 rounded-full bg-slate-400" />
+          <span className="inline-block w-2 h-2 rounded-full bg-slate-400" />
+          <span className="inline-block w-2.5 h-2.5 rounded-full bg-slate-400" />
+        </span>
+        Bubble = velocity
       </span>
     </div>
   )

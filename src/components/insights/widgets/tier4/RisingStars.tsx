@@ -221,6 +221,13 @@ export default function RisingStars({ className = '' }: RisingStarsProps) {
       emptyMessage="No creators above the +40% growth threshold right now — check back tomorrow."
       locked={locked}
       tier={4}
+      info={{
+        what: 'Creators whose engagement rate has surged ≥ 40% in the last 30 days.',
+        howToRead:
+          "These are creators on the way up — their tactics are clearly working right now. Study them before they hit the big leagues and the formula gets borrowed by everyone else. Click 'Study them' for the full breakdown.",
+        computation:
+          'Growth pct = recent 30-day engagement rate / prior 30-day rate − 1. Filtered to growth ≥ 40% and ordered by absolute growth.',
+      }}
     >
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {stars.map((star) => (

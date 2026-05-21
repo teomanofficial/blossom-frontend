@@ -144,6 +144,13 @@ export default function HookStrengthGauge({ className = '' }: HookStrengthGaugeP
       className={className}
       locked={locked}
       tier={2}
+      info={{
+        what: "Your library's average scroll-stop power compared to the niche median.",
+        howToRead:
+          "Scroll-stop power is a 0-100 score for how reliably a hook freezes thumbs in the first two seconds. The tick on the gauge is the niche P50 — your average above that means you out-hook the median creator in your space; below means your hooks are leaking attention.",
+        computation:
+          "Your average is a sample-weighted blend of your top-5 and bottom-5 video median scores. The niche P50 is the median across hook classes' avg_scroll_stop in the leaderboard.",
+      }}
     >
       {haveBoth ? (
         <div className="flex flex-col items-center gap-4 py-2">

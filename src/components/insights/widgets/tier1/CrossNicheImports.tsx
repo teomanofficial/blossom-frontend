@@ -173,6 +173,13 @@ export default function CrossNicheImports({
       className={className}
       locked={locked}
       tier={1}
+      info={{
+        what: 'Formats winning in adjacent niches that your niche has not absorbed yet.',
+        howToRead:
+          "These formats already work elsewhere — porting them into your niche is a high-leverage arbitrage move. The lift figure shows how much the format outperforms the P75 baseline in its source niche. The bigger the lift, the stronger the import candidate.",
+        computation:
+          'For each format class, we compare its avg views in adjacent niches to the global P75 format baseline. Ranked descending by avg views in source niche.',
+      }}
     >
       <div className="space-y-2.5">
         {top.map((item) => (

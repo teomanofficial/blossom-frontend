@@ -77,6 +77,13 @@ export default function PostingTimeHeatmapWidget({
       className={className}
       locked={locked}
       tier={3}
+      info={{
+        what: 'When viral content in this niche actually gets posted — day of week × hour of day.',
+        howToRead:
+          "Hotter cells (more saturated) mean higher avg engagement rate at that day/hour combination. Hover any cell for the exact figure. Use the brightest cells as your scheduling target.",
+        computation:
+          'Avg engagement rate matrix (7 days × 24 hours), aggregated from published_at timestamps across the niche.',
+      }}
       actions={
         <input
           type="text"

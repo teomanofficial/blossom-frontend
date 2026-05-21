@@ -58,6 +58,7 @@ const managementItems = [
   { to: '/dashboard/duplicate-management', icon: 'fa-code-merge', label: 'Duplicates', color: 'text-slate-300', bg: 'bg-white/5' },
   { to: '/dashboard/onboarding-management', icon: 'fa-clipboard-check', label: 'Onboarding', color: 'text-slate-300', bg: 'bg-white/5' },
   { to: '/dashboard/ai-model-lab', icon: 'fa-microchip', label: 'Cost Tracking', color: 'text-violet-400', bg: 'bg-violet-500/10' },
+  { to: '/dashboard/admin/keyword-blacklist', icon: 'fa-ban', label: 'Keyword Blacklist', color: 'text-pink-400', bg: 'bg-pink-500/10' },
 ]
 
 function NavItem({

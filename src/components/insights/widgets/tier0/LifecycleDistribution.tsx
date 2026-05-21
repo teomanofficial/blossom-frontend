@@ -119,6 +119,13 @@ export default function LifecycleDistribution({
       onRetry={retry}
       size="lg"
       className={className}
+      info={{
+        what: "The share of trend classes in your niche at each lifecycle stage.",
+        howToRead:
+          "Emerging and rising mean opportunity — new patterns gaining steam you can ride. Peaking means it's working but crowded. Stable is the niche's evergreen baseline. Declining means it's burnt out — skip it. A healthy niche has plenty of emerging + rising.",
+        computation:
+          "We classify every trend class (hook, format, sound) into one of five lifecycle stages based on its 30-day video count growth curve, then tally the share per stage.",
+      }}
     >
       {isBackfilling ? (
         <div className="flex flex-col items-center justify-center text-center py-6 gap-4">

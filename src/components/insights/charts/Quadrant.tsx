@@ -161,24 +161,27 @@ export default function Quadrant({
 
   return (
     <div className="relative w-full" style={{ height }}>
-      {/* Quadrant labels — absolute-positioned, point-events none. */}
+      {/* Quadrant labels — absolute-positioned in each corner of the plot
+       * area (inside the Recharts margins so they don't overlap with the
+       * axis label strip). Brighter slate-300 fill so they're legible
+       * against the dark glass surface, with a subtle backdrop pill. */}
       <div className="absolute inset-0 pointer-events-none z-10">
-        <span className="absolute top-1 left-2 text-[10px] uppercase tracking-widest font-black text-slate-500/70">
+        <span className="absolute top-2 left-4 px-1.5 py-0.5 rounded-md bg-slate-900/40 backdrop-blur-sm text-[10px] uppercase tracking-widest font-black text-slate-300">
           {quadrantLabels[0]}
         </span>
-        <span className="absolute top-1 right-2 text-[10px] uppercase tracking-widest font-black text-slate-500/70">
+        <span className="absolute top-2 right-6 px-1.5 py-0.5 rounded-md bg-slate-900/40 backdrop-blur-sm text-[10px] uppercase tracking-widest font-black text-slate-300">
           {quadrantLabels[1]}
         </span>
-        <span className="absolute bottom-8 right-2 text-[10px] uppercase tracking-widest font-black text-slate-500/70">
+        <span className="absolute bottom-10 right-6 px-1.5 py-0.5 rounded-md bg-slate-900/40 backdrop-blur-sm text-[10px] uppercase tracking-widest font-black text-slate-300">
           {quadrantLabels[2]}
         </span>
-        <span className="absolute bottom-8 left-2 text-[10px] uppercase tracking-widest font-black text-slate-500/70">
+        <span className="absolute bottom-10 left-4 px-1.5 py-0.5 rounded-md bg-slate-900/40 backdrop-blur-sm text-[10px] uppercase tracking-widest font-black text-slate-300">
           {quadrantLabels[3]}
         </span>
       </div>
 
       <ResponsiveContainer width="100%" height="100%">
-        <ScatterChart margin={{ top: 16, right: 24, bottom: 24, left: 0 }}>
+        <ScatterChart margin={{ top: 28, right: 32, bottom: 36, left: 16 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
           <XAxis
             type="number"
@@ -191,9 +194,10 @@ export default function Quadrant({
             label={{
               value: xLabel,
               position: 'insideBottom',
-              offset: -8,
-              fill: '#94a3b8',
+              offset: -12,
+              fill: '#cbd5e1',
               fontSize: 11,
+              fontWeight: 600,
             }}
           />
           <YAxis
@@ -208,8 +212,11 @@ export default function Quadrant({
               value: yLabel,
               angle: -90,
               position: 'insideLeft',
-              fill: '#94a3b8',
+              offset: 10,
+              fill: '#cbd5e1',
               fontSize: 11,
+              fontWeight: 600,
+              style: { textAnchor: 'middle' },
             }}
           />
           <ZAxis type="number" dataKey="size" range={[40, 360]} domain={sizeRange} />

@@ -221,6 +221,13 @@ export default function SoundsByPlatform({
       className={className}
       locked={locked}
       tier={3}
+      info={{
+        what: 'Top trending sounds split by platform (Instagram vs. TikTok).',
+        howToRead:
+          "Each side ranks the sounds with the most recent video adoption. The growth chip shows week-over-week change. If a sound is climbing on both platforms, that's a stronger signal than a single-platform spike. Click any row with a play link for a preview.",
+        computation:
+          'Sorted by 7-day recent_count. The wow_change_pct compares the last 7 days vs. the previous 7 days.',
+      }}
     >
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <PlatformColumn platform="instagram" sounds={ig} />

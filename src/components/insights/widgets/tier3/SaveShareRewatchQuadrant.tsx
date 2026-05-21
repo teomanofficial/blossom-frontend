@@ -98,6 +98,13 @@ export default function SaveShareRewatchQuadrant({
       className={className}
       locked={locked}
       tier={3}
+      info={{
+        what: 'The three deep-virality scores (save, share, rewatch) projected onto a 2D quadrant.',
+        howToRead:
+          'X axis is save score, Y axis is share score, bubble size is overall virality. Power Virals (top-right) win on both. Word of Mouth (bottom-right) gets saved but not shared. Bookmark Bait (top-left) shares but does not bookmark. Quiet Skips (bottom-left) miss both axes.',
+        computation:
+          "Each axis is a 0-100 score from the virality-level AI analysis. Bubble color codes whether the point comes from a creator scan or one of your drafts.",
+      }}
       actions={
         data && data.sample_size > 0 ? (
           <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">

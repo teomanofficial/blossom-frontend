@@ -129,6 +129,13 @@ export default function AudienceArchetypeMap({
       emptyMessage="No audience archetypes detected yet. Profile more creators to fill this map."
       locked={locked}
       tier={4}
+      info={{
+        what: 'The fan clusters that leading creators in your niche attract.',
+        howToRead:
+          "Each bar is an audience archetype with the count of creators whose followers fall into that cluster. Use the biggest archetypes as your casting call — design content for the audience profile most likely to convert in your space.",
+        computation:
+          'Audience archetypes are derived from creator_disc_profiles. We count which archetype shows up most across top creators in your niche.',
+      }}
     >
       <div style={{ width: '100%', height: chartHeight }}>
         <ResponsiveContainer width="100%" height="100%">

@@ -185,6 +185,13 @@ export default function WhitespaceKeywords({
       className={className}
       locked={locked}
       tier={1}
+      info={{
+        what: 'Topics with high engagement but low video count in your niche.',
+        howToRead:
+          "These are blue-ocean opportunities — creators aren't making this content yet, but when they do, it performs above average. Try one before someone else discovers it. The bar shows how much each keyword's engagement beats the niche P75 baseline.",
+        computation:
+          'Whitespace score = (engagement rate above niche P75) − (video count below niche median × 50). Sorted descending so the biggest opportunities float to the top.',
+      }}
     >
       <ul className="space-y-2.5">
         {top.map((kw) => (

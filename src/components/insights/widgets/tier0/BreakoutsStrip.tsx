@@ -21,9 +21,7 @@ import type {
   Tier0BreakoutsResponse,
 } from '../../../../types/insights'
 import { compactNumber, formatMultiplier } from '../../../../lib/format'
-import LifecycleDial from '../../shared/LifecycleDial'
 import NicheFitBadge from '../../shared/NicheFitBadge'
-import VelocitySparkline from '../../shared/VelocitySparkline'
 import WidgetCard from '../../shared/WidgetCard'
 
 interface BreakoutsStripProps {
@@ -100,42 +98,81 @@ function BreakoutRow({ item, type }: { item: BreakoutItem; type: BreakoutType })
   const multiple = multipleLabel(item)
   const series = buildBreakoutSeries(item)
 
+  // Build an SVG sparkline that fills the card as a background visual.
+  // The path is drawn into a 100×30 viewBox and stretched via preserveAspectRatio="none".
+  let sparkPath = ''
+  let isPositive = true
+  if (series.length >= 2) {
+    const min = Math.min(...series)
+    const max = Math.max(...series)
+    const range = max - min || 1
+    const points = series.map((v, i) => {
+      const x = (i / (series.length - 1)) * 100
+      const y = 28 - ((v - min) / range) * 24
+      return `${x.toFixed(1)},${y.toFixed(1)}`
+    })
+    sparkPath = `M${points.join(' L')}`
+    const first = series[0] ?? 0
+    const last = series[series.length - 1] ?? 0
+    isPositive = last >= first
+  }
+  const gradId = `spark-${type}-${item.id}`
+  const strokeColor = isPositive ? '#10b981' : '#f43f5e'
+
   return (
-    <li className="group flex items-start gap-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.05] p-2.5 transition-colors">
-      <div
-        className={`flex flex-col items-center justify-center min-w-[52px] px-1.5 py-1 rounded-lg ${meta.chip} border shrink-0`}
-      >
-        <span className="text-xs sm:text-sm font-black tabular-nums leading-none">
-          {multiple}
+    <li className="group relative overflow-hidden rounded-xl bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.05] p-2.5 transition-colors min-h-[96px] flex flex-col">
+      {/* Sparkline fills the card as background visual */}
+      {sparkPath ? (
+        <svg
+          viewBox="0 0 100 30"
+          preserveAspectRatio="none"
+          className="absolute inset-0 w-full h-full pointer-events-none opacity-30 group-hover:opacity-50 transition-opacity"
+          aria-hidden="true"
+        >
+          <defs>
+            <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={strokeColor} stopOpacity="0.55" />
+              <stop offset="100%" stopColor={strokeColor} stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          <path d={`${sparkPath} L100,30 L0,30 Z`} fill={`url(#${gradId})`} />
+          <path
+            d={sparkPath}
+            fill="none"
+            stroke={strokeColor}
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      ) : null}
+
+      {/* Top row: tiny multiplier chip (left) + title (right) */}
+      <div className="relative flex items-center justify-between gap-2">
+        <span
+          className={`inline-flex items-baseline gap-1 px-1.5 py-0.5 rounded ${meta.chip} border text-[10px] font-black tabular-nums leading-none shrink-0`}
+        >
+          <span>{multiple}</span>
+          <span className="text-[7px] uppercase tracking-wider opacity-70">normal</span>
         </span>
-        <span className="text-[8px] font-bold uppercase tracking-widest opacity-70 mt-0.5">
-          normal
-        </span>
+        <h4
+          className="text-xs sm:text-[13px] font-bold text-slate-100 leading-tight truncate text-right min-w-0"
+          title={item.name || 'Untitled'}
+        >
+          {item.name || 'Untitled'}
+        </h4>
       </div>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-start gap-2 mb-1">
-          <h4 className="text-xs sm:text-[13px] font-bold text-slate-100 leading-tight truncate flex-1">
-            {item.name || 'Untitled'}
-          </h4>
-          <LifecycleDial stage={item.lifecycle} size="sm" showLabel={false} />
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <NicheFitBadge score={item.niche_fit} size="sm" />
-          <span className="text-[10px] font-semibold text-slate-500 inline-flex items-center gap-1">
-            <i className="fas fa-eye text-[9px]" />
-            {compactNumber(item.avg_views)}
-          </span>
-        </div>
-        {series.length > 0 ? (
-          <div className="mt-1.5">
-            <VelocitySparkline
-              values={series}
-              height={18}
-              width={120}
-              ariaLabel={`${item.name} 24h volume trend`}
-            />
-          </div>
-        ) : null}
+
+      {/* Spacer pushes bottom row to the card floor */}
+      <div className="flex-1" />
+
+      {/* Bottom row: niche fit + view count */}
+      <div className="relative flex items-center gap-2 flex-wrap mt-2">
+        <NicheFitBadge score={item.niche_fit} size="sm" />
+        <span className="text-[10px] font-semibold text-slate-400 inline-flex items-center gap-1">
+          <i className="fas fa-eye text-[9px]" />
+          {compactNumber(item.avg_views)}
+        </span>
       </div>
     </li>
   )
@@ -197,6 +234,12 @@ export default function BreakoutsStrip({ className = '' }: BreakoutsStripProps) 
     <WidgetCard
       title="Breakouts of the Day"
       subtitle="Hooks, formats, sounds, and topics surging in the last 24h."
+      info={{
+        what: 'Hooks, formats, sounds, and topics whose 24h video count is statistically unusual compared to the 7-day baseline.',
+        howToRead: "Each card shows a multiplier (how unusual today's volume is vs the 7-day average) and a sparkline of the recent trajectory. Green sparkline = rising, red = falling. The niche-fit chip tells you if the surge applies to YOUR space — strong-fit items are the ones worth acting on.",
+        computation: 'Z-score of last 24h video count against the 7-day mean per item. Items with |z| ≥ 1 are surfaced and sorted by velocity within each category. Refreshed every 30 minutes.',
+        example: 'A "Dance Trend" hook at 1.4× normal with a green sparkline + 50% niche fit means dance hooks are accelerating today and partially overlap with your audience — worth a test post.',
+      }}
       icon="fa-fire"
       iconBg="bg-pink-500/15"
       iconColor="text-pink-400"

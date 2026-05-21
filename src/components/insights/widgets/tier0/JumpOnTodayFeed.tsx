@@ -158,6 +158,13 @@ export default function JumpOnTodayFeed({ className = '' }: JumpOnTodayFeedProps
       emptyMessage="Nothing matches your niche today — try widening your niche tag in settings."
       size="lg"
       className={className}
+      info={{
+        what: 'Hooks, formats, and sounds matching your niche right now — with a closing window of opportunity.',
+        howToRead:
+          "Each card shows a trend you should ride before it saturates. Days-remaining is the estimated time before the trend peaks; saturation% is how many creators are already on it. Aim for items with days-remaining ≥ 7 and saturation < 50%.",
+        computation:
+          'Filtered to lifecycle stages "emerging" and "rising" with niche-fit > 70 over the last 24 hours.',
+      }}
     >
       <ul className="space-y-2.5">
         {items.map((item) => (

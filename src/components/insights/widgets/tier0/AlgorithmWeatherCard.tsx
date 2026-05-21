@@ -157,6 +157,13 @@ export default function AlgorithmWeatherCard({
       isEmpty={false /* we render our own empty body below to preserve the toggle */}
       size="lg"
       className={className}
+      info={{
+        what: "What the platform's recommendation algorithm is rewarding this week.",
+        howToRead:
+          "Each signal is a structural shift (post length, format type, hook style, etc.) that's recently moved up or down in algorithmic favor. Green = trending up, red = trending down. Use the 'Why?' link on each signal to see the evidence behind it.",
+        computation:
+          'Generated weekly by comparing this week\'s top-decile videos against the prior week. Each signal carries a confidence score so you can weight your bets.',
+      }}
       actions={<PlatformToggle platform={platform} onChange={setPlatform} />}
     >
       {showEmpty ? (

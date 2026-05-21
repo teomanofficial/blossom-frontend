@@ -205,6 +205,13 @@ export default function EarlySoundsRadar({
       className={className}
       locked={locked}
       tier={1}
+      info={{
+        what: 'Sounds gaining traction in your niche this week but not yet saturated.',
+        howToRead:
+          "The lifecycle dial tells you the stage (emerging is earliest, rising is climbing). The growth arrow compares this week's adoption to last week's. Niche fit shows how well the sound matches your audience. Sweet spot: emerging + climbing + high niche fit.",
+        computation:
+          "Recent vs. prior 7-day video count delta, filtered by your niche tag, ordered by absolute growth.",
+      }}
     >
       <ul className="space-y-2.5">
         {top.map((sound) => (

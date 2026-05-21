@@ -301,6 +301,13 @@ export default function NicheLeaderboard({ className = '' }: NicheLeaderboardPro
       emptyMessage="Try a different niche or tier — no creators match these filters."
       locked={locked}
       tier={4}
+      info={{
+        what: 'Top creators in a niche ranked by a blended engagement × viral-hit-rate score.',
+        howToRead:
+          "Pick a niche (and optional follower tier) to see who's actually dominating right now. Engagement is consistent reach; viral hit rate is the share of their posts that broke through. The DISC chip hints at their delivery style. Click a row to deep-dive their profile.",
+        computation:
+          'Rank score = avg_engagement_rate × viral_hit_rate. Filtered to the niche and optional follower tier (nano → mega).',
+      }}
     >
       <FilterBar
         niche={niche}

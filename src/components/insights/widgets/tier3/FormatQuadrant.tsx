@@ -76,6 +76,11 @@ export default function FormatQuadrant({ className = '', niche }: FormatQuadrant
     <WidgetCard
       title="Format Quadrant"
       subtitle="Which production formats compound — and which are crowded with no payoff?"
+      info={{
+        what: 'Every content format in your space, plotted by adoption (x-axis) vs. avg performance (y-axis).',
+        howToRead: 'Top-right are Mainstream Winners — proven but crowded. Top-left is Blue Ocean — high views, low competition. This is where to play next. Saturated (bottom-right) means overused with diminishing yield. Bubble size = trend velocity; color = lifecycle stage.',
+        computation: 'Adoption from viral_format_classes.video_count. Performance from avg_views. Lifecycle stage backfilled from weekly trajectories.',
+      }}
       icon="fa-table-cells-large"
       iconBg="bg-cyan-500/15"
       iconColor="text-cyan-400"
