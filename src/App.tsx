@@ -10,6 +10,8 @@ import Terms from './pages/Terms'
 import Privacy from './pages/Privacy'
 import FAQ from './pages/FAQ'
 import Dashboard from './pages/Dashboard'
+import PostMortem from './pages/PostMortem'
+import Outliers from './pages/Outliers'
 import Formats from './pages/Formats'
 import FormatDetail from './pages/FormatDetail'
 import Hooks from './pages/Hooks'
@@ -126,6 +128,9 @@ function App() {
         }
       >
         <Route index element={<Dashboard />} />
+        <Route path="post-mortem" element={<PostMortem />} />
+        <Route path="post-mortem/:videoId" element={<PostMortem />} />
+        <Route path="outliers" element={<Outliers />} />
         <Route path="platforms" element={<Platforms />} />
         <Route path="platforms/posts" element={<PlatformPosts />} />
         <Route path="platforms/posts/new" element={<PlatformPostCreate />} />

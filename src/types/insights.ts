@@ -97,7 +97,13 @@ export interface JumpOnTodayItem {
 
 export interface OutlierVideo {
   video_id: string;
-  influencer: { id: string; username: string; follower_count: number };
+  influencer: {
+    id: string;
+    username: string;
+    follower_count: number;
+    tier?: string | null;
+    avatar_url?: string | null;
+  };
   views: number;
   creator_median_views: number;
   multiple: number;          // views / creator_median (>= 3)
@@ -105,6 +111,10 @@ export interface OutlierVideo {
   format_class: string;
   thumbnail_url: string;
   posted_at: string;
+  /** Source platform — used by N3's "View on platform" deep link. */
+  platform?: Platform | null;
+  /** Permalink back to the original post; null when the row has no canonical URL. */
+  content_url?: string | null;
   tactic_teardown: TacticTeardownItem[];
   niche_fit: NicheFitScore;
 }
