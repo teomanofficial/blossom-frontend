@@ -134,6 +134,20 @@ export interface GreenlightRequest {
   planned_format?: string;
   planned_duration_sec?: number;
   draft_video_url?: string;  // optional, for deeper analysis
+  /**
+   * Reverse-engineering hand-off from the Outlier Hunter page.
+   * When set, the pipeline uses that outlier's tactic teardown as the
+   * gold-standard reference instead of niche-generic top-decile tactics.
+   * Maps to a content_videos.id (stringified).
+   */
+  source_outlier_id?: string;
+}
+
+export interface GreenlightScoreBreakdown {
+  hook_strength: number;     // 0-100, mirrors predicted_hook_strength
+  niche_fit: number;         // 0-100, mirrors niche_fit.score
+  format_fit: number;        // 0-100, mirrors format_fit.score
+  creator_disc_fit: number;  // 0-100, distance between user's DISC and hook's DISC distribution
 }
 
 export interface GreenlightResponse {
@@ -149,6 +163,24 @@ export interface GreenlightResponse {
   missing_gold_standard_tactics: Array<{ tactic: string; lift: number; reason: string }>;
   swap_recommendations: Array<{ swap_from: string; swap_to: string; expected_lift: number }>;
   comparable_winners: Array<{ video_id: string; thumbnail_url: string; why_comparable: string }>;
+  /** Optional breakdown of the 4 contributing scores — surfaces directly in the UI progress bars. */
+  score_breakdown?: GreenlightScoreBreakdown;
+  /**
+   * Mirrors the request's source_outlier_id when the response was generated
+   * via the reverse-engineering path. Frontend uses it to render the
+   * "Reverse-engineering from @username" pill after submission.
+   */
+  source_outlier?: {
+    video_id: string;
+    username: string;
+    multiple: number;
+    hook_class: string;
+    format_class: string;
+    thumbnail_url: string;
+  } | null;
+  /** Used for the upgrade CTA when the quota is hit; populated only on quota errors. */
+  hook_class_id?: number | null;
+  format_class_id?: number | null;
 }
 
 export interface WhitespaceKeyword {

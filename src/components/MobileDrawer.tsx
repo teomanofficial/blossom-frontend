@@ -26,6 +26,7 @@ const intelligenceItems = [
   { to: '/dashboard/tactics', icon: 'fa-chess', label: 'Tactics', color: 'text-amber-400', bg: 'bg-amber-500/10' },
   { to: '/dashboard/post-mortem', icon: 'fa-magnifying-glass-chart', label: 'Forensics', color: 'text-pink-400', bg: 'bg-pink-500/10' },
   { to: '/dashboard/outliers', icon: 'fa-meteor', label: 'Outliers', color: 'text-orange-400', bg: 'bg-orange-500/10' },
+  { to: '/dashboard/greenlight', icon: 'fa-traffic-light', label: 'Greenlight', color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
 ]
 
 const accountItems = [

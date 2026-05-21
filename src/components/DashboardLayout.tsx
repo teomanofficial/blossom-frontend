@@ -26,6 +26,7 @@ const intelligenceItems = [
   { to: '/dashboard/tactics', icon: 'fa-chess', label: 'Tactics' },
   { to: '/dashboard/post-mortem', icon: 'fa-magnifying-glass-chart', label: 'Forensics' },
   { to: '/dashboard/outliers', icon: 'fa-meteor', label: 'Outliers' },
+  { to: '/dashboard/greenlight', icon: 'fa-traffic-light', label: 'Greenlight' },
 ]
 
 const bottomItems = [
@@ -70,6 +71,7 @@ const drawerRoutes = [
   '/dashboard/tactics',
   '/dashboard/post-mortem',
   '/dashboard/outliers',
+  '/dashboard/greenlight',
   '/dashboard/trends',
   '/dashboard/trends/posts',
   '/dashboard/trends/formats',

@@ -1,11 +1,9 @@
 /**
  * Tier 3 — "Under the hood"
  *
- * Stage 3 FE1 scaffolds the layout; Stage 4 W3 fills the slots with
- * real widgets. The strategic anatomy of viral content in your space.
- *
- * Tier 3 is the densest tier (~18 widgets). To keep things scannable
- * we group widgets into four sub-bands with their own small headings:
+ * The strategic anatomy of viral content in your space. Tier 3 is the
+ * densest tier (~18 widgets). To keep things scannable we group widgets
+ * into four sub-bands with their own small headings:
  *   - Anatomy        (9 widgets)
  *   - Hook Lab       (3 widgets)
  *   - Sound          (3 widgets)
@@ -14,38 +12,69 @@
  * Within each sub-band we use a 4-column dense grid on desktop with
  * select widgets spanning 2 columns when they carry richer chart UIs.
  *
- * Slot contract (Stage 4 W3 must keep the slot names + order):
+ * Each widget is wrapped in WidgetErrorBoundary so a render-time crash
+ * in one widget can't break the rest of the tier — useful for the
+ * chart-heavy widgets where a malformed backend payload could trip up
+ * Recharts.
+ *
+ * Slot contract (preserved from FE1's design):
  *
  * Anatomy:
- *   1.  HookMatrix
- *   2.  FormatQuadrant
- *   3.  CognitiveInterruptionHeatmap
+ *   1.  HookMatrix (2-col)
+ *   2.  FormatQuadrant (2-col)
+ *   3.  CognitiveInterruptionHeatmap (2-col)
  *   4.  EmotionDistribution
  *   5.  RetentionDangerZones
- *   6.  TacticCoOccurrenceNetwork
+ *   6.  TacticCoOccurrenceNetwork (2-col)
  *   7.  OptimalLengthCurves
  *   8.  ShareMotivationMix
- *   9.  SaveShareRewatchQuadrant
+ *   9.  SaveShareRewatchQuadrant (2-col)
  *
  * Hook Lab:
- *  10.  ScrollStopLeaderboard
+ *  10.  ScrollStopLeaderboard (2-col)
  *  11.  SpokenHookKeywords
  *  12.  OnScreenHookKeywords
  *
  * Sound:
- *  13.  SoundLifecycleBrowser
+ *  13.  SoundLifecycleBrowser (2-col)
  *  14.  SoundsByPlatform
  *  15.  SonicDNAPanel
  *
  * Category:
- *  16.  CategoryHeatGrid
+ *  16.  CategoryHeatGrid (2-col)
  *  17.  PostingTimeHeatmap
  *  18.  LengthSweetSpotByNiche
  */
 
 import type { ReactNode } from 'react'
 import TierSectionHeader from './TierSectionHeader'
-import WidgetSlot from './WidgetSlot'
+import WidgetErrorBoundary from './WidgetErrorBoundary'
+
+// Anatomy
+import HookMatrix from './widgets/tier3/HookMatrix'
+import FormatQuadrant from './widgets/tier3/FormatQuadrant'
+import CognitiveInterruptionHeatmap from './widgets/tier3/CognitiveInterruptionHeatmap'
+import EmotionDistribution from './widgets/tier3/EmotionDistribution'
+import RetentionDangerZones from './widgets/tier3/RetentionDangerZones'
+import TacticCoOccurrenceNetwork from './widgets/tier3/TacticCoOccurrenceNetwork'
+import OptimalLengthCurves from './widgets/tier3/OptimalLengthCurves'
+import ShareMotivationMix from './widgets/tier3/ShareMotivationMix'
+import SaveShareRewatchQuadrant from './widgets/tier3/SaveShareRewatchQuadrant'
+
+// Hook Lab
+import ScrollStopLeaderboard from './widgets/tier3/ScrollStopLeaderboard'
+import SpokenHookKeywords from './widgets/tier3/SpokenHookKeywords'
+import OnScreenHookKeywords from './widgets/tier3/OnScreenHookKeywords'
+
+// Sound
+import SoundLifecycleBrowser from './widgets/tier3/SoundLifecycleBrowser'
+import SoundsByPlatform from './widgets/tier3/SoundsByPlatform'
+import SonicDNAPanel from './widgets/tier3/SonicDNAPanel'
+
+// Category
+import CategoryHeatGrid from './widgets/tier3/CategoryHeatGrid'
+import PostingTimeHeatmap from './widgets/tier3/PostingTimeHeatmap'
+import LengthSweetSpotByNiche from './widgets/tier3/LengthSweetSpotByNiche'
 
 function SubBand({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -73,149 +102,81 @@ export default function Tier3Anatomy() {
       />
 
       <SubBand title="Anatomy">
-        <WidgetSlot
-          name="HookMatrix"
-          hint="Hook classes plotted by reach × retention."
-          icon="fa-grip"
-          iconBg="bg-cyan-500/15"
-          iconColor="text-cyan-400"
-          className="lg:col-span-2"
-        />
-        <WidgetSlot
-          name="FormatQuadrant"
-          hint="Format classes mapped to engagement vs. shareability."
-          icon="fa-table-cells-large"
-          iconBg="bg-cyan-500/15"
-          iconColor="text-cyan-400"
-          className="lg:col-span-2"
-        />
-        <WidgetSlot
+        <WidgetErrorBoundary name="HookMatrix" className="lg:col-span-2">
+          <HookMatrix className="lg:col-span-2" />
+        </WidgetErrorBoundary>
+        <WidgetErrorBoundary name="FormatQuadrant" className="lg:col-span-2">
+          <FormatQuadrant className="lg:col-span-2" />
+        </WidgetErrorBoundary>
+        <WidgetErrorBoundary
           name="CognitiveInterruptionHeatmap"
-          hint="Primal triggers × niches — which interrupts pay off where."
-          icon="fa-fire-flame-curved"
-          iconBg="bg-orange-500/15"
-          iconColor="text-orange-400"
           className="lg:col-span-2"
-        />
-        <WidgetSlot
-          name="EmotionDistribution"
-          hint="Primary emotion mix across top-decile videos."
-          icon="fa-face-smile-beam"
-          iconBg="bg-pink-500/15"
-          iconColor="text-pink-400"
-        />
-        <WidgetSlot
-          name="RetentionDangerZones"
-          hint="Where viewers drop — bucketed timestamps with common causes."
-          icon="fa-triangle-exclamation"
-          iconBg="bg-red-500/15"
-          iconColor="text-red-400"
-        />
-        <WidgetSlot
+        >
+          <CognitiveInterruptionHeatmap className="lg:col-span-2" />
+        </WidgetErrorBoundary>
+        <WidgetErrorBoundary name="EmotionDistribution">
+          <EmotionDistribution />
+        </WidgetErrorBoundary>
+        <WidgetErrorBoundary name="RetentionDangerZones">
+          <RetentionDangerZones />
+        </WidgetErrorBoundary>
+        <WidgetErrorBoundary
           name="TacticCoOccurrenceNetwork"
-          hint="Which tactic pairs compound when used together."
-          icon="fa-circle-nodes"
-          iconBg="bg-purple-500/15"
-          iconColor="text-purple-400"
           className="lg:col-span-2"
-        />
-        <WidgetSlot
-          name="OptimalLengthCurves"
-          hint="Hook + total-duration sweet spots per niche."
-          icon="fa-wave-square"
-          iconBg="bg-emerald-500/15"
-          iconColor="text-emerald-400"
-        />
-        <WidgetSlot
-          name="ShareMotivationMix"
-          hint="Why audiences share — relate, teach, surprise, tribe?"
-          icon="fa-share-nodes"
-          iconBg="bg-sky-500/15"
-          iconColor="text-sky-400"
-        />
-        <WidgetSlot
+        >
+          <TacticCoOccurrenceNetwork className="lg:col-span-2" />
+        </WidgetErrorBoundary>
+        <WidgetErrorBoundary name="OptimalLengthCurves">
+          <OptimalLengthCurves />
+        </WidgetErrorBoundary>
+        <WidgetErrorBoundary name="ShareMotivationMix">
+          <ShareMotivationMix />
+        </WidgetErrorBoundary>
+        <WidgetErrorBoundary
           name="SaveShareRewatchQuadrant"
-          hint="Save × share × rewatch — the virality triple-axis."
-          icon="fa-rotate"
-          iconBg="bg-amber-500/15"
-          iconColor="text-amber-400"
           className="lg:col-span-2"
-        />
+        >
+          <SaveShareRewatchQuadrant className="lg:col-span-2" />
+        </WidgetErrorBoundary>
       </SubBand>
 
       <SubBand title="Hook Lab">
-        <WidgetSlot
+        <WidgetErrorBoundary
           name="ScrollStopLeaderboard"
-          hint="Top-ranked hooks by scroll-stop power 0-100."
-          icon="fa-bullseye"
-          iconBg="bg-cyan-500/15"
-          iconColor="text-cyan-400"
           className="lg:col-span-2"
-        />
-        <WidgetSlot
-          name="SpokenHookKeywords"
-          hint="Most common spoken keywords in the first 2 seconds."
-          icon="fa-microphone-lines"
-          iconBg="bg-pink-500/15"
-          iconColor="text-pink-400"
-        />
-        <WidgetSlot
-          name="OnScreenHookKeywords"
-          hint="Most common on-screen text in the first 2 seconds."
-          icon="fa-closed-captioning"
-          iconBg="bg-purple-500/15"
-          iconColor="text-purple-400"
-        />
+        >
+          <ScrollStopLeaderboard className="lg:col-span-2" />
+        </WidgetErrorBoundary>
+        <WidgetErrorBoundary name="SpokenHookKeywords">
+          <SpokenHookKeywords />
+        </WidgetErrorBoundary>
+        <WidgetErrorBoundary name="OnScreenHookKeywords">
+          <OnScreenHookKeywords />
+        </WidgetErrorBoundary>
       </SubBand>
 
       <SubBand title="Sound">
-        <WidgetSlot
-          name="SoundLifecycleBrowser"
-          hint="Each sound's weekly adoption curve and current lifecycle stage."
-          icon="fa-music"
-          iconBg="bg-cyan-500/15"
-          iconColor="text-cyan-400"
-          className="lg:col-span-2"
-        />
-        <WidgetSlot
-          name="SoundsByPlatform"
-          hint="What's winning on Instagram vs. TikTok right now."
-          icon="fa-volume-high"
-          iconBg="bg-pink-500/15"
-          iconColor="text-pink-400"
-        />
-        <WidgetSlot
-          name="SonicDNAPanel"
-          hint="BPM, energy, and brightness signatures of viral audio."
-          icon="fa-waveform-lines"
-          iconBg="bg-purple-500/15"
-          iconColor="text-purple-400"
-        />
+        <WidgetErrorBoundary name="SoundLifecycleBrowser" className="lg:col-span-2">
+          <SoundLifecycleBrowser className="lg:col-span-2" />
+        </WidgetErrorBoundary>
+        <WidgetErrorBoundary name="SoundsByPlatform">
+          <SoundsByPlatform />
+        </WidgetErrorBoundary>
+        <WidgetErrorBoundary name="SonicDNAPanel">
+          <SonicDNAPanel />
+        </WidgetErrorBoundary>
       </SubBand>
 
       <SubBand title="Category">
-        <WidgetSlot
-          name="CategoryHeatGrid"
-          hint="Categories × subcategories — where heat is concentrating."
-          icon="fa-th"
-          iconBg="bg-cyan-500/15"
-          iconColor="text-cyan-400"
-          className="lg:col-span-2"
-        />
-        <WidgetSlot
-          name="PostingTimeHeatmap"
-          hint="Day × hour heatmap of when viral hits in your niche post."
-          icon="fa-clock"
-          iconBg="bg-pink-500/15"
-          iconColor="text-pink-400"
-        />
-        <WidgetSlot
-          name="LengthSweetSpotByNiche"
-          hint="The duration band where your niche consistently overperforms."
-          icon="fa-ruler-horizontal"
-          iconBg="bg-purple-500/15"
-          iconColor="text-purple-400"
-        />
+        <WidgetErrorBoundary name="CategoryHeatGrid" className="lg:col-span-2">
+          <CategoryHeatGrid className="lg:col-span-2" />
+        </WidgetErrorBoundary>
+        <WidgetErrorBoundary name="PostingTimeHeatmap">
+          <PostingTimeHeatmap />
+        </WidgetErrorBoundary>
+        <WidgetErrorBoundary name="LengthSweetSpotByNiche">
+          <LengthSweetSpotByNiche />
+        </WidgetErrorBoundary>
       </SubBand>
     </section>
   )

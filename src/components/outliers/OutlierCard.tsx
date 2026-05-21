@@ -204,7 +204,7 @@ export default function OutlierCard({
               : 'bg-black/40 border-white/15 text-white hover:bg-black/60'
           }`}
         >
-          <i className={`fas ${saved ? 'fa-bookmark' : 'fa-bookmark'} text-sm ${saved ? '' : 'opacity-90'}`} />
+          <i className={`${saved ? 'fas' : 'far'} fa-bookmark text-sm ${saved ? '' : 'opacity-90'}`} />
         </button>
 
         {/* Views + creator overlay along bottom */}

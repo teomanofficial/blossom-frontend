@@ -5,6 +5,7 @@ import { useDashboardSection } from '../lib/useDashboardSection'
 import { AccountsSkeleton } from '../components/DashboardSkeletons'
 import Tier0Hero from '../components/insights/Tier0Hero'
 import Tier1Actions from '../components/insights/Tier1Actions'
+import ForensicsOnboardingBanner from '../components/insights/ForensicsOnboardingBanner'
 
 // Tier 2+ sit below the fold — split out so the initial chunk only
 // carries Tier 0 / Tier 1. Stage 3 FE1 will likely promote each tier
@@ -150,6 +151,9 @@ export default function Dashboard() {
 
       {/* ── Tier 1 — Action (above the fold) ── */}
       <Tier1Actions />
+
+      {/* ── First-run onboarding (renders null when count >= 3) ── */}
+      <ForensicsOnboardingBanner />
 
       {/* ── Tier 2 — Forensics (lazy) ── */}
       <Suspense fallback={<TierLoadingFallback />}>
