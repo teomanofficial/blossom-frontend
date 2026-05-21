@@ -159,8 +159,14 @@ export default function HeatGrid({
 
   const fmt = formatValue ?? ((v: number) => v.toFixed(2))
 
+  // Cap display size so SVG labels stay readable inside wide col-12 grids.
+  // Natural viewBox units: ~28 per cell. We cap display at ~3.5× natural
+  // width so a 5×10 grid renders around ~840px max instead of stretching
+  // to fill a 1400px container (which made labels balloon to 60–80px).
+  const maxDisplayWidth = Math.min(viewW * 3.5, 880)
+
   return (
-    <div className="relative w-full">
+    <div className="relative w-full flex justify-center">
       <svg
         viewBox={`0 0 ${viewW} ${viewH}`}
         width="100%"
@@ -168,6 +174,7 @@ export default function HeatGrid({
         role="img"
         aria-label={`Heatmap of ${rows.length} rows by ${cols.length} columns`}
         className="block"
+        style={{ maxWidth: `${maxDisplayWidth}px` }}
       >
         {/* Column labels (top) */}
         {cols.map((col, ci) => {

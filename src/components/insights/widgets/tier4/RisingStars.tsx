@@ -12,6 +12,7 @@
  * averages, which is enough signal for a slope hint).
  */
 
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useInsights } from '../../../../lib/useInsights'
 import { compactNumber, formatPercent } from '../../../../lib/format'
@@ -98,6 +99,8 @@ function StarCard({ star }: { star: RisingStar }) {
   const tierTone = TIER_COLORS[(star.tier as string) ?? ''] ?? null
   const initial = (star.display_name || star.username || '?').charAt(0).toUpperCase()
   const safeAvatar = !!star.avatar_url && /^https?:\/\//.test(star.avatar_url)
+  const [imgFailed, setImgFailed] = useState(false)
+  const showImage = safeAvatar && !imgFailed
 
   return (
     <Link
@@ -108,12 +111,14 @@ function StarCard({ star }: { star: RisingStar }) {
       <div className="absolute -top-8 -right-8 w-24 h-24 bg-pink-500/15 rounded-full blur-3xl pointer-events-none group-hover:bg-pink-500/25 transition-colors" />
 
       <div className="relative flex items-start gap-3">
-        {safeAvatar ? (
+        {showImage ? (
           <img
             src={star.avatar_url as string}
             alt={`@${star.username}`}
             className="w-10 h-10 rounded-xl object-cover border border-white/10 shrink-0"
             loading="lazy"
+            referrerPolicy="no-referrer"
+            onError={() => setImgFailed(true)}
           />
         ) : (
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-500/30 to-purple-500/30 border border-white/10 flex items-center justify-center text-sm font-black text-white/70 shrink-0">
