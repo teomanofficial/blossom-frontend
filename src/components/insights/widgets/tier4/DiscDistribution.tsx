@@ -125,7 +125,7 @@ function CustomTooltip({
 }
 
 export default function DiscDistribution({ className = '' }: DiscDistributionProps) {
-  const { data, loading, error, retry } = useInsights<DiscDistributionResponse>(
+  const { data, loading, error, retry, locked } = useInsights<DiscDistributionResponse>(
     'tier4/disc-distribution',
   )
 
@@ -166,6 +166,8 @@ export default function DiscDistribution({ className = '' }: DiscDistributionPro
       isEmpty={!loading && !error && distribution.length === 0}
       emptyIcon="fa-fingerprint"
       emptyMessage="DISC distribution populates as more creators are profiled. None yet for this niche."
+      locked={locked}
+      tier={4}
     >
       {sparse ? (
         <div className="mb-3 flex items-start gap-2 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20">

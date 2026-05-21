@@ -157,7 +157,7 @@ function KeywordRow({ kw }: { kw: WhitespaceKeyword }) {
 export default function WhitespaceKeywords({
   className = '',
 }: WhitespaceKeywordsProps) {
-  const { data, loading, error, retry } = useInsights<WhitespaceResponse>(
+  const { data, loading, error, retry, locked } = useInsights<WhitespaceResponse>(
     'tier1/whitespace',
   )
 
@@ -183,6 +183,8 @@ export default function WhitespaceKeywords({
       emptyMessage="Your niche is fully explored — no whitespace right now."
       size="lg"
       className={className}
+      locked={locked}
+      tier={1}
     >
       <ul className="space-y-2.5">
         {top.map((kw) => (

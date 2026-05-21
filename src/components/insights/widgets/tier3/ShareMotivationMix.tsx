@@ -55,7 +55,7 @@ function colorFor(idx: number): string {
 }
 
 export default function ShareMotivationMix({ className = '' }: ShareMotivationMixProps) {
-  const { data, loading, error, retry } =
+  const { data, loading, error, retry, locked } =
     useInsights<ShareMotivationResponse>('tier3/share-motivation')
 
   const rows = data?.distribution ?? []
@@ -76,6 +76,8 @@ export default function ShareMotivationMix({ className = '' }: ShareMotivationMi
       emptyMessage="No share-motivation tags yet — virality analysis is the source and is still being seeded."
       size="md"
       className={className}
+      locked={locked}
+      tier={3}
       actions={
         data && data.sample_size > 0 ? (
           <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">

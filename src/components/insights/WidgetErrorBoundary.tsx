@@ -92,7 +92,14 @@ export default class WidgetErrorBoundary extends Component<
 
     // Bumping the key forces React to remount the subtree on retry —
     // useful because the offending render may have left the widget in
-    // an inconsistent local-state.
-    return <div key={resetKey}>{children}</div>
+    // an inconsistent local-state. We forward `className` so the wrapper
+    // becomes the grid child — eliminating the double-pass that was
+    // happening at the parent level (where the same span class was
+    // being passed BOTH to the boundary and to the child widget).
+    return (
+      <div key={resetKey} className={className}>
+        {children}
+      </div>
+    )
   }
 }

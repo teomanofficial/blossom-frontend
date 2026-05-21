@@ -111,7 +111,7 @@ const TREND_ARROW: Record<DerivedSummary['trend'], string> = {
 export default function ImprovementVelocityChart({
   className = '',
 }: ImprovementVelocityChartProps) {
-  const { data, loading, error, retry } = useInsights<VelocityEnvelope>(
+  const { data, loading, error, retry, locked } = useInsights<VelocityEnvelope>(
     'tier2/improvement-velocity',
   )
 
@@ -156,6 +156,8 @@ export default function ImprovementVelocityChart({
       emptyMessage="Iterate on a video twice to start tracking improvement velocity."
       size="lg"
       className={className}
+      locked={locked}
+      tier={2}
     >
       {summary ? (
         <div className="flex flex-col gap-4">

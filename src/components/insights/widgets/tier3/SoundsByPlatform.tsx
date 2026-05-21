@@ -197,7 +197,7 @@ function PlatformColumn({
 export default function SoundsByPlatform({
   className = '',
 }: SoundsByPlatformProps) {
-  const { data, loading, error, retry } =
+  const { data, loading, error, retry, locked } =
     useInsights<SoundsByPlatformResponse>('tier3/sounds-by-platform?limit=10')
 
   const ig = data?.instagram ?? []
@@ -219,6 +219,8 @@ export default function SoundsByPlatform({
       emptyMessage="No sound activity in the last 14 days — check back after the next refresh."
       size="md"
       className={className}
+      locked={locked}
+      tier={3}
     >
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <PlatformColumn platform="instagram" sounds={ig} />

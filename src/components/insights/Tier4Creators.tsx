@@ -39,7 +39,7 @@ export default function Tier4Creators() {
           name="NicheLeaderboard"
           className="sm:col-span-2 lg:col-span-3"
         >
-          <NicheLeaderboard className="sm:col-span-2 lg:col-span-3" />
+          <NicheLeaderboard />
         </WidgetErrorBoundary>
 
         <WidgetErrorBoundary name="RisingStars">

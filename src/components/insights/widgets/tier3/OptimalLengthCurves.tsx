@@ -49,7 +49,7 @@ export default function OptimalLengthCurves({
   const path = niche
     ? `tier3/optimal-lengths?niche=${encodeURIComponent(niche)}`
     : 'tier3/optimal-lengths'
-  const { data, loading, error, retry } = useInsights<OptimalLengthsResponse>(path)
+  const { data, loading, error, retry, locked } = useInsights<OptimalLengthsResponse>(path)
 
   const hookHasData =
     (data?.hook.top_decile_buckets.some((n) => n > 0) ?? false) ||
@@ -74,6 +74,8 @@ export default function OptimalLengthCurves({
       emptyMessage="Not enough analysed videos to build length distributions yet."
       size="md"
       className={className}
+      locked={locked}
+      tier={3}
     >
       {data ? (
         <div className="space-y-5">

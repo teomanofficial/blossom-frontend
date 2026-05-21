@@ -298,7 +298,7 @@ function NextPostCard({ item }: { item: NextPostItem }) {
 }
 
 export default function NextPostsRanked({ className = '' }: NextPostsRankedProps) {
-  const { data, loading, error, retry } = useInsights<NextPostsResponse>(
+  const { data, loading, error, retry, locked } = useInsights<NextPostsResponse>(
     'tier1/next-posts',
   )
 
@@ -328,6 +328,8 @@ export default function NextPostsRanked({ className = '' }: NextPostsRankedProps
       emptyMessage="We're crafting personalized suggestions — check back in a few hours."
       size="lg"
       className={className}
+      locked={locked}
+      tier={1}
     >
       <div className="space-y-2.5">
         {items.map((item) => (

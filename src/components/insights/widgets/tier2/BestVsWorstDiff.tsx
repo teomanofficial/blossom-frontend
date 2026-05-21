@@ -224,7 +224,7 @@ const TONE_PILL: Record<HeadlineDelta['tone'], string> = {
 }
 
 export default function BestVsWorstDiff({ className = '' }: BestVsWorstDiffProps) {
-  const { data, loading, error, retry } = useInsights<BestVsWorstResponse>(
+  const { data, loading, error, retry, locked } = useInsights<BestVsWorstResponse>(
     'tier2/best-vs-worst',
   )
 
@@ -258,6 +258,8 @@ export default function BestVsWorstDiff({ className = '' }: BestVsWorstDiffProps
       emptyMessage="Analyze more of your content to unlock this comparison."
       size="lg"
       className={className}
+      locked={locked}
+      tier={2}
     >
       <div className="flex flex-col gap-4">
         {headline ? (

@@ -82,7 +82,7 @@ function OutlierMiniCard({ outlier }: { outlier: OutlierVideo }) {
 }
 
 export default function OutlierFeed({ className = '' }: OutlierFeedProps) {
-  const { data, loading, error, retry } = useInsights<OutlierFeedResponse>(
+  const { data, loading, error, retry, locked } = useInsights<OutlierFeedResponse>(
     'tier1/outliers?limit=3',
   )
 
@@ -103,6 +103,8 @@ export default function OutlierFeed({ className = '' }: OutlierFeedProps) {
       emptyMessage="No outliers indexed yet — check back in a few hours."
       size="lg"
       className={className}
+      locked={locked}
+      tier={1}
       actions={
         <Link
           to="/dashboard/outliers"

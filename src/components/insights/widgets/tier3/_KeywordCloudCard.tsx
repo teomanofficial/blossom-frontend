@@ -66,7 +66,7 @@ export default function KeywordCloudCard({
   barTone,
 }: KeywordCloudCardProps) {
   const fullPath = niche ? `${path}?niche=${encodeURIComponent(niche)}` : path
-  const { data, loading, error, retry } = useInsights<KeywordResponse>(fullPath)
+  const { data, loading, error, retry, locked } = useInsights<KeywordResponse>(fullPath)
 
   const keywords = data?.keywords ?? []
   const isEmpty = !loading && !error && keywords.length === 0
@@ -103,6 +103,8 @@ export default function KeywordCloudCard({
       emptyMessage="No keyword data extracted yet for your scope."
       size="md"
       className={className}
+      locked={locked}
+      tier={3}
       actions={
         data && data.sample_size > 0 ? (
           <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">

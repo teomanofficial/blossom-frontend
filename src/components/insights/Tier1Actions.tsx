@@ -40,7 +40,7 @@ export default function Tier1Actions() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-5">
         <WidgetErrorBoundary name="OutlierFeed" className="sm:col-span-2">
-          <OutlierFeed className="sm:col-span-2" />
+          <OutlierFeed />
         </WidgetErrorBoundary>
         <WidgetErrorBoundary name="WhitespaceKeywords">
           <WhitespaceKeywords />

@@ -32,10 +32,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { authFetch } from '../lib/api'
+import { useAuth } from '../context/AuthContext'
 import { useInsights } from '../lib/useInsights'
 import type { GreenlightResponse, OutlierVideo } from '../types/insights'
 
 import WidgetErrorBoundary from '../components/insights/WidgetErrorBoundary'
+import LockedWidget from '../components/insights/shared/LockedWidget'
 import {
   ConceptInputForm,
   ComparableWinners,
@@ -289,7 +291,41 @@ function ResultsSection({
 // Page
 // ---------------------------------------------------------------------------
 
+function GreenlightLockedPage() {
+  return (
+    <div>
+      <Link
+        to="/dashboard"
+        className="inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-400 hover:text-white transition-colors mb-6"
+      >
+        <i className="fas fa-arrow-left text-[10px]" />
+        Back to dashboard
+      </Link>
+      <LockedWidget
+        requiredPlan="premium"
+        tier="flagship"
+        widgetTitle="Greenlight Studio"
+        variant="page"
+      />
+    </div>
+  )
+}
+
 export default function Greenlight() {
+  const { planSlug, userType, loading: authLoading } = useAuth()
+  // Free-tier hard gate — render a full-page LockedWidget instead of
+  // letting them see the empty input + results scaffold. Greenlight
+  // isn't behind App.tsx's FeatureGate, so we gate here.
+  const isAdmin = userType === 'admin'
+  const hasFlagshipAccess =
+    isAdmin || planSlug === 'premium' || planSlug === 'platin'
+  if (!authLoading && !hasFlagshipAccess) {
+    return <GreenlightLockedPage />
+  }
+  return <GreenlightInner />
+}
+
+function GreenlightInner() {
   const [searchParams, setSearchParams] = useSearchParams()
 
   // Read all four query params on mount; React re-renders on

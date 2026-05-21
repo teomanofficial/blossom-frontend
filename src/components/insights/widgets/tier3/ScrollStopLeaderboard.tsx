@@ -52,7 +52,7 @@ export default function ScrollStopLeaderboard({
   const path = niche
     ? `tier3/scroll-stop-leaderboard?niche=${encodeURIComponent(niche)}`
     : 'tier3/scroll-stop-leaderboard'
-  const { data, loading, error, retry } =
+  const { data, loading, error, retry, locked } =
     useInsights<ScrollStopLeaderboardResponse>(path)
   const [sortKey, setSortKey] = useState<SortKey>('score')
 
@@ -81,6 +81,8 @@ export default function ScrollStopLeaderboard({
       emptyMessage="Not enough scored hooks to build a leaderboard yet."
       size="lg"
       className={className}
+      locked={locked}
+      tier={3}
       actions={
         <div className="flex items-center gap-1 rounded-full bg-white/[0.04] border border-white/10 p-0.5">
           <SortButton

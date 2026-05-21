@@ -60,7 +60,7 @@ interface HookMatrixProps {
 
 export default function HookMatrix({ className = '', niche }: HookMatrixProps) {
   const path = niche ? `tier3/hook-matrix?niche=${encodeURIComponent(niche)}` : 'tier3/hook-matrix'
-  const { data, loading, error, retry } = useInsights<HookMatrixResponse>(path)
+  const { data, loading, error, retry, locked } = useInsights<HookMatrixResponse>(path)
 
   const points: QuadrantPoint[] = (data?.points ?? []).map((p) => ({
     x: p.video_count,
@@ -93,6 +93,8 @@ export default function HookMatrix({ className = '', niche }: HookMatrixProps) {
       emptyMessage="Not enough classified hooks to draw a matrix yet."
       size="lg"
       className={className}
+      locked={locked}
+      tier={3}
       actions={
         nicheLabel ? (
           <span className="px-2 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-[10px] font-black uppercase tracking-widest text-cyan-300">

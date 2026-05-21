@@ -257,6 +257,7 @@ export default function SonicDNAPanel({ className = '' }: SonicDNAPanelProps) {
     loading: bpmLoading,
     error: bpmError,
     retry: bpmRetry,
+    locked: bpmLocked,
   } = useInsights<BpmDistribution>(`tier3/sound-bpm-distribution${nicheQ}`)
 
   const {
@@ -264,12 +265,16 @@ export default function SonicDNAPanel({ className = '' }: SonicDNAPanelProps) {
     loading: archLoading,
     error: archError,
     retry: archRetry,
+    locked: archLocked,
   } = useInsights<EnergyArchetypesResponse>(
     `tier3/sound-energy-archetypes${nicheQ}`,
   )
 
   const loading = bpmLoading || archLoading
   const error = bpmError ?? archError
+  // Either endpoint can surface the tier lock — first one wins for the
+  // unified CTA. Both endpoints are Tier 3 so this is consistent.
+  const locked = bpmLocked ?? archLocked
   const onRetry = () => {
     if (bpmError) bpmRetry()
     if (archError) archRetry()
@@ -319,6 +324,8 @@ export default function SonicDNAPanel({ className = '' }: SonicDNAPanelProps) {
       onRetry={onRetry}
       size="md"
       className={className}
+      locked={locked}
+      tier={3}
       actions={
         <input
           type="text"

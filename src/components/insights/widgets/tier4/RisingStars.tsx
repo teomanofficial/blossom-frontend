@@ -198,7 +198,7 @@ function StarCard({ star }: { star: RisingStar }) {
 }
 
 export default function RisingStars({ className = '' }: RisingStarsProps) {
-  const { data, loading, error, retry } = useInsights<RisingStarsResponse>(
+  const { data, loading, error, retry, locked } = useInsights<RisingStarsResponse>(
     'tier4/rising-stars?limit=12',
   )
 
@@ -219,6 +219,8 @@ export default function RisingStars({ className = '' }: RisingStarsProps) {
       isEmpty={!loading && !error && stars.length === 0}
       emptyIcon="fa-seedling"
       emptyMessage="No creators above the +40% growth threshold right now — check back tomorrow."
+      locked={locked}
+      tier={4}
     >
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {stars.map((star) => (

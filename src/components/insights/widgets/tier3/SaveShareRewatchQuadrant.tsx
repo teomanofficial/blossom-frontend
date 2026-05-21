@@ -59,7 +59,7 @@ export default function SaveShareRewatchQuadrant({
   const path = niche
     ? `tier3/save-share-rewatch-quadrant?niche=${encodeURIComponent(niche)}`
     : 'tier3/save-share-rewatch-quadrant'
-  const { data, loading, error, retry } = useInsights<SaveShareRewatchResponse>(path)
+  const { data, loading, error, retry, locked } = useInsights<SaveShareRewatchResponse>(path)
 
   const rows = data?.points ?? []
   const isEmpty = !loading && !error && rows.length === 0
@@ -96,6 +96,8 @@ export default function SaveShareRewatchQuadrant({
       emptyMessage="No save/share/rewatch scores yet — virality-level analysis is the source and is still being seeded."
       size="lg"
       className={className}
+      locked={locked}
+      tier={3}
       actions={
         data && data.sample_size > 0 ? (
           <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">

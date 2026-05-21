@@ -68,7 +68,7 @@ export default function EmotionDistribution({
   const path = niche
     ? `tier3/emotion-distribution?niche=${encodeURIComponent(niche)}`
     : 'tier3/emotion-distribution'
-  const { data, loading, error, retry } = useInsights<EmotionDistributionResponse>(path)
+  const { data, loading, error, retry, locked } = useInsights<EmotionDistributionResponse>(path)
 
   const rows = data?.distribution ?? []
   const isEmpty = !loading && !error && rows.length === 0
@@ -93,6 +93,8 @@ export default function EmotionDistribution({
       emptyMessage="No primary-emotion data classified yet."
       size="md"
       className={className}
+      locked={locked}
+      tier={3}
       actions={
         data && data.sample_size > 0 ? (
           <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">

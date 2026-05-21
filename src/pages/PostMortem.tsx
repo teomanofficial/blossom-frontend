@@ -17,10 +17,12 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { authFetch } from '../lib/api'
+import { useAuth } from '../context/AuthContext'
 import { useInsights } from '../lib/useInsights'
 import { buildMockPostMortem } from '../lib/mockPostMortem'
 import type { PostMortemResponse } from '../types/insights'
 
+import LockedWidget from '../components/insights/shared/LockedWidget'
 import VideoMetaHeader from '../components/postmortem/VideoMetaHeader'
 import VideoSelector from '../components/postmortem/VideoSelector'
 import DivergedVariableCard from '../components/postmortem/DivergedVariableCard'
@@ -246,7 +248,38 @@ function EmptyState({ message, icon }: { message: string; icon: string }) {
   )
 }
 
+function PostMortemLockedPage() {
+  return (
+    <div>
+      <Link
+        to="/dashboard"
+        className="inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-400 hover:text-white transition-colors mb-6"
+      >
+        <i className="fas fa-arrow-left text-[10px]" />
+        Back to dashboard
+      </Link>
+      <LockedWidget
+        requiredPlan="premium"
+        tier="flagship"
+        widgetTitle="Forensics"
+        variant="page"
+      />
+    </div>
+  )
+}
+
 export default function PostMortem() {
+  const { planSlug, userType, loading: authLoading } = useAuth()
+  const isAdmin = userType === 'admin'
+  const hasFlagshipAccess =
+    isAdmin || planSlug === 'premium' || planSlug === 'platin'
+  if (!authLoading && !hasFlagshipAccess) {
+    return <PostMortemLockedPage />
+  }
+  return <PostMortemInner />
+}
+
+function PostMortemInner() {
   const { videoId } = useParams<{ videoId: string }>()
 
   const videoCount = useAnalyzedVideoCount()

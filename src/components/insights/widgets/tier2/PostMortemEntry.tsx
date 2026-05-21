@@ -163,8 +163,9 @@ function SampleTileCard({ tile }: { tile: SampleTile }) {
 export default function PostMortemEntry({ className = '' }: PostMortemEntryProps) {
   // Best-vs-worst is optional — fail open to the sample tiles. We don't
   // surface its loading/error states in this card; this is purely a
-  // discoverability / CTA component.
-  const { data: bestVsWorst } = useInsights<BestVsWorstResponse>(
+  // discoverability / CTA component. We DO honor the locked state so
+  // free users see the Tier 2 upgrade CTA inside this slot.
+  const { data: bestVsWorst, locked } = useInsights<BestVsWorstResponse>(
     'tier2/best-vs-worst',
   )
 
@@ -184,6 +185,8 @@ export default function PostMortemEntry({ className = '' }: PostMortemEntryProps
       iconColor="text-purple-400"
       size="xl"
       className={className}
+      locked={locked}
+      tier={2}
     >
       <div className="flex flex-col gap-5">
         {/* Sample / personalised tiles */}

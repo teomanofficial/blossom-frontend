@@ -90,7 +90,7 @@ function GapRow({ gap }: { gap: TacticGap }) {
 }
 
 export default function TacticGapsList({ className = '' }: TacticGapsListProps) {
-  const { data, loading, error, retry } = useInsights<TacticGapsEnvelope>(
+  const { data, loading, error, retry, locked } = useInsights<TacticGapsEnvelope>(
     'tier2/tactic-gaps',
   )
 
@@ -117,6 +117,8 @@ export default function TacticGapsList({ className = '' }: TacticGapsListProps) 
       emptyMessage="You're already executing the top tactics in your niche — great work."
       size="lg"
       className={className}
+      locked={locked}
+      tier={2}
     >
       <ul className="space-y-2 max-h-[480px] overflow-y-auto pr-1 -mr-1">
         {sorted.map((gap) => (

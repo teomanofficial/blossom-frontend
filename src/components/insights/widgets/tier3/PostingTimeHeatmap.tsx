@@ -47,7 +47,7 @@ export default function PostingTimeHeatmapWidget({
   const [niche, setNiche] = useState<string>('')
   const nicheQ = niche.trim() ? `?niche=${encodeURIComponent(niche.trim())}` : ''
 
-  const { data, loading, error, retry } = useInsights<PostingTimeHeatmapResponse>(
+  const { data, loading, error, retry, locked } = useInsights<PostingTimeHeatmapResponse>(
     `tier3/posting-time-heatmap${nicheQ}`,
   )
 
@@ -75,6 +75,8 @@ export default function PostingTimeHeatmapWidget({
       emptyMessage="No published_at + engagement data for this filter."
       size="md"
       className={className}
+      locked={locked}
+      tier={3}
       actions={
         <input
           type="text"

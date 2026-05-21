@@ -103,16 +103,16 @@ export default function Tier3Anatomy() {
 
       <SubBand title="Anatomy">
         <WidgetErrorBoundary name="HookMatrix" className="lg:col-span-2">
-          <HookMatrix className="lg:col-span-2" />
+          <HookMatrix />
         </WidgetErrorBoundary>
         <WidgetErrorBoundary name="FormatQuadrant" className="lg:col-span-2">
-          <FormatQuadrant className="lg:col-span-2" />
+          <FormatQuadrant />
         </WidgetErrorBoundary>
         <WidgetErrorBoundary
           name="CognitiveInterruptionHeatmap"
           className="lg:col-span-2"
         >
-          <CognitiveInterruptionHeatmap className="lg:col-span-2" />
+          <CognitiveInterruptionHeatmap />
         </WidgetErrorBoundary>
         <WidgetErrorBoundary name="EmotionDistribution">
           <EmotionDistribution />
@@ -124,7 +124,7 @@ export default function Tier3Anatomy() {
           name="TacticCoOccurrenceNetwork"
           className="lg:col-span-2"
         >
-          <TacticCoOccurrenceNetwork className="lg:col-span-2" />
+          <TacticCoOccurrenceNetwork />
         </WidgetErrorBoundary>
         <WidgetErrorBoundary name="OptimalLengthCurves">
           <OptimalLengthCurves />
@@ -136,7 +136,7 @@ export default function Tier3Anatomy() {
           name="SaveShareRewatchQuadrant"
           className="lg:col-span-2"
         >
-          <SaveShareRewatchQuadrant className="lg:col-span-2" />
+          <SaveShareRewatchQuadrant />
         </WidgetErrorBoundary>
       </SubBand>
 
@@ -145,7 +145,7 @@ export default function Tier3Anatomy() {
           name="ScrollStopLeaderboard"
           className="lg:col-span-2"
         >
-          <ScrollStopLeaderboard className="lg:col-span-2" />
+          <ScrollStopLeaderboard />
         </WidgetErrorBoundary>
         <WidgetErrorBoundary name="SpokenHookKeywords">
           <SpokenHookKeywords />
@@ -157,7 +157,7 @@ export default function Tier3Anatomy() {
 
       <SubBand title="Sound">
         <WidgetErrorBoundary name="SoundLifecycleBrowser" className="lg:col-span-2">
-          <SoundLifecycleBrowser className="lg:col-span-2" />
+          <SoundLifecycleBrowser />
         </WidgetErrorBoundary>
         <WidgetErrorBoundary name="SoundsByPlatform">
           <SoundsByPlatform />
@@ -169,7 +169,7 @@ export default function Tier3Anatomy() {
 
       <SubBand title="Category">
         <WidgetErrorBoundary name="CategoryHeatGrid" className="lg:col-span-2">
-          <CategoryHeatGrid className="lg:col-span-2" />
+          <CategoryHeatGrid />
         </WidgetErrorBoundary>
         <WidgetErrorBoundary name="PostingTimeHeatmap">
           <PostingTimeHeatmap />

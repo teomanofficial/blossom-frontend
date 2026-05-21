@@ -147,7 +147,7 @@ export default function LengthSweetSpotByNiche({
   const [niche, setNiche] = useState<string>('')
   const nicheQ = niche.trim() ? `?niche=${encodeURIComponent(niche.trim())}` : ''
 
-  const { data, loading, error, retry } = useInsights<LengthSweetspotResponse>(
+  const { data, loading, error, retry, locked } = useInsights<LengthSweetspotResponse>(
     `tier3/length-sweetspot-by-niche${nicheQ}`,
   )
 
@@ -200,6 +200,8 @@ export default function LengthSweetSpotByNiche({
       emptyMessage={data?.note ?? 'No duration data for this niche yet.'}
       size="md"
       className={className}
+      locked={locked}
+      tier={3}
       actions={
         <input
           type="text"

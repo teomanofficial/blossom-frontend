@@ -54,7 +54,7 @@ export default function FormatQuadrant({ className = '', niche }: FormatQuadrant
   const path = niche
     ? `tier3/format-quadrant?niche=${encodeURIComponent(niche)}`
     : 'tier3/format-quadrant'
-  const { data, loading, error, retry } = useInsights<FormatQuadrantResponse>(path)
+  const { data, loading, error, retry, locked } = useInsights<FormatQuadrantResponse>(path)
 
   const points: QuadrantPoint[] = (data?.points ?? []).map((p) => ({
     x: p.video_count,
@@ -87,6 +87,8 @@ export default function FormatQuadrant({ className = '', niche }: FormatQuadrant
       emptyMessage="No classified formats yet — analyse more content to populate this view."
       size="lg"
       className={className}
+      locked={locked}
+      tier={3}
       actions={
         nicheLabel ? (
           <span className="px-2 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-[10px] font-black uppercase tracking-widest text-cyan-300">

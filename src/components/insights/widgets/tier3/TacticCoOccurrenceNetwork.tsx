@@ -44,7 +44,7 @@ export default function TacticCoOccurrenceNetwork({
   const path = niche
     ? `tier3/tactic-cooccurrence?niche=${encodeURIComponent(niche)}`
     : 'tier3/tactic-cooccurrence'
-  const { data, loading, error, retry } = useInsights<TacticCoOccurrenceResponse>(path)
+  const { data, loading, error, retry, locked } = useInsights<TacticCoOccurrenceResponse>(path)
 
   const nodes = data?.nodes ?? []
   const edges = data?.edges ?? []
@@ -65,6 +65,8 @@ export default function TacticCoOccurrenceNetwork({
       emptyMessage="No tactic co-occurrence pairs above the noise floor yet."
       size="lg"
       className={className}
+      locked={locked}
+      tier={3}
       actions={
         data ? (
           <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">

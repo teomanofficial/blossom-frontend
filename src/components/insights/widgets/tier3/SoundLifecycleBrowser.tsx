@@ -278,6 +278,7 @@ export default function SoundLifecycleBrowser({
     loading: poolLoading,
     error: poolError,
     retry: poolRetry,
+    locked: poolLocked,
   } = useInsights<SoundsByPlatformResponse>('tier3/sounds-by-platform?limit=20')
 
   const pool: SoundListItem[] = useMemo(() => {
@@ -305,6 +306,7 @@ export default function SoundLifecycleBrowser({
     loading: detailLoading,
     error: detailError,
     retry: detailRetry,
+    locked: detailLocked,
   } = useInsights<SoundLifecycleResponse>(
     selectedId ? `tier3/sound-lifecycle/${selectedId}` : 'tier3/sound-lifecycle/0',
     { enabled: !!selectedId },
@@ -315,6 +317,8 @@ export default function SoundLifecycleBrowser({
     if (poolError) poolRetry()
     if (detailError) detailRetry()
   }
+  // Both endpoints are Tier 3; first lock wins for the unified CTA.
+  const locked = poolLocked ?? detailLocked
   const isEmpty = !poolLoading && !poolError && pool.length === 0
 
   return (
@@ -332,6 +336,8 @@ export default function SoundLifecycleBrowser({
       emptyMessage="No trending sounds indexed yet — analyse more content to populate this widget."
       size="lg"
       className={className}
+      locked={locked}
+      tier={3}
       actions={
         pool.length > 0 ? (
           <SoundPicker

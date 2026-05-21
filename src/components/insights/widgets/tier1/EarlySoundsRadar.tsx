@@ -179,7 +179,7 @@ function SoundRow({ sound }: { sound: EarlySound }) {
 export default function EarlySoundsRadar({
   className = '',
 }: EarlySoundsRadarProps) {
-  const { data, loading, error, retry } = useInsights<EarlySoundsResponse>(
+  const { data, loading, error, retry, locked } = useInsights<EarlySoundsResponse>(
     'tier1/early-sounds',
   )
 
@@ -203,6 +203,8 @@ export default function EarlySoundsRadar({
       emptyMessage="No emerging sounds match your niche today."
       size="lg"
       className={className}
+      locked={locked}
+      tier={1}
     >
       <ul className="space-y-2.5">
         {top.map((sound) => (

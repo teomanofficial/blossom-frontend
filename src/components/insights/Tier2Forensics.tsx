@@ -43,7 +43,7 @@ export default function Tier2Forensics() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-5">
         <WidgetErrorBoundary name="PostMortemEntry" className="lg:col-span-2">
-          <PostMortemEntry className="lg:col-span-2" />
+          <PostMortemEntry />
         </WidgetErrorBoundary>
         <WidgetErrorBoundary name="TacticGapsList">
           <TacticGapsList />

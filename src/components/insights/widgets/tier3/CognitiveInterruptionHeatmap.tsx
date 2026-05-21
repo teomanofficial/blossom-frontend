@@ -69,7 +69,7 @@ export default function CognitiveInterruptionHeatmap({
   const path = niche
     ? `tier3/cognitive-interruption?niche=${encodeURIComponent(niche)}`
     : 'tier3/cognitive-interruption'
-  const { data, loading, error, retry } = useInsights<CognitiveInterruptionResponse>(path)
+  const { data, loading, error, retry, locked } = useInsights<CognitiveInterruptionResponse>(path)
 
   const isEmpty =
     !loading &&
@@ -96,6 +96,8 @@ export default function CognitiveInterruptionHeatmap({
       emptyMessage="Not enough top-decile hook analyses to chart this matrix yet."
       size="lg"
       className={className}
+      locked={locked}
+      tier={3}
       actions={
         data?.baseline_avg_views ? (
           <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">

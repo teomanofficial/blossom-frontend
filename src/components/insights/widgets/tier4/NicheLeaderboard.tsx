@@ -278,7 +278,7 @@ export default function NicheLeaderboard({ className = '' }: NicheLeaderboardPro
     return `tier4/niche-leaderboard?${params.toString()}`
   }, [appliedNiche, appliedTier])
 
-  const { data, loading, error, retry } = useInsights<LeaderboardResponse>(path, {
+  const { data, loading, error, retry, locked } = useInsights<LeaderboardResponse>(path, {
     enabled: !!path,
   })
 
@@ -299,6 +299,8 @@ export default function NicheLeaderboard({ className = '' }: NicheLeaderboardPro
       isEmpty={!!path && !loading && !error && creators.length === 0}
       emptyIcon="fa-magnifying-glass"
       emptyMessage="Try a different niche or tier — no creators match these filters."
+      locked={locked}
+      tier={4}
     >
       <FilterBar
         niche={niche}

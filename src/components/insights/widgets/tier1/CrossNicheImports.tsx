@@ -147,7 +147,7 @@ function ImportCard({ item }: { item: CrossNicheImport }) {
 export default function CrossNicheImports({
   className = '',
 }: CrossNicheImportsProps) {
-  const { data, loading, error, retry } = useInsights<CrossNicheImportsResponse>(
+  const { data, loading, error, retry, locked } = useInsights<CrossNicheImportsResponse>(
     'tier1/cross-niche-imports',
   )
 
@@ -171,6 +171,8 @@ export default function CrossNicheImports({
       emptyMessage="No adjacent-niche imports found — your niche may already be saturating cross-overs."
       size="lg"
       className={className}
+      locked={locked}
+      tier={1}
     >
       <div className="space-y-2.5">
         {top.map((item) => (

@@ -66,7 +66,7 @@ function formatCellValue(metric: string, value: number): string {
 export default function CategoryHeatGrid({
   className = '',
 }: CategoryHeatGridProps) {
-  const { data, loading, error, retry } =
+  const { data, loading, error, retry, locked } =
     useInsights<CategoryHeatGridResponse>('tier3/category-heatgrid')
 
   const categories = data?.categories ?? []
@@ -143,6 +143,8 @@ export default function CategoryHeatGrid({
       emptyMessage="No category benchmarks indexed yet — refresh the mat views."
       size="lg"
       className={className}
+      locked={locked}
+      tier={3}
     >
       <HeatGrid
         rows={categories}

@@ -78,7 +78,7 @@ export default function RetentionDangerZones({
   const path = selected
     ? `tier3/retention-dangerzones?niche=${encodeURIComponent(selected)}`
     : 'tier3/retention-dangerzones'
-  const { data, loading, error, retry } = useInsights<RetentionDangerZonesResponse>(path)
+  const { data, loading, error, retry, locked } = useInsights<RetentionDangerZonesResponse>(path)
 
   const zones = data?.zones ?? []
   const isEmpty = !loading && !error && zones.length === 0
@@ -102,6 +102,8 @@ export default function RetentionDangerZones({
       }
       size="md"
       className={className}
+      locked={locked}
+      tier={3}
     >
       <div className="flex flex-wrap items-center gap-1.5 mb-4">
         <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 mr-1">

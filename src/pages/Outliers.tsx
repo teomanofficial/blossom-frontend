@@ -21,6 +21,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { useInsights } from '../lib/useInsights'
 import { useAuth } from '../context/AuthContext'
 import type { OutlierVideo } from '../types/insights'
+import LockedWidget from '../components/insights/shared/LockedWidget'
 import OutlierCard from '../components/outliers/OutlierCard'
 import FilterBar, { type OutlierFilters } from '../components/outliers/FilterBar'
 import SavedOutliers, { useSavedOutliers } from '../components/outliers/SavedOutliers'
@@ -205,7 +206,38 @@ function EmptyState({
   )
 }
 
+function OutliersLockedPage() {
+  return (
+    <div>
+      <Link
+        to="/dashboard"
+        className="inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-400 hover:text-white transition-colors mb-6"
+      >
+        <i className="fas fa-arrow-left text-[10px]" />
+        Back to dashboard
+      </Link>
+      <LockedWidget
+        requiredPlan="premium"
+        tier="flagship"
+        widgetTitle="Outlier Hunter"
+        variant="page"
+      />
+    </div>
+  )
+}
+
 export default function Outliers() {
+  const { planSlug, userType, loading: authLoading } = useAuth()
+  const isAdmin = userType === 'admin'
+  const hasFlagshipAccess =
+    isAdmin || planSlug === 'premium' || planSlug === 'platin'
+  if (!authLoading && !hasFlagshipAccess) {
+    return <OutliersLockedPage />
+  }
+  return <OutliersInner />
+}
+
+function OutliersInner() {
   const [searchParams, setSearchParams] = useSearchParams()
   const { profile } = useAuth()
   const savedHook = useSavedOutliers()

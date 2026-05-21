@@ -92,7 +92,7 @@ function CustomTooltip({
 export default function AudienceArchetypeMap({
   className = '',
 }: AudienceArchetypeMapProps) {
-  const { data, loading, error, retry } = useInsights<ArchetypesResponse>(
+  const { data, loading, error, retry, locked } = useInsights<ArchetypesResponse>(
     'tier4/audience-archetypes',
   )
 
@@ -127,6 +127,8 @@ export default function AudienceArchetypeMap({
       isEmpty={!loading && !error && archetypes.length === 0}
       emptyIcon="fa-users-slash"
       emptyMessage="No audience archetypes detected yet. Profile more creators to fill this map."
+      locked={locked}
+      tier={4}
     >
       <div style={{ width: '100%', height: chartHeight }}>
         <ResponsiveContainer width="100%" height="100%">

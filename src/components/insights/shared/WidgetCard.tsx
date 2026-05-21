@@ -13,6 +13,8 @@
  */
 
 import type { ReactNode } from 'react'
+import type { LockedState } from '../../../lib/useInsights'
+import LockedWidget, { type LockTier } from './LockedWidget'
 
 interface WidgetCardProps {
   title: string
@@ -33,6 +35,17 @@ interface WidgetCardProps {
   iconBg?: string
   /** Tailwind text utility for the icon glyph, e.g. `text-pink-400`. */
   iconColor?: string
+  /**
+   * When the backend returned 403 (`tier_required`), `useInsights`
+   * surfaces this. WidgetCard then renders a <LockedWidget> in place of
+   * the loading/error/empty/content branches.
+   */
+  locked?: LockedState
+  /**
+   * Tier the widget belongs to — drives the LockedWidget copy block.
+   * Required when `locked` is set; ignored otherwise.
+   */
+  tier?: LockTier
 }
 
 const SIZE_PADDING: Record<NonNullable<WidgetCardProps['size']>, string> = {
@@ -151,7 +164,25 @@ export default function WidgetCard({
   icon,
   iconBg = 'bg-white/[0.05]',
   iconColor = 'text-slate-300',
+  locked = null,
+  tier,
 }: WidgetCardProps) {
+  // Tier-locked path — render <LockedWidget> in place of the whole
+  // card. The LockedWidget owns its own glass + gradient treatment so
+  // we bypass the normal header/body chrome entirely; this also means
+  // tier locks are immediately recognisable as a different surface
+  // from loading/error/empty states.
+  if (locked) {
+    return (
+      <LockedWidget
+        requiredPlan={locked.requiredPlan}
+        tier={tier ?? 'flagship'}
+        widgetTitle={title}
+        className={className}
+      />
+    )
+  }
+
   const padding = SIZE_PADDING[size]
   const radius = SIZE_RADIUS[size]
   const titleSize = SIZE_TITLE[size]

@@ -105,6 +105,10 @@ export default function HookStrengthGauge({ className = '' }: HookStrengthGaugeP
   const loading = bestVsWorst.loading || leaderboard.loading
   // Combined error: surface whichever returns one first. Retry hits both.
   const error = bestVsWorst.error ?? leaderboard.error
+  // The widget is Tier 2 — best-vs-worst is the tier-gated endpoint, so
+  // honor its locked state. (Leaderboard is Tier 3 but on Platin so a
+  // Tier 2 lock takes precedence for this composition.)
+  const locked = bestVsWorst.locked ?? leaderboard.locked
   function retry() {
     bestVsWorst.retry()
     leaderboard.retry()
@@ -138,6 +142,8 @@ export default function HookStrengthGauge({ className = '' }: HookStrengthGaugeP
       emptyMessage="Analyze 3+ of your videos to compute your hook strength index."
       size="lg"
       className={className}
+      locked={locked}
+      tier={2}
     >
       {haveBoth ? (
         <div className="flex flex-col items-center gap-4 py-2">
