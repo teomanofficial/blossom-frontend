@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
+import { lazy, Suspense } from 'react'
 import { useAuth } from './context/AuthContext'
 import Landing from './pages/Landing'
 import Login from './pages/Login'
@@ -80,6 +81,27 @@ import ProtectedRoute from './components/ProtectedRoute'
 import DashboardLayout from './components/DashboardLayout'
 import type { ReactNode } from 'react'
 
+/* ── Insights drill-down pages (lazy — keeps the initial chunk thin) ── */
+const InsightsPulse = lazy(() => import('./pages/insights/Pulse'))
+const InsightsAction = lazy(() => import('./pages/insights/Action'))
+const InsightsForensics = lazy(() => import('./pages/insights/Forensics'))
+const InsightsAnatomy = lazy(() => import('./pages/insights/Anatomy'))
+const InsightsCreators = lazy(() => import('./pages/insights/Creators'))
+
+function InsightsPageFallback() {
+  return (
+    <div className="glass-card rounded-3xl p-8 animate-pulse">
+      <div className="h-4 w-32 bg-white/5 rounded mb-3" />
+      <div className="h-6 w-64 bg-white/5 rounded mb-6" />
+      <div className="grid grid-cols-12 gap-4 lg:gap-6">
+        <div className="col-span-12 h-48 bg-white/[0.04] rounded-3xl" />
+        <div className="col-span-12 lg:col-span-6 h-48 bg-white/[0.04] rounded-3xl" />
+        <div className="col-span-12 lg:col-span-6 h-48 bg-white/[0.04] rounded-3xl" />
+      </div>
+    </div>
+  )
+}
+
 function FeatureGate({ children }: { children: ReactNode }) {
   const { userType, planSlug, loading } = useAuth()
   if (loading) return null
@@ -129,6 +151,51 @@ function App() {
         }
       >
         <Route index element={<Dashboard />} />
+
+        {/* Insights drill-down pages (Pulse / Action / Forensics / Anatomy / Creators).
+            Each rewrites the corresponding old Tier section as a dedicated page so
+            widgets get col-6 / col-12 room instead of being cramped into a 3-4 col grid. */}
+        <Route
+          path="pulse"
+          element={
+            <Suspense fallback={<InsightsPageFallback />}>
+              <InsightsPulse />
+            </Suspense>
+          }
+        />
+        <Route
+          path="action"
+          element={
+            <Suspense fallback={<InsightsPageFallback />}>
+              <InsightsAction />
+            </Suspense>
+          }
+        />
+        <Route
+          path="forensics"
+          element={
+            <Suspense fallback={<InsightsPageFallback />}>
+              <InsightsForensics />
+            </Suspense>
+          }
+        />
+        <Route
+          path="anatomy"
+          element={
+            <Suspense fallback={<InsightsPageFallback />}>
+              <InsightsAnatomy />
+            </Suspense>
+          }
+        />
+        <Route
+          path="creators"
+          element={
+            <Suspense fallback={<InsightsPageFallback />}>
+              <InsightsCreators />
+            </Suspense>
+          }
+        />
+
         <Route path="post-mortem" element={<PostMortem />} />
         <Route path="post-mortem/:videoId" element={<PostMortem />} />
         <Route path="outliers" element={<Outliers />} />

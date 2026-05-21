@@ -19,13 +19,25 @@ const generalItems = [
   { to: '/dashboard/influencers', icon: 'fa-users', label: 'Creators' },
 ]
 
+/* ── Insights drill-down pages (Pulse → Creators).
+   Five dedicated pages each owning one of the old single-page tiers.
+   Order mirrors the depth funnel: surface → action → diagnosis →
+   anatomy → creator study. */
+const insightsItems = [
+  { to: '/dashboard/pulse', icon: 'fa-wave-square', label: 'Pulse' },
+  { to: '/dashboard/action', icon: 'fa-rocket', label: 'Action' },
+  { to: '/dashboard/forensics', icon: 'fa-magnifying-glass-chart', label: 'Forensics' },
+  { to: '/dashboard/anatomy', icon: 'fa-dna', label: 'Anatomy' },
+  { to: '/dashboard/creators', icon: 'fa-medal', label: 'Creators' },
+]
+
 const intelligenceItems = [
   { to: '/dashboard/suggestions', icon: 'fa-scroll', label: 'Scripts' },
   { to: '/dashboard/formats', icon: 'fa-shapes', label: 'Formats' },
   { to: '/dashboard/hooks', icon: 'fa-comment-dots', label: 'Hooks' },
   { to: '/dashboard/tactics', icon: 'fa-chess', label: 'Tactics' },
-  { to: '/dashboard/post-mortem', icon: 'fa-magnifying-glass-chart', label: 'Forensics' },
   { to: '/dashboard/outliers', icon: 'fa-meteor', label: 'Outliers' },
+  { to: '/dashboard/post-mortem', icon: 'fa-stethoscope', label: 'Post-Mortem' },
   { to: '/dashboard/greenlight', icon: 'fa-traffic-light', label: 'Greenlight' },
 ]
 
@@ -69,6 +81,11 @@ const drawerRoutes = [
   '/dashboard/platforms/posts',
   '/dashboard/hooks',
   '/dashboard/tactics',
+  '/dashboard/pulse',
+  '/dashboard/action',
+  '/dashboard/forensics',
+  '/dashboard/anatomy',
+  '/dashboard/creators',
   '/dashboard/post-mortem',
   '/dashboard/outliers',
   '/dashboard/greenlight',
@@ -205,6 +222,18 @@ export default function DashboardLayout() {
           </div>
           <div className="space-y-0.5">
             {visibleGeneralItems.map((item) => (
+              <RailLink key={item.to} item={item} supportUnreadCount={supportUnreadCount} />
+            ))}
+          </div>
+
+          {/* Insights Section (Pulse / Action / Forensics / Anatomy / Creators) */}
+          <div className="px-5 pt-5 pb-2">
+            <span className="nav-section-label text-[10px] font-black text-slate-500 uppercase tracking-widest">
+              Insights
+            </span>
+          </div>
+          <div className="space-y-0.5">
+            {insightsItems.map((item) => (
               <RailLink key={item.to} item={item} supportUnreadCount={supportUnreadCount} />
             ))}
           </div>

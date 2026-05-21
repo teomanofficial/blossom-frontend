@@ -19,13 +19,24 @@ const generalItems = [
 
 const creatorsItem = { to: '/dashboard/influencers', icon: 'fa-users', label: 'Creators', color: 'text-cyan-400', bg: 'bg-cyan-500/10' }
 
+/* ── Insights drill-down pages (Pulse → Creators).
+   Mirrors the desktop sidebar's "Insights" group order so the mobile
+   experience matches what desktop users already see. */
+const insightsItems = [
+  { to: '/dashboard/pulse', icon: 'fa-wave-square', label: 'Pulse', color: 'text-pink-400', bg: 'bg-pink-500/10' },
+  { to: '/dashboard/action', icon: 'fa-rocket', label: 'Action', color: 'text-orange-400', bg: 'bg-orange-500/10' },
+  { to: '/dashboard/forensics', icon: 'fa-magnifying-glass-chart', label: 'Forensics', color: 'text-purple-400', bg: 'bg-purple-500/10' },
+  { to: '/dashboard/anatomy', icon: 'fa-dna', label: 'Anatomy', color: 'text-cyan-400', bg: 'bg-cyan-500/10' },
+  { to: '/dashboard/creators', icon: 'fa-medal', label: 'Creators', color: 'text-amber-400', bg: 'bg-amber-500/10' },
+]
+
 const intelligenceItems = [
   { to: '/dashboard/suggestions', icon: 'fa-scroll', label: 'Scripts', color: 'text-yellow-400', bg: 'bg-yellow-500/10' },
   { to: '/dashboard/formats', icon: 'fa-shapes', label: 'Formats', color: 'text-indigo-400', bg: 'bg-indigo-500/10' },
   { to: '/dashboard/hooks', icon: 'fa-magnet', label: 'Hooks', color: 'text-purple-400', bg: 'bg-purple-500/10' },
   { to: '/dashboard/tactics', icon: 'fa-chess', label: 'Tactics', color: 'text-amber-400', bg: 'bg-amber-500/10' },
-  { to: '/dashboard/post-mortem', icon: 'fa-magnifying-glass-chart', label: 'Forensics', color: 'text-pink-400', bg: 'bg-pink-500/10' },
   { to: '/dashboard/outliers', icon: 'fa-meteor', label: 'Outliers', color: 'text-orange-400', bg: 'bg-orange-500/10' },
+  { to: '/dashboard/post-mortem', icon: 'fa-stethoscope', label: 'Post-Mortem', color: 'text-pink-400', bg: 'bg-pink-500/10' },
   { to: '/dashboard/greenlight', icon: 'fa-traffic-light', label: 'Greenlight', color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
 ]
 
@@ -259,6 +270,14 @@ export default function MobileDrawer({ open, onClose, supportUnreadCount, hasAna
               {hasAnalysis && (
                 <NavItem item={creatorsItem} supportUnreadCount={supportUnreadCount} onClose={handleClose} />
               )}
+            </div>
+
+            {/* Insights Section (Pulse / Action / Forensics / Anatomy / Creators) */}
+            <SectionHeader label="Insights" />
+            <div className="space-y-0.5">
+              {insightsItems.map((item) => (
+                <NavItem key={item.to} item={item} supportUnreadCount={supportUnreadCount} onClose={handleClose} />
+              ))}
             </div>
 
             {/* Intelligence Section */}

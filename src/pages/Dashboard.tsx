@@ -1,18 +1,37 @@
-import { lazy, Suspense } from 'react'
+/**
+ * Dashboard — the Overview page at `/dashboard`.
+ *
+ * The Overview is intentionally narrow: Quick Actions (preserved), the
+ * Tier 0 hero strip (Algorithm Weather, Breakouts, Jump On Today,
+ * Lifecycle), four rich teaser strips that point at the drill-down pages
+ * (Action, Forensics, Anatomy, Creators), and the Your Accounts card.
+ *
+ * The 5 drill-down pages — Pulse, Action, Forensics, Anatomy, Creators —
+ * live at `/dashboard/{pulse,action,forensics,anatomy,creators}` and own
+ * the dense widget grids. The Overview's job is to:
+ *   1. Tell the user what happened today (Algorithm Weather + Breakouts)
+ *   2. Tease the four deeper surfaces (top 3 outliers, post-mortem CTA,
+ *      1 anatomy preview, top 3 rising stars)
+ *   3. Stay above-the-fold-friendly — no dense charts here.
+ *
+ * Replaces the old single-scroll 5-tier dashboard which packed 35+
+ * widgets into one route at col-3/col-4 spans.
+ */
+
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useDashboardSection } from '../lib/useDashboardSection'
 import { AccountsSkeleton } from '../components/DashboardSkeletons'
-import Tier0Hero from '../components/insights/Tier0Hero'
-import Tier1Actions from '../components/insights/Tier1Actions'
-import ForensicsOnboardingBanner from '../components/insights/ForensicsOnboardingBanner'
-
-// Tier 2+ sit below the fold — split out so the initial chunk only
-// carries Tier 0 / Tier 1. Stage 3 FE1 will likely promote each tier
-// to a heavier bundle once real widgets ship.
-const Tier2Forensics = lazy(() => import('../components/insights/Tier2Forensics'))
-const Tier3Anatomy = lazy(() => import('../components/insights/Tier3Anatomy'))
-const Tier4Creators = lazy(() => import('../components/insights/Tier4Creators'))
+import WidgetErrorBoundary from '../components/insights/WidgetErrorBoundary'
+import OverviewTeaserStrip from '../components/insights/OverviewTeaserStrip'
+import OutlierFeed from '../components/insights/OutlierFeed'
+import AlgorithmWeatherCard from '../components/insights/widgets/tier0/AlgorithmWeatherCard'
+import BreakoutsStrip from '../components/insights/widgets/tier0/BreakoutsStrip'
+import JumpOnTodayFeed from '../components/insights/widgets/tier0/JumpOnTodayFeed'
+import LifecycleDistribution from '../components/insights/widgets/tier0/LifecycleDistribution'
+import PostMortemEntry from '../components/insights/widgets/tier2/PostMortemEntry'
+import CognitiveInterruptionHeatmap from '../components/insights/widgets/tier3/CognitiveInterruptionHeatmap'
+import RisingStars from '../components/insights/widgets/tier4/RisingStars'
 
 /* ── Types (preserved widget only) ── */
 interface ConnectedAccounts {
@@ -73,18 +92,6 @@ const quickActions = [
   },
 ]
 
-/* ── Tier-section lazy-load fallback ── */
-function TierLoadingFallback() {
-  return (
-    <section className="mb-8 lg:mb-12">
-      <div className="glass-card rounded-3xl p-8 animate-pulse">
-        <div className="h-4 w-32 bg-white/5 rounded mb-3" />
-        <div className="h-6 w-64 bg-white/5 rounded" />
-      </div>
-    </section>
-  )
-}
-
 /* ── Section Error (preserved for Your Accounts) ── */
 function SectionError({ onRetry }: { onRetry: () => void }) {
   return (
@@ -107,7 +114,7 @@ export default function Dashboard() {
   const displayName =
     user?.user_metadata?.full_name ?? user?.email?.split('@')[0] ?? 'Creator'
 
-  // Only the preserved "Your Accounts" widget still fetches.
+  // Only the preserved "Your Accounts" widget still fetches here.
   const connectedAccounts = useDashboardSection<ConnectedAccounts>('connected-accounts')
 
   return (
@@ -118,7 +125,7 @@ export default function Dashboard() {
           Welcome, <span className="gradient-text font-display">{displayName}</span>
         </h1>
         <p className="text-slate-400 text-xs sm:text-sm font-medium tracking-wide uppercase">
-          Your viral intelligence hub. Five tiers, one question at a time.
+          Your viral intelligence hub. Open a page to go deep.
         </p>
       </div>
 
@@ -146,29 +153,104 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* ── Tier 0 — Hero (above the fold) ── */}
-      <Tier0Hero />
+      {/* ── Pulse section — Tier 0 hero widgets (no teaser strip, this IS
+          the overview content for "what happened today") ── */}
+      <OverviewTeaserStrip
+        eyebrow="Pulse"
+        title="What's happening right now"
+        subtitle="Algorithm Weather, breakouts, and what's worth riding today."
+        icon="fa-wave-square"
+        iconBg="bg-pink-500/15"
+        iconColor="text-pink-400"
+        viewAllHref="/dashboard/pulse"
+      >
+        <div className="grid grid-cols-12 gap-4 lg:gap-6">
+          <div className="col-span-12">
+            <WidgetErrorBoundary name="AlgorithmWeatherCard">
+              <AlgorithmWeatherCard />
+            </WidgetErrorBoundary>
+          </div>
+          <div className="col-span-12">
+            <WidgetErrorBoundary name="BreakoutsStrip">
+              <BreakoutsStrip />
+            </WidgetErrorBoundary>
+          </div>
+          <div className="col-span-12 lg:col-span-6">
+            <WidgetErrorBoundary name="JumpOnTodayFeed">
+              <JumpOnTodayFeed />
+            </WidgetErrorBoundary>
+          </div>
+          <div className="col-span-12 lg:col-span-6">
+            <WidgetErrorBoundary name="LifecycleDistribution">
+              <LifecycleDistribution />
+            </WidgetErrorBoundary>
+          </div>
+        </div>
+      </OverviewTeaserStrip>
 
-      {/* ── Tier 1 — Action (above the fold) ── */}
-      <Tier1Actions />
+      {/* ── Action teaser — top 3 outliers (via OutlierFeed) + CTA ── */}
+      <OverviewTeaserStrip
+        eyebrow="Action"
+        title="What should I make next"
+        subtitle="Outliers worth reverse-engineering, whitespace keywords, and sounds to ride."
+        icon="fa-rocket"
+        iconBg="bg-orange-500/15"
+        iconColor="text-orange-400"
+        viewAllHref="/dashboard/action"
+        viewAllLabel="See all action"
+      >
+        <WidgetErrorBoundary name="OutlierFeed">
+          <OutlierFeed />
+        </WidgetErrorBoundary>
+      </OverviewTeaserStrip>
 
-      {/* ── First-run onboarding (renders null when count >= 3) ── */}
-      <ForensicsOnboardingBanner />
+      {/* ── Forensics teaser — Post-Mortem hero CTA with 3 sample tiles ── */}
+      <OverviewTeaserStrip
+        eyebrow="Forensics"
+        title="Why did this work — and why didn't this?"
+        subtitle="Run a tactic-level autopsy on any video. See what diverged from your hits."
+        icon="fa-magnifying-glass-chart"
+        iconBg="bg-purple-500/15"
+        iconColor="text-purple-400"
+        viewAllHref="/dashboard/forensics"
+        viewAllLabel="See all forensics"
+      >
+        <WidgetErrorBoundary name="PostMortemEntry">
+          <PostMortemEntry />
+        </WidgetErrorBoundary>
+      </OverviewTeaserStrip>
 
-      {/* ── Tier 2 — Forensics (lazy) ── */}
-      <Suspense fallback={<TierLoadingFallback />}>
-        <Tier2Forensics />
-      </Suspense>
+      {/* ── Anatomy teaser — one Cognitive Interruption mini ── */}
+      <OverviewTeaserStrip
+        eyebrow="Anatomy"
+        title="Under the hood"
+        subtitle="Cognitive triggers, hook patterns, retention danger zones, sound DNA."
+        icon="fa-dna"
+        iconBg="bg-cyan-500/15"
+        iconColor="text-cyan-400"
+        viewAllHref="/dashboard/anatomy"
+        viewAllLabel="See all anatomy"
+      >
+        <WidgetErrorBoundary name="CognitiveInterruptionHeatmap">
+          <CognitiveInterruptionHeatmap />
+        </WidgetErrorBoundary>
+      </OverviewTeaserStrip>
 
-      {/* ── Tier 3 — Anatomy (lazy) ── */}
-      <Suspense fallback={<TierLoadingFallback />}>
-        <Tier3Anatomy />
-      </Suspense>
-
-      {/* ── Tier 4 — Creators (lazy) ── */}
-      <Suspense fallback={<TierLoadingFallback />}>
-        <Tier4Creators />
-      </Suspense>
+      {/* ── Creators teaser — Rising Stars (the most emotional widget) ── */}
+      <OverviewTeaserStrip
+        eyebrow="Creators"
+        title="Who's winning in your niche"
+        subtitle="Rising stars, niche leaders, DISC profiles, audience archetypes."
+        icon="fa-medal"
+        iconBg="bg-amber-500/15"
+        iconColor="text-amber-400"
+        viewAllHref="/dashboard/creators"
+        viewAllLabel="See all creators"
+      >
+        <WidgetErrorBoundary name="RisingStars">
+          <RisingStars />
+        </WidgetErrorBoundary>
+      </OverviewTeaserStrip>
 
       {/* ── Your Accounts (preserved) ── */}
       <div className="glass-card rounded-3xl p-5 sm:p-7 mb-8 lg:mb-12">
