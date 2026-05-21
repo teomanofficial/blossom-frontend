@@ -31,6 +31,10 @@ interface HeatGridProps {
    * Optional formatter for the tooltip value. Defaults to fixed-3.
    */
   formatValue?: (v: number) => string
+  /**
+   * Render at a smaller cell size for horizontal/compact layouts.
+   */
+  compact?: boolean
 }
 
 interface TooltipState {
@@ -97,6 +101,8 @@ function colorFor(scale: ColorScale, value: number, min: number, max: number): s
 
 const TOP_LABEL_HEIGHT = 56
 const LEFT_LABEL_WIDTH = 96
+const TOP_LABEL_HEIGHT_COMPACT = 44
+const LEFT_LABEL_WIDTH_COMPACT = 72
 const CELL_GAP = 2
 const CELL_RADIUS = 3
 
@@ -115,7 +121,10 @@ export default function HeatGrid({
   minValue,
   maxValue,
   formatValue,
+  compact = false,
 }: HeatGridProps) {
+  const topLabelHeight = compact ? TOP_LABEL_HEIGHT_COMPACT : TOP_LABEL_HEIGHT
+  const leftLabelWidth = compact ? LEFT_LABEL_WIDTH_COMPACT : LEFT_LABEL_WIDTH
   const [tooltip, setTooltip] = useState<TooltipState | null>(null)
 
   const { min, max } = useMemo(() => {
@@ -149,21 +158,22 @@ export default function HeatGrid({
   }
 
   // Use a viewBox so SVG scales. Width units arbitrary.
-  const cellSize = 28
+  const cellSize = compact ? 22 : 28
   const gridW = cols.length * cellSize
   const gridH = rows.length * cellSize
-  const viewW = LEFT_LABEL_WIDTH + gridW
-  const viewH = TOP_LABEL_HEIGHT + gridH
+  const viewW = leftLabelWidth + gridW
+  const viewH = topLabelHeight + gridH
 
   const showRotatedColLabels = cols.length > 8 || maxLabelLines(cols, 6) > 1
 
   const fmt = formatValue ?? ((v: number) => v.toFixed(2))
 
   // Cap display size so SVG labels stay readable inside wide col-12 grids.
-  // Natural viewBox units: ~28 per cell. We cap display at ~3.5× natural
-  // width so a 5×10 grid renders around ~840px max instead of stretching
-  // to fill a 1400px container (which made labels balloon to 60–80px).
-  const maxDisplayWidth = Math.min(viewW * 3.5, 880)
+  // Compact mode caps tighter (~720px) so wide grids like trigger×niche
+  // stay scannable instead of stretching across the full column-12 width.
+  const maxDisplayWidth = compact
+    ? Math.min(viewW * 2.2, 720)
+    : Math.min(viewW * 3.5, 880)
 
   return (
     <div className="relative w-full flex justify-center">
@@ -178,8 +188,8 @@ export default function HeatGrid({
       >
         {/* Column labels (top) */}
         {cols.map((col, ci) => {
-          const cx = LEFT_LABEL_WIDTH + ci * cellSize + cellSize / 2
-          const cy = TOP_LABEL_HEIGHT - 8
+          const cx = leftLabelWidth + ci * cellSize + cellSize / 2
+          const cy = topLabelHeight - 8
           if (showRotatedColLabels) {
             return (
               <text
@@ -213,18 +223,19 @@ export default function HeatGrid({
 
         {/* Row labels (left) */}
         {rows.map((row, ri) => {
-          const ry = TOP_LABEL_HEIGHT + ri * cellSize + cellSize / 2 + 4
+          const ry = topLabelHeight + ri * cellSize + cellSize / 2 + 4
+          const maxChars = compact ? 11 : 14
           return (
             <text
               key={`row-${ri}`}
-              x={LEFT_LABEL_WIDTH - 8}
+              x={leftLabelWidth - 8}
               y={ry}
               fill="#94a3b8"
               fontSize="10"
               textAnchor="end"
               className="select-none"
             >
-              {row.length > 14 ? `${row.slice(0, 12)}…` : row}
+              {row.length > maxChars ? `${row.slice(0, maxChars - 1)}…` : row}
             </text>
           )
         })}
@@ -238,8 +249,8 @@ export default function HeatGrid({
             const fill = hasValue
               ? colorFor(colorScale, v as number, min, max)
               : 'rgba(255,255,255,0.04)'
-            const x = LEFT_LABEL_WIDTH + ci * cellSize + CELL_GAP / 2
-            const y = TOP_LABEL_HEIGHT + ri * cellSize + CELL_GAP / 2
+            const x = leftLabelWidth + ci * cellSize + CELL_GAP / 2
+            const y = topLabelHeight + ri * cellSize + CELL_GAP / 2
             const size = cellSize - CELL_GAP
             return (
               <rect

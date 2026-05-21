@@ -70,6 +70,32 @@ function useAnalyzedVideoCount(): { count: number | null; loading: boolean } {
 }
 
 /**
+ * Empty-state envelope the backend returns (200 + body) when it has
+ * nothing to diagnose — target missing, no analysis, fewer than 3 hits,
+ * or no diverged variable. Distinct from the success shape which has
+ * `video`, `diverged_variable`, etc.
+ */
+type PostMortemEnvelope = { data: null; reason: string }
+type PostMortemApiBody = PostMortemResponse | PostMortemEnvelope
+
+function isEmptyEnvelope(body: PostMortemApiBody | null): body is PostMortemEnvelope {
+  return Boolean(
+    body &&
+      typeof body === 'object' &&
+      'data' in body &&
+      (body as { data: unknown }).data === null,
+  )
+}
+
+function isValidPostMortem(
+  body: PostMortemApiBody | null,
+): body is PostMortemResponse {
+  // Defensive: trust the type contract but verify the load-bearing field
+  // so a partial response can't crash the page.
+  return Boolean(body && typeof body === 'object' && 'video' in body && (body as PostMortemResponse).video)
+}
+
+/**
  * Decide what to render given the API state + dev mode + video id.
  * Returns either real data, mock data (with banner), or a friendly
  * non-error empty state.
@@ -81,9 +107,10 @@ function useResolvedPostMortem(
   loading: boolean
   source: 'real' | 'mock' | 'none'
   error: string | null
+  reason: string | null
   retry: () => void
 } {
-  const { data, loading, error, retry } = useInsights<PostMortemResponse>(
+  const { data: rawData, loading, error, retry } = useInsights<PostMortemApiBody>(
     'tier2/post-mortem',
     {
       method: 'POST',
@@ -92,12 +119,15 @@ function useResolvedPostMortem(
     },
   )
 
+  const envelopeReason = isEmptyEnvelope(rawData) ? rawData.reason : null
+  const data = isValidPostMortem(rawData) ? rawData : null
+
   // Use mock data when:
   //   1. We're in dev mode
-  //   2. The backend returned 501 (Not Implemented) OR any other error
+  //   2. The backend returned an error, an empty envelope, or no data
   //   3. We have a videoId to attach the mock to
   if (videoId && data) {
-    return { data, loading: false, source: 'real', error: null, retry }
+    return { data, loading: false, source: 'real', error: null, reason: null, retry }
   }
   if (videoId && !loading && (error || !data)) {
     if (import.meta.env.DEV) {
@@ -106,12 +136,13 @@ function useResolvedPostMortem(
         loading: false,
         source: 'mock',
         error,
+        reason: envelopeReason,
         retry,
       }
     }
-    return { data: null, loading: false, source: 'none', error, retry }
+    return { data: null, loading: false, source: 'none', error, reason: envelopeReason, retry }
   }
-  return { data: null, loading, source: 'none', error: null, retry }
+  return { data: null, loading, source: 'none', error: null, reason: null, retry }
 }
 
 function PageHeader({
@@ -227,6 +258,19 @@ function LoadingState() {
   )
 }
 
+function emptyStateMessage(reason: string | null, error: string | null): string {
+  if (reason === 'insufficient_hits') {
+    return "We need at least 3 of your hit posts to baseline against before we can autopsy this one. Analyze a few more of your top performers and try again."
+  }
+  if (reason) {
+    return `Nothing to diagnose yet (${reason}). The forensic analyzer needs a baseline of your hits to compare against.`
+  }
+  if (error) {
+    return `${error}. The forensic analyzer needs a baseline of your hits to compare against — try again once a few more of your posts are analyzed.`
+  }
+  return 'The post-mortem service is coming soon. Once it ships, this page will fill with your diagnostic.'
+}
+
 function EmptyState({ message, icon }: { message: string; icon: string }) {
   return (
     <div className="glass-card rounded-3xl p-8 sm:p-12 text-center">
@@ -336,11 +380,7 @@ function PostMortemInner() {
       ) : !resolved.data ? (
         <EmptyState
           icon="fa-pen-ruler"
-          message={
-            resolved.error
-              ? `${resolved.error}. The forensic analyzer needs a baseline of your hits to compare against — try again once a few more of your posts are analyzed.`
-              : 'The post-mortem service is coming soon. Once it ships, this page will fill with your diagnostic.'
-          }
+          message={emptyStateMessage(resolved.reason, resolved.error)}
         />
       ) : (
         <>

@@ -1,24 +1,20 @@
 /**
  * CategoryHeatGrid — Tier 3 / Category widget.
  *
- * 2D heatmap of categories (rows) × metrics (columns: Views P50,
- * Engagement %, Duration sec). Renders via the shared HeatGrid chart.
+ * Compact horizontal heatmap: metrics are the 3 rows (Views P50,
+ * Engagement %, Duration sec) and categories spread across as columns.
+ * Categories outnumber metrics ~5:1, so a wide-and-short layout fits the
+ * full set at a glance without scrolling.
  *
- * Each metric carries a different unit, so we normalise per-column
- * before passing to HeatGrid: cell value becomes its rank in [0, 1]
- * within the column. HeatGrid colors by the normalised values, but the
- * tooltip still shows the original raw number with the appropriate unit.
- *
- * Default view shows the top 10 categories (rows are pre-ordered by the
- * backend, typically by sample_size DESC) with compact row heights, so
- * the widget stays well under 500px tall. The "Show all" toggle expands
- * to the full set without changing the cell size — the parent card
- * scrolls vertically if needed.
+ * Each metric carries a different unit, so we normalise per-row before
+ * passing to HeatGrid: cell value becomes its rank in [0, 1] within the
+ * row. HeatGrid colors by the normalised values; the tooltip still shows
+ * the original raw number with the appropriate unit.
  *
  * Data source: `GET /api/insights/tier3/category-heatgrid`.
  */
 
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { useInsights } from '../../../../lib/useInsights'
 import { compactNumber } from '../../../../lib/format'
 import HeatGrid from '../../charts/HeatGrid'
@@ -36,27 +32,19 @@ interface CategoryHeatGridResponse {
   sparse?: boolean
 }
 
-/** How many rows are visible in the compact / default view. */
-const DEFAULT_VISIBLE_ROWS = 10
-
-/** Min-max normalise a single column of the matrix to [0, 1]. */
-function normalizeColumn(values: number[][], colIdx: number): number[] {
-  const col: number[] = []
-  for (let r = 0; r < values.length; r++) {
-    const row = values[r]
-    const v = row?.[colIdx]
-    col.push(typeof v === 'number' && Number.isFinite(v) ? v : 0)
-  }
+/** Min-max normalise a single row of the matrix to [0, 1]. */
+function normalizeRow(row: number[]): number[] {
+  const safe = row.map((v) => (typeof v === 'number' && Number.isFinite(v) ? v : 0))
   let lo = Number.POSITIVE_INFINITY
   let hi = Number.NEGATIVE_INFINITY
-  for (const v of col) {
+  for (const v of safe) {
     if (v < lo) lo = v
     if (v > hi) hi = v
   }
   if (!Number.isFinite(lo) || !Number.isFinite(hi) || hi === lo) {
-    return col.map(() => 0.5)
+    return safe.map(() => 0.5)
   }
-  return col.map((v) => (v - lo) / (hi - lo))
+  return safe.map((v) => (v - lo) / (hi - lo))
 }
 
 /**
@@ -78,73 +66,50 @@ export default function CategoryHeatGrid({
   const { data, loading, error, retry, locked } =
     useInsights<CategoryHeatGridResponse>('tier3/category-heatgrid')
 
-  const [showAll, setShowAll] = useState(false)
-
   const categories = data?.categories ?? []
   const metrics = data?.metrics ?? []
   const rawValues = data?.values ?? []
 
-  // Top-N slice. We slice rows + values together so column normalisation
-  // still scales relative to the visible subset (brighter cells mean
-  // "leads within visible categories"). When toggled to "all", we use
-  // the full matrix.
-  const { visibleCategories, visibleRaw } = useMemo(() => {
-    if (showAll) {
-      return { visibleCategories: categories, visibleRaw: rawValues }
-    }
-    return {
-      visibleCategories: categories.slice(0, DEFAULT_VISIBLE_ROWS),
-      visibleRaw: rawValues.slice(0, DEFAULT_VISIBLE_ROWS),
-    }
-  }, [showAll, categories, rawValues])
-
-  // Per-column normalised matrix so each metric gets its own [0,1] scale.
-  const normalised: number[][] = useMemo(() => {
-    if (visibleRaw.length === 0 || metrics.length === 0) return []
-    const cols = metrics.map((_, c) => normalizeColumn(visibleRaw, c))
-    return visibleRaw.map((_, r) => {
+  // Transposed matrix: rows are metrics, columns are categories.
+  // raw[c][m] in the source → transposed[m][c] for HeatGrid.
+  const transposedRaw: number[][] = useMemo(() => {
+    if (metrics.length === 0 || categories.length === 0) return []
+    return metrics.map((_m, mi) => {
       const row: number[] = []
-      for (let c = 0; c < metrics.length; c++) {
-        row.push(cols[c]?.[r] ?? 0)
+      for (let ci = 0; ci < categories.length; ci++) {
+        const v = rawValues[ci]?.[mi]
+        row.push(typeof v === 'number' && Number.isFinite(v) ? v : 0)
       }
       return row
     })
-  }, [visibleRaw, metrics])
+  }, [metrics, categories, rawValues])
 
-  // Selected-cell formatter: HeatGrid passes the normalised value, but we
-  // want to display the raw number in the tooltip. We thread the lookup
-  // via a closure that maps normalised → raw using row/col indices in
-  // the same order. HeatGrid doesn't pass indices to formatValue, so we
-  // accept the limitation: format `value` as the *normalised* score with
-  // a percentage hint, and rely on the per-cell row × col label in the
-  // header to convey the metric. This is a known UX trade-off.
-  //
-  // Workaround: we pre-build a flat lookup table so format ↔ raw is
-  // achievable by reverse-matching the normalised value within the
-  // matrix. In practice cells are unique enough that this works.
+  // Per-row normalised matrix so each metric gets its own [0,1] scale.
+  const normalised: number[][] = useMemo(
+    () => transposedRaw.map((row) => normalizeRow(row)),
+    [transposedRaw],
+  )
+
+  // Reverse-lookup table to recover raw values + metric labels in the
+  // tooltip (HeatGrid only passes the normalised value).
   const rawByNormalised = useMemo(() => {
     const map = new Map<string, { metric: string; raw: number }>()
     for (let r = 0; r < normalised.length; r++) {
       for (let c = 0; c < (normalised[r]?.length ?? 0); c++) {
         const n = normalised[r]?.[c]
-        const raw = visibleRaw[r]?.[c]
-        const metric = metrics[c]
+        const raw = transposedRaw[r]?.[c]
+        const metric = metrics[r]
         if (n === undefined || raw === undefined || metric === undefined) continue
-        // Use a 4-decimal key so multiple identical floats collapse.
         const key = `${r}:${c}:${n.toFixed(4)}`
         map.set(key, { metric, raw })
       }
     }
     return map
-  }, [normalised, visibleRaw, metrics])
+  }, [normalised, transposedRaw, metrics])
 
   const formatValue = (v: number): string => {
-    // Try to recover the raw value by scanning the lookup. We bias toward
-    // the first matching entry — index collisions are rare across the
-    // ~21 × 3 grid.
     for (const [, entry] of rawByNormalised) {
       if (Math.abs(v - 0) < 1e-9) continue
-      // No row/col context here; just label by closest unit guess.
       return formatCellValue(entry.metric, entry.raw)
     }
     return v.toFixed(2)
@@ -153,26 +118,14 @@ export default function CategoryHeatGrid({
   const isEmpty =
     !loading && !error && (categories.length === 0 || metrics.length === 0)
 
-  const hiddenCount = Math.max(0, categories.length - DEFAULT_VISIBLE_ROWS)
-  const canExpand = hiddenCount > 0
-
-  // Bound the SVG container so the widget never exceeds a comfortable
-  // height even with many categories. The shared HeatGrid uses a
-  // viewBox + width="100%" + height="auto", which lets it grow tall when
-  // there are many rows — capping the wrapper with overflow-y:auto keeps
-  // the widget compact and scannable.
-  // Compact view (top 10): ~10 rows × 28 + 56 ≈ 336px → fits under 400.
-  // Expanded view (21 rows): we cap at 420px and let the SVG scroll.
-  const wrapperMaxHeight = showAll ? 420 : 360
-
   return (
     <WidgetCard
       title="Category heat grid"
       subtitle="Where heat is concentrating across content categories."
       info={{
         what: 'How each content category performs across three key metrics: median views, engagement rate, and duration.',
-        howToRead: 'Each row is a category, each column is a metric (P50 = median). Color intensity is normalized PER COLUMN so each metric scales independently — a bright cell in Views means high views vs other categories, not vs Engagement. Cross-reference rows to spot mismatches (e.g., a category with high views but low engagement is built for reach, not depth).',
-        computation: 'Materialized view of last 90 days of videos, percentile_cont(0.5) per (category, metric). Categories ordered by sample size descending. Default shows top 10; expand to see all 21.',
+        howToRead: 'Each row is a metric (P50 = median), each column is a category. Color intensity is normalized PER ROW so each metric scales independently — a bright cell in the Views row means high views vs other categories, not vs Engagement. Scan a column to spot mismatches (e.g., bright Views but dim Engagement = built for reach, not depth).',
+        computation: 'Materialized view of last 90 days of videos, percentile_cont(0.5) per (category, metric). Categories ordered by sample size descending.',
       }}
       icon="fa-th"
       iconBg="bg-cyan-500/15"
@@ -187,27 +140,11 @@ export default function CategoryHeatGrid({
       className={className}
       locked={locked}
       tier={3}
-      actions={
-        canExpand ? (
-          <button
-            type="button"
-            onClick={() => setShowAll((v) => !v)}
-            className="px-2 py-0.5 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-[10px] font-black uppercase tracking-widest text-slate-200 transition-colors"
-          >
-            {showAll
-              ? `Show top ${DEFAULT_VISIBLE_ROWS}`
-              : `Show all ${categories.length}`}
-          </button>
-        ) : null
-      }
     >
-      <div
-        className="overflow-y-auto overflow-x-hidden -mx-1 px-1"
-        style={{ maxHeight: wrapperMaxHeight }}
-      >
+      <div className="overflow-x-auto -mx-1 px-1">
         <HeatGrid
-          rows={visibleCategories}
-          cols={metrics}
+          rows={metrics}
+          cols={categories}
           values={normalised}
           colorScale="viridis"
           valueLabel="Score"
@@ -223,13 +160,7 @@ export default function CategoryHeatGrid({
         </p>
       ) : null}
       <p className="mt-2 text-[10px] text-slate-500 font-medium leading-snug">
-        Each column is normalised independently — brighter cells lead within that metric.
-        {canExpand && !showAll ? (
-          <>
-            {' '}
-            Showing top {DEFAULT_VISIBLE_ROWS} of {categories.length}.
-          </>
-        ) : null}
+        Each row is normalised independently — brighter cells lead within that metric.
       </p>
     </WidgetCard>
   )

@@ -81,6 +81,13 @@ export default function CognitiveInterruptionHeatmap({
     n.charAt(0).toUpperCase() + n.slice(1),
   )
 
+  // Transpose: original data is niches × triggers; we render triggers × niches
+  // so the grid is wide (niche columns) and short (trigger rows) — a much
+  // more compact horizontal layout than the tall niche-first orientation.
+  const transposedValues: number[][] = triggerLabels.map((_, ti) =>
+    nicheLabels.map((_, ni) => (data?.values[ni]?.[ti] ?? Number.NaN)),
+  )
+
   return (
     <WidgetCard
       title="Cognitive Interruption Matrix"
@@ -101,7 +108,7 @@ export default function CognitiveInterruptionHeatmap({
       info={{
         what: 'Which psychological triggers drive virality in each niche.',
         howToRead:
-          "Cells colored green mean the trigger outperforms the baseline in that niche; red means it underperforms. Top-decile videos only. Find your niche's row to see which triggers to lean into and which to avoid.",
+          "Cells colored green mean the trigger outperforms the baseline in that niche; red means it underperforms. Top-decile videos only. Find your niche's column to see which triggers to lean into and which to avoid.",
         computation:
           'Lift = (avg views with this trigger in this niche) ÷ (overall niche baseline). Computed from primal_trigger classification across the AI pipeline.',
       }}
@@ -114,12 +121,13 @@ export default function CognitiveInterruptionHeatmap({
       }
     >
       <HeatGrid
-        rows={nicheLabels}
-        cols={triggerLabels}
-        values={data?.values ?? []}
+        rows={triggerLabels}
+        cols={nicheLabels}
+        values={transposedValues}
         colorScale="diverging"
         valueLabel="Lift vs baseline"
         formatValue={(v) => `${v.toFixed(2)}×`}
+        compact
       />
       <div className="mt-4 flex items-center justify-between gap-3 text-[10px] font-black uppercase tracking-widest text-slate-500">
         <div className="flex items-center gap-3">
