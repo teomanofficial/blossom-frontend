@@ -66,6 +66,54 @@ interface QualityStat {
   avg_virality_score: string | null
 }
 
+interface SmokeTestOperationDef {
+  key: string
+  label: string
+  description: string
+}
+
+interface SmokeTestVideo {
+  id: number
+  platform: string
+  username: string | null
+  caption: string | null
+  thumbnail_url: string | null
+  views: number | null
+  created_at: string
+  has_analysis: boolean
+}
+
+interface SmokeTestRun {
+  id: number
+  run_group_id: string
+  video_id: number
+  operation: string
+  model: string
+  status: 'running' | 'done' | 'error'
+  output: any | null
+  input_tokens: number | null
+  output_tokens: number | null
+  duration_ms: number | null
+  estimated_cost_usd: string | number | null
+  error_message: string | null
+  created_at: string
+  finished_at: string | null
+  platform?: string
+  caption?: string | null
+  thumbnail_url?: string | null
+  username?: string | null
+}
+
+interface SmokeTestGroupSummary {
+  run_group_id: string
+  video_id: number
+  operation: string
+  created_at: string
+  model_count: string | number
+  done_count: string | number
+  error_count: string | number
+}
+
 interface RecentAnalysis {
   id: number
   video_id: number
@@ -116,12 +164,14 @@ const ANALYSIS_TYPE_LABELS: Record<string, string> = {
 
 const MODEL_COLORS: Record<string, string> = {
   'gemini-2.0-flash': 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+  'gemini-2.5-flash-lite': 'bg-teal-500/10 text-teal-400 border-teal-500/20',
   'gemini-2.5-flash': 'bg-blue-500/10 text-blue-400 border-blue-500/20',
   'gemini-2.5-pro': 'bg-purple-500/10 text-purple-400 border-purple-500/20',
 }
 
 const MODEL_CHART_COLORS: Record<string, { bar: string; text: string; ring: string }> = {
   'gemini-2.0-flash': { bar: 'bg-emerald-500', text: 'text-emerald-400', ring: 'ring-emerald-500/30' },
+  'gemini-2.5-flash-lite': { bar: 'bg-teal-500', text: 'text-teal-400', ring: 'ring-teal-500/30' },
   'gemini-2.5-flash': { bar: 'bg-blue-500', text: 'text-blue-400', ring: 'ring-blue-500/30' },
   'gemini-2.5-pro': { bar: 'bg-purple-500', text: 'text-purple-400', ring: 'ring-purple-500/30' },
 }
@@ -135,7 +185,7 @@ function getModelColor(model: string): string {
 }
 
 export default function AIModelLab() {
-  const [activeTab, setActiveTab] = useState<'config' | 'analytics' | 'results'>('config')
+  const [activeTab, setActiveTab] = useState<'config' | 'analytics' | 'results' | 'smoke-test'>('config')
   const [models, setModels] = useState<ModelConfig[]>([])
   const [modelsLoading, setModelsLoading] = useState(false)
   const [costStats, setCostStats] = useState<CostStat[]>([])
@@ -154,6 +204,20 @@ export default function AIModelLab() {
   const [defaultModelName, setDefaultModelName] = useState('')
   const [overridesLoading, setOverridesLoading] = useState(false)
   const [savingOperation, setSavingOperation] = useState<string | null>(null)
+
+  // ── Smoke Test state
+  const [smokeOperations, setSmokeOperations] = useState<SmokeTestOperationDef[]>([])
+  const [smokeVideoQuery, setSmokeVideoQuery] = useState('')
+  const [smokeVideoResults, setSmokeVideoResults] = useState<SmokeTestVideo[]>([])
+  const [smokeSelectedVideo, setSmokeSelectedVideo] = useState<SmokeTestVideo | null>(null)
+  const [smokeSelectedOperation, setSmokeSelectedOperation] = useState<string>('analyze_video_v2')
+  const [smokeSelectedModels, setSmokeSelectedModels] = useState<string[]>([])
+  const [smokeRunning, setSmokeRunning] = useState(false)
+  const [smokeRunGroupId, setSmokeRunGroupId] = useState<string | null>(null)
+  const [smokeRuns, setSmokeRuns] = useState<SmokeTestRun[]>([])
+  const [smokeHistory, setSmokeHistory] = useState<SmokeTestGroupSummary[]>([])
+  const [smokeSearching, setSmokeSearching] = useState(false)
+  const [smokeExpandedRunId, setSmokeExpandedRunId] = useState<number | null>(null)
 
   const fetchModels = async () => {
     setModelsLoading(true)
@@ -299,12 +363,136 @@ export default function AIModelLab() {
 
   useEffect(() => {
     if (activeTab === 'config') fetchOperationOverrides()
+    // Smoke-test tab needs the same availableModels list from operation-model-overrides
+    if (activeTab === 'smoke-test') {
+      fetchOperationOverrides()
+      fetchSmokeOperations()
+      fetchSmokeHistory()
+    }
   }, [activeTab])
+
+  // ── Smoke Test handlers
+  const fetchSmokeOperations = async () => {
+    try {
+      const res = await authFetch('/api/admin/smoke-test/operations')
+      const data = await res.json()
+      setSmokeOperations(data.operations || [])
+    } catch {
+      toast.error('Failed to load operations')
+    }
+  }
+
+  const fetchSmokeHistory = async () => {
+    try {
+      const res = await authFetch('/api/admin/smoke-test?limit=20')
+      const data = await res.json()
+      setSmokeHistory(data.groups || [])
+    } catch {
+      // silent
+    }
+  }
+
+  const searchSmokeVideos = async (query: string) => {
+    if (!query.trim()) { setSmokeVideoResults([]); return }
+    setSmokeSearching(true)
+    try {
+      const res = await authFetch(`/api/admin/smoke-test/videos/search?q=${encodeURIComponent(query)}`)
+      const data = await res.json()
+      setSmokeVideoResults(data.videos || [])
+    } catch {
+      toast.error('Search failed')
+    } finally {
+      setSmokeSearching(false)
+    }
+  }
+
+  const runSmokeTest = async () => {
+    if (!smokeSelectedVideo) { toast.error('Pick a video first'); return }
+    if (smokeSelectedModels.length === 0) { toast.error('Select at least one model'); return }
+    setSmokeRunning(true)
+    setSmokeRuns([])
+    setSmokeRunGroupId(null)
+    try {
+      const res = await authFetch('/api/admin/smoke-test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          videoId: smokeSelectedVideo.id,
+          operation: smokeSelectedOperation,
+          models: smokeSelectedModels,
+        }),
+      })
+      const data = await res.json()
+      if (data.error) { toast.error(data.error); return }
+      setSmokeRunGroupId(data.runGroupId)
+      toast.success('Smoke test started — polling for results')
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to start smoke test')
+    } finally {
+      setSmokeRunning(false)
+    }
+  }
+
+  const loadSmokeGroup = async (runGroupId: string) => {
+    setSmokeRunGroupId(runGroupId)
+    setSmokeRuns([])
+    try {
+      const res = await authFetch(`/api/admin/smoke-test/${runGroupId}`)
+      const data = await res.json()
+      setSmokeRuns(data.runs || [])
+      // Pre-select the video and op from the loaded group for context
+      if (data.runs?.[0]) {
+        const r = data.runs[0]
+        setSmokeSelectedVideo({
+          id: r.video_id,
+          platform: r.platform || '',
+          username: r.username || null,
+          caption: r.caption || null,
+          thumbnail_url: r.thumbnail_url || null,
+          views: null,
+          created_at: r.created_at,
+          has_analysis: true,
+        })
+        setSmokeSelectedOperation(r.operation)
+      }
+    } catch {
+      toast.error('Failed to load run')
+    }
+  }
+
+  // Poll the current run group every 2s while any row is still 'running'.
+  useEffect(() => {
+    if (!smokeRunGroupId) return
+    let cancelled = false
+    const poll = async () => {
+      try {
+        const res = await authFetch(`/api/admin/smoke-test/${smokeRunGroupId}`)
+        const data = await res.json()
+        if (cancelled) return
+        setSmokeRuns(data.runs || [])
+        const stillRunning = (data.runs || []).some((r: SmokeTestRun) => r.status === 'running')
+        if (stillRunning) setTimeout(poll, 2000)
+        else fetchSmokeHistory() // refresh history when this group finishes
+      } catch {
+        if (!cancelled) setTimeout(poll, 4000)
+      }
+    }
+    poll()
+    return () => { cancelled = true }
+  }, [smokeRunGroupId])
+
+  // Debounced video search
+  useEffect(() => {
+    if (activeTab !== 'smoke-test') return
+    const t = setTimeout(() => searchSmokeVideos(smokeVideoQuery), 300)
+    return () => clearTimeout(t)
+  }, [smokeVideoQuery, activeTab])
 
   const tabs = [
     { key: 'config' as const, label: 'Model Config', icon: 'fa-sliders' },
     { key: 'analytics' as const, label: 'Cost & Performance', icon: 'fa-chart-bar' },
     { key: 'results' as const, label: 'Analysis Results', icon: 'fa-flask' },
+    { key: 'smoke-test' as const, label: 'Smoke Test', icon: 'fa-vial' },
   ]
 
   const totalCost = costStats.reduce((s, c) => s + parseFloat(c.total_cost_usd || '0'), 0)
@@ -955,6 +1143,247 @@ export default function AIModelLab() {
               {recentAnalyses.length === 0 && (
                 <div className="text-center py-12 text-slate-500 text-sm">No analysis results in this period</div>
               )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ═══════════ SMOKE TEST TAB ═══════════ */}
+      {activeTab === 'smoke-test' && (
+        <div className="space-y-4">
+          <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-3 text-xs text-amber-200">
+            <i className="fas fa-triangle-exclamation mr-2" />
+            Each run hits the Gemini API for real — costs real money. Pick a few models at a time, not all.
+          </div>
+
+          {/* Video picker */}
+          <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-4 space-y-3">
+            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">1. Pick a video</div>
+            <input
+              type="text"
+              value={smokeVideoQuery}
+              onChange={e => setSmokeVideoQuery(e.target.value)}
+              placeholder="Search by username, caption, or video ID..."
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-pink-500/40"
+            />
+            {smokeSelectedVideo && (
+              <div className="flex items-center gap-3 bg-pink-500/5 border border-pink-500/20 rounded-xl p-3">
+                {smokeSelectedVideo.thumbnail_url && (
+                  <img src={getStorageUrl(smokeSelectedVideo.thumbnail_url) || smokeSelectedVideo.thumbnail_url} alt="" className="w-12 h-12 rounded-lg object-cover shrink-0" />
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold">{smokeSelectedVideo.platform}</span>
+                    {smokeSelectedVideo.username && <span className="text-xs text-slate-400">@{smokeSelectedVideo.username}</span>}
+                    <span className="text-[10px] text-slate-500">#{smokeSelectedVideo.id}</span>
+                    {smokeSelectedVideo.has_analysis && (
+                      <span className="px-1.5 py-0.5 bg-emerald-500/10 text-emerald-400 text-[9px] font-bold rounded">analyzed</span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-400 truncate">{smokeSelectedVideo.caption || 'No caption'}</p>
+                </div>
+                <button onClick={() => setSmokeSelectedVideo(null)} className="text-slate-400 hover:text-white text-xs">
+                  <i className="fas fa-times" />
+                </button>
+              </div>
+            )}
+            {!smokeSelectedVideo && smokeVideoQuery && (
+              <div className="max-h-64 overflow-y-auto space-y-1">
+                {smokeSearching && <div className="text-xs text-slate-500 px-2 py-1">Searching...</div>}
+                {!smokeSearching && smokeVideoResults.length === 0 && (
+                  <div className="text-xs text-slate-500 px-2 py-1">No matches</div>
+                )}
+                {smokeVideoResults.map(v => (
+                  <button
+                    key={v.id}
+                    onClick={() => { setSmokeSelectedVideo(v); setSmokeVideoQuery(''); setSmokeVideoResults([]) }}
+                    className="w-full flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg text-left transition-colors"
+                  >
+                    {v.thumbnail_url && (
+                      <img src={getStorageUrl(v.thumbnail_url) || v.thumbnail_url} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] text-slate-500">#{v.id}</span>
+                        <span className="text-xs font-bold">{v.platform}</span>
+                        {v.username && <span className="text-xs text-slate-400">@{v.username}</span>}
+                        {v.has_analysis && (
+                          <span className="px-1.5 py-0.5 bg-emerald-500/10 text-emerald-400 text-[9px] font-bold rounded">analyzed</span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-400 truncate">{v.caption || 'No caption'}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Operation picker */}
+          <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-4 space-y-3">
+            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">2. Pick operation</div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {smokeOperations.map(op => (
+                <button
+                  key={op.key}
+                  onClick={() => setSmokeSelectedOperation(op.key)}
+                  className={`text-left p-3 rounded-xl border transition-all ${
+                    smokeSelectedOperation === op.key
+                      ? 'bg-pink-500/10 border-pink-500/40'
+                      : 'bg-white/5 border-white/10 hover:bg-white/10'
+                  }`}
+                >
+                  <div className="text-sm font-bold">{op.label}</div>
+                  <div className="text-[10px] text-slate-400 mt-0.5">{op.description}</div>
+                </button>
+              ))}
+            </div>
+            {(smokeSelectedOperation === 'virality_and_improvements' || smokeSelectedOperation === 'classify_and_extract') && smokeSelectedVideo && !smokeSelectedVideo.has_analysis && (
+              <div className="text-xs text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded-lg p-2">
+                <i className="fas fa-info-circle mr-1" /> This operation needs an existing analysis. The selected video has none — pick an analyzed video.
+              </div>
+            )}
+          </div>
+
+          {/* Model multi-select */}
+          <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-4 space-y-3">
+            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">3. Pick models to compare</div>
+            <div className="flex flex-wrap gap-2">
+              {availableModels.map(m => {
+                const selected = smokeSelectedModels.includes(m.model_name)
+                return (
+                  <button
+                    key={m.model_name}
+                    onClick={() => setSmokeSelectedModels(prev =>
+                      prev.includes(m.model_name) ? prev.filter(x => x !== m.model_name) : [...prev, m.model_name]
+                    )}
+                    className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all ${
+                      selected ? getModelColor(m.model_name) : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
+                    }`}
+                  >
+                    <i className={`fas ${selected ? 'fa-check' : 'fa-plus'} mr-1.5 text-[10px]`} />
+                    {m.display_name || m.model_name}
+                  </button>
+                )
+              })}
+              {availableModels.length === 0 && (
+                <div className="text-xs text-slate-500">No enabled models. Add some in Config tab.</div>
+              )}
+            </div>
+          </div>
+
+          {/* Run button */}
+          <button
+            onClick={runSmokeTest}
+            disabled={smokeRunning || !smokeSelectedVideo || smokeSelectedModels.length === 0}
+            className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-pink-500 to-orange-400 hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl text-sm font-black transition-opacity"
+          >
+            {smokeRunning ? (
+              <><i className="fas fa-spinner fa-spin mr-2" /> Starting...</>
+            ) : (
+              <><i className="fas fa-play mr-2" /> Run on {smokeSelectedModels.length || 0} model{smokeSelectedModels.length === 1 ? '' : 's'}</>
+            )}
+          </button>
+
+          {/* Live results grid */}
+          {smokeRuns.length > 0 && (
+            <div className="space-y-2">
+              <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Results</div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {smokeRuns.map(run => (
+                  <div
+                    key={run.id}
+                    className={`bg-white/[0.03] border rounded-2xl p-4 ${
+                      run.status === 'running' ? 'border-blue-500/30 animate-pulse' :
+                      run.status === 'error' ? 'border-red-500/30' :
+                      'border-white/10'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${getModelColor(run.model)}`}>
+                        {run.model}
+                      </span>
+                      <span className={`text-[10px] font-bold ${
+                        run.status === 'running' ? 'text-blue-400' :
+                        run.status === 'error' ? 'text-red-400' :
+                        'text-emerald-400'
+                      }`}>
+                        {run.status === 'running' && <i className="fas fa-spinner fa-spin mr-1" />}
+                        {run.status === 'done' && <i className="fas fa-check mr-1" />}
+                        {run.status === 'error' && <i className="fas fa-xmark mr-1" />}
+                        {run.status}
+                      </span>
+                    </div>
+                    {run.status !== 'running' && (
+                      <div className="grid grid-cols-3 gap-2 mb-3 text-center">
+                        <div>
+                          <div className="text-[10px] text-slate-500 uppercase">Latency</div>
+                          <div className="text-sm font-bold">{run.duration_ms != null ? `${(run.duration_ms / 1000).toFixed(1)}s` : '—'}</div>
+                        </div>
+                        <div>
+                          <div className="text-[10px] text-slate-500 uppercase">Tokens</div>
+                          <div className="text-sm font-bold">{formatNumber((run.input_tokens || 0) + (run.output_tokens || 0))}</div>
+                        </div>
+                        <div>
+                          <div className="text-[10px] text-slate-500 uppercase">Cost</div>
+                          <div className="text-sm font-bold">${typeof run.estimated_cost_usd === 'string' ? parseFloat(run.estimated_cost_usd).toFixed(4) : (run.estimated_cost_usd || 0).toFixed(4)}</div>
+                        </div>
+                      </div>
+                    )}
+                    {run.status === 'error' && (
+                      <div className="text-xs text-red-300 bg-red-500/10 rounded p-2 break-words">{run.error_message}</div>
+                    )}
+                    {run.status === 'done' && run.output && (
+                      <>
+                        <button
+                          onClick={() => setSmokeExpandedRunId(smokeExpandedRunId === run.id ? null : run.id)}
+                          className="text-xs font-bold text-pink-400 hover:text-pink-300"
+                        >
+                          {smokeExpandedRunId === run.id ? 'Hide output' : 'Show output'}
+                          <i className={`fas fa-chevron-${smokeExpandedRunId === run.id ? 'up' : 'down'} ml-1 text-[10px]`} />
+                        </button>
+                        {smokeExpandedRunId === run.id && (
+                          <pre className="mt-2 text-[10px] bg-black/40 rounded-lg p-3 overflow-auto max-h-96 text-slate-300 font-mono whitespace-pre-wrap break-words">
+                            {JSON.stringify(run.output, null, 2)}
+                          </pre>
+                        )}
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* History */}
+          {smokeHistory.length > 0 && (
+            <div className="space-y-2">
+              <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Recent Runs</div>
+              <div className="bg-white/[0.03] border border-white/10 rounded-2xl divide-y divide-white/5">
+                {smokeHistory.map(g => (
+                  <button
+                    key={g.run_group_id}
+                    onClick={() => loadSmokeGroup(g.run_group_id)}
+                    className={`w-full text-left p-3 hover:bg-white/5 transition-colors flex items-center gap-3 ${
+                      smokeRunGroupId === g.run_group_id ? 'bg-pink-500/5' : ''
+                    }`}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold">{g.operation}</span>
+                        <span className="text-[10px] text-slate-500">video #{g.video_id}</span>
+                      </div>
+                      <div className="text-[10px] text-slate-500">{timeAgo(g.created_at)}</div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <div className="text-[10px] text-slate-400">
+                        {g.done_count}/{g.model_count} done
+                        {parseInt(String(g.error_count), 10) > 0 && <span className="text-red-400"> · {g.error_count} err</span>}
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </div>
