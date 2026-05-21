@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef, type ReactNode } from 'react'
 import { getStorageUrl } from '../lib/media'
 import { useAuth } from '../context/AuthContext'
+import { authFetch } from '../lib/api'
 
 function formatCount(n: number | null | undefined): string {
   if (n == null) return '0'
@@ -185,6 +186,8 @@ export default function VideoStoryCarousel({ videos: initialVideos, initialIndex
   const [videoError, setVideoError] = useState(false)
   const [isMuted, setIsMuted] = useState(true)
   const [jsonCopied, setJsonCopied] = useState(false)
+  const [adminDownloading, setAdminDownloading] = useState(false)
+  const [adminDownloadError, setAdminDownloadError] = useState<string | null>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
 
   const video = videos[currentIndex]
@@ -217,6 +220,7 @@ export default function VideoStoryCarousel({ videos: initialVideos, initialIndex
     setIsPlaying(false)
     setVideoError(false)
     setJsonCopied(false)
+    setAdminDownloadError(null)
     if (videoRef.current) {
       videoRef.current.pause()
       videoRef.current.currentTime = 0
@@ -282,6 +286,34 @@ export default function VideoStoryCarousel({ videos: initialVideos, initialIndex
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
+  }
+
+  async function handleAdminDownload(e: React.MouseEvent) {
+    e.stopPropagation()
+    if (!video || adminDownloading) return
+    setAdminDownloading(true)
+    setAdminDownloadError(null)
+    try {
+      const res = await authFetch(`/api/analysis/videos/${video.id}/download`)
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ error: `HTTP ${res.status}` }))
+        throw new Error(body.error || `HTTP ${res.status}`)
+      }
+      const blob = await res.blob()
+      const blobUrl = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = blobUrl
+      a.download = `${video.username}_${video.platform}_${video.id}.mp4`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000)
+    } catch (err: any) {
+      setAdminDownloadError(err.message || 'Download failed')
+      setTimeout(() => setAdminDownloadError(null), 5000)
+    } finally {
+      setAdminDownloading(false)
+    }
   }
 
   if (!video) return null
@@ -724,6 +756,29 @@ export default function VideoStoryCarousel({ videos: initialVideos, initialIndex
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
                   </svg>
                   Save Video
+                </button>
+              )}
+              {isAdmin && (
+                <button
+                  onClick={handleAdminDownload}
+                  disabled={adminDownloading}
+                  title={adminDownloadError || `Download video via ${video.platform === 'tiktok' ? 'LamaTok' : 'HikerAPI'}`}
+                  className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-colors font-bold ${
+                    adminDownloadError
+                      ? 'bg-red-500/10 text-red-400 border-red-500/15'
+                      : 'bg-sky-500/10 text-sky-400 hover:bg-sky-500/20 border-sky-500/15 disabled:opacity-60 disabled:cursor-not-allowed'
+                  }`}
+                >
+                  {adminDownloading ? (
+                    <svg className="animate-spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                    </svg>
+                  ) : (
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                  )}
+                  {adminDownloading ? 'Downloading…' : adminDownloadError ? 'Failed — retry' : 'Download (Admin)'}
                 </button>
               )}
               {isAdmin && (
