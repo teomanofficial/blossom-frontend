@@ -45,6 +45,13 @@ interface AuthContextType {
   organization: Organization | null
   isOrgOwner: boolean
   isOrgAdmin: boolean
+  /**
+   * True when the resolved user is on the Free tier (no active paid plan).
+   * Drives disabled-state UI + upgrade overlay on Dashboard / Virality Check
+   * and on the API Keys page. Falsy while auth is still loading so we don't
+   * flash the locked state before we know the plan.
+   */
+  isFreeTier: boolean
   loading: boolean
   signOut: () => Promise<void>
   refreshProfile: () => Promise<string | null>
@@ -188,9 +195,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const isOrgOwner = organization?.role === 'owner'
   const isOrgAdmin = organization?.role === 'owner' || organization?.role === 'admin'
+  const isFreeTier =
+    !loading && !!user && userType !== 'admin' && userType !== 'vip' && !planSlug
 
   return (
-    <AuthContext.Provider value={{ user, session, profile, userType, planSlug, categoryIds, categoryStatus, onboardingCompleted, vipCredits, proCredits, organization, isOrgOwner, isOrgAdmin, loading, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ user, session, profile, userType, planSlug, categoryIds, categoryStatus, onboardingCompleted, vipCredits, proCredits, organization, isOrgOwner, isOrgAdmin, isFreeTier, loading, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   )

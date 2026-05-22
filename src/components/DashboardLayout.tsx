@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { useUpgrade } from '../context/UpgradeContext'
 import { useImpersonation } from '../context/ImpersonationContext'
 import { authFetch } from '../lib/api'
 import SearchOverlay from './SearchOverlay'
@@ -153,7 +154,8 @@ function RailLink({
 }
 
 export default function DashboardLayout() {
-  const { user, signOut, userType, planSlug, vipCredits, proCredits } = useAuth()
+  const { user, signOut, userType, planSlug, vipCredits, proCredits, isFreeTier } = useAuth()
+  const { openUpgrade } = useUpgrade()
   const { impersonating, stopImpersonation, isImpersonating } = useImpersonation()
   const location = useLocation()
   const displayName = user?.user_metadata?.full_name ?? user?.email?.split('@')[0] ?? 'Creator'
@@ -374,6 +376,16 @@ export default function DashboardLayout() {
                     {proCredits.limit - proCredits.used}/{proCredits.limit} analyses left
                   </div>
                 </div>
+              )}
+              {isFreeTier && (
+                <button
+                  type="button"
+                  onClick={() => openUpgrade('navbar')}
+                  className="group relative flex items-center gap-2 px-4 py-2 rounded-2xl bg-gradient-to-r from-pink-500 to-orange-400 text-white text-[11px] font-black uppercase tracking-widest shadow-lg shadow-pink-500/30 hover:scale-[1.03] transition-transform"
+                >
+                  <i className="fas fa-bolt text-[10px]" />
+                  Upgrade
+                </button>
               )}
             </>
           )}

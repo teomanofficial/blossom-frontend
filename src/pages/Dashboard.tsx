@@ -24,6 +24,7 @@ import { useDashboardSection } from '../lib/useDashboardSection'
 import { AccountsSkeleton } from '../components/DashboardSkeletons'
 import WidgetErrorBoundary from '../components/insights/WidgetErrorBoundary'
 import OverviewTeaserStrip from '../components/insights/OverviewTeaserStrip'
+import TierLockedCard from '../components/TierLockedCard'
 import OutlierFeed from '../components/insights/OutlierFeed'
 import AlgorithmWeatherCard from '../components/insights/widgets/tier0/AlgorithmWeatherCard'
 import BreakoutsStrip from '../components/insights/widgets/tier0/BreakoutsStrip'
@@ -110,12 +111,19 @@ function SectionError({ onRetry }: { onRetry: () => void }) {
 
 /* ── Main Dashboard ── */
 export default function Dashboard() {
-  const { user } = useAuth()
+  const { user, isFreeTier } = useAuth()
   const displayName =
     user?.user_metadata?.full_name ?? user?.email?.split('@')[0] ?? 'Creator'
 
   // Only the preserved "Your Accounts" widget still fetches here.
   const connectedAccounts = useDashboardSection<ConnectedAccounts>('connected-accounts')
+
+  /**
+   * Wrap with <TierLockedCard> only for Free-tier users; paid users get the
+   * raw widget. Keeps the JSX below readable without a forest of ternaries.
+   */
+  const gate = (source: string, children: React.ReactNode) =>
+    isFreeTier ? <TierLockedCard source={source}>{children}</TierLockedCard> : <>{children}</>;
 
   return (
     <>
@@ -131,30 +139,35 @@ export default function Dashboard() {
 
       {/* ── Quick Actions Grid (preserved — static, no fetch) ── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-8 lg:mb-12">
-        {quickActions.map((a) => (
-          <Link
-            key={a.to}
-            to={a.to}
-            className="glass-card-lift p-4 sm:p-6 group cursor-pointer overflow-hidden relative"
-          >
-            <div
-              className={`absolute -right-4 -top-4 w-24 h-24 ${a.glow} rounded-full blur-2xl ${a.glowHover} transition-colors`}
-            />
-            <div className="relative">
+        {quickActions.map((a) =>
+          gate(
+            `dashboard:quick:${a.label}`,
+            <Link
+              key={a.to}
+              to={a.to}
+              className="glass-card-lift p-4 sm:p-6 group cursor-pointer overflow-hidden relative block"
+            >
               <div
-                className={`w-10 h-10 sm:w-12 sm:h-12 ${a.iconBg} rounded-2xl flex items-center justify-center mb-3 sm:mb-4 ${a.iconColor}`}
-              >
-                <i className={`fas ${a.icon} text-base sm:text-lg`} />
+                className={`absolute -right-4 -top-4 w-24 h-24 ${a.glow} rounded-full blur-2xl ${a.glowHover} transition-colors`}
+              />
+              <div className="relative">
+                <div
+                  className={`w-10 h-10 sm:w-12 sm:h-12 ${a.iconBg} rounded-2xl flex items-center justify-center mb-3 sm:mb-4 ${a.iconColor}`}
+                >
+                  <i className={`fas ${a.icon} text-base sm:text-lg`} />
+                </div>
+                <h3 className="text-sm sm:text-lg font-semibold mb-0.5 sm:mb-1">{a.label}</h3>
+                <p className="text-slate-400 text-[10px] sm:text-xs hidden sm:block">{a.desc}</p>
               </div>
-              <h3 className="text-sm sm:text-lg font-semibold mb-0.5 sm:mb-1">{a.label}</h3>
-              <p className="text-slate-400 text-[10px] sm:text-xs hidden sm:block">{a.desc}</p>
-            </div>
-          </Link>
-        ))}
+            </Link>,
+          ),
+        )}
       </div>
 
       {/* ── Pulse section — Tier 0 hero widgets (no teaser strip, this IS
           the overview content for "what happened today") ── */}
+      {gate(
+        'dashboard:pulse',
       <OverviewTeaserStrip
         eyebrow="Pulse"
         title="What's happening right now"
@@ -186,9 +199,12 @@ export default function Dashboard() {
             </WidgetErrorBoundary>
           </div>
         </div>
-      </OverviewTeaserStrip>
+      </OverviewTeaserStrip>,
+      )}
 
       {/* ── Action teaser — top 3 outliers (via OutlierFeed) + CTA ── */}
+      {gate(
+        'dashboard:action',
       <OverviewTeaserStrip
         eyebrow="Action"
         title="What should I make next"
@@ -202,9 +218,12 @@ export default function Dashboard() {
         <WidgetErrorBoundary name="OutlierFeed">
           <OutlierFeed />
         </WidgetErrorBoundary>
-      </OverviewTeaserStrip>
+      </OverviewTeaserStrip>,
+      )}
 
       {/* ── Forensics teaser — Post-Mortem hero CTA with 3 sample tiles ── */}
+      {gate(
+        'dashboard:forensics',
       <OverviewTeaserStrip
         eyebrow="Forensics"
         title="Why did this work — and why didn't this?"
@@ -218,9 +237,12 @@ export default function Dashboard() {
         <WidgetErrorBoundary name="PostMortemEntry">
           <PostMortemEntry />
         </WidgetErrorBoundary>
-      </OverviewTeaserStrip>
+      </OverviewTeaserStrip>,
+      )}
 
       {/* ── Anatomy teaser — one Cognitive Interruption mini ── */}
+      {gate(
+        'dashboard:anatomy',
       <OverviewTeaserStrip
         eyebrow="Anatomy"
         title="Under the hood"
@@ -234,9 +256,12 @@ export default function Dashboard() {
         <WidgetErrorBoundary name="CognitiveInterruptionHeatmap">
           <CognitiveInterruptionHeatmap />
         </WidgetErrorBoundary>
-      </OverviewTeaserStrip>
+      </OverviewTeaserStrip>,
+      )}
 
       {/* ── Creators teaser — Rising Stars (the most emotional widget) ── */}
+      {gate(
+        'dashboard:creators',
       <OverviewTeaserStrip
         eyebrow="Creators"
         title="Who's winning in your niche"
@@ -250,7 +275,8 @@ export default function Dashboard() {
         <WidgetErrorBoundary name="RisingStars">
           <RisingStars />
         </WidgetErrorBoundary>
-      </OverviewTeaserStrip>
+      </OverviewTeaserStrip>,
+      )}
 
       {/* ── Your Accounts (preserved) ── */}
       <div className="glass-card rounded-3xl p-5 sm:p-7 mb-8 lg:mb-12">

@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import TierLockedCard from '../components/TierLockedCard'
 import { API_URL } from '../lib/api'
 
 // === Helper Functions ===
@@ -68,7 +69,7 @@ interface HistoryItem {
 }
 
 export default function ContentAnalysis() {
-  const { session, planSlug, proCredits } = useAuth()
+  const { session, planSlug, proCredits, isFreeTier } = useAuth()
   const navigate = useNavigate()
 
   // Upload state
@@ -576,7 +577,37 @@ export default function ContentAnalysis() {
           ) : (
             /* === UPLOAD FORM + HISTORY === */
             <div className="space-y-10">
-              {/* Upload Form */}
+              {/* Upload Form — gated for Free tier */}
+              {isFreeTier ? (
+                <TierLockedCard source="virality-check">
+                  <div className="glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-8">
+                    <div className="flex items-center gap-1 bg-white/5 rounded-xl p-1 mb-8 w-fit">
+                      <div className="px-5 py-2.5 rounded-lg text-sm font-bold bg-white/10 text-white">
+                        <i className="fas fa-link mr-2" />
+                        Paste URL
+                      </div>
+                      <div className="px-5 py-2.5 rounded-lg text-sm font-bold text-slate-400">
+                        <i className="fas fa-cloud-upload-alt mr-2" />
+                        Upload File
+                      </div>
+                    </div>
+                    <div className="space-y-4">
+                      <div className="relative">
+                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">
+                          <i className="fas fa-link text-lg" />
+                        </div>
+                        <div className="bg-white/5 border border-white/10 rounded-xl pl-12 pr-4 py-4 text-slate-500 w-full text-sm">
+                          Paste a TikTok or Instagram URL...
+                        </div>
+                      </div>
+                      <div className="w-full px-6 py-3.5 bg-gradient-to-r from-pink-500 to-orange-400 text-white font-bold rounded-xl text-center">
+                        <i className="fas fa-wand-magic-sparkles mr-2" />
+                        Analyze
+                      </div>
+                    </div>
+                  </div>
+                </TierLockedCard>
+              ) : (
               <div className="glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-8">
                 {/* Mode Toggle Pills */}
                 <div className="flex items-center gap-1 bg-white/5 rounded-xl p-1 mb-8 w-fit">
@@ -749,6 +780,7 @@ export default function ContentAnalysis() {
                   </div>
                 )}
               </div>
+              )}
 
               {/* ═══════════════════════════════════════════════════════════ */}
               {/* HISTORY LIST                                                */}

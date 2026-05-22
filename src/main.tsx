@@ -5,7 +5,9 @@ import { Toaster } from 'react-hot-toast'
 import App from './App'
 import { AuthProvider } from './context/AuthContext'
 import { ImpersonationProvider } from './context/ImpersonationContext'
+import { UpgradeProvider } from './context/UpgradeContext'
 import AnalyticsProvider from './components/AnalyticsProvider'
+import UpgradeOverlay from './components/UpgradeOverlay'
 import { trackAiReferrerOnce } from './lib/analytics'
 import './index.css'
 
@@ -22,7 +24,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       <AnalyticsProvider>
       <AuthProvider>
         <ImpersonationProvider>
+        <UpgradeProvider>
         <App />
+        <UpgradeOverlay />
         <Toaster
           position="top-right"
           toastOptions={{
@@ -43,6 +47,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
             },
           }}
         />
+        </UpgradeProvider>
         </ImpersonationProvider>
       </AuthProvider>
       </AnalyticsProvider>

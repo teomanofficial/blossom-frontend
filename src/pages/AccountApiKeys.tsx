@@ -1,5 +1,13 @@
 import { useState, useEffect, useCallback } from 'react'
 import { authFetch } from '../lib/api'
+import { useAuth } from '../context/AuthContext'
+import { useUpgrade } from '../context/UpgradeContext'
+
+const PLAN_RATE_LIMITS: Record<string, { limit: number; label: string }> = {
+  pro: { limit: 30, label: 'Pro' },
+  premium: { limit: 60, label: 'Premium' },
+  platin: { limit: 100, label: 'Platin' },
+}
 
 interface ApiKey {
   id: number
@@ -18,7 +26,10 @@ interface UsageDay {
 }
 
 export default function AccountApiKeys() {
+  const { isFreeTier, planSlug, userType } = useAuth()
+  const { openUpgrade } = useUpgrade()
   const [keys, setKeys] = useState<ApiKey[]>([])
+  const [mcpCopied, setMcpCopied] = useState(false)
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
   const [newKeyName, setNewKeyName] = useState('')
@@ -145,6 +156,64 @@ export default function AccountApiKeys() {
   const activeKeys = keys.filter((k) => k.is_active)
   const revokedKeys = keys.filter((k) => !k.is_active)
 
+  const tierInfo =
+    userType === 'admin'
+      ? { limit: 600, label: 'Admin' }
+      : (planSlug && PLAN_RATE_LIMITS[planSlug]) || { limit: 30, label: 'Pro' }
+
+  const mcpConfig = `{
+  "mcpServers": {
+    "blossom": {
+      "command": "npx",
+      "args": ["-y", "@blossai/mcp-server"],
+      "env": { "BLOSSOM_API_KEY": "blsm_your_key_here" }
+    }
+  }
+}`
+
+  const handleCopyMcp = async () => {
+    try {
+      await navigator.clipboard.writeText(mcpConfig)
+      setMcpCopied(true)
+      setTimeout(() => setMcpCopied(false), 2000)
+    } catch {
+      // ignore — non-HTTPS contexts
+    }
+  }
+
+  // Free-tier users see a locked CTA instead of the full management UI —
+  // backend would 403 on create anyway, but a locked surface is friendlier.
+  if (isFreeTier) {
+    return (
+      <div>
+        <div className="pb-6 mb-6 border-b border-white/[0.06]">
+          <h2 className="text-xl font-black tracking-tight">API Access</h2>
+          <p className="text-slate-500 text-sm mt-1">
+            Create and manage API keys to access Blossom data programmatically.
+          </p>
+        </div>
+        <div className="glass-card rounded-3xl p-10 text-center">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-pink-500/20 to-fuchsia-500/20 border border-pink-500/30 mb-4">
+            <i className="fas fa-key text-pink-400 text-xl" />
+          </div>
+          <h3 className="text-xl font-black mb-2">API access is a paid feature</h3>
+          <p className="text-slate-400 text-sm max-w-md mx-auto mb-6">
+            Upgrade to Pro, Premium, or Platin to create API keys, hit the public
+            API at <code className="text-pink-400">/api/v1</code>, and drive Blossom
+            from Claude, Cursor, or your own tooling via the MCP server.
+          </p>
+          <button
+            onClick={() => openUpgrade('api-keys')}
+            className="px-6 py-3 bg-gradient-to-r from-pink-500 to-orange-400 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-pink-500/25 transition-all text-sm"
+          >
+            <i className="fas fa-arrow-up-right-from-square mr-2" />
+            See plans
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div>
       {/* Section title */}
@@ -152,6 +221,10 @@ export default function AccountApiKeys() {
         <h2 className="text-xl font-black tracking-tight">API Access</h2>
         <p className="text-slate-500 text-sm mt-1">
           Create and manage API keys to access Blossom data programmatically.
+          <span className="ml-2 text-slate-400">
+            Your <strong className="text-pink-400">{tierInfo.label}</strong> plan:{' '}
+            <strong>{tierInfo.limit} requests/min</strong>.
+          </span>
         </p>
       </div>
 
@@ -380,7 +453,9 @@ export default function AccountApiKeys() {
           </div>
           <div>
             <span className="text-slate-500 font-semibold">Rate Limit:</span>
-            <span className="ml-2">100 requests/minute</span>
+            <span className="ml-2">
+              {tierInfo.limit} requests/minute ({tierInfo.label} plan)
+            </span>
           </div>
           <div className="pt-2 border-t border-white/[0.04]">
             <span className="text-slate-500 font-semibold block mb-2">Available Endpoints:</span>
@@ -419,6 +494,44 @@ export default function AccountApiKeys() {
             </pre>
           </div>
         </div>
+      </div>
+
+      {/* ── MCP Server: drop into Claude Desktop / Cursor / Continue ── */}
+      <div className="mt-6 glass-card rounded-2xl p-5">
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div>
+            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+              <i className="fas fa-plug text-pink-400 text-xs" />
+              Connect to Claude / Cursor (MCP)
+            </h3>
+            <p className="text-[11px] text-slate-500 mt-1">
+              Drop this into your MCP client config to drive Blossom from any
+              LLM. Uses one of your API keys.
+            </p>
+          </div>
+          <button
+            onClick={handleCopyMcp}
+            className="px-3 py-1.5 bg-white/[0.04] hover:bg-white/[0.08] rounded-lg text-[11px] font-bold text-slate-300 transition-all flex items-center gap-1.5 flex-shrink-0"
+          >
+            <i className={`fas ${mcpCopied ? 'fa-check' : 'fa-copy'} text-[10px]`} />
+            {mcpCopied ? 'Copied!' : 'Copy'}
+          </button>
+        </div>
+        <pre className="px-3 py-2.5 bg-black/30 rounded-lg text-[11px] font-mono text-slate-300 overflow-x-auto border border-white/[0.04] leading-relaxed">
+{mcpConfig}
+        </pre>
+        <p className="mt-2 text-[11px] text-slate-600">
+          Replace <code className="text-slate-400">blsm_your_key_here</code> with a key you create above. See the{' '}
+          <a
+            href="https://www.npmjs.com/package/@blossai/mcp-server"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-pink-400 hover:text-pink-300"
+          >
+            @blossai/mcp-server
+          </a>{' '}
+          README for full tool reference.
+        </p>
       </div>
     </div>
   )
