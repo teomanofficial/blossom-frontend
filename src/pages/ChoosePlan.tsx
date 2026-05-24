@@ -115,6 +115,18 @@ export default function ChoosePlan() {
   const handleSubscribe = async (plan: Plan) => {
     trackEvent('plan_checkout_initiated', 'conversion', { plan: plan.slug, price: plan.price_amount })
     trackPricingView('click_cta', plan.slug, plan.name, plan.price_amount, plan.billing_interval)
+
+    // Free plan: no Paddle, no subscription row — just route into onboarding.
+    if (plan.slug === 'free') {
+      navigate('/onboarding')
+      return
+    }
+
+    if (!plan.paddle_price_id) {
+      toast.error('This plan is not available right now.')
+      return
+    }
+
     setSubscribing(plan.paddle_price_id)
     try {
       const res = await authFetch('/api/billing/checkout', {
@@ -218,7 +230,7 @@ export default function ChoosePlan() {
         </div>
 
         {/* Plans grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl w-full">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl w-full">
           {plans.map((plan) => (
             <PlanCard
               key={plan.id}

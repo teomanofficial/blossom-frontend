@@ -1,11 +1,17 @@
 import { Link } from 'react-router-dom'
+import { useUpgrade } from '../context/UpgradeContext'
 
 interface UpgradePremiumBannerProps {
   itemLabel: string // e.g. "hooks", "formats", "tactics"
   accentColor?: string // e.g. "pink", "amber"
+  /** Optional: number of locked items behind the paywall (used for "Unlock N more" copy). */
+  lockedCount?: number | null
+  /** Optional analytics source for the upgrade overlay click. If omitted, falls back to billing page link. */
+  upgradeSource?: string
 }
 
-export default function UpgradePremiumBanner({ itemLabel, accentColor = 'pink' }: UpgradePremiumBannerProps) {
+export default function UpgradePremiumBanner({ itemLabel, accentColor = 'pink', lockedCount, upgradeSource }: UpgradePremiumBannerProps) {
+  const { openUpgrade } = useUpgrade()
   const colors: Record<string, { gradient: string; text: string; border: string; button: string }> = {
     pink: {
       gradient: 'from-pink-500/20 via-purple-500/10 to-transparent',
@@ -33,19 +39,31 @@ export default function UpgradePremiumBanner({ itemLabel, accentColor = 'pink' }
         </div>
 
         <h3 className="text-xl md:text-2xl font-black tracking-tight mb-2">
-          Get Full Access to All {itemLabel.charAt(0).toUpperCase() + itemLabel.slice(1)}
+          {lockedCount && lockedCount > 0
+            ? `Unlock ${lockedCount} more ${itemLabel}`
+            : `Get Full Access to All ${itemLabel.charAt(0).toUpperCase() + itemLabel.slice(1)}`}
         </h3>
         <p className="text-sm text-slate-400 font-medium mb-6 max-w-md mx-auto">
-          Upgrade to Premium to unlock all {itemLabel} across every category, fine-tuning, and advanced analytics.
+          Upgrade to Pro to unlock every {itemLabel.replace(/s$/, '')} across all categories, plus advanced analytics and API access.
         </p>
 
-        <Link
-          to="/dashboard/account/billing"
-          className={`inline-flex items-center gap-2 ${c.button} text-white font-black text-sm px-8 py-3 rounded-2xl transition-all active:scale-[0.97] shadow-lg`}
-        >
-          <i className="fas fa-crown text-xs"></i>
-          Upgrade to Premium
-        </Link>
+        {upgradeSource ? (
+          <button
+            onClick={() => openUpgrade(upgradeSource)}
+            className={`inline-flex items-center gap-2 ${c.button} text-white font-black text-sm px-8 py-3 rounded-2xl transition-all active:scale-[0.97] shadow-lg`}
+          >
+            <i className="fas fa-crown text-xs"></i>
+            See plans
+          </button>
+        ) : (
+          <Link
+            to="/dashboard/account/billing"
+            className={`inline-flex items-center gap-2 ${c.button} text-white font-black text-sm px-8 py-3 rounded-2xl transition-all active:scale-[0.97] shadow-lg`}
+          >
+            <i className="fas fa-crown text-xs"></i>
+            See plans
+          </Link>
+        )}
 
         <p className="text-[10px] text-slate-500 font-bold mt-4 uppercase tracking-widest">
           All categories, fine-tuning & advanced analytics

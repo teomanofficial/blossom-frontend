@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import TierLockedCard from '../components/TierLockedCard'
+import { useUpgrade } from '../context/UpgradeContext'
 import { API_URL } from '../lib/api'
 
 // === Helper Functions ===
@@ -69,8 +69,11 @@ interface HistoryItem {
 }
 
 export default function ContentAnalysis() {
-  const { session, planSlug, proCredits, isFreeTier } = useAuth()
+  const { session, planSlug, proCredits, freeUploads, isFreeTier, refreshProfile } = useAuth()
+  const { openUpgrade } = useUpgrade()
   const navigate = useNavigate()
+
+  const freeQuotaExhausted = isFreeTier && !!freeUploads && freeUploads.used >= freeUploads.limit
 
   // Upload state
   const [mode, setMode] = useState<'url' | 'upload'>('url')
@@ -189,6 +192,13 @@ export default function ContentAnalysis() {
     if (mode === 'url' && !url.trim()) return
     if (mode === 'upload' && !file) return
 
+    // Free users who already hit the quota: skip the network call and open
+    // the upgrade overlay directly — no point poking the API to get a 403.
+    if (freeQuotaExhausted) {
+      openUpgrade('quota-exhausted-mid-upload')
+      return
+    }
+
     setUploading(true)
     setUploadError(null)
     setAnalysisStatus(null)
@@ -214,13 +224,24 @@ export default function ContentAnalysis() {
         })
       }
       const data = await resp.json()
-      if (!resp.ok || data.error) throw new Error(data.error || 'Upload failed')
+      if (!resp.ok || data.error) {
+        // Backend free-quota guard returns this exact error code. Refresh
+        // /me so the in-page counter syncs, then open the upgrade overlay.
+        if (data?.error === 'free_quota_exhausted') {
+          refreshProfile().catch(() => {})
+          openUpgrade('quota-exhausted-mid-upload')
+          return
+        }
+        throw new Error(data.error || 'Upload failed')
+      }
       // Set thumbnail from backend response for URL mode (Instagram/TikTok cover image)
       if (mode === 'url' && data.thumbnail) {
         setVideoThumbnail(data.thumbnail)
       }
       setUploadId(data.id)
       startPolling(data.id)
+      // Free users: refresh /me so the counter ticks up to reflect this upload.
+      if (isFreeTier) refreshProfile().catch(() => {})
     } catch (err: any) {
       setUploadError(err.message)
     } finally {
@@ -386,6 +407,20 @@ export default function ContentAnalysis() {
               <div className={`mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold ${proCredits.used >= proCredits.limit ? 'bg-red-500/10 border border-red-400/20 text-red-400' : 'bg-blue-500/10 border border-blue-400/20 text-blue-300'}`}>
                 <i className="fas fa-bolt text-[10px]" />
                 {proCredits.limit - proCredits.used}/{proCredits.limit} monthly analyses remaining
+              </div>
+            )}
+            {isFreeTier && freeUploads && (
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold ${freeQuotaExhausted ? 'bg-red-500/10 border border-red-400/20 text-red-400' : 'bg-pink-500/10 border border-pink-400/20 text-pink-300'}`}>
+                  <i className="fas fa-bolt text-[10px]" />
+                  {Math.max(0, freeUploads.limit - freeUploads.used)}/{freeUploads.limit} free analyses left this month
+                </div>
+                <button
+                  onClick={() => openUpgrade('quota-banner')}
+                  className="text-xs font-bold text-pink-400 hover:text-pink-300 underline underline-offset-4"
+                >
+                  Upgrade for unlimited →
+                </button>
               </div>
             )}
           </div>
@@ -577,36 +612,30 @@ export default function ContentAnalysis() {
           ) : (
             /* === UPLOAD FORM + HISTORY === */
             <div className="space-y-10">
-              {/* Upload Form — gated for Free tier */}
-              {isFreeTier ? (
-                <TierLockedCard source="virality-check">
-                  <div className="glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-8">
-                    <div className="flex items-center gap-1 bg-white/5 rounded-xl p-1 mb-8 w-fit">
-                      <div className="px-5 py-2.5 rounded-lg text-sm font-bold bg-white/10 text-white">
-                        <i className="fas fa-link mr-2" />
-                        Paste URL
-                      </div>
-                      <div className="px-5 py-2.5 rounded-lg text-sm font-bold text-slate-400">
-                        <i className="fas fa-cloud-upload-alt mr-2" />
-                        Upload File
-                      </div>
-                    </div>
-                    <div className="space-y-4">
-                      <div className="relative">
-                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">
-                          <i className="fas fa-link text-lg" />
-                        </div>
-                        <div className="bg-white/5 border border-white/10 rounded-xl pl-12 pr-4 py-4 text-slate-500 w-full text-sm">
-                          Paste a TikTok or Instagram URL...
-                        </div>
-                      </div>
-                      <div className="w-full px-6 py-3.5 bg-gradient-to-r from-pink-500 to-orange-400 text-white font-bold rounded-xl text-center">
-                        <i className="fas fa-wand-magic-sparkles mr-2" />
-                        Analyze
-                      </div>
-                    </div>
+              {/* Free-tier: out-of-quota replaces the form entirely so the user
+                  can't bash submit and get a wall of 403s. */}
+              {freeQuotaExhausted ? (
+                <div className="glass-card rounded-2xl sm:rounded-3xl p-8 sm:p-12 text-center border border-pink-500/20 bg-gradient-to-br from-pink-500/10 via-purple-500/5 to-transparent">
+                  <div className="w-14 h-14 mx-auto mb-5 bg-white/5 rounded-2xl flex items-center justify-center">
+                    <i className="fas fa-crown text-pink-400 text-xl" />
                   </div>
-                </TierLockedCard>
+                  <h3 className="text-xl sm:text-2xl font-black tracking-tight mb-2">
+                    You've used all 3 free analyses this month
+                  </h3>
+                  <p className="text-sm text-slate-400 font-medium mb-6 max-w-md mx-auto">
+                    Upgrade to Pro for 10 analyses per month, full breakdown reports, and unlocked formats / hooks / tactics.
+                  </p>
+                  <button
+                    onClick={() => openUpgrade('quota-exhausted-form')}
+                    className="inline-flex items-center gap-2 bg-gradient-to-r from-pink-500 to-orange-400 text-white font-black text-sm px-8 py-3 rounded-2xl transition-all active:scale-[0.97] shadow-lg shadow-pink-500/30"
+                  >
+                    <i className="fas fa-crown text-xs" />
+                    See plans
+                  </button>
+                  <p className="text-[10px] text-slate-500 font-bold mt-4 uppercase tracking-widest">
+                    Resets on the 1st of next month
+                  </p>
+                </div>
               ) : (
               <div className="glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-8">
                 {/* Mode Toggle Pills */}

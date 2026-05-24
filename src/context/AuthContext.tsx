@@ -23,6 +23,11 @@ export interface ProCredits {
   limit: number
 }
 
+export interface FreeUploads {
+  used: number
+  limit: number
+}
+
 export interface Organization {
   id: number
   name: string
@@ -42,6 +47,7 @@ interface AuthContextType {
   onboardingCompleted: boolean | null
   vipCredits: VipCredits | null
   proCredits: ProCredits | null
+  freeUploads: FreeUploads | null
   organization: Organization | null
   isOrgOwner: boolean
   isOrgAdmin: boolean
@@ -70,6 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [onboardingCompleted, setOnboardingCompleted] = useState<boolean | null>(null)
   const [vipCredits, setVipCredits] = useState<VipCredits | null>(null)
   const [proCredits, setProCredits] = useState<ProCredits | null>(null)
+  const [freeUploads, setFreeUploads] = useState<FreeUploads | null>(null)
   const [organization, setOrganization] = useState<Organization | null>(null)
   const [loading, setLoading] = useState(true)
   const initialLoadDone = useRef(false)
@@ -92,6 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setCategoryStatus(data.profile?.category_status || null)
       setVipCredits(data.vipCredits || null)
       setProCredits(data.proCredits || null)
+      setFreeUploads(data.freeUploads || null)
       setOrganization(data.organization || null)
 
       // Fetch onboarding status (only admins skip onboarding; VIP users go through it)
@@ -157,6 +165,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setOnboardingCompleted(null)
         setVipCredits(null)
         setProCredits(null)
+        setFreeUploads(null)
         setOrganization(null)
       }
     })
@@ -199,7 +208,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     !loading && !!user && userType !== 'admin' && userType !== 'vip' && !planSlug
 
   return (
-    <AuthContext.Provider value={{ user, session, profile, userType, planSlug, categoryIds, categoryStatus, onboardingCompleted, vipCredits, proCredits, organization, isOrgOwner, isOrgAdmin, isFreeTier, loading, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ user, session, profile, userType, planSlug, categoryIds, categoryStatus, onboardingCompleted, vipCredits, proCredits, freeUploads, organization, isOrgOwner, isOrgAdmin, isFreeTier, loading, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   )

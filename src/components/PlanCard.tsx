@@ -9,7 +9,8 @@ export interface Plan {
   price_currency: string
   billing_interval: string
   features: string[]
-  paddle_price_id: string
+  /** Null for the Free plan (no Paddle SKU). */
+  paddle_price_id: string | null
   coming_soon: boolean
 }
 
@@ -23,6 +24,22 @@ interface PlanCardProps {
   /** Override the secondary copy shown under the CTA. */
   ctaSubcopy?: ReactNode
 }
+
+const FREE_CHECK_ICON = (
+  <svg
+    className="w-3.5 h-3.5 flex-shrink-0"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth={2}
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"
+    />
+  </svg>
+)
 
 function formatPrice(cents: number): string {
   return `$${(cents / 100).toFixed(0)}`
@@ -41,10 +58,12 @@ export default function PlanCard({
   ctaSubcopy,
 }: PlanCardProps) {
   const isFeatured = plan.slug === 'premium'
+  const isFree = plan.slug === 'free'
+  const isSubscribing = !!plan.paddle_price_id && subscribingPriceId === plan.paddle_price_id
 
   return (
     <div
-      className={`glass-card rounded-[2.5rem] p-8 sm:p-10 relative transition-all hover:scale-[1.02] ${
+      className={`glass-card rounded-[2.5rem] p-7 sm:p-8 relative transition-all hover:scale-[1.02] ${
         isFeatured ? 'border-pink-500/30 ring-1 ring-pink-500/20 scale-105' : ''
       }`}
     >
@@ -94,34 +113,22 @@ export default function PlanCard({
         <>
           <button
             onClick={() => onSubscribe(plan)}
-            disabled={subscribingPriceId === plan.paddle_price_id}
+            disabled={isSubscribing}
             className={`w-full py-4 rounded-2xl text-sm font-black transition-all disabled:opacity-50 ${
               isFeatured
                 ? 'bg-gradient-to-r from-pink-500 to-orange-400 text-white glow-button hover:scale-105'
                 : 'bg-white/10 hover:bg-white/15 border border-white/10 text-white'
             }`}
           >
-            {subscribingPriceId === plan.paddle_price_id
+            {isSubscribing
               ? 'Opening checkout...'
-              : ctaLabel || 'Start Free Trial'}
+              : ctaLabel || (isFree ? 'Get Started Free' : 'Start Free Trial')}
           </button>
           <div className="text-emerald-400/80 text-xs font-medium mt-2 text-center flex items-center justify-center gap-1">
             {ctaSubcopy || (
               <>
-                <svg
-                  className="w-3.5 h-3.5 flex-shrink-0"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"
-                  />
-                </svg>
-                No payment due now
+                {FREE_CHECK_ICON}
+                {isFree ? 'Always free, no card required' : 'No payment due now'}
               </>
             )}
           </div>

@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useUpgrade } from '../context/UpgradeContext'
 import { API_URL } from '../lib/api'
 import VideoStoryCarousel, { type CarouselVideo } from '../components/VideoStoryCarousel'
 import VersionTimeline from '../components/VersionTimeline'
@@ -21,6 +22,7 @@ import ShareModal from '../components/ShareModal'
 export default function AnalysisDetail() {
   const { id } = useParams<{ id: string }>()
   const { session } = useAuth()
+  const { openUpgrade } = useUpgrade()
   const navigate = useNavigate()
 
   const [analysisResult, setAnalysisResult] = useState<any>(null)
@@ -46,7 +48,9 @@ export default function AnalysisDetail() {
       const data = await resp.json()
       if (resp.ok && !data.error) {
         setAnalysisResult(data)
-        setActiveTab('improvements')
+        // Free-tier responses strip improvements/full/hook — drop into the
+        // virality tab (the only one with content) instead of an empty tab.
+        setActiveTab(data?.tier_gated ? 'virality' : 'improvements')
       }
     } catch (err) {
       console.error('Failed to fetch result:', err)
@@ -134,17 +138,22 @@ export default function AnalysisDetail() {
   const topFormatVideos = analysisResult?.topFormatVideos
   const topHookVideos = analysisResult?.topHookVideos
   const hookTacticFrequency = analysisResult?.hookTacticFrequency
+  const tierGated = !!analysisResult?.tier_gated
 
-  const tabs = [
-    ...(improv ? [{ id: 'improvements', label: 'Improvements', icon: 'fa-rocket' }] : []),
-    { id: 'hook', label: 'Hook', icon: 'fa-magnet' },
-    { id: 'structure', label: 'Structure', icon: 'fa-layer-group' },
-    { id: 'tactics', label: 'Tactics', icon: 'fa-chess' },
-    { id: 'emotions', label: 'Emotions', icon: 'fa-heart' },
-    ...(virality ? [{ id: 'virality', label: 'Virality', icon: 'fa-fire' }] : []),
-    { id: 'weaknesses', label: 'Weaknesses', icon: 'fa-exclamation-triangle' },
-    ...(upload?.platform && upload?.platform_id ? [{ id: 'comments', label: 'Comments', icon: 'fa-comments' }] : []),
-  ]
+  // Free tier: only the virality tab is populated — collapse the tab list to
+  // a single entry so locked tabs aren't even visible. Paid tiers see the full set.
+  const tabs = tierGated
+    ? (virality ? [{ id: 'virality', label: 'Virality', icon: 'fa-fire' }] : [])
+    : [
+        ...(improv ? [{ id: 'improvements', label: 'Improvements', icon: 'fa-rocket' }] : []),
+        { id: 'hook', label: 'Hook', icon: 'fa-magnet' },
+        { id: 'structure', label: 'Structure', icon: 'fa-layer-group' },
+        { id: 'tactics', label: 'Tactics', icon: 'fa-chess' },
+        { id: 'emotions', label: 'Emotions', icon: 'fa-heart' },
+        ...(virality ? [{ id: 'virality', label: 'Virality', icon: 'fa-fire' }] : []),
+        { id: 'weaknesses', label: 'Weaknesses', icon: 'fa-exclamation-triangle' },
+        ...(upload?.platform && upload?.platform_id ? [{ id: 'comments', label: 'Comments', icon: 'fa-comments' }] : []),
+      ]
 
   return (
     <>
@@ -314,6 +323,28 @@ export default function AnalysisDetail() {
                   uploadId={uploadId}
                   sessionToken={session.access_token}
                 />
+              )}
+
+              {/* Free-tier upsell — sits below the virality tab to nudge upgrades. */}
+              {tierGated && (
+                <div className="glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-10 text-center border border-pink-500/20 bg-gradient-to-br from-pink-500/10 via-purple-500/5 to-transparent">
+                  <div className="w-12 h-12 mx-auto mb-4 bg-white/5 rounded-2xl flex items-center justify-center">
+                    <i className="fas fa-crown text-pink-400 text-lg" />
+                  </div>
+                  <h3 className="text-lg sm:text-xl font-black tracking-tight mb-2">
+                    Unlock the full breakdown
+                  </h3>
+                  <p className="text-sm text-slate-400 font-medium mb-5 max-w-md mx-auto">
+                    Format + hook classification, top-10 viral references, tactic breakdown, and 10 personalized improvement suggestions.
+                  </p>
+                  <button
+                    onClick={() => openUpgrade('analysis-detail-full-report')}
+                    className="inline-flex items-center gap-2 bg-gradient-to-r from-pink-500 to-orange-400 text-white font-black text-sm px-8 py-3 rounded-2xl transition-all active:scale-[0.97] shadow-lg shadow-pink-500/30"
+                  >
+                    <i className="fas fa-crown text-xs" />
+                    See plans
+                  </button>
+                </div>
               )}
             </div>
           </div>

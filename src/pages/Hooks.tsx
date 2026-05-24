@@ -1,11 +1,11 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
-import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { authFetch } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import FineTunedList from '../components/FineTunedList'
 import { SkeletonGrid } from '../components/CardSkeleton'
 import UpgradePremiumBanner from '../components/UpgradePremiumBanner'
+import BlurredLockedTile from '../components/BlurredLockedTile'
 
 interface HookClass {
   id: number
@@ -19,6 +19,7 @@ interface HookClass {
   analysis_video_count: number | null
   is_in_category: boolean
   created_at: string
+  tier_locked?: boolean
 }
 
 type SortField = 'video_count' | 'avg_views' | 'avg_engagement_rate' | 'name' | 'created_at'
@@ -53,9 +54,8 @@ function getHookEmoji(name: string): string {
 }
 
 export default function Hooks() {
-  const { userType, planSlug } = useAuth()
+  const { userType, planSlug, isFreeTier } = useAuth()
   const canFineTune = userType === 'admin' || planSlug === 'premium' || planSlug === 'platin'
-  const isPro = planSlug === 'pro' && userType !== 'admin'
   const [activeTab, setActiveTab] = useState<'all' | 'fine-tuned'>('all')
   const [hooks, setHooks] = useState<HookClass[]>([])
   const [loading, setLoading] = useState(true)
@@ -63,6 +63,7 @@ export default function Hooks() {
   const [sortBy, setSortBy] = useState<SortField>('video_count')
   const [order, setOrder] = useState<'desc' | 'asc'>('desc')
   const [total, setTotal] = useState(0)
+  const [unlockLimit, setUnlockLimit] = useState<number | null>(null)
   const [hasMore, setHasMore] = useState(true)
   const sentinelRef = useRef<HTMLDivElement>(null)
 
@@ -79,6 +80,7 @@ export default function Hooks() {
       const serverTotal: number = data.total ?? 0
 
       setTotal(serverTotal)
+      setUnlockLimit(data.unlock_limit ?? null)
       setHooks((prev) => reset ? newHooks : [...prev, ...newHooks])
       setHasMore(offset + newHooks.length < serverTotal)
     } catch (err) {
@@ -219,9 +221,11 @@ export default function Hooks() {
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
             {hooks.map((hook, index) => (
-              <Link
+              <BlurredLockedTile
                 key={hook.id}
+                locked={!!hook.tier_locked}
                 to={`/dashboard/hooks/${hook.id}`}
+                source="hooks-list"
                 className={`gradient-border group cursor-pointer md:hover:translate-y-[-4px] active:scale-[0.98] transition-all duration-300${!hook.is_in_category ? ' opacity-40 hover:opacity-70' : ''}`}
               >
                 <div className="card-inner p-5 md:p-7 flex flex-col h-full">
@@ -274,19 +278,24 @@ export default function Hooks() {
                     </div>
                   </div>
                 </div>
-              </Link>
+              </BlurredLockedTile>
             ))}
 
             {/* Loading more skeletons */}
             {loadingMore && <SkeletonGrid count={3} type="format-hook" />}
 
-            {/* Upgrade banner for pro users */}
-            {isPro && !hasMore && (
-              <UpgradePremiumBanner itemLabel="hooks" accentColor="pink" />
+            {/* Free-tier upgrade banner */}
+            {isFreeTier && unlockLimit !== null && hooks.length > unlockLimit && (
+              <UpgradePremiumBanner
+                itemLabel="hooks"
+                accentColor="pink"
+                lockedCount={Math.max(0, total - unlockLimit)}
+                upgradeSource="hooks-list-bottom"
+              />
             )}
 
-            {/* Discover More Card - only show when all loaded */}
-            {!isPro && !hasMore && (
+            {/* Discover More Card - shown to paid tiers once they've exhausted the list */}
+            {!isFreeTier && !hasMore && (
               <div className="border-2 border-dashed border-white/10 rounded-[1.5rem] p-8 flex flex-col items-center justify-center text-center opacity-50 hover:opacity-100 transition-opacity">
                 <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mb-4">
                   <i className="fas fa-plus text-slate-500"></i>

@@ -71,6 +71,10 @@ export default function UpgradeOverlay() {
       source: source || 'upgrade_overlay',
     })
     trackPricingView('click_cta', plan.slug, plan.name, plan.price_amount, plan.billing_interval)
+    if (!plan.paddle_price_id) {
+      toast.error('This plan is not available right now.')
+      return
+    }
     setSubscribing(plan.paddle_price_id)
     try {
       const res = await authFetch('/api/billing/checkout', {
@@ -95,6 +99,10 @@ export default function UpgradeOverlay() {
       setSubscribing(null)
     }
   }
+
+  // The Free plan exists in /api/billing/plans for the pricing page but
+  // doesn't belong in an upgrade modal (the viewer is already free).
+  const paidPlans = plans.filter((p) => p.slug !== 'free')
 
   if (!isOpen) return null
 
@@ -142,7 +150,7 @@ export default function UpgradeOverlay() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
-            {plans.map((plan) => (
+            {paidPlans.map((plan) => (
               <PlanCard
                 key={plan.id}
                 plan={plan}
