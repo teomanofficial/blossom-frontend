@@ -10,17 +10,25 @@ const baseNavItems = [
 
 const orgNavItem = { to: '/dashboard/account/organization', label: 'Organization', icon: 'fa-building', end: false }
 const apiNavItem = { to: '/dashboard/account/api', label: 'API', icon: 'fa-code', end: false }
+const mcpNavItem = { to: '/dashboard/account/mcp', label: 'MCP', icon: 'fa-plug', end: false }
 const billingNavItem = { to: '/dashboard/account/billing', label: 'Billing & Plans', icon: 'fa-credit-card', end: false }
 
 export default function AccountLayout() {
   const { user, profile, planSlug, userType, organization } = useAuth()
   const displayName = profile?.full_name ?? user?.user_metadata?.full_name ?? user?.email?.split('@')[0] ?? 'Creator'
   const showOrgTab = planSlug === 'platin' || organization !== null
-  const showApiTab = planSlug === 'platin' || userType === 'admin'
+  // API + MCP are available on every paid tier (pro / premium / platin) plus admin.
+  // Backend gates creation/use via hasApiAccess(); we surface the tabs to anyone
+  // who can use them.
+  const showApiTab =
+    planSlug === 'pro' ||
+    planSlug === 'premium' ||
+    planSlug === 'platin' ||
+    userType === 'admin'
   const accountNavItems = [
     ...baseNavItems,
     ...(showOrgTab ? [orgNavItem] : []),
-    ...(showApiTab ? [apiNavItem] : []),
+    ...(showApiTab ? [apiNavItem, mcpNavItem] : []),
     billingNavItem,
   ]
 

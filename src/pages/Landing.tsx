@@ -4,6 +4,7 @@ import { apiFetch } from '../lib/api'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import HowItWorksCarousel from '../components/HowItWorksCarousel'
+import McpIntegrationsSection from '../components/McpIntegrationsSection'
 import { Seo } from '../lib/seo'
 
 interface Plan {
@@ -568,6 +569,9 @@ export default function Landing() {
           </div>
         </div>
       </section>
+
+      {/* MCP Server — Claude / OpenClaw / Hermes integrations */}
+      <McpIntegrationsSection variant="marketing" />
 
       {/* Final CTA */}
       <section id="influence" className="py-32 sm:py-44 px-4 sm:px-6 text-center relative z-10">

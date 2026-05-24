@@ -39,6 +39,7 @@ import AccountSecurity from './pages/AccountSecurity'
 import AccountPreferences from './pages/AccountPreferences'
 import AccountOrganization from './pages/AccountOrganization'
 import AccountApiKeys from './pages/AccountApiKeys'
+import AccountMcp from './pages/AccountMcp'
 import InviteAccept from './pages/InviteAccept'
 import SubscriptionPlans from './pages/SubscriptionPlans'
 import Users from './pages/Users'
@@ -241,6 +242,7 @@ function App() {
           <Route path="integrations" element={<AccountIntegrations />} />
           <Route path="organization" element={<AccountOrganization />} />
           <Route path="api" element={<AccountApiKeys />} />
+          <Route path="mcp" element={<AccountMcp />} />
           <Route path="billing" element={<AccountBilling />} />
         </Route>
         <Route path="subscription-plans" element={<AdminGate><SubscriptionPlans /></AdminGate>} />
