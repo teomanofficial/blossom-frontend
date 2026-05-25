@@ -6,6 +6,8 @@ import FineTunedList from '../components/FineTunedList'
 import { SkeletonGrid } from '../components/CardSkeleton'
 import UpgradePremiumBanner from '../components/UpgradePremiumBanner'
 import BlurredLockedTile from '../components/BlurredLockedTile'
+import UpsellBadge from '../components/upsell/UpsellBadge'
+import { hasTier } from '../components/upsell/tierUtils'
 
 interface Tactic {
   id: number
@@ -230,8 +232,8 @@ export default function Tactics() {
       </div>
 
       {/* Fine-Tune Tabs */}
-      {canFineTune && (
-        <div className="flex gap-2 mb-6">
+      {canFineTune ? (
+        <div className="flex gap-2 mb-6 items-center">
           <button
             onClick={() => setActiveTab('all')}
             className={`px-4 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest transition-colors ${
@@ -250,6 +252,14 @@ export default function Tactics() {
             Fine-tuned
           </button>
         </div>
+      ) : (
+        !hasTier(planSlug, 'premium') && userType !== 'admin' && userType !== 'vip' && (
+          <div className="flex items-center gap-2 mb-6 text-[11px] text-slate-500">
+            <i className="fas fa-sliders text-[10px]" />
+            <span className="font-bold uppercase tracking-widest">Fine-tuned classes</span>
+            <UpsellBadge tier="premium" size="sm" />
+          </div>
+        )
       )}
 
       {activeTab === 'fine-tuned' && canFineTune ? (

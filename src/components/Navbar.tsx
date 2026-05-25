@@ -16,6 +16,7 @@ export default function Navbar() {
           <a href="#results" className="hover:text-white transition-colors">The Playbook</a>
           <a href="#system" className="hover:text-white transition-colors">The System</a>
           <a href="#influence" className="hover:text-white transition-colors">Influence</a>
+          <Link to="/pricing" className="hover:text-white transition-colors">Pricing</Link>
         </div>
 
         <div className="flex items-center gap-4">

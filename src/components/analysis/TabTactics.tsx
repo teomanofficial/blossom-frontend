@@ -1,11 +1,25 @@
 import { useState } from 'react'
 import { fmtTime, getCategoryColor, scoreColor, scoreBarColor } from './helpers'
+import { FeatureLockedOverlay } from '../upsell'
 
 interface TabTacticsProps {
   full: any
+  /**
+   * When false, only the tactic *names* + category + score are shown for each
+   * tactic; the application detail (what/why/timestamp/viewer effect/execution
+   * notes) is replaced with a single compact upgrade card at the top.
+   * Defaults to true.
+   */
+  showDetail?: boolean
+  /**
+   * Kept for backwards compatibility — `FeatureLockedOverlay` opens the
+   * upgrade overlay directly via `useUpgrade()`, so callers no longer need
+   * to pass this.
+   */
+  onOpenUpgrade?: (source: string) => void
 }
 
-export default function TabTactics({ full }: TabTacticsProps) {
+export default function TabTactics({ full, showDetail = true }: TabTacticsProps) {
   const [tacticSort, setTacticSort] = useState<'score' | 'time'>('score')
   const [tacticFilter, setTacticFilter] = useState<string>('all')
 
@@ -25,6 +39,21 @@ export default function TabTactics({ full }: TabTacticsProps) {
 
   return (
     <div className="space-y-6">
+      {/* Locked notice — visible only when the deep per-tactic breakdown is
+          gated. Names + categories + scores stay visible below so users can
+          still see which tactics the video uses. */}
+      {!showDetail && (
+        <FeatureLockedOverlay
+          requiredTier="pro"
+          featureName="How to apply each tactic"
+          description="Unlock per-tactic timestamps, implementation notes, viewer effects, and AI rationale for why each tactic works in this specific video."
+          preview="hide"
+          upgradeSource="analysis-detail-tactics-detail"
+        >
+          <></>
+        </FeatureLockedOverlay>
+      )}
+
       {/* Sort & Filter Controls */}
       <div className="flex flex-col md:flex-row gap-4">
         {/* Sort */}
@@ -104,8 +133,10 @@ export default function TabTactics({ full }: TabTacticsProps) {
               ></div>
             </div>
 
-            {/* Timestamp */}
-            {(tactic.when_start != null || tactic.when_end != null) && (
+            {/* Application detail — Creator-tier gated. Name + category +
+                score (above) stay visible so users still see which tactics
+                were detected; only the "how/why" is locked. */}
+            {showDetail && (tactic.when_start != null || tactic.when_end != null) && (
               <div className="text-[10px] font-bold text-slate-500 mb-2">
                 <i className="fas fa-clock mr-1"></i>
                 {fmtTime(tactic.when_start)}
@@ -113,26 +144,22 @@ export default function TabTactics({ full }: TabTacticsProps) {
               </div>
             )}
 
-            {/* What */}
-            <p className="text-sm text-white mb-2">{tactic.what}</p>
+            {showDetail && <p className="text-sm text-white mb-2">{tactic.what}</p>}
 
-            {/* Why it works */}
-            {tactic.why_it_works && (
+            {showDetail && tactic.why_it_works && (
               <p className="text-xs text-slate-400 mb-2">
                 <i className="fas fa-brain mr-1 text-[9px] text-slate-500"></i>
                 {tactic.why_it_works}
               </p>
             )}
 
-            {/* Viewer effect */}
-            {tactic.viewer_effect && (
+            {showDetail && tactic.viewer_effect && (
               <span className="inline-block px-2.5 py-1 rounded-full text-[9px] font-bold bg-white/5 text-slate-400 mr-2">
                 <i className="fas fa-eye mr-1 text-[8px]"></i>{tactic.viewer_effect}
               </span>
             )}
 
-            {/* Execution note */}
-            {tactic.execution_note && (
+            {showDetail && tactic.execution_note && (
               <p className="text-[11px] text-slate-500 mt-2 italic">{tactic.execution_note}</p>
             )}
           </div>

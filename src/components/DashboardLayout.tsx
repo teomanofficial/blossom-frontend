@@ -6,15 +6,27 @@ import { useImpersonation } from '../context/ImpersonationContext'
 import { authFetch } from '../lib/api'
 import SearchOverlay from './SearchOverlay'
 import MobileDrawer from './MobileDrawer'
+import UpsellBadge from './upsell/UpsellBadge'
+import { hasTier } from './upsell/tierUtils'
+
+type UpsellTier = 'pro' | 'premium' | 'platin'
+interface NavItem {
+  to: string
+  icon: string
+  label: string
+  end?: boolean
+  /** Optional tier badge shown to users below this tier. */
+  upsellTier?: UpsellTier
+}
 
 /* ── Top-level standalone nav items (outside any group) ── */
-const topItems = [
+const topItems: NavItem[] = [
   { to: '/dashboard', icon: 'fa-house', label: 'Dashboard', end: true },
   { to: '/dashboard/analyze', icon: 'fa-chart-simple', label: 'Virality Check' },
 ]
 
 /* ── Nav item groups matching the sidebar screenshots ── */
-const generalItems = [
+const generalItems: NavItem[] = [
   { to: '/dashboard/platforms', icon: 'fa-tower-broadcast', label: 'Platforms' },
   { to: '/dashboard/trends', icon: 'fa-bolt', label: 'Trends' },
   { to: '/dashboard/influencers', icon: 'fa-users', label: 'Creators' },
@@ -24,7 +36,7 @@ const generalItems = [
    Five dedicated pages each owning one of the old single-page tiers.
    Order mirrors the depth funnel: surface → action → diagnosis →
    anatomy → creator study. */
-const insightsItems = [
+const insightsItems: NavItem[] = [
   { to: '/dashboard/pulse', icon: 'fa-wave-square', label: 'Pulse' },
   { to: '/dashboard/action', icon: 'fa-rocket', label: 'Action' },
   { to: '/dashboard/forensics', icon: 'fa-magnifying-glass-chart', label: 'Forensics' },
@@ -32,8 +44,9 @@ const insightsItems = [
   { to: '/dashboard/creators', icon: 'fa-medal', label: 'Creators' },
 ]
 
-const intelligenceItems = [
-  { to: '/dashboard/suggestions', icon: 'fa-scroll', label: 'Scripts' },
+const intelligenceItems: NavItem[] = [
+  // AI Suggestions / scripts are a Creator-tier (pro) feature.
+  { to: '/dashboard/suggestions', icon: 'fa-scroll', label: 'Scripts', upsellTier: 'pro' },
   { to: '/dashboard/formats', icon: 'fa-shapes', label: 'Formats' },
   { to: '/dashboard/hooks', icon: 'fa-comment-dots', label: 'Hooks' },
   { to: '/dashboard/tactics', icon: 'fa-chess', label: 'Tactics' },
@@ -42,12 +55,12 @@ const intelligenceItems = [
   { to: '/dashboard/greenlight', icon: 'fa-traffic-light', label: 'Greenlight' },
 ]
 
-const bottomItems = [
+const bottomItems: NavItem[] = [
   { to: '/dashboard/support', icon: 'fa-headset', label: 'Support' },
   { to: '/dashboard/account', icon: 'fa-gear', label: 'Settings' },
 ]
 
-const managementItems = [
+const managementItems: NavItem[] = [
   { to: '/dashboard/users', icon: 'fa-users-gear', label: 'Users' },
   { to: '/dashboard/subscription-plans', icon: 'fa-credit-card', label: 'Plans' },
   { to: '/dashboard/content-analytics', icon: 'fa-chart-pie', label: 'Content' },
@@ -123,10 +136,15 @@ const drawerRoutes = [
 function RailLink({
   item,
   supportUnreadCount,
+  effectiveSlug,
 }: {
-  item: { to: string; icon: string; label: string; end?: boolean }
+  item: NavItem
   supportUnreadCount: number
+  /** Plan slug used for upsell badge gating; admin/vip → 'platin'. */
+  effectiveSlug: string
 }) {
+  const needsUpsell = item.upsellTier && !hasTier(effectiveSlug, item.upsellTier)
+
   return (
     <NavLink
       to={item.to}
@@ -143,6 +161,11 @@ function RailLink({
         <i className={`fas ${item.icon} text-[15px]`} />
       </div>
       <span className="nav-label text-sm font-medium">{item.label}</span>
+      {needsUpsell && item.upsellTier && (
+        <span className="nav-label ml-auto">
+          <UpsellBadge tier={item.upsellTier} size="sm" />
+        </span>
+      )}
       {(item.to === '/dashboard/support' || item.to === '/dashboard/support-management') &&
         supportUnreadCount > 0 && (
           <span className="nav-label ml-auto px-2 py-0.5 bg-pink-500 text-white text-[10px] font-black rounded-full min-w-[20px] text-center">
@@ -159,6 +182,10 @@ export default function DashboardLayout() {
   const { impersonating, stopImpersonation, isImpersonating } = useImpersonation()
   const location = useLocation()
   const displayName = user?.user_metadata?.full_name ?? user?.email?.split('@')[0] ?? 'Creator'
+
+  // Admins/VIPs see everything — treat as the top tier for upsell-badge gating.
+  const effectiveSlug =
+    userType === 'admin' || userType === 'vip' ? 'platin' : planSlug ?? 'free'
 
   const [supportUnreadCount, setSupportUnreadCount] = useState(0)
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -212,7 +239,7 @@ export default function DashboardLayout() {
           {/* Top-level standalone items */}
           <div className="space-y-0.5">
             {topItems.map((item) => (
-              <RailLink key={item.to} item={item} supportUnreadCount={supportUnreadCount} />
+              <RailLink key={item.to} item={item} supportUnreadCount={supportUnreadCount} effectiveSlug={effectiveSlug} />
             ))}
           </div>
 
@@ -226,7 +253,7 @@ export default function DashboardLayout() {
           </div>
           <div className="space-y-0.5">
             {visibleGeneralItems.map((item) => (
-              <RailLink key={item.to} item={item} supportUnreadCount={supportUnreadCount} />
+              <RailLink key={item.to} item={item} supportUnreadCount={supportUnreadCount} effectiveSlug={effectiveSlug} />
             ))}
           </div>
 
@@ -238,7 +265,7 @@ export default function DashboardLayout() {
           </div>
           <div className="space-y-0.5">
             {insightsItems.map((item) => (
-              <RailLink key={item.to} item={item} supportUnreadCount={supportUnreadCount} />
+              <RailLink key={item.to} item={item} supportUnreadCount={supportUnreadCount} effectiveSlug={effectiveSlug} />
             ))}
           </div>
 
@@ -250,7 +277,7 @@ export default function DashboardLayout() {
           </div>
           <div className="space-y-0.5">
             {intelligenceItems.map((item) => (
-              <RailLink key={item.to} item={item} supportUnreadCount={supportUnreadCount} />
+              <RailLink key={item.to} item={item} supportUnreadCount={supportUnreadCount} effectiveSlug={effectiveSlug} />
             ))}
           </div>
 
@@ -264,7 +291,7 @@ export default function DashboardLayout() {
               </div>
               <div className="space-y-0.5">
                 {managementItems.map((item) => (
-                  <RailLink key={item.to} item={item} supportUnreadCount={supportUnreadCount} />
+                  <RailLink key={item.to} item={item} supportUnreadCount={supportUnreadCount} effectiveSlug={effectiveSlug} />
                 ))}
               </div>
             </>
@@ -303,7 +330,7 @@ export default function DashboardLayout() {
           <div className="shrink-0 border-t border-white/[0.06] py-3">
             <div className="space-y-0.5">
               {bottomItems.map((item) => (
-                <RailLink key={item.to} item={item} supportUnreadCount={supportUnreadCount} />
+                <RailLink key={item.to} item={item} supportUnreadCount={supportUnreadCount} effectiveSlug={effectiveSlug} />
               ))}
             </div>
             {/* User Profile */}

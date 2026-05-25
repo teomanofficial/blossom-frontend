@@ -1,34 +1,59 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import UpsellBadge from '../components/upsell/UpsellBadge'
+import { hasTier } from '../components/upsell/tierUtils'
 
-const baseNavItems = [
+interface NavItem {
+  to: string
+  label: string
+  icon: string
+  end: boolean
+  /** Optional upsell hint shown as a small tier badge after the label. */
+  upsellTier?: 'pro' | 'premium' | 'platin'
+}
+
+const baseNavItems: NavItem[] = [
   { to: '/dashboard/account', label: 'Profile', icon: 'fa-user', end: true },
   { to: '/dashboard/account/preferences', label: 'Preferences', icon: 'fa-sliders-h', end: false },
   { to: '/dashboard/account/security', label: 'Security', icon: 'fa-shield-alt', end: false },
   { to: '/dashboard/account/integrations', label: 'Integrations', icon: 'fa-plug', end: false },
 ]
 
-const orgNavItem = { to: '/dashboard/account/organization', label: 'Organization', icon: 'fa-building', end: false }
-const apiNavItem = { to: '/dashboard/account/api', label: 'API', icon: 'fa-code', end: false }
-const mcpNavItem = { to: '/dashboard/account/mcp', label: 'MCP', icon: 'fa-plug', end: false }
-const billingNavItem = { to: '/dashboard/account/billing', label: 'Billing & Plans', icon: 'fa-credit-card', end: false }
+const orgNavItem: NavItem = { to: '/dashboard/account/organization', label: 'Organization', icon: 'fa-building', end: false }
+const apiNavItem: NavItem = { to: '/dashboard/account/api', label: 'API', icon: 'fa-code', end: false }
+const mcpNavItem: NavItem = { to: '/dashboard/account/mcp', label: 'MCP', icon: 'fa-plug', end: false }
+const billingNavItem: NavItem = { to: '/dashboard/account/billing', label: 'Billing & Plans', icon: 'fa-credit-card', end: false }
 
 export default function AccountLayout() {
   const { user, profile, planSlug, userType, organization } = useAuth()
   const displayName = profile?.full_name ?? user?.user_metadata?.full_name ?? user?.email?.split('@')[0] ?? 'Creator'
   const showOrgTab = planSlug === 'platin' || organization !== null
-  // API + MCP are available on every paid tier (pro / premium / platin) plus admin.
-  // Backend gates creation/use via hasApiAccess(); we surface the tabs to anyone
-  // who can use them.
-  const showApiTab =
-    planSlug === 'pro' ||
-    planSlug === 'premium' ||
-    planSlug === 'platin' ||
-    userType === 'admin'
-  const accountNavItems = [
+  // Surface API/MCP tabs to everyone so free/creator users can discover the
+  // upgrade. The pages themselves handle the locked state with an upsell card.
+  const showApiTab = true
+  const showMcpTab = true
+
+  const isAdminOrVip = userType === 'admin' || userType === 'vip'
+  // The API tab needs premium+ to create keys; MCP needs pro+. Show a small
+  // badge next to the menu item for users below those tiers.
+  const apiUpsellTier: 'premium' | undefined =
+    !isAdminOrVip && !hasTier(planSlug, 'premium') ? 'premium' : undefined
+  const mcpUpsellTier: 'pro' | undefined =
+    !isAdminOrVip && !hasTier(planSlug, 'pro') ? 'pro' : undefined
+  const orgUpsellTier: 'platin' | undefined =
+    !isAdminOrVip && !hasTier(planSlug, 'platin') ? 'platin' : undefined
+
+  const accountNavItems: NavItem[] = [
     ...baseNavItems,
-    ...(showOrgTab ? [orgNavItem] : []),
-    ...(showApiTab ? [apiNavItem, mcpNavItem] : []),
+    ...(showOrgTab
+      ? [{ ...orgNavItem, upsellTier: orgUpsellTier }]
+      : []),
+    ...(showApiTab
+      ? [{ ...apiNavItem, upsellTier: apiUpsellTier }]
+      : []),
+    ...(showMcpTab
+      ? [{ ...mcpNavItem, upsellTier: mcpUpsellTier }]
+      : []),
     billingNavItem,
   ]
 
@@ -66,6 +91,7 @@ export default function AccountLayout() {
           >
             <i className={`fas ${item.icon} text-[10px]`}></i>
             {item.label}
+            {item.upsellTier && <UpsellBadge tier={item.upsellTier} size="sm" />}
           </NavLink>
         ))}
       </nav>
@@ -89,7 +115,8 @@ export default function AccountLayout() {
                 }
               >
                 <i className={`fas ${item.icon} w-4 text-xs`}></i>
-                {item.label}
+                <span className="flex-1">{item.label}</span>
+                {item.upsellTier && <UpsellBadge tier={item.upsellTier} size="sm" />}
               </NavLink>
             ))}
           </div>

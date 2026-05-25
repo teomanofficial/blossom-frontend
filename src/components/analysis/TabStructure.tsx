@@ -1,17 +1,32 @@
 import { scoreColor } from './helpers'
+import { FeatureLockedOverlay } from '../upsell'
 
 interface TabStructureProps {
   full: any
   upload: any
   improv?: any
+  /**
+   * When false, the deep format breakdown (timeline, promise analysis,
+   * shareability) is replaced with a compact upgrade prompt. The format
+   * *class* badge stays visible at the top so users still see what kind of
+   * format their video uses. Defaults to true.
+   */
+  showDetail?: boolean
+  /**
+   * Kept for backwards compatibility — `FeatureLockedOverlay` opens the
+   * upgrade overlay directly via `useUpgrade()`, so callers no longer need
+   * to pass this.
+   */
+  onOpenUpgrade?: (source: string) => void
 }
 
-export default function TabStructure({ full, improv }: TabStructureProps) {
+export default function TabStructure({ full, improv, showDetail = true }: TabStructureProps) {
   const rec = improv?.recommended_timeline
 
   return (
     <div className="space-y-6">
-      {/* Format Class */}
+      {/* Format Class — label only, always visible (free users see the
+          identification but not the why-it-works breakdown). */}
       {full?.format_class && (
         <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
           <h3 className="text-lg font-bold text-white mb-2">
@@ -23,8 +38,21 @@ export default function TabStructure({ full, improv }: TabStructureProps) {
         </div>
       )}
 
+      {/* Compact upgrade prompt in place of the deep timeline + breakdown. */}
+      {!showDetail && (
+        <FeatureLockedOverlay
+          requiredTier="pro"
+          featureName="How this format works"
+          description="Unlock the timeline breakdown, recommended pacing, promise analysis, and shareability signals — the full AI explanation of why this format succeeds."
+          preview="hide"
+          upgradeSource="analysis-detail-structure-detail"
+        >
+          <></>
+        </FeatureLockedOverlay>
+      )}
+
       {/* Timeline Visualization */}
-      {full?.structural_breakdown && (
+      {showDetail && full?.structural_breakdown && (
         <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
           <h3 className="text-lg font-bold text-white mb-4">
             <i className="fas fa-stream mr-2 text-indigo-400 text-sm"></i>Timeline Breakdown
@@ -197,7 +225,7 @@ export default function TabStructure({ full, improv }: TabStructureProps) {
       )}
 
       {/* Stats Grid */}
-      {full?.structural_breakdown && (
+      {showDetail && full?.structural_breakdown && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
           {[
             { label: 'Pacing Style', value: full.structural_breakdown.pacing_style, icon: 'fa-tachometer-alt' },
@@ -216,7 +244,7 @@ export default function TabStructure({ full, improv }: TabStructureProps) {
       )}
 
       {/* Loop Description */}
-      {full?.structural_breakdown?.loop_description && (
+      {showDetail && full?.structural_breakdown?.loop_description && (
         <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
           <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">
             <i className="fas fa-redo mr-1"></i>Loop Description
@@ -226,7 +254,7 @@ export default function TabStructure({ full, improv }: TabStructureProps) {
       )}
 
       {/* Promise Analysis */}
-      {full?.promise && (
+      {showDetail && full?.promise && (
         <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
           <h3 className="text-lg font-bold text-white mb-4">
             <i className="fas fa-bullseye mr-2 text-orange-400 text-sm"></i>Promise Analysis
@@ -267,7 +295,7 @@ export default function TabStructure({ full, improv }: TabStructureProps) {
       )}
 
       {/* Shareability */}
-      {full?.shareability && (
+      {showDetail && full?.shareability && (
         <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
           <h3 className="text-lg font-bold text-white mb-4">
             <i className="fas fa-share-alt mr-2 text-orange-400 text-sm"></i>Shareability

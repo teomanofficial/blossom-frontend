@@ -2,6 +2,8 @@ import { NavLink } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useImpersonation } from '../context/ImpersonationContext'
 import { useRef, useState, useCallback, useEffect } from 'react'
+import UpsellBadge from './upsell/UpsellBadge'
+import { hasTier } from './upsell/tierUtils'
 
 interface MobileDrawerProps {
   open: boolean
@@ -11,18 +13,32 @@ interface MobileDrawerProps {
   showManagement: boolean
 }
 
+type UpsellTier = 'pro' | 'premium' | 'platin'
+
+interface DrawerItem {
+  to: string
+  icon: string
+  label: string
+  color: string
+  bg: string
+  hasBadge?: boolean
+  end?: boolean
+  /** Optional tier badge shown to users below this tier. */
+  upsellTier?: UpsellTier
+}
+
 /* ── Navigation groups with semantic organization ── */
-const generalItems = [
+const generalItems: DrawerItem[] = [
   { to: '/dashboard/platforms', icon: 'fa-tower-broadcast', label: 'Platforms', color: 'text-pink-400', bg: 'bg-pink-500/10' },
   { to: '/dashboard/trends', icon: 'fa-arrow-trend-up', label: 'Trends', color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
 ]
 
-const creatorsItem = { to: '/dashboard/influencers', icon: 'fa-users', label: 'Creators', color: 'text-cyan-400', bg: 'bg-cyan-500/10' }
+const creatorsItem: DrawerItem = { to: '/dashboard/influencers', icon: 'fa-users', label: 'Creators', color: 'text-cyan-400', bg: 'bg-cyan-500/10' }
 
 /* ── Insights drill-down pages (Pulse → Creators).
    Mirrors the desktop sidebar's "Insights" group order so the mobile
    experience matches what desktop users already see. */
-const insightsItems = [
+const insightsItems: DrawerItem[] = [
   { to: '/dashboard/pulse', icon: 'fa-wave-square', label: 'Pulse', color: 'text-pink-400', bg: 'bg-pink-500/10' },
   { to: '/dashboard/action', icon: 'fa-rocket', label: 'Action', color: 'text-orange-400', bg: 'bg-orange-500/10' },
   { to: '/dashboard/forensics', icon: 'fa-magnifying-glass-chart', label: 'Forensics', color: 'text-purple-400', bg: 'bg-purple-500/10' },
@@ -30,8 +46,9 @@ const insightsItems = [
   { to: '/dashboard/creators', icon: 'fa-medal', label: 'Creators', color: 'text-amber-400', bg: 'bg-amber-500/10' },
 ]
 
-const intelligenceItems = [
-  { to: '/dashboard/suggestions', icon: 'fa-scroll', label: 'Scripts', color: 'text-yellow-400', bg: 'bg-yellow-500/10' },
+const intelligenceItems: DrawerItem[] = [
+  // AI scripts are a Creator-tier (pro) feature — badge for free users.
+  { to: '/dashboard/suggestions', icon: 'fa-scroll', label: 'Scripts', color: 'text-yellow-400', bg: 'bg-yellow-500/10', upsellTier: 'pro' },
   { to: '/dashboard/formats', icon: 'fa-shapes', label: 'Formats', color: 'text-indigo-400', bg: 'bg-indigo-500/10' },
   { to: '/dashboard/hooks', icon: 'fa-magnet', label: 'Hooks', color: 'text-purple-400', bg: 'bg-purple-500/10' },
   { to: '/dashboard/tactics', icon: 'fa-chess', label: 'Tactics', color: 'text-amber-400', bg: 'bg-amber-500/10' },
@@ -40,12 +57,12 @@ const intelligenceItems = [
   { to: '/dashboard/greenlight', icon: 'fa-traffic-light', label: 'Greenlight', color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
 ]
 
-const accountItems = [
+const accountItems: DrawerItem[] = [
   { to: '/dashboard/support', icon: 'fa-headset', label: 'Support', color: 'text-blue-400', bg: 'bg-blue-500/10', hasBadge: true },
   { to: '/dashboard/account', icon: 'fa-gear', label: 'Account Settings', color: 'text-slate-300', bg: 'bg-white/5' },
 ]
 
-const managementItems = [
+const managementItems: DrawerItem[] = [
   { to: '/dashboard/users', icon: 'fa-users-gear', label: 'Users', color: 'text-slate-300', bg: 'bg-white/5' },
   { to: '/dashboard/subscription-plans', icon: 'fa-credit-card', label: 'Plans', color: 'text-slate-300', bg: 'bg-white/5' },
   { to: '/dashboard/content-analytics', icon: 'fa-chart-pie', label: 'Content', color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
@@ -65,11 +82,15 @@ function NavItem({
   item,
   supportUnreadCount,
   onClose,
+  effectiveSlug,
 }: {
-  item: { to: string; icon: string; label: string; color: string; bg: string; hasBadge?: boolean; end?: boolean }
+  item: DrawerItem
   supportUnreadCount: number
   onClose: () => void
+  effectiveSlug: string
 }) {
+  const needsUpsell = item.upsellTier && !hasTier(effectiveSlug, item.upsellTier)
+
   return (
     <NavLink
       to={item.to}
@@ -91,6 +112,9 @@ function NavItem({
           <span className={`text-[13px] font-semibold flex-1 ${isActive ? 'text-white font-bold' : 'text-slate-200'}`}>
             {item.label}
           </span>
+          {needsUpsell && item.upsellTier && (
+            <UpsellBadge tier={item.upsellTier} size="sm" />
+          )}
           {item.hasBadge && supportUnreadCount > 0 && (
             <span className="px-2 py-0.5 bg-pink-500 text-white text-[10px] font-black rounded-full min-w-[20px] text-center">
               {supportUnreadCount}
@@ -116,10 +140,12 @@ function SectionHeader({ label }: { label: string }) {
 const CLOSE_THRESHOLD = 120
 
 export default function MobileDrawer({ open, onClose, supportUnreadCount, hasAnalysis, showManagement }: MobileDrawerProps) {
-  const { user, signOut } = useAuth()
+  const { user, signOut, planSlug, userType } = useAuth()
   const { impersonating, stopImpersonation, isImpersonating } = useImpersonation()
   const displayName = user?.user_metadata?.full_name ?? user?.email?.split('@')[0] ?? 'Creator'
   const email = user?.email ?? ''
+  const effectiveSlug =
+    userType === 'admin' || userType === 'vip' ? 'platin' : planSlug ?? 'free'
 
   const [closing, setClosing] = useState(false)
   const [dragY, setDragY] = useState(0)
@@ -266,10 +292,10 @@ export default function MobileDrawer({ open, onClose, supportUnreadCount, hasAna
             <SectionHeader label="General" />
             <div className="space-y-0.5">
               {generalItems.map((item) => (
-                <NavItem key={item.to} item={item} supportUnreadCount={supportUnreadCount} onClose={handleClose} />
+                <NavItem key={item.to} item={item} supportUnreadCount={supportUnreadCount} onClose={handleClose} effectiveSlug={effectiveSlug} />
               ))}
               {hasAnalysis && (
-                <NavItem item={creatorsItem} supportUnreadCount={supportUnreadCount} onClose={handleClose} />
+                <NavItem item={creatorsItem} supportUnreadCount={supportUnreadCount} onClose={handleClose} effectiveSlug={effectiveSlug} />
               )}
             </div>
 
@@ -277,7 +303,7 @@ export default function MobileDrawer({ open, onClose, supportUnreadCount, hasAna
             <SectionHeader label="Insights" />
             <div className="space-y-0.5">
               {insightsItems.map((item) => (
-                <NavItem key={item.to} item={item} supportUnreadCount={supportUnreadCount} onClose={handleClose} />
+                <NavItem key={item.to} item={item} supportUnreadCount={supportUnreadCount} onClose={handleClose} effectiveSlug={effectiveSlug} />
               ))}
             </div>
 
@@ -285,7 +311,7 @@ export default function MobileDrawer({ open, onClose, supportUnreadCount, hasAna
             <SectionHeader label="Intelligence" />
             <div className="space-y-0.5">
               {intelligenceItems.map((item) => (
-                <NavItem key={item.to} item={item} supportUnreadCount={supportUnreadCount} onClose={handleClose} />
+                <NavItem key={item.to} item={item} supportUnreadCount={supportUnreadCount} onClose={handleClose} effectiveSlug={effectiveSlug} />
               ))}
             </div>
 
@@ -293,7 +319,7 @@ export default function MobileDrawer({ open, onClose, supportUnreadCount, hasAna
             <SectionHeader label="Account" />
             <div className="space-y-0.5">
               {accountItems.map((item) => (
-                <NavItem key={item.to} item={item} supportUnreadCount={supportUnreadCount} onClose={handleClose} />
+                <NavItem key={item.to} item={item} supportUnreadCount={supportUnreadCount} onClose={handleClose} effectiveSlug={effectiveSlug} />
               ))}
             </div>
 
@@ -303,7 +329,7 @@ export default function MobileDrawer({ open, onClose, supportUnreadCount, hasAna
                 <SectionHeader label="Management" />
                 <div className="space-y-0.5">
                   {managementItems.map((item) => (
-                    <NavItem key={item.to} item={item} supportUnreadCount={supportUnreadCount} onClose={handleClose} />
+                    <NavItem key={item.to} item={item} supportUnreadCount={supportUnreadCount} onClose={handleClose} effectiveSlug={effectiveSlug} />
                   ))}
                 </div>
               </>

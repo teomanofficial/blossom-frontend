@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { authFetch } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
+import { useUpgrade } from '../context/UpgradeContext'
+import UpsellBadge from '../components/upsell/UpsellBadge'
 
 interface Member {
   id: number
@@ -36,6 +38,7 @@ interface OrgData {
 
 export default function AccountOrganization() {
   const { planSlug, organization, isOrgOwner, isOrgAdmin, refreshProfile } = useAuth()
+  const { openUpgrade } = useUpgrade()
   const [orgData, setOrgData] = useState<OrgData | null>(null)
   const [members, setMembers] = useState<Member[]>([])
   const [invites, setInvites] = useState<Invite[]>([])
@@ -256,21 +259,33 @@ export default function AccountOrganization() {
     )
   }
 
-  // No org and not platin — shouldn't normally reach here
+  // No org and not platin — show an upgrade CTA that opens the overlay.
   if (!orgData && planSlug !== 'platin') {
     return (
       <div>
         <div className="pb-6 mb-6 border-b border-white/[0.06]">
-          <h2 className="text-xl font-black tracking-tight">Organization</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-black tracking-tight">Organization</h2>
+            <UpsellBadge tier="platin" />
+          </div>
         </div>
         <div className="glass-card rounded-3xl p-8 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-violet-500/10 flex items-center justify-center mx-auto mb-4">
-            <i className="fas fa-building text-2xl text-violet-400" />
+          <div className="w-16 h-16 rounded-2xl bg-amber-500/15 flex items-center justify-center mx-auto mb-4 border border-amber-400/30">
+            <i className="fas fa-building text-2xl text-amber-300" />
           </div>
-          <h3 className="text-lg font-black mb-2">Organization Management</h3>
-          <p className="text-sm text-slate-400 max-w-md mx-auto">
-            Upgrade to the Platin plan to create an organization and invite up to 10 team members.
+          <h3 className="text-lg font-black mb-2">Multi-seat teams require Agency</h3>
+          <p className="text-sm text-slate-400 max-w-md mx-auto mb-6">
+            Upgrade to the Agency plan to create an organization and invite up
+            to 10 team members under one shared subscription.
           </p>
+          <button
+            type="button"
+            onClick={() => openUpgrade('account-organization')}
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-400 text-white text-xs font-black uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-transform shadow-lg shadow-amber-500/25"
+          >
+            <i className="fas fa-bolt text-[10px]" />
+            Upgrade to Agency
+          </button>
         </div>
       </div>
     )

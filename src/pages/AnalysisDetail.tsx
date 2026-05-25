@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useUpgrade } from '../context/UpgradeContext'
 import { API_URL } from '../lib/api'
+import { FeatureLockedOverlay, hasTier } from '../components/upsell'
 import VideoStoryCarousel, { type CarouselVideo } from '../components/VideoStoryCarousel'
 import VersionTimeline from '../components/VersionTimeline'
 import VersionComparison from '../components/VersionComparison'
@@ -21,9 +22,17 @@ import ShareModal from '../components/ShareModal'
 
 export default function AnalysisDetail() {
   const { id } = useParams<{ id: string }>()
-  const { session } = useAuth()
+  const { session, planSlug, userType } = useAuth()
   const { openUpgrade } = useUpgrade()
   const navigate = useNavigate()
+
+  // Tier gating: Creator (pro) unlocks deep AI breakdowns (suggestions, hook
+  // /format/tactic detail, audio analysis). Pro (premium) unlocks analysis
+  // versioning. Admin/VIP bypass by being treated as the top tier upstream.
+  const effectiveSlug =
+    userType === 'admin' || userType === 'vip' ? 'platin' : planSlug ?? 'free'
+  const hasCreatorTier = hasTier(effectiveSlug, 'pro')
+  const hasProTier = hasTier(effectiveSlug, 'premium')
 
   const [analysisResult, setAnalysisResult] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -181,11 +190,28 @@ export default function AnalysisDetail() {
               <span className="hidden sm:inline">Share</span>
             </button>
             <button
-              onClick={() => setShowRecheck(!showRecheck)}
-              className="px-3 sm:px-4 py-2 bg-gradient-to-r from-purple-500/20 to-teal-500/20 border border-purple-500/30 rounded-xl text-purple-300 hover:text-white hover:from-purple-500/30 hover:to-teal-500/30 transition-all text-xs sm:text-sm font-bold"
+              onClick={() => {
+                if (!hasProTier) {
+                  openUpgrade('analysis-detail-recheck')
+                  return
+                }
+                setShowRecheck(!showRecheck)
+              }}
+              className={`px-3 sm:px-4 py-2 rounded-xl transition-all text-xs sm:text-sm font-bold relative ${
+                hasProTier
+                  ? 'bg-gradient-to-r from-purple-500/20 to-teal-500/20 border border-purple-500/30 text-purple-300 hover:text-white hover:from-purple-500/30 hover:to-teal-500/30'
+                  : 'bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10'
+              }`}
+              aria-label={hasProTier ? 'Improve and re-check' : 'Upgrade to Pro to re-analyze versions'}
+              title={hasProTier ? undefined : 'Pro plan required to re-analyze content versions'}
             >
-              <i className="fas fa-redo sm:mr-2"></i>
+              <i className={`fas ${hasProTier ? 'fa-redo' : 'fa-lock'} sm:mr-2`}></i>
               <span className="hidden sm:inline">Improve & Re-check</span>
+              {!hasProTier && (
+                <span className="ml-1 sm:ml-2 px-1.5 py-0.5 bg-gradient-to-r from-pink-500 to-fuchsia-500 rounded text-[8px] font-black text-white uppercase tracking-widest align-middle">
+                  Pro
+                </span>
+              )}
             </button>
           </div>
         </div>
@@ -194,8 +220,8 @@ export default function AnalysisDetail() {
       <div className="flex gap-4 sm:gap-6 overflow-x-hidden">
         <div className="flex-1 min-w-0">
           <div>
-            {/* Re-check Form */}
-            {showRecheck && uploadId && session?.access_token && (
+            {/* Re-check Form — gated by Pro tier (re-analysis is a paid feature) */}
+            {showRecheck && uploadId && session?.access_token && hasProTier && (
               <RecheckForm
                 uploadId={uploadId}
                 sessionToken={session.access_token}
@@ -207,21 +233,37 @@ export default function AnalysisDetail() {
               />
             )}
 
-            {/* Version Timeline */}
+            {/* Version Timeline + Comparison — Pro tier gate. Free/Creator
+                users see a compact locked notice in place of the timeline so
+                they still know the feature exists. */}
             {analysisResult?.versionInfo && uploadId && (
-              <VersionTimeline
-                uploadId={uploadId}
-                versionInfo={analysisResult.versionInfo}
-                onVersionSelect={handleVersionSelect}
-              />
-            )}
-
-            {/* Version Comparison */}
-            {analysisResult?.versionInfo && uploadId && (
-              <VersionComparison
-                uploadId={uploadId}
-                versionInfo={analysisResult.versionInfo}
-              />
+              hasProTier ? (
+                <>
+                  <VersionTimeline
+                    uploadId={uploadId}
+                    versionInfo={analysisResult.versionInfo}
+                    onVersionSelect={handleVersionSelect}
+                  />
+                  <VersionComparison
+                    uploadId={uploadId}
+                    versionInfo={analysisResult.versionInfo}
+                  />
+                </>
+              ) : (
+                analysisResult.versionInfo.totalVersions > 1 && (
+                  <div className="mb-6">
+                    <FeatureLockedOverlay
+                      requiredTier="premium"
+                      featureName="Track your version history"
+                      description="See every iteration side-by-side, compare scores across versions, and re-run analysis on improved content."
+                      preview="hide"
+                      upgradeSource="analysis-detail-versioning"
+                    >
+                      <></>
+                    </FeatureLockedOverlay>
+                  </div>
+                )
+              )
             )}
 
             <div className="space-y-6">
@@ -278,12 +320,24 @@ export default function AnalysisDetail() {
               </div>
 
               {/* Tab Content */}
-              {activeTab === 'improvements' && improv && (
-                <TabImprovements
-                  improv={improv}
-                  exampleVideos={exampleVideos}
-                  onOpenCarousel={openExampleCarousel}
-                />
+              {activeTab === 'improvements' && (
+                hasCreatorTier && improv ? (
+                  <TabImprovements
+                    improv={improv}
+                    exampleVideos={exampleVideos}
+                    onOpenCarousel={openExampleCarousel}
+                  />
+                ) : (
+                  <FeatureLockedOverlay
+                    requiredTier="pro"
+                    featureName="AI Suggestions"
+                    description="Get actionable improvement ideas: priority actions, alternative hooks, before/after rewrites, and missing high-impact tactics personalized to your content."
+                    preview="hide"
+                    upgradeSource="analysis-detail-suggestions"
+                  >
+                    <></>
+                  </FeatureLockedOverlay>
+                )
               )}
 
               {activeTab === 'hook' && (
@@ -294,15 +348,27 @@ export default function AnalysisDetail() {
                   virality={virality}
                   topHookVideos={topHookVideos || []}
                   onOpenCarousel={openExampleCarousel}
+                  showDetail={hasCreatorTier}
+                  onOpenUpgrade={openUpgrade}
                 />
               )}
 
               {activeTab === 'structure' && (
-                <TabStructure full={full} upload={upload} improv={improv} />
+                <TabStructure
+                  full={full}
+                  upload={upload}
+                  improv={improv}
+                  showDetail={hasCreatorTier}
+                  onOpenUpgrade={openUpgrade}
+                />
               )}
 
               {activeTab === 'tactics' && (
-                <TabTactics full={full} />
+                <TabTactics
+                  full={full}
+                  showDetail={hasCreatorTier}
+                  onOpenUpgrade={openUpgrade}
+                />
               )}
 
               {activeTab === 'emotions' && (

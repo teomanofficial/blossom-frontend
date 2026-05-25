@@ -6,6 +6,8 @@ import { useAuth } from '../context/AuthContext'
 import VideoStoryCarousel, { type CarouselVideo } from '../components/VideoStoryCarousel'
 import InfluencerAnalyzeProgress from '../components/InfluencerAnalyzeProgress'
 import FetchContentProgress from '../components/FetchContentProgress'
+import FeatureLockedOverlay from '../components/upsell/FeatureLockedOverlay'
+import { hasTier } from '../components/upsell/tierUtils'
 
 interface InfluencerVideo {
   id: number
@@ -154,7 +156,7 @@ function getPartnershipPotentialColor(potential: string): string {
 
 export default function InfluencerDetail() {
   const { id } = useParams()
-  const { userType } = useAuth()
+  const { userType, planSlug } = useAuth()
   const [influencer, setInfluencer] = useState<InfluencerData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -854,6 +856,22 @@ export default function InfluencerDetail() {
             </button>
           )}
         </div>
+      )}
+
+      {/* Deep analytics upsell — non-admins below premium see a teaser of what
+          DISC profiles, audience quality, viral hit rate, and brand
+          partnerships would look like behind the Pro tier. */}
+      {!ds && userType !== 'admin' && userType !== 'vip' && !hasTier(planSlug, 'premium') && (
+        <FeatureLockedOverlay
+          requiredTier="premium"
+          featureName="Deep Creator Analytics"
+          description="DISC voice profile, viral hit-rate, consistency score, audience quality and AI-suggested brand partnerships."
+          preview="hide"
+          upgradeSource="influencer-detail-deep-scan"
+          className="mb-8 md:mb-10 glass-card rounded-3xl min-h-[320px]"
+        >
+          <div />
+        </FeatureLockedOverlay>
       )}
 
       {/* Top Hashtags */}

@@ -54,7 +54,8 @@ All routes defined in `App.tsx` using react-router-dom v7. Protected routes wrap
 /account                  Account.tsx              [protected]
 /account/profile          AccountProfile.tsx
 /account/billing          AccountBilling.tsx
-/account/api-keys         AccountApiKeys.tsx       [platin/admin only]
+/account/api-keys         AccountApiKeys.tsx       [visible to all; create gated to premium+ via DisabledUpsellButton]
+/pricing                  Pricing.tsx              [public]
 /account/organization     AccountOrganization.tsx
 /account/security         AccountSecurity.tsx
 /admin/*                  Users, Categories, Onboarding... [admin only]

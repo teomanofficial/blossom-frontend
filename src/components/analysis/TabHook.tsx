@@ -1,5 +1,6 @@
 import { formatNumber, scoreColor, scoreBarColor, getCategoryColor, fmtTime } from './helpers'
 import { ExampleVideoCard } from './ExampleVideos'
+import { FeatureLockedOverlay } from '../upsell'
 
 export interface TabHookProps {
   hook: any
@@ -8,6 +9,20 @@ export interface TabHookProps {
   virality: any
   topHookVideos: any[]
   onOpenCarousel: (videos: any[], index: number) => void
+  /**
+   * When false, the in-depth breakdown (verdict, first-frame analysis, tactic
+   * details, etc.) is replaced with a compact upgrade prompt. The hook *class*
+   * label and the high-level score stay visible so free / lower-tier users can
+   * still see what kind of hook they have — they just can't see the "why".
+   * Defaults to true so all existing callers keep current behavior.
+   */
+  showDetail?: boolean
+  /**
+   * Kept for backwards compatibility — `FeatureLockedOverlay` opens the
+   * upgrade overlay directly via `useUpgrade()`, so callers no longer need
+   * to pass this. Left in place to avoid a prop-drilling churn.
+   */
+  onOpenUpgrade?: (source: string) => void
 }
 
 export default function TabHook({
@@ -17,6 +32,7 @@ export default function TabHook({
   virality,
   topHookVideos,
   onOpenCarousel,
+  showDetail = true,
 }: TabHookProps) {
   const hookClassAnalysis = benchmarks?.hook_class_analysis
 
@@ -35,7 +51,9 @@ export default function TabHook({
         </div>
       )}
 
-      {/* Hook class + verdict */}
+      {/* Hook class + verdict — the class label always shows so free users
+          can see what kind of hook they have; the "why it works" verdict is
+          Creator-tier gated. */}
       <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6 space-y-3">
         {hook?.hook_class && (
           <div className="flex items-center gap-3">
@@ -44,13 +62,32 @@ export default function TabHook({
             </span>
           </div>
         )}
-        {hook?.verdict && (
+        {hook?.verdict && showDetail && (
           <p className="text-base font-bold text-white leading-relaxed">{hook.verdict}</p>
+        )}
+        {hook?.verdict && !showDetail && (
+          <div className="text-xs text-slate-500 font-bold uppercase tracking-widest">
+            <i className="fas fa-lock mr-1.5"></i>Verdict locked
+          </div>
         )}
       </div>
 
+      {/* Gate the deep-detail sections below as a single block — show one
+          compact upgrade card instead of duplicating it under every heading. */}
+      {!showDetail && (
+        <FeatureLockedOverlay
+          requiredTier="pro"
+          featureName="Why this hook works"
+          description="Unlock the first-frame breakdown, scroll-stop tactics, promise setup, audio analysis, and anti-pattern detection — the full AI explanation of why this hook succeeds (or doesn't)."
+          preview="hide"
+          upgradeSource="analysis-detail-hook-detail"
+        >
+          <></>
+        </FeatureLockedOverlay>
+      )}
+
       {/* First Frame Analysis */}
-      {hook?.first_frame && (
+      {showDetail && hook?.first_frame && (
         <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
           <h3 className="text-lg font-bold text-white mb-4">
             <i className="fas fa-image mr-2 text-pink-400 text-sm"></i>First Frame
@@ -69,7 +106,7 @@ export default function TabHook({
       )}
 
       {/* Hook Tactics */}
-      {hook?.tactics && hook.tactics.length > 0 && (
+      {showDetail && hook?.tactics && hook.tactics.length > 0 && (
         <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
           <h3 className="text-lg font-bold text-white mb-4">
             <i className="fas fa-chess mr-2 text-indigo-400 text-sm"></i>Hook Tactics
@@ -156,7 +193,7 @@ export default function TabHook({
       )}
 
       {/* Promise Setup */}
-      {hook?.promise_setup && (
+      {showDetail && hook?.promise_setup && (
         <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
           <h3 className="text-lg font-bold text-white mb-4">
             <i className="fas fa-bullseye mr-2 text-orange-400 text-sm"></i>Promise Setup
@@ -206,8 +243,8 @@ export default function TabHook({
         </div>
       )}
 
-      {/* Audio in First 3s */}
-      {hook?.audio_in_first_3s && (
+      {/* Audio in First 3s — part of the Creator-tier deep audio analysis */}
+      {showDetail && hook?.audio_in_first_3s && (
         <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
           <h3 className="text-lg font-bold text-white mb-4">
             <i className="fas fa-volume-up mr-2 text-violet-400 text-sm"></i>Audio (First 3 Seconds)
@@ -230,7 +267,7 @@ export default function TabHook({
       )}
 
       {/* Anti-Patterns */}
-      {hook?.anti_patterns_detected && hook.anti_patterns_detected.length > 0 && (
+      {showDetail && hook?.anti_patterns_detected && hook.anti_patterns_detected.length > 0 && (
         <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
           <h3 className="text-lg font-bold text-white mb-4">
             <i className="fas fa-shield-alt mr-2 text-red-400 text-sm"></i>Anti-Patterns Detected
@@ -249,7 +286,7 @@ export default function TabHook({
       {/* HOOK CLASS COMPARISON */}
 
       {/* Section A: Your Hook vs Hook Class Benchmark */}
-      {benchmarks?.hook_name && (
+      {showDetail && benchmarks?.hook_name && (
         <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
           <h3 className="text-lg font-bold text-white mb-4">
             <i className="fas fa-chart-bar mr-2 text-purple-400 text-sm"></i>Your Hook vs "{benchmarks.hook_name}"
@@ -311,7 +348,7 @@ export default function TabHook({
       )}
 
       {/* Section B: Gold Standard / Execution Gaps / Overrated / Harmful from class_analysis */}
-      {hookClassAnalysis &&
+      {showDetail && hookClassAnalysis &&
         (hookClassAnalysis.gold_standard_tactics?.length > 0 ||
          hookClassAnalysis.execution_gaps?.length > 0 ||
          hookClassAnalysis.overrated_tactics?.length > 0 ||
@@ -442,6 +479,7 @@ export default function TabHook({
 
       {/* Section D: Missing Gold Standard Hook Tactics */}
       {(() => {
+        if (!showDetail) return null;
         if (!hookTacticFrequency?.gold_standard?.length || !hook?.tactics) return null;
         const userTacticNames = new Set(
           (hook.tactics as any[]).map((t: any) => (t.name || '').toLowerCase().trim())
@@ -477,7 +515,7 @@ export default function TabHook({
       })()}
 
       {/* Section E: Top Performers in Hook Class */}
-      {topHookVideos && topHookVideos.length > 0 && benchmarks?.hook_name && (
+      {showDetail && topHookVideos && topHookVideos.length > 0 && benchmarks?.hook_name && (
         <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
           <h3 className="text-lg font-bold text-white mb-4">
             <i className="fas fa-crown mr-2 text-purple-400 text-sm"></i>Top Performers — "{benchmarks.hook_name}"

@@ -2,6 +2,9 @@ import { useState, useEffect, useCallback } from 'react'
 import { authFetch } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import { useUpgrade } from '../context/UpgradeContext'
+import DisabledUpsellButton from '../components/upsell/DisabledUpsellButton'
+import UpsellBadge from '../components/upsell/UpsellBadge'
+import { hasTier } from '../components/upsell/tierUtils'
 
 const PLAN_RATE_LIMITS: Record<string, { limit: number; label: string }> = {
   pro: { limit: 30, label: 'Pro' },
@@ -156,6 +159,11 @@ export default function AccountApiKeys() {
   const activeKeys = keys.filter((k) => k.is_active)
   const revokedKeys = keys.filter((k) => !k.is_active)
 
+  // API key *creation* is gated to premium+ (Pro tier in new naming).
+  // Pro (Creator) sees a locked button + explainer; admin/vip pass through.
+  const isAdminOrVip = userType === 'admin' || userType === 'vip'
+  const canCreateKeys = isAdminOrVip || hasTier(planSlug, 'premium')
+
   const tierInfo =
     userType === 'admin'
       ? { limit: 600, label: 'Admin' }
@@ -218,7 +226,10 @@ export default function AccountApiKeys() {
     <div>
       {/* Section title */}
       <div className="pb-6 mb-6 border-b border-white/[0.06]">
-        <h2 className="text-xl font-black tracking-tight">API Access</h2>
+        <div className="flex items-center gap-2 flex-wrap">
+          <h2 className="text-xl font-black tracking-tight">API Access</h2>
+          {!canCreateKeys && <UpsellBadge tier="premium" />}
+        </div>
         <p className="text-slate-500 text-sm mt-1">
           Create and manage API keys to access Blossom data programmatically.
           <span className="ml-2 text-slate-400">
@@ -227,6 +238,39 @@ export default function AccountApiKeys() {
           </span>
         </p>
       </div>
+
+      {/* Creator-tier explainer: API key creation needs Pro (premium) or above */}
+      {!canCreateKeys && (
+        <div className="mb-6 glass-card rounded-2xl p-5 border border-purple-400/30 bg-gradient-to-br from-purple-500/10 to-pink-500/5">
+          <div className="flex items-start gap-4">
+            <div className="w-10 h-10 rounded-xl bg-purple-500/15 flex items-center justify-center shrink-0">
+              <i className="fas fa-key text-purple-300 text-sm" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                <h3 className="text-sm font-black text-white">
+                  Public API access requires Pro plan or above
+                </h3>
+                <UpsellBadge tier="premium" size="sm" />
+              </div>
+              <p className="text-xs text-slate-400 leading-relaxed mb-3">
+                Your <strong className="text-white">Creator</strong> plan includes the MCP
+                server. To create REST API keys and hit{' '}
+                <code className="text-pink-400">/api/v1</code> directly from your own apps,
+                upgrade to Pro.
+              </p>
+              <button
+                type="button"
+                onClick={() => openUpgrade('api-keys-explainer')}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-black uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-transform shadow-lg shadow-purple-500/25"
+              >
+                <i className="fas fa-bolt text-[10px]" />
+                Upgrade to Pro
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Key Revealed Modal */}
       {revealedKey && (
@@ -277,7 +321,9 @@ export default function AccountApiKeys() {
             maxLength={100}
             className="flex-1 px-4 py-2.5 bg-white/[0.04] border border-white/[0.08] rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-pink-500/40 focus:ring-1 focus:ring-pink-500/20 transition-all"
           />
-          <button
+          <DisabledUpsellButton
+            requiredTier="premium"
+            upgradeSource="api-keys-create"
             onClick={handleCreate}
             disabled={creating || !newKeyName.trim()}
             className="px-5 py-2.5 bg-gradient-to-r from-pink-500 to-orange-400 hover:from-pink-600 hover:to-orange-500 rounded-xl text-sm font-bold text-white transition-all disabled:opacity-50 shadow-lg shadow-pink-500/20 flex items-center gap-2 justify-center"
@@ -293,7 +339,7 @@ export default function AccountApiKeys() {
                 Create Key
               </>
             )}
-          </button>
+          </DisabledUpsellButton>
         </div>
         {error && (
           <p className="mt-2 text-xs text-red-400">
