@@ -66,6 +66,7 @@ export default function PlatformPosts() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [analyzingAll, setAnalyzingAll] = useState(false)
   const [analyzingPost, setAnalyzingPost] = useState<number | null>(null)
+  const [deletingPost, setDeletingPost] = useState<number | null>(null)
 
   const fetchPosts = useCallback(async () => {
     const params = new URLSearchParams({ sort: filter.sort, order: 'desc', limit: '100' })
@@ -102,6 +103,27 @@ export default function PlatformPosts() {
       toast.error('Analysis failed')
     } finally {
       setAnalyzingPost(null)
+    }
+  }
+
+  const handleDeletePost = async (postId: number, e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!confirm('Delete this draft? This cannot be undone.')) return
+    setDeletingPost(postId)
+    try {
+      const res = await authFetch(`/api/social/posts/${postId}`, { method: 'DELETE' })
+      if (res.ok) {
+        setPosts(prev => prev.filter(p => p.id !== postId))
+        toast.success('Draft deleted')
+      } else {
+        const err = await res.json().catch(() => ({}))
+        toast.error(err.error || 'Delete failed')
+      }
+    } catch {
+      toast.error('Delete failed')
+    } finally {
+      setDeletingPost(null)
     }
   }
 
@@ -240,7 +262,19 @@ export default function PlatformPosts() {
                   <span className={`badge-glass text-[9px] font-bold ${statusBadge(post.status)}`}>
                     {post.status}
                   </span>
-                  <i className={`${platformIcon(post.account_platform)} text-[10px] text-white/70`} />
+                  <div className="flex items-center gap-1.5">
+                    {post.status === 'draft' && (
+                      <button
+                        onClick={(e) => handleDeletePost(post.id, e)}
+                        disabled={deletingPost === post.id}
+                        title="Delete draft"
+                        className="w-5 h-5 rounded-md bg-black/40 hover:bg-red-500/80 text-white/80 hover:text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all disabled:opacity-50"
+                      >
+                        {deletingPost === post.id ? <i className="fas fa-spinner fa-spin text-[8px]" /> : <i className="fas fa-trash text-[8px]" />}
+                      </button>
+                    )}
+                    <i className={`${platformIcon(post.account_platform)} text-[10px] text-white/70`} />
+                  </div>
                 </div>
                 <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/80 to-transparent">
                   <div className="text-[10px] font-bold text-white truncate mb-0.5">@{post.account_username}</div>
@@ -290,13 +324,26 @@ export default function PlatformPosts() {
                   {post.engagement_rate > 0 && <span className="text-emerald-400">{post.engagement_rate.toFixed(1)}%</span>}
                 </div>
               </div>
-              <button
-                onClick={(e) => { e.preventDefault(); handleAnalyzePost(post.id) }}
-                disabled={analyzingPost === post.id}
-                className="px-2.5 py-1.5 bg-pink-500/10 hover:bg-pink-500/20 text-pink-400 rounded-lg text-[10px] font-bold transition-all disabled:opacity-50 shrink-0"
-              >
-                {analyzingPost === post.id ? <i className="fas fa-spinner fa-spin" /> : <i className="fas fa-wand-magic-sparkles" />}
-              </button>
+              <div className="flex items-center gap-1.5 shrink-0">
+                {post.status === 'draft' ? (
+                  <button
+                    onClick={(e) => handleDeletePost(post.id, e)}
+                    disabled={deletingPost === post.id}
+                    title="Delete draft"
+                    className="px-2.5 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg text-[10px] font-bold transition-all disabled:opacity-50"
+                  >
+                    {deletingPost === post.id ? <i className="fas fa-spinner fa-spin" /> : <i className="fas fa-trash" />}
+                  </button>
+                ) : (
+                  <button
+                    onClick={(e) => { e.preventDefault(); handleAnalyzePost(post.id) }}
+                    disabled={analyzingPost === post.id}
+                    className="px-2.5 py-1.5 bg-pink-500/10 hover:bg-pink-500/20 text-pink-400 rounded-lg text-[10px] font-bold transition-all disabled:opacity-50"
+                  >
+                    {analyzingPost === post.id ? <i className="fas fa-spinner fa-spin" /> : <i className="fas fa-wand-magic-sparkles" />}
+                  </button>
+                )}
+              </div>
             </Link>
           ))}
         </div>
