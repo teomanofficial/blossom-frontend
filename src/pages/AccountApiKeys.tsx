@@ -6,10 +6,12 @@ import DisabledUpsellButton from '../components/upsell/DisabledUpsellButton'
 import UpsellBadge from '../components/upsell/UpsellBadge'
 import { hasTier } from '../components/upsell/tierUtils'
 
+// Mirrors backend/src/middleware/rate-limiter.ts (May 2026 tier restructure).
+// Creator (slug `pro`) has MCP access only — REST is blocked, hence limit 0.
 const PLAN_RATE_LIMITS: Record<string, { limit: number; label: string }> = {
-  pro: { limit: 30, label: 'Pro' },
-  premium: { limit: 60, label: 'Premium' },
-  platin: { limit: 100, label: 'Platin' },
+  pro: { limit: 0, label: 'Creator' },
+  premium: { limit: 30, label: 'Pro' },
+  platin: { limit: 200, label: 'Agency' },
 }
 
 interface ApiKey {
@@ -206,7 +208,7 @@ export default function AccountApiKeys() {
           </div>
           <h3 className="text-xl font-black mb-2">API access is a paid feature</h3>
           <p className="text-slate-400 text-sm max-w-md mx-auto mb-6">
-            Upgrade to Pro, Premium, or Platin to create API keys, hit the public
+            Upgrade to Creator, Pro, or Agency to create API keys, hit the public
             API at <code className="text-pink-400">/api/v1</code>, and drive Blossom
             from Claude, Cursor, or your own tooling via the MCP server.
           </p>
@@ -234,7 +236,9 @@ export default function AccountApiKeys() {
           Create and manage API keys to access Blossom data programmatically.
           <span className="ml-2 text-slate-400">
             Your <strong className="text-pink-400">{tierInfo.label}</strong> plan:{' '}
-            <strong>{tierInfo.limit} requests/min</strong>.
+            <strong>
+              {tierInfo.limit > 0 ? `${tierInfo.limit} requests/min` : 'MCP server access (no REST)'}
+            </strong>.
           </span>
         </p>
       </div>
@@ -487,7 +491,18 @@ export default function AccountApiKeys() {
 
       {/* API Documentation Quick Reference */}
       <div className="mt-8 glass-card rounded-2xl p-5">
-        <h3 className="text-sm font-bold text-white mb-3">Quick Reference</h3>
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <h3 className="text-sm font-bold text-white">Quick Reference</h3>
+          <a
+            href="/docs/api"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-3 py-1.5 bg-white/[0.04] hover:bg-white/[0.08] rounded-lg text-[11px] font-bold text-pink-400 hover:text-pink-300 transition-all flex items-center gap-1.5 flex-shrink-0"
+          >
+            Full API documentation
+            <i className="fas fa-arrow-up-right-from-square text-[9px]" />
+          </a>
+        </div>
         <div className="space-y-3 text-xs text-slate-400">
           <div>
             <span className="text-slate-500 font-semibold">Base URL:</span>
@@ -500,7 +515,9 @@ export default function AccountApiKeys() {
           <div>
             <span className="text-slate-500 font-semibold">Rate Limit:</span>
             <span className="ml-2">
-              {tierInfo.limit} requests/minute ({tierInfo.label} plan)
+              {tierInfo.limit > 0
+                ? `${tierInfo.limit} requests/minute (${tierInfo.label} plan)`
+                : `MCP only — REST requires Pro or above (${tierInfo.label} plan)`}
             </span>
           </div>
           <div className="pt-2 border-t border-white/[0.04]">
@@ -521,9 +538,24 @@ export default function AccountApiKeys() {
                 { method: 'GET', path: '/trending/hooks', desc: 'Trending hooks' },
                 { method: 'GET', path: '/trending/songs', desc: 'Trending songs' },
                 { method: 'GET', path: '/categories', desc: 'Your categories' },
+                { method: 'POST', path: '/analysis', desc: 'Analyze a TikTok/IG URL' },
+                { method: 'POST', path: '/analysis/upload', desc: 'Analyze a video file' },
+                { method: 'GET', path: '/analysis/:id', desc: 'Poll analysis result' },
+                { method: 'GET', path: '/social/accounts', desc: 'Connected accounts' },
+                { method: 'POST', path: '/social/posts', desc: 'Create a post draft' },
+                { method: 'POST', path: '/social/posts/:id/publish', desc: 'Publish a post' },
+                { method: 'GET', path: '/social/posts/:id/metrics', desc: 'Post metric history' },
+                { method: 'GET', path: '/social/analytics/overview', desc: 'Engagement overview' },
+                { method: 'GET', path: '/account', desc: 'Plan, usage & quotas' },
               ].map((ep) => (
-                <div key={ep.path} className="flex items-center gap-2">
-                  <span className="px-1.5 py-0.5 bg-emerald-500/10 text-emerald-400 text-[9px] font-bold rounded font-mono">
+                <div key={`${ep.method} ${ep.path}`} className="flex items-center gap-2">
+                  <span
+                    className={`px-1.5 py-0.5 text-[9px] font-bold rounded font-mono ${
+                      ep.method === 'GET'
+                        ? 'bg-emerald-500/10 text-emerald-400'
+                        : 'bg-pink-500/10 text-pink-400'
+                    }`}
+                  >
                     {ep.method}
                   </span>
                   <code className="text-slate-300">{ep.path}</code>
@@ -531,6 +563,13 @@ export default function AccountApiKeys() {
                 </div>
               ))}
             </div>
+            <p className="mt-2.5 text-[11px] text-slate-600">
+              Plus social post CRUD, account syncing, and dashboard analytics — see the{' '}
+              <a href="/docs/api" target="_blank" rel="noopener noreferrer" className="text-pink-400 hover:text-pink-300">
+                full documentation
+              </a>{' '}
+              for every endpoint, parameter, and response shape.
+            </p>
           </div>
           <div className="pt-2 border-t border-white/[0.04]">
             <span className="text-slate-500 font-semibold">Example:</span>
