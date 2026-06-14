@@ -63,18 +63,59 @@ export default function AnalysisOverview({
       {/* Video info card */}
       <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
         <div className="flex flex-col md:flex-row gap-4 sm:gap-6">
-          {/* Thumbnail */}
-          {upload?.thumbnail_path && (
-            <div className="w-full md:w-48 flex-shrink-0">
-              <div className="aspect-[9/16] rounded-xl overflow-hidden bg-slate-900">
-                <img
-                  src={upload.thumbnail_path.startsWith('http') ? upload.thumbnail_path : `/media/${upload.thumbnail_path.split('/').pop()}`}
-                  alt="Video thumbnail"
-                  className="w-full h-full object-cover"
-                />
+          {/* Thumbnail + watch-on-platform link.
+             The source video is not stored after analysis, so when we have the
+             original post URL we make the preview a clickable link to watch it
+             on the platform. Direct file uploads (no source_url) show the
+             thumbnail only. */}
+          {(upload?.thumbnail_path || upload?.source_url) && (() => {
+            const platformName = upload?.platform === 'tiktok' ? 'TikTok'
+              : upload?.platform === 'instagram' ? 'Instagram' : 'platform'
+            const platformIcon = upload?.platform === 'tiktok' ? 'fa-tiktok'
+              : upload?.platform === 'instagram' ? 'fa-instagram' : 'fa-video'
+            const thumbSrc = upload?.thumbnail_path
+              ? (upload.thumbnail_path.startsWith('http') ? upload.thumbnail_path : `/media/${upload.thumbnail_path.split('/').pop()}`)
+              : null
+            const preview = (
+              <div className="relative aspect-[9/16] rounded-xl overflow-hidden bg-slate-900 group/thumb">
+                {thumbSrc ? (
+                  <img src={thumbSrc} alt="Video thumbnail" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <i className={`fab ${platformIcon} text-3xl text-slate-700`}></i>
+                  </div>
+                )}
+                {upload?.source_url && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover/thumb:bg-black/30 transition-colors">
+                    <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center opacity-80 group-hover/thumb:opacity-100 transition-opacity">
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z" /></svg>
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          )}
+            )
+            return (
+              <div className="w-full md:w-48 flex-shrink-0 space-y-2">
+                {upload?.source_url ? (
+                  <>
+                    <a href={upload.source_url} target="_blank" rel="noopener noreferrer" className="block" title={`Watch on ${platformName}`}>
+                      {preview}
+                    </a>
+                    <a
+                      href={upload.source_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-1.5 w-full py-2 rounded-lg bg-white/10 hover:bg-white/15 text-xs font-bold text-white transition-colors"
+                    >
+                      <i className={`fab ${platformIcon} text-[11px]`}></i>
+                      Watch on {platformName}
+                      <i className="fas fa-external-link-alt text-[9px] opacity-70"></i>
+                    </a>
+                  </>
+                ) : preview}
+              </div>
+            )
+          })()}
 
           <div className="flex-1 space-y-4">
             {/* Platform + Username */}
