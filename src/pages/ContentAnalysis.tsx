@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import toast from 'react-hot-toast'
 import { useAuth } from '../context/AuthContext'
 import { useUpgrade } from '../context/UpgradeContext'
 import { API_URL } from '../lib/api'
@@ -26,6 +27,17 @@ function formatDate(dateStr: string): string {
     hour: '2-digit',
     minute: '2-digit',
   })
+}
+
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime()
+  const days = Math.floor(diff / 86400000)
+  if (days === 0) return 'Today'
+  if (days === 1) return 'Yesterday'
+  if (days < 30) return `${days}d ago`
+  const months = Math.floor(days / 30)
+  if (months < 12) return `${months}mo ago`
+  return `${Math.floor(months / 12)}y ago`
 }
 
 // === Analysis Steps for Progress Stepper ===
@@ -60,6 +72,7 @@ interface HistoryItem {
   shares: number
   saves: number
   engagement_rate: number
+  published_at: string | null
   status: string
   error_message: string | null
   optimization_score: number | null
@@ -93,6 +106,7 @@ export default function ContentAnalysis() {
   const [historyTotal, setHistoryTotal] = useState(0)
   const [historyOffset, setHistoryOffset] = useState(0)
   const [retryingIds, setRetryingIds] = useState<Set<number>>(new Set())
+  const [refreshingIds, setRefreshingIds] = useState<Set<number>>(new Set())
   const historyLimit = 20
 
   // Video thumbnail for loading screen
@@ -279,6 +293,43 @@ export default function ContentAnalysis() {
       console.error('Retry failed:', err)
     } finally {
       setRetryingIds(prev => {
+        const next = new Set(prev)
+        next.delete(itemId)
+        return next
+      })
+    }
+  }
+
+  const handleRefreshMetrics = async (e: React.MouseEvent, itemId: number) => {
+    e.stopPropagation()
+    if (!session?.access_token) return
+    setRefreshingIds(prev => new Set(prev).add(itemId))
+    try {
+      const resp = await fetch(`${API_URL}/api/content-analysis/${itemId}/refresh-metrics`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      })
+      const data = await resp.json()
+      if (!resp.ok) throw new Error(data.error || 'Refresh failed')
+      setHistory(prev => prev.map(h =>
+        h.id === itemId
+          ? {
+              ...h,
+              views: data.views,
+              likes: data.likes,
+              comments_count: data.comments_count,
+              shares: data.shares,
+              saves: data.saves,
+              engagement_rate: data.engagement_rate,
+              published_at: data.published_at ?? h.published_at,
+            }
+          : h
+      ))
+      toast.success('Metrics updated')
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to refresh metrics')
+    } finally {
+      setRefreshingIds(prev => {
         const next = new Set(prev)
         next.delete(itemId)
         return next
@@ -926,20 +977,48 @@ export default function ContentAnalysis() {
                           <span className="text-[9px] text-slate-600 sm:hidden">{formatDate(item.created_at)}</span>
 
                           {/* Stats row */}
-                          <div className="hidden sm:flex items-center gap-4 text-xs text-slate-500">
-                            {item.views > 0 && (
-                              <span><i className="fas fa-eye mr-1"></i>{formatNumber(item.views)}</span>
-                            )}
-                            {item.likes > 0 && (
-                              <span><i className="fas fa-heart mr-1"></i>{formatNumber(item.likes)}</span>
-                            )}
-                            {item.comments_count > 0 && (
-                              <span><i className="fas fa-comment mr-1"></i>{formatNumber(item.comments_count)}</span>
-                            )}
-                            {item.shares > 0 && (
-                              <span><i className="fas fa-share mr-1"></i>{formatNumber(item.shares)}</span>
-                            )}
-                          </div>
+                          {(item.views > 0 || item.likes > 0 || item.comments_count > 0 || item.shares > 0 || item.engagement_rate > 0 || (item.source_type === 'url' && item.published_at)) && (
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500">
+                              {item.views > 0 && (
+                                <span><i className="fas fa-eye mr-1 opacity-50"></i>{formatNumber(item.views)}</span>
+                              )}
+                              {item.likes > 0 && (
+                                <span><i className="fas fa-heart mr-1 opacity-50"></i>{formatNumber(item.likes)}</span>
+                              )}
+                              {item.comments_count > 0 && (
+                                <span><i className="fas fa-comment mr-1 opacity-50"></i>{formatNumber(item.comments_count)}</span>
+                              )}
+                              {item.shares > 0 && (
+                                <span><i className="fas fa-share mr-1 opacity-50"></i>{formatNumber(item.shares)}</span>
+                              )}
+                              {item.engagement_rate > 0 && (
+                                <span><i className="fas fa-chart-line mr-1 opacity-50"></i>{Number(item.engagement_rate).toFixed(1)}%</span>
+                              )}
+                              {item.source_type === 'url' && item.published_at && (
+                                <span><i className="fas fa-calendar mr-1 opacity-50"></i>Posted {timeAgo(item.published_at)}</span>
+                              )}
+                            </div>
+                          )}
+
+                          {item.source_type === 'upload' && item.views === 0 && item.likes === 0 && (
+                            <div className="text-[9px] font-bold text-slate-700 mt-1">
+                              <i className="fas fa-upload mr-1"></i> Uploaded file — no platform metrics
+                            </div>
+                          )}
+
+                          {item.source_type === 'url' && item.status === 'completed' && (
+                            <button
+                              onClick={(e) => handleRefreshMetrics(e, item.id)}
+                              disabled={refreshingIds.has(item.id)}
+                              className="mt-1 flex items-center gap-1 text-[9px] sm:text-[10px] font-bold text-slate-600 hover:text-slate-400 transition-colors disabled:opacity-40"
+                            >
+                              {refreshingIds.has(item.id) ? (
+                                <><i className="fas fa-spinner fa-spin"></i> Refreshing...</>
+                              ) : (
+                                <><i className="fas fa-rotate-right"></i> Refresh metrics</>
+                              )}
+                            </button>
+                          )}
                         </div>
 
                         {/* Score + Status */}

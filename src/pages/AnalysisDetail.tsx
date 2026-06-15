@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useUpgrade } from '../context/UpgradeContext'
 import { API_URL } from '../lib/api'
@@ -18,10 +18,13 @@ import TabEmotions from '../components/analysis/TabEmotions'
 import TabVirality from '../components/analysis/TabVirality'
 import TabWeaknesses from '../components/analysis/TabWeaknesses'
 import TabComments from '../components/analysis/TabComments'
+import TabChat from '../components/analysis/TabChat'
 import ShareModal from '../components/ShareModal'
 
 export default function AnalysisDetail() {
   const { id } = useParams<{ id: string }>()
+  const [searchParams] = useSearchParams()
+  const tabParam = searchParams.get('tab')
   const { session, planSlug, userType } = useAuth()
   const { openUpgrade } = useUpgrade()
   const navigate = useNavigate()
@@ -60,13 +63,16 @@ export default function AnalysisDetail() {
         // Free-tier responses strip improvements/full/hook — drop into the
         // virality tab (the only one with content) instead of an empty tab.
         setActiveTab(data?.tier_gated ? 'virality' : 'improvements')
+        if (tabParam && ['improvements','hook','structure','tactics','emotions','virality','weaknesses','comments','chat'].includes(tabParam)) {
+          setActiveTab(tabParam)
+        }
       }
     } catch (err) {
       console.error('Failed to fetch result:', err)
     } finally {
       setLoading(false)
     }
-  }, [session?.access_token])
+  }, [session?.access_token, tabParam])
 
   useEffect(() => {
     if (uploadId && session?.access_token) {
@@ -162,6 +168,7 @@ export default function AnalysisDetail() {
         ...(virality ? [{ id: 'virality', label: 'Virality', icon: 'fa-fire' }] : []),
         { id: 'weaknesses', label: 'Weaknesses', icon: 'fa-exclamation-triangle' },
         ...(upload?.platform && upload?.platform_id ? [{ id: 'comments', label: 'Comments', icon: 'fa-comments' }] : []),
+        { id: 'chat', label: 'Chat', icon: 'fa-comment-dots' },
       ]
 
   return (
@@ -388,6 +395,16 @@ export default function AnalysisDetail() {
                   upload={upload}
                   uploadId={uploadId}
                   sessionToken={session.access_token}
+                />
+              )}
+
+              {activeTab === 'chat' && (
+                <TabChat
+                  uploadId={uploadId!}
+                  session={session}
+                  analysisReady={analysisResult?.upload?.status === 'completed'}
+                  planSlug={planSlug ?? null}
+                  userType={userType ?? null}
                 />
               )}
 

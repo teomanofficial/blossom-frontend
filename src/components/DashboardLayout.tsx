@@ -23,6 +23,7 @@ interface NavItem {
 const topItems: NavItem[] = [
   { to: '/dashboard', icon: 'fa-house', label: 'Dashboard', end: true },
   { to: '/dashboard/analyze', icon: 'fa-chart-simple', label: 'Virality Check' },
+  { to: '/dashboard/chats', icon: 'fa-comment-dots', label: 'Chats', upsellTier: 'pro' },
 ]
 
 /* ── Nav item groups matching the sidebar screenshots ── */
@@ -92,6 +93,7 @@ const bottomTabs = [
 
 /* Routes that live in the "More" drawer */
 const drawerRoutes = [
+  '/dashboard/chats',
   '/dashboard/platforms',
   '/dashboard/platforms/posts',
   '/dashboard/hooks',

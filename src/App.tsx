@@ -24,6 +24,7 @@ import TacticDetail from './pages/TacticDetail'
 import Videos from './pages/Videos'
 import ContentAnalysis from './pages/ContentAnalysis'
 import AnalysisDetail from './pages/AnalysisDetail'
+import Chats from './pages/Chats'
 import Influencers from './pages/Influencers'
 import InfluencerDetail from './pages/InfluencerDetail'
 import Discovery from './pages/Discovery'
@@ -220,6 +221,7 @@ function App() {
         <Route path="analyze" element={<ContentAnalysis />} />
         <Route path="analyze/history" element={<Navigate to="/dashboard/analyze" replace />} />
         <Route path="analyze/:id" element={<AnalysisDetail />} />
+        <Route path="chats" element={<Chats />} />
         <Route path="influencers" element={<FeatureGate><Influencers /></FeatureGate>} />
         <Route path="influencers/:id" element={<FeatureGate><InfluencerDetail /></FeatureGate>} />
         <Route path="discovery" element={<AdminGate><Discovery /></AdminGate>} />

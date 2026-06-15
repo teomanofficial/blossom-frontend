@@ -2,6 +2,12 @@ import { useState } from 'react'
 import { API_URL } from '../../lib/api'
 import { scoreColor } from './helpers'
 
+function formatNumber(n: number): string {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M'
+  if (n >= 1_000) return (n / 1_000).toFixed(1).replace(/\.0$/, '') + 'k'
+  return String(Math.round(n))
+}
+
 export interface AnalysisOverviewProps {
   upload: any
   full: any
@@ -135,6 +141,48 @@ export default function AnalysisOverview({
                 </span>
               )}
             </div>
+
+            {upload?.source_type === 'url' && (upload.views > 0 || upload.engagement_rate > 0 || upload.published_at) && (
+              <div className="flex flex-wrap gap-3 mt-3">
+                {upload.views > 0 && (
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 glass-card rounded-xl">
+                    <i className="fas fa-eye text-slate-500 text-xs"></i>
+                    <span className="text-sm font-bold text-white">{formatNumber(upload.views)}</span>
+                    <span className="text-[10px] text-slate-500 uppercase tracking-widest">views</span>
+                  </div>
+                )}
+                {upload.engagement_rate > 0 && (
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 glass-card rounded-xl">
+                    <i className="fas fa-chart-line text-slate-500 text-xs"></i>
+                    <span className="text-sm font-bold text-white">{Number(upload.engagement_rate).toFixed(1)}%</span>
+                    <span className="text-[10px] text-slate-500 uppercase tracking-widest">eng. rate</span>
+                  </div>
+                )}
+                {upload.likes > 0 && (
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 glass-card rounded-xl">
+                    <i className="fas fa-heart text-slate-500 text-xs"></i>
+                    <span className="text-sm font-bold text-white">{formatNumber(upload.likes)}</span>
+                    <span className="text-[10px] text-slate-500 uppercase tracking-widest">likes</span>
+                  </div>
+                )}
+                {upload.comments_count > 0 && (
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 glass-card rounded-xl">
+                    <i className="fas fa-comment text-slate-500 text-xs"></i>
+                    <span className="text-sm font-bold text-white">{formatNumber(upload.comments_count)}</span>
+                    <span className="text-[10px] text-slate-500 uppercase tracking-widest">comments</span>
+                  </div>
+                )}
+                {upload.published_at && (
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 glass-card rounded-xl">
+                    <i className="fas fa-calendar text-slate-500 text-xs"></i>
+                    <span className="text-sm font-bold text-white">
+                      {new Date(upload.published_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </span>
+                    <span className="text-[10px] text-slate-500 uppercase tracking-widest">posted</span>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Editable Title */}
             <div className="group/title">
