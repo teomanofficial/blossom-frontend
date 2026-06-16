@@ -191,6 +191,45 @@ export default function AnalysisDetail() {
           </div>
           <div className="flex items-center gap-2">
             <button
+              onClick={() => {
+                if (!hasCreatorTier) {
+                  openUpgrade('script-studio')
+                  return
+                }
+                if (!uploadId) {
+                  navigate('/dashboard/script-studio')
+                  return
+                }
+                const up = analysisResult?.upload ?? {}
+                // The content-analysis result is a content_uploads row, so we
+                // seed Script Studio from the UPLOAD (not a content_videos id).
+                navigate('/dashboard/script-studio', {
+                  state: {
+                    sourceUploadId: String(uploadId),
+                    sourceVideo: {
+                      handle: up.username ?? null,
+                      // content_uploads.thumbnail_path is stored as a full URL.
+                      thumbnailUrl: up.thumbnail_path ?? null,
+                      title: up.caption ?? null,
+                      platform: up.platform ?? null,
+                      views: up.views ?? null,
+                    },
+                  },
+                })
+              }}
+              className="px-3 sm:px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition-all text-xs sm:text-sm font-bold relative"
+              aria-label={hasCreatorTier ? 'Create a script from this video' : 'Upgrade to Pro to create scripts'}
+              title={hasCreatorTier ? undefined : 'Pro plan required to create scripts'}
+            >
+              <i className={`fas ${hasCreatorTier ? 'fa-wand-magic-sparkles' : 'fa-lock'} sm:mr-2`}></i>
+              <span className="hidden sm:inline">Create script</span>
+              {!hasCreatorTier && (
+                <span className="ml-1 sm:ml-2 px-1.5 py-0.5 bg-gradient-to-r from-pink-500 to-fuchsia-500 rounded text-[8px] font-black text-white uppercase tracking-widest align-middle">
+                  Pro
+                </span>
+              )}
+            </button>
+            <button
               onClick={() => setShowShareModal(true)}
               className="px-3 sm:px-4 py-2 bg-gradient-to-r from-pink-500/20 to-orange-500/20 border border-pink-500/30 rounded-xl text-pink-300 hover:text-white hover:from-pink-500/30 hover:to-orange-500/30 transition-all text-xs sm:text-sm font-bold"
             >

@@ -49,6 +49,7 @@ const insightsItems: NavItem[] = [
 const intelligenceItems: NavItem[] = [
   // AI Suggestions / scripts are a Creator-tier (pro) feature.
   { to: '/dashboard/suggestions', icon: 'fa-scroll', label: 'Scripts', upsellTier: 'pro' },
+  { to: '/dashboard/script-studio', icon: 'fa-wand-magic-sparkles', label: 'Script Studio', upsellTier: 'pro' },
   { to: '/dashboard/formats', icon: 'fa-shapes', label: 'Formats' },
   { to: '/dashboard/hooks', icon: 'fa-comment-dots', label: 'Hooks' },
   { to: '/dashboard/tactics', icon: 'fa-chess', label: 'Tactics' },

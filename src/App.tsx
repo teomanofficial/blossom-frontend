@@ -33,6 +33,8 @@ import DiscoveredItems from './pages/DiscoveredItems'
 import DiscoverySettings from './pages/DiscoverySettings'
 import Suggestions from './pages/Suggestions'
 import SuggestionDetail from './pages/SuggestionDetail'
+import ScriptStudio from './pages/ScriptStudio'
+import Scripts from './pages/Scripts'
 import AccountLayout from './pages/Account'
 import AccountProfile from './pages/AccountProfile'
 import AccountBilling from './pages/AccountBilling'
@@ -82,6 +84,7 @@ import PlatformPostDetail from './pages/PlatformPostDetail'
 import PlatformPostCreate from './pages/PlatformPostCreate'
 import ProtectedRoute from './components/ProtectedRoute'
 import DashboardLayout from './components/DashboardLayout'
+import { hasTier } from './components/upsell/tierUtils'
 import type { ReactNode } from 'react'
 
 /* ── Insights drill-down pages (lazy — keeps the initial chunk thin) ── */
@@ -112,6 +115,23 @@ function FeatureGate({ children }: { children: ReactNode }) {
   const { userType, planSlug, loading } = useAuth()
   if (loading) return null
   const hasAccess = userType === 'admin' || planSlug === 'premium' || planSlug === 'platin'
+  if (!hasAccess) return <Navigate to="/dashboard" replace />
+  return <>{children}</>
+}
+
+/**
+ * Gate for Creator-tier (pro) features like Script Studio. Free and any
+ * sub-pro users are redirected to the dashboard — they only ever see the
+ * nav upsell badge. Admins/VIPs are treated as top-tier. The backend
+ * independently enforces this (403 plan_required) and the in-page CTAs
+ * open the upgrade overlay as defense in depth.
+ */
+function ProGate({ children }: { children: ReactNode }) {
+  const { userType, planSlug, loading } = useAuth()
+  if (loading) return null
+  const effectiveSlug =
+    userType === 'admin' || userType === 'vip' ? 'platin' : planSlug ?? 'free'
+  const hasAccess = userType === 'admin' || hasTier(effectiveSlug, 'pro')
   if (!hasAccess) return <Navigate to="/dashboard" replace />
   return <>{children}</>
 }
@@ -242,6 +262,9 @@ function App() {
         <Route path="trending" element={<Navigate to="/dashboard/trends" replace />} />
         <Route path="suggestions" element={<Suggestions />} />
         <Route path="suggestions/:id" element={<SuggestionDetail />} />
+        <Route path="script-studio" element={<ProGate><ScriptStudio /></ProGate>} />
+        <Route path="script-studio/:id" element={<ProGate><ScriptStudio /></ProGate>} />
+        <Route path="scripts" element={<ProGate><Scripts /></ProGate>} />
         <Route path="settings" element={<Navigate to="/dashboard/account/billing" replace />} />
         <Route path="account" element={<AccountLayout />}>
           <Route index element={<AccountProfile />} />
