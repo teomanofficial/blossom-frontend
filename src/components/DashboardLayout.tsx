@@ -8,6 +8,7 @@ import SearchOverlay from './SearchOverlay'
 import MobileDrawer from './MobileDrawer'
 import UpsellBadge from './upsell/UpsellBadge'
 import { hasTier } from './upsell/tierUtils'
+import { MENTOR_LABEL } from '../lib/mentor'
 
 type UpsellTier = 'pro' | 'premium' | 'platin'
 interface NavItem {
@@ -23,7 +24,7 @@ interface NavItem {
 const topItems: NavItem[] = [
   { to: '/dashboard', icon: 'fa-house', label: 'Dashboard', end: true },
   { to: '/dashboard/analyze', icon: 'fa-chart-simple', label: 'Virality Check' },
-  { to: '/dashboard/chats', icon: 'fa-comment-dots', label: 'Chats', upsellTier: 'pro' },
+  { to: '/dashboard/mentor', icon: 'fa-seedling', label: MENTOR_LABEL },
 ]
 
 /* ── Nav item groups matching the sidebar screenshots ── */
@@ -93,7 +94,7 @@ const bottomTabs = [
 
 /* Routes that live in the "More" drawer */
 const drawerRoutes = [
-  '/dashboard/chats',
+  '/dashboard/mentor',
   '/dashboard/platforms',
   '/dashboard/platforms/posts',
   '/dashboard/hooks',

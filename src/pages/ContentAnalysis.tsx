@@ -4,6 +4,7 @@ import toast from 'react-hot-toast'
 import { useAuth } from '../context/AuthContext'
 import { useUpgrade } from '../context/UpgradeContext'
 import { API_URL } from '../lib/api'
+import { engagementRatePct } from '../lib/engagement'
 
 // === Helper Functions ===
 
@@ -977,7 +978,7 @@ export default function ContentAnalysis() {
                           <span className="text-[9px] text-slate-600 sm:hidden">{formatDate(item.created_at)}</span>
 
                           {/* Stats row */}
-                          {(item.views > 0 || item.likes > 0 || item.comments_count > 0 || item.shares > 0 || item.engagement_rate > 0 || (item.source_type === 'url' && item.published_at)) && (
+                          {(item.views > 0 || item.likes > 0 || item.comments_count > 0 || item.shares > 0 || (engagementRatePct(item) ?? 0) > 0 || (item.source_type === 'url' && item.published_at)) && (
                             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500">
                               {item.views > 0 && (
                                 <span><i className="fas fa-eye mr-1 opacity-50"></i>{formatNumber(item.views)}</span>
@@ -991,9 +992,12 @@ export default function ContentAnalysis() {
                               {item.shares > 0 && (
                                 <span><i className="fas fa-share mr-1 opacity-50"></i>{formatNumber(item.shares)}</span>
                               )}
-                              {item.engagement_rate > 0 && (
-                                <span><i className="fas fa-chart-line mr-1 opacity-50"></i>{Number(item.engagement_rate).toFixed(1)}%</span>
-                              )}
+                              {(() => {
+                                const er = engagementRatePct(item)
+                                return er != null && er > 0 ? (
+                                  <span><i className="fas fa-chart-line mr-1 opacity-50"></i>{er.toFixed(1)}%</span>
+                                ) : null
+                              })()}
                               {item.source_type === 'url' && item.published_at && (
                                 <span><i className="fas fa-calendar mr-1 opacity-50"></i>Posted {timeAgo(item.published_at)}</span>
                               )}

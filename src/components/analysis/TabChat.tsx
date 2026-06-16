@@ -2,6 +2,19 @@ import { useEffect, useMemo, useRef, useState, type JSX } from 'react'
 import { Link } from 'react-router-dom'
 import { API_URL } from '../../lib/api'
 import { hasTier } from '../upsell'
+import { MENTOR_LABEL } from '../../lib/mentor'
+
+/** Gradient mentor avatar dot, aligned to model bubbles. */
+function MentorAvatar({ size = 'sm' }: { size?: 'sm' | 'lg' }) {
+  const dim = size === 'lg' ? 'w-12 h-12 text-lg' : 'w-7 h-7 text-xs'
+  return (
+    <div
+      className={`${dim} shrink-0 rounded-full bg-gradient-to-br from-pink-500 to-orange-400 flex items-center justify-center shadow-lg shadow-pink-500/25`}
+    >
+      <i className="fa-solid fa-seedling text-white" />
+    </div>
+  )
+}
 
 export interface TabChatProps {
   uploadId: number
@@ -107,15 +120,15 @@ function renderMarkdown(text: string): JSX.Element {
   let i = 0
   let key = 0
   while (i < lines.length) {
-    const line = lines[i]
+    const line = lines[i] ?? ''
     const numMatch = /^\s*\d+\.\s+(.*)$/.exec(line)
     const bulMatch = /^\s*[-•]\s+(.*)$/.exec(line)
     if (numMatch) {
       const items: string[] = []
       while (i < lines.length) {
-        const m = /^\s*\d+\.\s+(.*)$/.exec(lines[i])
+        const m = /^\s*\d+\.\s+(.*)$/.exec(lines[i] ?? '')
         if (!m) break
-        items.push(m[1])
+        items.push(m[1] ?? '')
         i++
       }
       blocks.push(
@@ -130,9 +143,9 @@ function renderMarkdown(text: string): JSX.Element {
     if (bulMatch) {
       const items: string[] = []
       while (i < lines.length) {
-        const m = /^\s*[-•]\s+(.*)$/.exec(lines[i])
+        const m = /^\s*[-•]\s+(.*)$/.exec(lines[i] ?? '')
         if (!m) break
-        items.push(m[1])
+        items.push(m[1] ?? '')
         i++
       }
       blocks.push(
@@ -169,6 +182,8 @@ export default function TabChat({ uploadId, session, analysisReady, planSlug, us
   const [contextLoading, setContextLoading] = useState(false)
   const [threadId, setThreadId] = useState<number | null>(null)
   const [historyLoading, setHistoryLoading] = useState(false)
+  const [confirmingNew, setConfirmingNew] = useState(false)
+  const [resetting, setResetting] = useState(false)
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
@@ -300,9 +315,9 @@ export default function TabChat({ uploadId, session, analysisReady, planSlug, us
         <div className="w-12 h-12 mx-auto mb-4 bg-white/5 rounded-2xl flex items-center justify-center">
           <i className="fas fa-comment-dots text-pink-400 text-lg" />
         </div>
-        <h3 className="text-lg sm:text-xl font-black tracking-tight mb-2">Chat with your analysis</h3>
+        <h3 className="text-lg sm:text-xl font-black tracking-tight mb-2">Your analysis {MENTOR_LABEL}</h3>
         <p className="text-sm text-slate-400 font-medium mb-5 max-w-md mx-auto">
-          Analysis Chat is available on the Creator plan and above.
+          The analysis {MENTOR_LABEL} is available on the Creator plan and above.
         </p>
         <Link
           to="/pricing"
@@ -324,7 +339,7 @@ export default function TabChat({ uploadId, session, analysisReady, planSlug, us
         </div>
         <h3 className="text-lg sm:text-xl font-black tracking-tight mb-2">Almost there</h3>
         <p className="text-sm text-slate-400 font-medium max-w-md mx-auto">
-          Analysis must complete before you can chat.
+          Analysis must complete before your {MENTOR_LABEL} can weigh in.
         </p>
       </div>
     )
@@ -361,7 +376,7 @@ export default function TabChat({ uploadId, session, analysisReady, planSlug, us
 
       if (!resp.ok) {
         if (resp.status === 429) throw new Error('Too many messages. Please wait before sending more.')
-        if (resp.status === 403) throw new Error('Analysis Chat is available on the Creator plan and above.')
+        if (resp.status === 403) throw new Error(`The analysis ${MENTOR_LABEL} is available on the Creator plan and above.`)
         throw new Error(`Chat failed (${resp.status}). Please try again.`)
       }
       if (!resp.body) throw new Error('No response stream received.')
@@ -456,6 +471,34 @@ export default function TabChat({ uploadId, session, analysisReady, planSlug, us
     sendMessage(inputValue)
   }
 
+  const hasHistory = messages.length > 1
+
+  // Start a fresh conversation for this video: delete the persisted thread (if
+  // any) and reset local state back to the greeting + suggestions.
+  async function handleNewConversation() {
+    if (isStreaming || resetting) return
+    abortRef.current?.abort()
+    setResetting(true)
+    setError(null)
+    try {
+      if (threadId) {
+        const resp = await fetch(`${API_URL}/api/analysis-chat/threads/${threadId}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${session?.access_token}` },
+        })
+        if (!resp.ok) throw new Error(`Couldn't start a new conversation (${resp.status}).`)
+      }
+      setThreadId(null)
+      setMessages([INITIAL_GREETING])
+      setInputValue('')
+      setConfirmingNew(false)
+    } catch (err: any) {
+      setError(err?.message || 'Something went wrong.')
+    } finally {
+      setResetting(false)
+    }
+  }
+
   const pills: { label: string; icon?: string }[] = contextData
     ? [
         { label: contextData.formatClass ? `Format: ${contextData.formatClass}` : 'Format: Unknown format' },
@@ -480,135 +523,186 @@ export default function TabChat({ uploadId, session, analysisReady, planSlug, us
       className="flex flex-col rounded-2xl border border-white/10 bg-slate-950/60 backdrop-blur-xl overflow-hidden"
       style={{ height: 'calc(100vh - 280px)', minHeight: 500 }}
     >
-      {/* Zone 1 — Context pill bar */}
-      <div className="flex-shrink-0 h-12 border-b border-white/[0.06] flex items-center px-3 sm:px-4 overflow-x-auto scrollbar-hide">
-        {contextLoading ? (
-          <div className="flex gap-2">
-            {[0, 1, 2, 3].map((k) => (
-              <div key={k} className="h-6 w-24 rounded-full bg-white/5 animate-pulse" />
-            ))}
-          </div>
-        ) : (
-          <>
-            {/* Mobile collapsed pill */}
-            <div className="md:hidden">
-              <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold text-slate-300 whitespace-nowrap">
-                {mobilePillText}
-              </span>
-            </div>
-            {/* Desktop pills */}
-            <div className="hidden md:flex gap-2 min-w-max">
-              {pills.map((p, idx) => (
-                <span
-                  key={idx}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold text-slate-300 whitespace-nowrap uppercase tracking-wider"
-                >
-                  {p.icon && <i className={`${p.icon} text-[10px]`} />}
-                  {p.label}
-                </span>
+      {/* Zone 1 — Context pill bar + New conversation control */}
+      <div className="flex-shrink-0 h-12 border-b border-white/[0.06] flex items-center gap-3 px-3 sm:px-4">
+        <div className="flex-1 min-w-0 flex items-center overflow-x-auto scrollbar-hide">
+          {contextLoading ? (
+            <div className="flex gap-2">
+              {[0, 1, 2, 3].map((k) => (
+                <div key={k} className="h-6 w-24 rounded-full bg-white/5 animate-pulse" />
               ))}
             </div>
-          </>
-        )}
+          ) : (
+            <>
+              {/* Mobile collapsed pill */}
+              <div className="md:hidden">
+                <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold text-slate-300 whitespace-nowrap">
+                  {mobilePillText}
+                </span>
+              </div>
+              {/* Desktop pills */}
+              <div className="hidden md:flex gap-2 min-w-max">
+                {pills.map((p, idx) => (
+                  <span
+                    key={idx}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold text-slate-300 whitespace-nowrap uppercase tracking-wider"
+                  >
+                    {p.icon && <i className={`${p.icon} text-[10px]`} />}
+                    {p.label}
+                  </span>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* New conversation — inline-confirm when there is existing history */}
+        <div className="shrink-0">
+          {confirmingNew ? (
+            <div className="flex items-center gap-1.5">
+              <span className="hidden sm:inline text-[10px] text-slate-400 font-bold">Start over?</span>
+              <button
+                type="button"
+                onClick={handleNewConversation}
+                disabled={resetting}
+                aria-label="Confirm new conversation"
+                className="h-7 px-2.5 rounded-lg bg-red-500/90 text-white text-[11px] font-black flex items-center gap-1 hover:bg-red-500 disabled:opacity-50"
+              >
+                <i className={`fas ${resetting ? 'fa-spinner fa-spin' : 'fa-check'} text-[10px]`} />
+                Yes
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmingNew(false)}
+                disabled={resetting}
+                aria-label="Cancel"
+                className="h-7 w-7 rounded-lg bg-white/10 text-slate-300 flex items-center justify-center hover:bg-white/20"
+              >
+                <i className="fas fa-xmark text-[11px]" />
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => (hasHistory ? setConfirmingNew(true) : handleNewConversation())}
+              disabled={isStreaming || resetting}
+              title="New conversation"
+              aria-label="New conversation"
+              className="h-8 px-3 rounded-xl bg-white/[0.05] border border-white/10 text-slate-300 text-[11px] font-black uppercase tracking-widest flex items-center gap-1.5 hover:text-white hover:bg-white/[0.1] hover:border-pink-500/30 transition-all disabled:opacity-40"
+            >
+              <i className="fa-solid fa-rotate-right text-[11px]" />
+              <span className="hidden sm:inline">New</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Zone 2 — Message list */}
       <div
         role="log"
         aria-live="polite"
-        className="flex-1 min-h-0 overflow-y-auto px-3 sm:px-6 py-4 space-y-3"
+        className="flex-1 min-h-0 overflow-y-auto px-3 sm:px-6 py-5 dashboard-scrollbar"
       >
-        {historyLoading && (
-          <div className="space-y-2 mb-4">
-            <div className="h-3 w-2/3 rounded bg-white/5 animate-pulse" />
-            <div className="h-3 w-1/2 rounded bg-white/5 animate-pulse" />
-            <div className="h-3 w-3/4 rounded bg-white/5 animate-pulse" />
-          </div>
-        )}
-        {messages.map((m, idx) => {
-          const isUser = m.role === 'user'
-          const isLast = idx === messages.length - 1
-          const showTypingDots = isLast && isStreaming && m.role === 'model' && m.content === ''
-          const showCursor = isLast && isStreaming && m.role === 'model' && m.content !== ''
-          return (
-            <div key={m.id} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
-              <div
-                className={
-                  isUser
-                    ? 'max-w-[80%] rounded-2xl rounded-br-md px-4 py-2.5 bg-gradient-to-br from-pink-500 to-orange-400 text-white text-sm font-medium shadow-lg shadow-pink-500/20'
-                    : 'max-w-[90%] rounded-2xl rounded-bl-md px-4 py-2.5 bg-white/[0.04] border border-white/[0.06] text-slate-100 text-sm'
-                }
-              >
-                {showTypingDots ? (
-                  <div className="flex items-center gap-1 py-1" aria-label="AI is typing">
-                    <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                  </div>
-                ) : isUser ? (
-                  <div className="whitespace-pre-wrap">{m.content}</div>
-                ) : (
-                  <div>
-                    {renderMarkdown(m.content)}
-                    {showCursor && <span className="inline-block w-1.5 h-4 align-middle bg-pink-400 ml-0.5 animate-pulse" />}
+        <div className="mx-auto w-full max-w-[720px] space-y-4">
+          {historyLoading && (
+            <div className="space-y-2 mb-4">
+              <div className="h-3 w-2/3 rounded bg-white/5 animate-pulse" />
+              <div className="h-3 w-1/2 rounded bg-white/5 animate-pulse" />
+              <div className="h-3 w-3/4 rounded bg-white/5 animate-pulse" />
+            </div>
+          )}
+          {messages.map((m, idx) => {
+            const isUser = m.role === 'user'
+            const isLast = idx === messages.length - 1
+            const showTypingDots = isLast && isStreaming && m.role === 'model' && m.content === ''
+            const showCursor = isLast && isStreaming && m.role === 'model' && m.content !== ''
+            return (
+              <div key={m.id} className={`flex gap-2.5 ${isUser ? 'justify-end' : 'justify-start'}`}>
+                {!isUser && (
+                  <div className="mt-0.5">
+                    <MentorAvatar />
                   </div>
                 )}
+                <div
+                  className={
+                    isUser
+                      ? 'max-w-[82%] rounded-3xl rounded-br-md px-4 py-2.5 bg-gradient-to-br from-pink-500 to-orange-400 text-white text-[15px] font-medium leading-relaxed shadow-lg shadow-pink-500/20'
+                      : 'max-w-[88%] rounded-3xl rounded-tl-md px-4 py-3 bg-white/[0.05] border border-white/[0.08] text-slate-100 text-[15px] leading-relaxed'
+                  }
+                >
+                  {showTypingDots ? (
+                    <div className="flex items-center gap-1 py-1" aria-label="Mentor is thinking">
+                      <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                    </div>
+                  ) : isUser ? (
+                    <div className="whitespace-pre-wrap">{m.content}</div>
+                  ) : (
+                    <div>
+                      {renderMarkdown(m.content)}
+                      {showCursor && <span className="inline-block w-1.5 h-4 align-middle bg-pink-400 ml-0.5 animate-pulse" />}
+                    </div>
+                  )}
+                </div>
               </div>
+            )
+          })}
+
+          {/* Suggestion chips after initial greeting */}
+          {messages.length === 1 && !isStreaming && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-2">
+              {SUGGESTED_QUESTIONS.map((q) => (
+                <button
+                  key={q}
+                  onClick={() => sendMessage(q)}
+                  className="text-left px-4 py-3 rounded-2xl bg-white/[0.03] border border-white/10 text-[13px] font-semibold text-slate-300 hover:text-white hover:bg-white/[0.07] hover:border-pink-500/30 hover:-translate-y-0.5 transition-all"
+                >
+                  {q}
+                </button>
+              ))}
             </div>
-          )
-        })}
+          )}
 
-        {/* Suggestion chips after initial greeting */}
-        {messages.length === 1 && !isStreaming && (
-          <div className="flex flex-wrap gap-2 mt-3">
-            {SUGGESTED_QUESTIONS.map((q) => (
-              <button
-                key={q}
-                onClick={() => sendMessage(q)}
-                className="px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/10 text-xs font-bold text-slate-300 hover:text-white hover:bg-white/[0.08] hover:border-pink-500/30 transition-all"
-              >
-                {q}
-              </button>
-            ))}
-          </div>
-        )}
-
-        <div ref={messagesEndRef} />
+          <div ref={messagesEndRef} />
+        </div>
       </div>
 
-      {/* Zone 3 — Input bar */}
-      <div className="flex-shrink-0 border-t border-white/[0.06] px-3 sm:px-4 py-3 bg-slate-950/80">
-        <div className="flex items-end gap-2">
-          <textarea
-            ref={textareaRef}
-            aria-label="Chat message"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Ask about tactics, scores, cross-niche ideas..."
-            rows={1}
-            disabled={isStreaming}
-            className="flex-1 resize-none rounded-xl bg-white/[0.04] border border-white/10 px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-pink-500/40 disabled:opacity-50 leading-5"
-            style={{ maxHeight: 76 }}
-          />
-          <button
-            type="button"
-            aria-label="Send message"
-            onClick={() => sendMessage(inputValue)}
-            disabled={isStreaming || inputValue.trim() === ''}
-            className="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-pink-500 to-orange-400 text-white flex items-center justify-center shadow-lg shadow-pink-500/20 transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none disabled:from-slate-700 disabled:to-slate-700"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="19" x2="12" y2="5" />
-              <polyline points="5 12 12 5 19 12" />
-            </svg>
-          </button>
-        </div>
-        <div className="mt-1.5 min-h-[16px] flex items-center justify-between">
-          <span className="text-[10px] text-slate-500">
-            {isStreaming && !isLastEmptyStreaming ? 'AI is typing...' : isLastEmptyStreaming ? 'AI is thinking...' : ''}
-          </span>
-          {error && <span className="text-[11px] text-red-400 font-bold">{error}</span>}
+      {/* Zone 3 — Composer */}
+      <div className="flex-shrink-0 border-t border-white/[0.06] px-3 sm:px-5 py-3.5 bg-slate-950/80">
+        <div className="mx-auto w-full max-w-[720px]">
+          <div className="flex items-end gap-2.5">
+            <textarea
+              ref={textareaRef}
+              aria-label="Message your mentor"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Ask about tactics, scores, cross-niche ideas..."
+              rows={1}
+              disabled={isStreaming}
+              className="flex-1 resize-none rounded-2xl bg-white/[0.04] border border-white/10 px-4 py-3 text-[15px] text-white placeholder:text-slate-500 focus:outline-none focus:border-pink-500/40 focus:shadow-[0_0_0_4px_rgba(244,114,182,0.08)] disabled:opacity-50 leading-[22px] transition-shadow"
+              style={{ maxHeight: 84 }}
+            />
+            <button
+              type="button"
+              aria-label="Send message"
+              onClick={() => sendMessage(inputValue)}
+              disabled={isStreaming || inputValue.trim() === ''}
+              className="flex-shrink-0 w-11 h-11 rounded-2xl bg-gradient-to-br from-pink-500 to-orange-400 text-white flex items-center justify-center shadow-lg shadow-pink-500/20 transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none disabled:from-slate-700 disabled:to-slate-700"
+            >
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="19" x2="12" y2="5" />
+                <polyline points="5 12 12 5 19 12" />
+              </svg>
+            </button>
+          </div>
+          <div className="mt-1.5 min-h-[16px] flex items-center justify-between">
+            <span className="text-[10px] text-slate-500">
+              {isStreaming && !isLastEmptyStreaming ? 'Mentor is replying…' : isLastEmptyStreaming ? 'Mentor is thinking…' : ''}
+            </span>
+            {error && <span className="text-[11px] text-red-400 font-bold">{error}</span>}
+          </div>
         </div>
       </div>
     </div>

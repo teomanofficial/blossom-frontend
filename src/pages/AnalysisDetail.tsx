@@ -20,6 +20,7 @@ import TabWeaknesses from '../components/analysis/TabWeaknesses'
 import TabComments from '../components/analysis/TabComments'
 import TabChat from '../components/analysis/TabChat'
 import ShareModal from '../components/ShareModal'
+import { MENTOR_LABEL } from '../lib/mentor'
 
 export default function AnalysisDetail() {
   const { id } = useParams<{ id: string }>()
@@ -168,7 +169,7 @@ export default function AnalysisDetail() {
         ...(virality ? [{ id: 'virality', label: 'Virality', icon: 'fa-fire' }] : []),
         { id: 'weaknesses', label: 'Weaknesses', icon: 'fa-exclamation-triangle' },
         ...(upload?.platform && upload?.platform_id ? [{ id: 'comments', label: 'Comments', icon: 'fa-comments' }] : []),
-        { id: 'chat', label: 'Chat', icon: 'fa-comment-dots' },
+        { id: 'chat', label: MENTOR_LABEL, icon: 'fa-seedling' },
       ]
 
   return (

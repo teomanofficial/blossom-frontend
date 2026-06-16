@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { API_URL } from '../../lib/api'
+import { engagementRatePct } from '../../lib/engagement'
 import { scoreColor } from './helpers'
 
 function formatNumber(n: number): string {
@@ -142,7 +143,7 @@ export default function AnalysisOverview({
               )}
             </div>
 
-            {upload?.source_type === 'url' && (upload.views > 0 || upload.engagement_rate > 0 || upload.published_at) && (
+            {upload?.source_type === 'url' && (upload.views > 0 || (engagementRatePct(upload) ?? 0) > 0 || upload.published_at) && (
               <div className="flex flex-wrap gap-3 mt-3">
                 {upload.views > 0 && (
                   <div className="flex items-center gap-1.5 px-3 py-1.5 glass-card rounded-xl">
@@ -151,13 +152,16 @@ export default function AnalysisOverview({
                     <span className="text-[10px] text-slate-500 uppercase tracking-widest">views</span>
                   </div>
                 )}
-                {upload.engagement_rate > 0 && (
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 glass-card rounded-xl">
-                    <i className="fas fa-chart-line text-slate-500 text-xs"></i>
-                    <span className="text-sm font-bold text-white">{Number(upload.engagement_rate).toFixed(1)}%</span>
-                    <span className="text-[10px] text-slate-500 uppercase tracking-widest">eng. rate</span>
-                  </div>
-                )}
+                {(() => {
+                  const er = engagementRatePct(upload)
+                  return er != null && er > 0 ? (
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 glass-card rounded-xl">
+                      <i className="fas fa-chart-line text-slate-500 text-xs"></i>
+                      <span className="text-sm font-bold text-white">{er.toFixed(1)}%</span>
+                      <span className="text-[10px] text-slate-500 uppercase tracking-widest">eng. rate</span>
+                    </div>
+                  ) : null
+                })()}
                 {upload.likes > 0 && (
                   <div className="flex items-center gap-1.5 px-3 py-1.5 glass-card rounded-xl">
                     <i className="fas fa-heart text-slate-500 text-xs"></i>

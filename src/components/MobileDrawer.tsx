@@ -4,6 +4,7 @@ import { useImpersonation } from '../context/ImpersonationContext'
 import { useRef, useState, useCallback, useEffect } from 'react'
 import UpsellBadge from './upsell/UpsellBadge'
 import { hasTier } from './upsell/tierUtils'
+import { MENTOR_LABEL } from '../lib/mentor'
 
 interface MobileDrawerProps {
   open: boolean
@@ -58,6 +59,7 @@ const intelligenceItems: DrawerItem[] = [
 ]
 
 const accountItems: DrawerItem[] = [
+  { to: '/dashboard/mentor', icon: 'fa-seedling', label: MENTOR_LABEL, color: 'text-orange-400', bg: 'bg-orange-500/10' },
   { to: '/dashboard/support', icon: 'fa-headset', label: 'Support', color: 'text-blue-400', bg: 'bg-blue-500/10', hasBadge: true },
   { to: '/dashboard/account', icon: 'fa-gear', label: 'Account Settings', color: 'text-slate-300', bg: 'bg-white/5' },
 ]
