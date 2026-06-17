@@ -15,6 +15,7 @@ import TabHook from '../components/analysis/TabHook'
 import TabStructure from '../components/analysis/TabStructure'
 import TabTactics from '../components/analysis/TabTactics'
 import TabEmotions from '../components/analysis/TabEmotions'
+import TabScript from '../components/analysis/TabScript'
 import TabVirality from '../components/analysis/TabVirality'
 import TabWeaknesses from '../components/analysis/TabWeaknesses'
 import TabComments from '../components/analysis/TabComments'
@@ -64,7 +65,7 @@ export default function AnalysisDetail() {
         // Free-tier responses strip improvements/full/hook — drop into the
         // virality tab (the only one with content) instead of an empty tab.
         setActiveTab(data?.tier_gated ? 'virality' : 'improvements')
-        if (tabParam && ['improvements','hook','structure','tactics','emotions','virality','weaknesses','comments','chat'].includes(tabParam)) {
+        if (tabParam && ['improvements','hook','structure','script','tactics','emotions','virality','weaknesses','comments','chat'].includes(tabParam)) {
           setActiveTab(tabParam)
         }
       }
@@ -164,6 +165,7 @@ export default function AnalysisDetail() {
         ...(improv ? [{ id: 'improvements', label: 'Improvements', icon: 'fa-rocket' }] : []),
         { id: 'hook', label: 'Hook', icon: 'fa-magnet' },
         { id: 'structure', label: 'Structure', icon: 'fa-layer-group' },
+        { id: 'script', label: 'Script', icon: 'fa-quote-left' },
         { id: 'tactics', label: 'Tactics', icon: 'fa-chess' },
         { id: 'emotions', label: 'Emotions', icon: 'fa-heart' },
         ...(virality ? [{ id: 'virality', label: 'Virality', icon: 'fa-fire' }] : []),
@@ -416,6 +418,10 @@ export default function AnalysisDetail() {
                   showDetail={hasCreatorTier}
                   onOpenUpgrade={openUpgrade}
                 />
+              )}
+
+              {activeTab === 'script' && (
+                <TabScript full={full} />
               )}
 
               {activeTab === 'emotions' && (

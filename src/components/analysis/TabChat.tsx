@@ -291,14 +291,31 @@ export default function TabChat({ uploadId, session, analysisReady, planSlug, us
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  // Auto-resize textarea up to 3 lines
+  // Auto-grow the composer with content, capping at 5 lines and only then
+  // showing a scrollbar — matches the standalone mentor (CoachChatPanel).
   useEffect(() => {
     const el = textareaRef.current
     if (!el) return
+    // Reset so scrollHeight reflects current content, and hide the scrollbar
+    // while measuring/growing so it never flashes.
     el.style.height = 'auto'
-    const lineHeight = 20
-    const maxHeight = lineHeight * 3 + 16
-    el.style.height = Math.min(el.scrollHeight, maxHeight) + 'px'
+    el.style.overflowY = 'hidden'
+    const cs = getComputedStyle(el)
+    const borderY = parseFloat(cs.borderTopWidth) + parseFloat(cs.borderBottomWidth)
+    const lineHeight = 22
+    const maxLines = 5
+    const paddingY = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom)
+    const maxHeight = lineHeight * maxLines + paddingY + borderY
+    // scrollHeight = content + padding (no border). For border-box we must add
+    // the border so the content fits exactly with no spurious overflow.
+    const fullHeight = el.scrollHeight + borderY
+    if (fullHeight > maxHeight) {
+      el.style.height = maxHeight + 'px'
+      el.style.overflowY = 'auto'   // only now is scrolling allowed
+    } else {
+      el.style.height = fullHeight + 'px'
+      // overflowY stays 'hidden'
+    }
   }, [inputValue])
 
   // Cleanup any in-flight stream on unmount
@@ -681,8 +698,7 @@ export default function TabChat({ uploadId, session, analysisReady, planSlug, us
               placeholder="Ask about tactics, scores, cross-niche ideas..."
               rows={1}
               disabled={isStreaming}
-              className="flex-1 resize-none rounded-2xl bg-white/[0.04] border border-white/10 px-4 py-3 text-[15px] text-white placeholder:text-slate-500 focus:outline-none focus:border-pink-500/40 focus:shadow-[0_0_0_4px_rgba(244,114,182,0.08)] disabled:opacity-50 leading-[22px] transition-shadow"
-              style={{ maxHeight: 84 }}
+              className="flex-1 resize-none overflow-hidden rounded-2xl bg-white/[0.04] border border-white/10 px-4 py-3 text-[15px] text-white placeholder:text-slate-500 focus:outline-none focus:border-pink-500/40 focus:shadow-[0_0_0_4px_rgba(244,114,182,0.08)] disabled:opacity-50 leading-[22px] transition-shadow"
             />
             <button
               type="button"
