@@ -1,8 +1,16 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { authFetch } from '../lib/api'
-import type { BusinessProfile, InspirationItem } from '../types/business'
+import { getStorageUrl } from '../lib/media'
+import type {
+  BusinessProfile,
+  InspirationFilters,
+  InspirationItem,
+  InspirationSort,
+} from '../types/business'
+
+const PAGE = 30
 
 function formatCount(n: number | null): string {
   if (n == null) return ''
@@ -11,43 +19,131 @@ function formatCount(n: number | null): string {
   return String(n)
 }
 
+const SORTS: { key: InspirationSort; label: string }[] = [
+  { key: 'top', label: 'Top outliers' },
+  { key: 'views', label: 'Most viewed' },
+  { key: 'recent', label: 'Newest' },
+  { key: 'shuffle', label: 'Surprise me' },
+]
+
 export default function Inspiration() {
   const navigate = useNavigate()
   const [profiles, setProfiles] = useState<BusinessProfile[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
   const [items, setItems] = useState<InspirationItem[]>([])
+  const [filters, setFilters] = useState<InspirationFilters>({ formats: [], platforms: [] })
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(true)
   const [adaptingId, setAdaptingId] = useState<number | null>(null)
 
-  const load = useCallback(async () => {
+  // Filter state
+  const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [platform, setPlatform] = useState<string>('')
+  const [format, setFormat] = useState<string>('')
+  const [sort, setSort] = useState<InspirationSort>('top')
+  const [seed, setSeed] = useState(() => Math.random().toString(36).slice(2, 8))
+
+  // Debounce search input.
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search.trim()), 350)
+    return () => clearTimeout(t)
+  }, [search])
+
+  const buildQuery = useCallback(
+    (offset: number) => {
+      const p = new URLSearchParams()
+      p.set('limit', String(PAGE))
+      p.set('offset', String(offset))
+      p.set('sort', sort)
+      if (sort === 'shuffle') p.set('seed', seed)
+      if (platform) p.set('platform', platform)
+      if (format) p.set('format', format)
+      if (debouncedSearch) p.set('search', debouncedSearch)
+      return p.toString()
+    },
+    [sort, seed, platform, format, debouncedSearch]
+  )
+
+  // Load profiles + filter options once.
+  useEffect(() => {
+    ;(async () => {
+      try {
+        const [pRes, fRes] = await Promise.all([
+          authFetch('/api/business-profiles'),
+          authFetch('/api/business-profiles/inspiration/filters'),
+        ])
+        if (pRes.ok) {
+          const pData = await pRes.json()
+          const ready: BusinessProfile[] = (pData.profiles || []).filter(
+            (p: BusinessProfile) => p.status === 'ready'
+          )
+          setProfiles(ready)
+          const active = ready.find((p) => p.is_active) || ready[0]
+          setActiveId(active?.id ?? null)
+        }
+        if (fRes.ok) setFilters(await fRes.json())
+      } catch {
+        /* non-fatal */
+      }
+    })()
+  }, [])
+
+  // (Re)load the feed whenever filters change.
+  const loadFeed = useCallback(async () => {
+    setLoading(true)
     try {
-      const [pRes, fRes] = await Promise.all([
-        authFetch('/api/business-profiles'),
-        authFetch('/api/business-profiles/inspiration?limit=36'),
-      ])
-      if (pRes.ok) {
-        const pData = await pRes.json()
-        const ready: BusinessProfile[] = (pData.profiles || []).filter(
-          (p: BusinessProfile) => p.status === 'ready'
-        )
-        setProfiles(ready)
-        const active = ready.find((p) => p.is_active) || ready[0]
-        setActiveId(active?.id ?? null)
-      }
-      if (fRes.ok) {
-        const fData = await fRes.json()
-        setItems(fData.items || [])
-      }
+      const res = await authFetch(`/api/business-profiles/inspiration?${buildQuery(0)}`)
+      if (!res.ok) throw new Error('feed_failed')
+      const data = await res.json()
+      const next: InspirationItem[] = data.items || []
+      setItems(next)
+      setHasMore(next.length >= PAGE)
     } catch {
       toast.error('Could not load inspiration')
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [buildQuery])
 
   useEffect(() => {
-    load()
-  }, [load])
+    loadFeed()
+  }, [loadFeed])
+
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasMore) return
+    setLoadingMore(true)
+    try {
+      const res = await authFetch(`/api/business-profiles/inspiration?${buildQuery(items.length)}`)
+      if (res.ok) {
+        const data = await res.json()
+        const next: InspirationItem[] = data.items || []
+        setItems((prev) => {
+          const seen = new Set(prev.map((p) => p.video_id))
+          return [...prev, ...next.filter((n) => !seen.has(n.video_id))]
+        })
+        setHasMore(next.length >= PAGE)
+      }
+    } finally {
+      setLoadingMore(false)
+    }
+  }, [buildQuery, items.length, hasMore, loadingMore])
+
+  // Infinite scroll sentinel.
+  const sentinelRef = useRef<HTMLDivElement | null>(null)
+  useEffect(() => {
+    const el = sentinelRef.current
+    if (!el) return
+    const obs = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) loadMore()
+      },
+      { rootMargin: '600px' }
+    )
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [loadMore])
 
   const activeProfile = useMemo(
     () => profiles.find((p) => p.id === activeId) || null,
@@ -80,8 +176,8 @@ export default function Inspiration() {
         return
       }
       const script = await res.json()
-      toast.success('Adapting for your business…')
-      navigate(`/dashboard/script-studio/${script.id}`)
+      toast.success('Building your content playbook…')
+      navigate(`/dashboard/playbook/${script.id}`)
     } catch {
       toast.error('Something went wrong')
     } finally {
@@ -89,14 +185,19 @@ export default function Inspiration() {
     }
   }
 
+  const resetShuffle = () => {
+    setSeed(Math.random().toString(36).slice(2, 8))
+    setSort('shuffle')
+  }
+
   return (
     <div className="max-w-7xl mx-auto">
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+      <div className="mb-5 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight">Inspiration</h1>
           <p className="text-slate-400 text-sm mt-1">
-            What’s breaking out right now across every niche. Pick anything — even something
-            unrelated — and we’ll remix it into a script for your business.
+            The biggest outliers across every niche on TikTok & Instagram. Pick anything — even
+            something unrelated — and we’ll turn it into a full content playbook for your business.
           </p>
         </div>
 
@@ -134,6 +235,65 @@ export default function Inspiration() {
         </div>
       )}
 
+      {/* Filter bar */}
+      <div className="glass-card rounded-2xl p-3 mb-5 border border-white/[0.08] flex flex-wrap items-center gap-2">
+        <div className="relative flex-1 min-w-[180px]">
+          <i className="fas fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search captions, hooks, niches…"
+            className="w-full pl-9 pr-3 py-2 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white text-sm placeholder:text-slate-500 focus:outline-none focus:border-pink-500/50"
+          />
+        </div>
+
+        <select
+          value={platform}
+          onChange={(e) => setPlatform(e.target.value)}
+          className="px-3 py-2 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white text-sm focus:outline-none focus:border-pink-500/50"
+        >
+          <option value="" className="bg-[#0e0e14]">All platforms</option>
+          {filters.platforms.map((p) => (
+            <option key={p} value={p} className="bg-[#0e0e14] capitalize">
+              {p}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={format}
+          onChange={(e) => setFormat(e.target.value)}
+          className="px-3 py-2 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white text-sm focus:outline-none focus:border-pink-500/50 max-w-[200px]"
+        >
+          <option value="" className="bg-[#0e0e14]">All formats</option>
+          {filters.formats.map((f) => (
+            <option key={f.name} value={f.name} className="bg-[#0e0e14]">
+              {f.name} ({f.count})
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={sort}
+          onChange={(e) => setSort(e.target.value as InspirationSort)}
+          className="px-3 py-2 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white text-sm focus:outline-none focus:border-pink-500/50"
+        >
+          {SORTS.map((s) => (
+            <option key={s.key} value={s.key} className="bg-[#0e0e14]">
+              {s.label}
+            </option>
+          ))}
+        </select>
+
+        <button
+          onClick={resetShuffle}
+          title="Shuffle"
+          className="px-3 py-2 rounded-xl bg-white/[0.04] border border-white/[0.08] text-slate-300 text-sm hover:bg-white/[0.08] transition"
+        >
+          <i className="fas fa-shuffle" />
+        </button>
+      </div>
+
       {loading ? (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
           {Array.from({ length: 12 }).map((_, i) => (
@@ -142,68 +302,108 @@ export default function Inspiration() {
         </div>
       ) : items.length === 0 ? (
         <div className="glass-card rounded-3xl p-10 text-center border border-white/[0.08]">
-          <p className="text-slate-400">No inspiration available yet.</p>
+          <p className="text-slate-400">No videos match these filters. Try clearing them.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-          {items.map((it) => (
-            <div
-              key={it.video_id}
-              className="group relative rounded-2xl overflow-hidden bg-white/[0.04] border border-white/[0.08]"
-            >
-              <div className="aspect-[9/16] relative">
-                {it.thumbnail_url ? (
-                  <img
-                    src={it.thumbnail_url}
-                    alt={it.caption || 'inspiration'}
-                    className="absolute inset-0 w-full h-full object-cover"
-                    loading="lazy"
-                  />
-                ) : (
-                  <div className="absolute inset-0 bg-white/[0.04]" />
-                )}
-
-                {/* Outlier multiple badge */}
-                {it.multiple != null && (
-                  <span className="absolute top-2 left-2 px-2 py-1 rounded-lg bg-pink-500 text-white text-xs font-black">
-                    {it.multiple.toFixed(1)}x
-                  </span>
-                )}
-
-                {/* Bottom gradient + meta */}
-                <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/80 to-transparent">
-                  {it.influencer_username && (
-                    <p className="text-white text-xs font-semibold truncate">
-                      @{it.influencer_username}
-                    </p>
-                  )}
-                  <p className="text-slate-300 text-[10px] truncate">
-                    {it.views != null ? `${formatCount(it.views)} views` : ''}
-                    {it.platform ? ` · ${it.platform}` : ''}
-                  </p>
-                </div>
-              </div>
-
-              <div className="p-2">
-                <button
-                  onClick={() => handleAdapt(it.video_id)}
-                  disabled={adaptingId === it.video_id}
-                  className="w-full px-3 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-violet-500 to-pink-500 hover:scale-[1.02] transition disabled:opacity-50 disabled:hover:scale-100"
-                >
-                  {adaptingId === it.video_id ? (
-                    <i className="fas fa-spinner fa-spin" />
-                  ) : (
-                    <>
-                      <i className="fas fa-wand-magic-sparkles mr-1" />
-                      Adapt{activeProfile ? ` for ${truncate(activeProfile.name || 'me', 14)}` : ''}
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+            {items.map((it) => (
+              <InspirationCard
+                key={it.video_id}
+                item={it}
+                adapting={adaptingId === it.video_id}
+                businessLabel={activeProfile?.name || null}
+                onAdapt={() => handleAdapt(it.video_id)}
+              />
+            ))}
+          </div>
+          <div ref={sentinelRef} className="h-12 flex items-center justify-center mt-4">
+            {loadingMore && <i className="fas fa-spinner fa-spin text-slate-500" />}
+            {!hasMore && items.length > 0 && (
+              <span className="text-xs text-slate-600">That’s everything for these filters.</span>
+            )}
+          </div>
+        </>
       )}
+    </div>
+  )
+}
+
+function InspirationCard({
+  item,
+  adapting,
+  businessLabel,
+  onAdapt,
+}: {
+  item: InspirationItem
+  adapting: boolean
+  businessLabel: string | null
+  onAdapt: () => void
+}) {
+  const thumb = getStorageUrl(item.thumbnail_path)
+  const [imgFailed, setImgFailed] = useState(false)
+  const showImg = thumb && !imgFailed
+
+  return (
+    <div className="group relative rounded-2xl overflow-hidden bg-white/[0.04] border border-white/[0.08]">
+      <div className="aspect-[9/16] relative">
+        {showImg ? (
+          <img
+            src={thumb}
+            alt={item.caption || 'inspiration'}
+            className="absolute inset-0 w-full h-full object-cover"
+            loading="lazy"
+            onError={() => setImgFailed(true)}
+          />
+        ) : (
+          // Caption-forward placeholder so users still know what the video is.
+          <div className="absolute inset-0 p-3 flex flex-col justify-between bg-gradient-to-br from-violet-900/30 to-pink-900/20">
+            <i className="fas fa-clapperboard text-slate-500" />
+            <p className="text-[11px] text-slate-300 line-clamp-5 leading-snug">
+              {item.caption || 'No preview available'}
+            </p>
+          </div>
+        )}
+
+        {item.multiple != null && (
+          <span className="absolute top-2 left-2 px-2 py-1 rounded-lg bg-pink-500 text-white text-xs font-black">
+            {item.multiple.toFixed(1)}x
+          </span>
+        )}
+        {item.format_class && (
+          <span className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur text-white text-[9px] font-bold uppercase tracking-wide max-w-[70%] truncate">
+            {item.format_class}
+          </span>
+        )}
+
+        <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/85 to-transparent">
+          {item.influencer_username && (
+            <p className="text-white text-xs font-semibold truncate">@{item.influencer_username}</p>
+          )}
+          <p className="text-slate-300 text-[10px] truncate">
+            {item.views != null ? `${formatCount(item.views)} views` : ''}
+            {item.platform ? ` · ${item.platform}` : ''}
+            {item.niche ? ` · ${item.niche}` : ''}
+          </p>
+        </div>
+      </div>
+
+      <div className="p-2">
+        <button
+          onClick={onAdapt}
+          disabled={adapting}
+          className="w-full px-3 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-violet-500 to-pink-500 hover:scale-[1.02] transition disabled:opacity-50 disabled:hover:scale-100"
+        >
+          {adapting ? (
+            <i className="fas fa-spinner fa-spin" />
+          ) : (
+            <>
+              <i className="fas fa-wand-magic-sparkles mr-1" />
+              Adapt{businessLabel ? ` for ${truncate(businessLabel, 12)}` : ''}
+            </>
+          )}
+        </button>
+      </div>
     </div>
   )
 }

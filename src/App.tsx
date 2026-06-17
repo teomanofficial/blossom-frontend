@@ -37,6 +37,7 @@ import ScriptStudio from './pages/ScriptStudio'
 import Scripts from './pages/Scripts'
 import BusinessStudio from './pages/BusinessStudio'
 import Inspiration from './pages/Inspiration'
+import ContentPlaybook from './pages/ContentPlaybook'
 import AccountLayout from './pages/Account'
 import AccountProfile from './pages/AccountProfile'
 import AccountBilling from './pages/AccountBilling'
@@ -268,6 +269,7 @@ function App() {
         <Route path="script-studio/:id" element={<ProGate><ScriptStudio /></ProGate>} />
         <Route path="business-studio" element={<ProGate><BusinessStudio /></ProGate>} />
         <Route path="inspiration" element={<ProGate><Inspiration /></ProGate>} />
+        <Route path="playbook/:id" element={<ProGate><ContentPlaybook /></ProGate>} />
         <Route path="scripts" element={<ProGate><Scripts /></ProGate>} />
         <Route path="settings" element={<Navigate to="/dashboard/account/billing" replace />} />
         <Route path="account" element={<AccountLayout />}>
