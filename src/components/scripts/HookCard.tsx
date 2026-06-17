@@ -24,8 +24,13 @@ export default function HookCard({ hook, selected, onSelect, onEdit, onDelete }:
   // Normalize the handle once: backend stores it bare, but guard against a
   // stray leading @ so we never render "@@handle".
   const handle = (hook.source_influencer || '').replace(/^@+/, '')
-  const hasRealMultiple = hook.source_outlier_multiple != null && hook.source_outlier_multiple > 0
-  const hasProvenance = !!handle || hasRealMultiple || hook.source_views != null
+  // Coerce defensively — these arrive as numbers from the API, but pg can
+  // serialize NUMERIC/BIGINT as strings, which would break the badges.
+  const multipleNum = hook.source_outlier_multiple != null ? Number(hook.source_outlier_multiple) : null
+  const viewsNum = hook.source_views != null ? Number(hook.source_views) : null
+  const hasRealMultiple = multipleNum != null && Number.isFinite(multipleNum) && multipleNum > 0
+  const hasViews = viewsNum != null && Number.isFinite(viewsNum)
+  const hasProvenance = !!handle || hasRealMultiple || hasViews
 
   const commitEdit = () => {
     const next = draft.trim()
@@ -35,7 +40,7 @@ export default function HookCard({ hook, selected, onSelect, onEdit, onDelete }:
 
   return (
     <div
-      className={`group relative flex flex-col rounded-3xl border p-5 transition-all ${
+      className={`relative flex flex-col rounded-3xl border p-5 transition-all ${
         selected
           ? 'border-pink-500/50 bg-gradient-to-br from-pink-500/[0.08] to-orange-400/[0.04] ring-1 ring-pink-500/30'
           : 'border-white/[0.06] bg-white/[0.03] hover:border-white/15'
@@ -58,9 +63,21 @@ export default function HookCard({ hook, selected, onSelect, onEdit, onDelete }:
         </button>
 
         {hook.archetype && (
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.06] px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-slate-300 backdrop-blur-md">
-            <i className="fas fa-fingerprint text-[9px] text-pink-400" />
-            {hook.archetype}
+          <span className="group/chip relative inline-block">
+            <span className="inline-flex cursor-help items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.06] px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-slate-300 backdrop-blur-md">
+              <i className="fas fa-fingerprint text-[9px] text-pink-400" />
+              {hook.archetype}
+            </span>
+
+            {/* Rationale tooltip — revealed only when hovering the chip */}
+            {hook.rationale && (
+              <span className="pointer-events-none absolute right-0 top-full z-30 mt-2 w-64 max-w-[80vw] translate-y-1 rounded-2xl border border-white/10 bg-[#0b0b12]/95 p-3 text-left text-[11px] font-medium normal-case leading-relaxed tracking-normal text-slate-300 opacity-0 shadow-2xl backdrop-blur-xl transition-all duration-200 group-hover/chip:translate-y-0 group-hover/chip:opacity-100">
+                <span className="mb-1 block text-[9px] font-black uppercase tracking-widest text-pink-400">
+                  Why it works
+                </span>
+                {hook.rationale}
+              </span>
+            )}
           </span>
         )}
       </div>
@@ -97,13 +114,13 @@ export default function HookCard({ hook, selected, onSelect, onEdit, onDelete }:
           )}
           {hasRealMultiple && (
             <span className="inline-flex items-center rounded-lg bg-gradient-to-br from-pink-500 via-fuchsia-500 to-purple-600 px-2 py-0.5 text-[11px] font-black text-white shadow-lg shadow-pink-500/30">
-              {formatMultiple(hook.source_outlier_multiple)}
+              {formatMultiple(multipleNum)}
             </span>
           )}
-          {hook.source_views != null && (
+          {hasViews && (
             <span className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[11px] font-bold text-slate-300">
               <i className="fas fa-eye text-[9px] text-slate-500" />
-              {compactCount(hook.source_views)}
+              {compactCount(viewsNum)}
             </span>
           )}
         </div>
@@ -141,16 +158,6 @@ export default function HookCard({ hook, selected, onSelect, onEdit, onDelete }:
           Delete
         </button>
       </div>
-
-      {/* Rationale — revealed on hover */}
-      {hook.rationale && (
-        <div className="pointer-events-none absolute inset-x-3 bottom-3 z-20 translate-y-1 rounded-2xl border border-white/10 bg-[#0b0b12]/95 p-3 text-[11px] leading-relaxed text-slate-300 opacity-0 shadow-2xl backdrop-blur-xl transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100">
-          <span className="mb-1 block text-[9px] font-black uppercase tracking-widest text-pink-400">
-            Why it works
-          </span>
-          {hook.rationale}
-        </div>
-      )}
     </div>
   )
 }

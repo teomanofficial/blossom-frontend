@@ -4,9 +4,11 @@
  * badges read identically (e.g. "7.2M", "114x").
  */
 
-/** Compact count formatting: 7_200_000 → "7.2M", 7_200 → "7.2k". */
-export function compactCount(n: number | null | undefined): string {
-  if (n == null || !Number.isFinite(n)) return '—'
+/** Compact count formatting: 7_200_000 → "7.2M", 7_200 → "7.2k".
+ *  Accepts strings too — pg serializes BIGINT/NUMERIC as strings over JSON. */
+export function compactCount(value: number | string | null | undefined): string {
+  const n = value == null ? NaN : Number(value)
+  if (!Number.isFinite(n)) return '—'
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`
   if (n >= 1_000) return `${(n / 1_000).toFixed(1).replace(/\.0$/, '')}k`
   return String(Math.round(n))
@@ -14,10 +16,11 @@ export function compactCount(n: number | null | undefined): string {
 
 /**
  * Outlier multiple label. ≥100x drops the decimal so "700x" reads clean;
- * under 100x keeps one decimal ("4.3x").
+ * under 100x keeps one decimal ("4.3x"). Accepts strings too (pg NUMERIC).
  */
-export function formatMultiple(multiple: number | null | undefined): string {
-  if (multiple == null || !Number.isFinite(multiple) || multiple <= 0) return '0x'
+export function formatMultiple(value: number | string | null | undefined): string {
+  const multiple = value == null ? NaN : Number(value)
+  if (!Number.isFinite(multiple) || multiple <= 0) return '0x'
   if (multiple >= 100) return `${Math.round(multiple)}x`
   return `${multiple.toFixed(1).replace(/\.0$/, '')}x`
 }
