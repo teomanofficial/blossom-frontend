@@ -21,6 +21,7 @@ import TabWeaknesses from '../components/analysis/TabWeaknesses'
 import TabComments from '../components/analysis/TabComments'
 import TabChat from '../components/analysis/TabChat'
 import ShareModal from '../components/ShareModal'
+import { exportPdf, type PdfBlock } from '../lib/exportPdf'
 import { MENTOR_LABEL } from '../lib/mentor'
 
 export default function AnalysisDetail() {
@@ -230,6 +231,58 @@ export default function AnalysisDetail() {
                   Pro
                 </span>
               )}
+            </button>
+            <button
+              onClick={() => {
+                const kv = (pairs: [string, any][]): [string, string][] =>
+                  pairs.filter(([, v]) => v != null && v !== '').map(([k, v]) => [k, String(v)] as [string, string])
+                const blocks: PdfBlock[] = []
+                if (full) {
+                  blocks.push({
+                    heading: 'Overview',
+                    keyValues: kv([
+                      ['Title', full.title],
+                      ['Verdict', full.one_line_verdict],
+                      ['Format', full.format_class],
+                      ['Niche', full.niche],
+                    ]),
+                  })
+                  if (full.content_substance)
+                    blocks.push({
+                      heading: 'Substance',
+                      paragraphs: [full.content_substance.summary, full.content_substance.unique_angle, full.content_substance.contrarian_angle].filter(Boolean),
+                    })
+                  if (Array.isArray(full.tactics) && full.tactics.length)
+                    blocks.push({ heading: 'Tactics', bullets: full.tactics.slice(0, 12).map((t: any) => `${t.name}${t.why_it_works ? ` — ${t.why_it_works}` : ''}`) })
+                  if (full.structural_breakdown)
+                    blocks.push({
+                      heading: 'Structure',
+                      keyValues: kv([
+                        ['Hook (s)', full.structural_breakdown.hook_seconds],
+                        ['Pacing', full.structural_breakdown.pacing_style],
+                        ['Loop', full.structural_breakdown.loop_description],
+                      ]),
+                    })
+                  if (Array.isArray(full.weaknesses) && full.weaknesses.length)
+                    blocks.push({ heading: 'Weaknesses', bullets: full.weaknesses.map((w: any) => `${w.what}${w.fix ? ` → ${w.fix}` : ''}`) })
+                }
+                if (hook)
+                  blocks.push({ heading: 'Hook', keyValues: kv([['Class', hook.hook_class], ['Verdict', hook.verdict], ['Promise', hook.promise_setup?.promise_text]]) })
+                if (virality)
+                  blocks.push({ heading: 'Virality', keyValues: kv([['Overall score', virality.overall_virality_score]]) })
+                if (improv && Array.isArray(improv.priority_actions))
+                  blocks.push({ heading: 'Priority actions', numbered: improv.priority_actions.map((a: any) => ({ title: `#${a.rank} · ${a.effort} effort`, lines: [a.action] })) })
+                exportPdf({
+                  title: full?.title || upload?.caption || 'Video Analysis',
+                  subtitle: [upload?.username ? `@${upload.username}` : '', upload?.platform].filter(Boolean).join(' · '),
+                  blocks,
+                })
+              }}
+              className="px-3 sm:px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition-all text-xs sm:text-sm font-bold"
+              aria-label="Export analysis as PDF"
+            >
+              <i className="fas fa-file-pdf sm:mr-2"></i>
+              <span className="hidden sm:inline">Export PDF</span>
             </button>
             <button
               onClick={() => setShowShareModal(true)}

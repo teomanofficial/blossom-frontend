@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { authFetch } from '../lib/api'
 import { getStorageUrl } from '../lib/media'
+import VideoDetailModal from '../components/VideoDetailModal'
 import type {
   BusinessProfile,
+  FilterBucket,
   InspirationFilters,
   InspirationItem,
   InspirationSort,
@@ -31,17 +33,20 @@ export default function Inspiration() {
   const [profiles, setProfiles] = useState<BusinessProfile[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
   const [items, setItems] = useState<InspirationItem[]>([])
-  const [filters, setFilters] = useState<InspirationFilters>({ formats: [], platforms: [] })
+  const [filters, setFilters] = useState<InspirationFilters>({ formats: [], industries: [], platforms: [] })
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(true)
   const [adaptingId, setAdaptingId] = useState<number | null>(null)
+  const [openVideoId, setOpenVideoId] = useState<number | null>(null)
 
   // Filter state
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [platform, setPlatform] = useState<string>('')
-  const [format, setFormat] = useState<string>('')
+  const [format, setFormat] = useState<string>('') // format bucket key
+  const [industry, setIndustry] = useState<string>('') // industry bucket key
+  const [windowDays, setWindowDays] = useState<number>(0) // 0 = all time
   const [sort, setSort] = useState<InspirationSort>('top')
   const [seed, setSeed] = useState(() => Math.random().toString(36).slice(2, 8))
 
@@ -60,10 +65,12 @@ export default function Inspiration() {
       if (sort === 'shuffle') p.set('seed', seed)
       if (platform) p.set('platform', platform)
       if (format) p.set('format', format)
+      if (industry) p.set('industry', industry)
+      if (windowDays > 0) p.set('windowDays', String(windowDays))
       if (debouncedSearch) p.set('search', debouncedSearch)
       return p.toString()
     },
-    [sort, seed, platform, format, debouncedSearch]
+    [sort, seed, platform, format, industry, windowDays, debouncedSearch]
   )
 
   // Load profiles + filter options once.
@@ -201,8 +208,17 @@ export default function Inspiration() {
           </p>
         </div>
 
-        {profiles.length > 0 && (
-          <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => navigate('/dashboard/analyze')}
+            className="px-3 py-2 rounded-xl bg-white/[0.05] border border-white/[0.08] text-slate-200 text-sm font-bold hover:bg-white/[0.1] transition whitespace-nowrap"
+            title="Analyze any TikTok/Instagram video by URL, then adapt it"
+          >
+            <i className="fas fa-link mr-1.5" />
+            Import a video
+          </button>
+          {profiles.length > 0 && (
+          <>
             <span className="text-[11px] font-black uppercase tracking-widest text-slate-500">
               Adapt for
             </span>
@@ -217,8 +233,9 @@ export default function Inspiration() {
                 </option>
               ))}
             </select>
-          </div>
-        )}
+          </>
+          )}
+        </div>
       </div>
 
       {profiles.length === 0 && !loading && (
@@ -261,16 +278,13 @@ export default function Inspiration() {
         </select>
 
         <select
-          value={format}
-          onChange={(e) => setFormat(e.target.value)}
-          className="px-3 py-2 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white text-sm focus:outline-none focus:border-pink-500/50 max-w-[200px]"
+          value={windowDays}
+          onChange={(e) => setWindowDays(Number(e.target.value))}
+          className="px-3 py-2 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white text-sm focus:outline-none focus:border-pink-500/50"
         >
-          <option value="" className="bg-[#0e0e14]">All formats</option>
-          {filters.formats.map((f) => (
-            <option key={f.name} value={f.name} className="bg-[#0e0e14]">
-              {f.name} ({f.count})
-            </option>
-          ))}
+          <option value={0} className="bg-[#0e0e14]">All time</option>
+          <option value={30} className="bg-[#0e0e14]">This month</option>
+          <option value={7} className="bg-[#0e0e14]">This week</option>
         </select>
 
         <select
@@ -294,6 +308,28 @@ export default function Inspiration() {
         </button>
       </div>
 
+      {/* Format + industry buckets (single-select each, like SpyTok) */}
+      {(filters.formats.length > 0 || filters.industries.length > 0) && (
+        <div className="mb-5 space-y-2">
+          {filters.formats.length > 0 && (
+            <ChipRow
+              label="Format"
+              options={filters.formats}
+              value={format}
+              onChange={setFormat}
+            />
+          )}
+          {filters.industries.length > 0 && (
+            <ChipRow
+              label="Industry"
+              options={filters.industries}
+              value={industry}
+              onChange={setIndustry}
+            />
+          )}
+        </div>
+      )}
+
       {loading ? (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
           {Array.from({ length: 12 }).map((_, i) => (
@@ -314,6 +350,7 @@ export default function Inspiration() {
                 adapting={adaptingId === it.video_id}
                 businessLabel={activeProfile?.name || null}
                 onAdapt={() => handleAdapt(it.video_id)}
+                onOpen={() => setOpenVideoId(it.video_id)}
               />
             ))}
           </div>
@@ -325,6 +362,16 @@ export default function Inspiration() {
           </div>
         </>
       )}
+
+      {openVideoId != null && (
+        <VideoDetailModal
+          videoId={openVideoId}
+          businessLabel={activeProfile?.name || null}
+          adapting={adaptingId === openVideoId}
+          onAdapt={(id) => handleAdapt(id)}
+          onClose={() => setOpenVideoId(null)}
+        />
+      )}
     </div>
   )
 }
@@ -334,11 +381,13 @@ function InspirationCard({
   adapting,
   businessLabel,
   onAdapt,
+  onOpen,
 }: {
   item: InspirationItem
   adapting: boolean
   businessLabel: string | null
   onAdapt: () => void
+  onOpen: () => void
 }) {
   const thumb = getStorageUrl(item.thumbnail_path)
   const [imgFailed, setImgFailed] = useState(false)
@@ -346,7 +395,7 @@ function InspirationCard({
 
   return (
     <div className="group relative rounded-2xl overflow-hidden bg-white/[0.04] border border-white/[0.08]">
-      <div className="aspect-[9/16] relative">
+      <div className="aspect-[9/16] relative cursor-pointer" onClick={onOpen}>
         {showImg ? (
           <img
             src={thumb}
@@ -410,4 +459,48 @@ function InspirationCard({
 
 function truncate(s: string, n: number): string {
   return s.length > n ? `${s.slice(0, n - 1)}…` : s
+}
+
+function ChipRow({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  label: string
+  options: FilterBucket[]
+  value: string
+  onChange: (v: string) => void
+}) {
+  return (
+    <div className="flex items-center gap-2 flex-wrap">
+      <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 w-16 shrink-0">
+        {label}
+      </span>
+      <button
+        onClick={() => onChange('')}
+        className={`px-3 py-1.5 rounded-full text-xs font-bold transition ${
+          value === '' ? 'bg-pink-500 text-white' : 'bg-white/[0.05] text-slate-300 hover:bg-white/[0.1]'
+        }`}
+      >
+        All
+      </button>
+      {options
+        .filter((o) => o.key !== 'other')
+        .map((o) => (
+          <button
+            key={o.key}
+            onClick={() => onChange(value === o.key ? '' : o.key)}
+            title={o.description}
+            className={`px-3 py-1.5 rounded-full text-xs font-bold transition ${
+              value === o.key
+                ? 'bg-pink-500 text-white'
+                : 'bg-white/[0.05] text-slate-300 hover:bg-white/[0.1]'
+            }`}
+          >
+            {o.label}
+          </button>
+        ))}
+    </div>
+  )
 }

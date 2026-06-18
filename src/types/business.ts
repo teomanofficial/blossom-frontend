@@ -64,8 +64,15 @@ export interface InspirationItem {
 
 export type InspirationSort = 'top' | 'views' | 'recent' | 'shuffle'
 
+export interface FilterBucket {
+  key: string
+  label: string
+  description: string
+}
+
 export interface InspirationFilters {
-  formats: { name: string; count: number }[]
+  formats: FilterBucket[]
+  industries: FilterBucket[]
   platforms: string[]
 }
 
@@ -107,6 +114,17 @@ export interface ContentPlaybook {
   recording_tips: string[]
   estimated_duration_seconds: number
   full_script: string
+  shots?: PlaybookShot[]
+  production_notes?: string[]
+  variations?: { title: string; change: string }[]
+}
+
+export interface PlaybookShot {
+  n: number
+  visual: string
+  on_screen_text: string | null
+  audio: string | null
+  duration: string | null
 }
 
 export type PlaybookStatus =
@@ -126,10 +144,60 @@ export interface PlaybookRecord {
   business_profile_id: string | null
   business_name: string | null
   error_message: string | null
+  version_count?: number
+}
+
+export interface SavedIdea {
+  id: string
+  status: PlaybookStatus
+  topic: string | null
+  concept: string | null
+  format: string | null
+  business_name: string | null
+  created_at: string
 }
 
 export interface PlaybookChatMessage {
   role: 'user' | 'model'
   content: string
   created_at?: string
+}
+
+// ---- Inspiration video detail ----
+
+export interface VideoDetailMetrics {
+  views: number
+  likes: number
+  comments: number
+  shares: number
+  saves: number
+  engagement_rate: number | null
+  save_rate: number | null
+  shareable_rate: number | null
+}
+
+export interface VideoDetail {
+  video_id: number
+  platform: string | null
+  content_url: string | null
+  username: string | null
+  avatar_url: string | null
+  thumbnail_path: string | null
+  caption: string | null
+  duration_sec: number | null
+  posted_at: string | null
+  niche: string | null
+  format_class: string | null
+  hook_class: string | null
+  metrics: VideoDetailMetrics
+  why_it_works: string | null
+  // Anatomy kept loose to tolerate analysis-schema variation across the library.
+  promise: any
+  structural: any
+  emotional: any
+  tactics: any[]
+  weaknesses: any[]
+  hook: any | null
+  transcript: string | null
+  transcript_status: string
 }
