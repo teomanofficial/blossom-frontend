@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { authFetch } from '../lib/api'
+import IntentPreferences from '../components/IntentPreferences'
 
 interface Category {
   id: number
@@ -15,6 +16,15 @@ interface Domain {
 }
 
 export default function AccountPreferences() {
+  return (
+    <div className="space-y-12">
+      <IntentPreferences />
+      <ContentPreferences />
+    </div>
+  )
+}
+
+function ContentPreferences() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)

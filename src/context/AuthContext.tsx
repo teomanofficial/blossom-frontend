@@ -11,6 +11,8 @@ interface Profile {
   website: string | null
   location: string | null
   user_type: string
+  account_type: string | null
+  primary_goal: string | null
 }
 
 export interface VipCredits {
